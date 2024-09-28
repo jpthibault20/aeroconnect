@@ -1,19 +1,29 @@
+
 "use client";
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React from 'react'
+import React, { use } from 'react'
 import InputString from './InputString';
 import ButtonForm from './buttonForm'
 import CardWrapper from './cardWrapper';
 import Link from 'next/link';
-
-import { useForm } from "react-hook-form";
+import { set, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginSchema, loginSchema } from "../../schemas/loginSchema"; // Assure-toi que le chemin est correct
-
+import { emailLogin } from '@/app/auth/login/action';
+import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 
 export const Login = () => {
     const [loading, setLoading] = React.useState(false);
+    const [message, setMessage] = React.useState('');
+    const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
+
+    useEffect(() => {
+        setMessage(searchParams.get('message') ?? '');
+    }, [searchParams]);
+
+
 
     const {
         register,
@@ -24,15 +34,22 @@ export const Login = () => {
         resolver: zodResolver(loginSchema),
     });
 
-    const onSubmit = (data: LoginSchema) => {
+    const onSubmit = async (data: LoginSchema) => {
         setLoading(true);
         console.log(data);
 
+        // Convert the data object to FormData
+        const formData = new FormData();
+        formData.append('email', data.email);
+        formData.append('password', data.password);
+
         // Logique de soumission du formulaire, comme un appel API
+        await emailLogin(formData);
 
         reset();
         setLoading(false);
     };
+
 
     return (
         <CardWrapper title='Se connecter'>
@@ -65,7 +82,13 @@ export const Login = () => {
                             Mot de passe oublié ?
                         </Link>
                     </div>
-
+                </div>
+                <div>
+                    {message && (
+                        <div className="text-sm font-medium text-destructive flex justify-center">
+                            {message}
+                        </div>
+                    )}
                 </div>
                 <div className='flex justify-center items-center mt-4 w-full px-8'>
                     <ButtonForm

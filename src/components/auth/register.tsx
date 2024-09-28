@@ -1,17 +1,25 @@
 "use client";
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import CardWrapper from './cardWrapper'
 import InputString from './InputString'
 import ButtonForm from './buttonForm'
 import Link from 'next/link'
-
+import { useSearchParams } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RegisterSchema, registerSchema } from "../../schemas/registerSchema"; // Assure-toi que le chemin est correct  
+import { signup } from '@/app/auth/login/action';
 
 const Register = () => {
-    const [loading, setLoading] = React.useState(false);
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
+    const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
+
+    useEffect(() => {
+        setMessage(searchParams.get('message') ?? '');
+    }, [searchParams]);
+
 
     const {
         register,
@@ -22,11 +30,20 @@ const Register = () => {
         resolver: zodResolver(registerSchema),
     });
 
-    const onSubmit = (data: RegisterSchema) => {
+    const onSubmit = async (data: RegisterSchema) => {
         setLoading(true);
         console.log(data);
 
+        // Convert the data object to FormData
+        const formData = new FormData();
+        formData.append('name', data.name);
+        formData.append('firstName', data.firstName);
+        formData.append('email', data.email);
+        formData.append('password', data.password);
+        formData.append('phone', data.phone);
+
         // Logique de soumission du formulaire, comme un appel API
+        await signup(formData);
 
         reset();
         setLoading(false);
@@ -85,6 +102,13 @@ const Register = () => {
                         />
                         {errors.phone && <p className='text-red-500'>{errors.phone.message}</p>}
                     </div>
+                </div>
+                <div>
+                    {message && (
+                        <div className="text-sm font-medium text-destructive flex justify-center">
+                            {message}
+                        </div>
+                    )}
                 </div>
                 <div className='flex justify-center items-center mt-4 w-full px-8'>
                     <ButtonForm
