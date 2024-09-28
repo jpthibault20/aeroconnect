@@ -52,7 +52,7 @@ export const Login = () => {
 
 
     return (
-        <Suspense>
+        <Suspense fallback={<div>Loading...</div>}>
             <CardWrapper title='Se connecter'>
                 <form action="#" onSubmit={handleSubmit(onSubmit)}>
                     <div className='px-8 py-4 space-y-4'>

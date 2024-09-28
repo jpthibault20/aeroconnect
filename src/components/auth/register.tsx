@@ -49,7 +49,7 @@ const Register = () => {
         setLoading(false);
     };
     return (
-        <Suspense>
+        <Suspense fallback={<div>Loading...</div>}>
             <CardWrapper title='Créer un compte'>
                 <form action="#" onSubmit={handleSubmit(onSubmit)}>
                     <div className='px-8 py-4 space-y-4'>
