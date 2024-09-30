@@ -12,8 +12,6 @@ const page = async () => {
         data: { user },
     } = await supabase.auth.getUser();
 
-
-
     if (!user) {
         return redirect("/auth/login");
     }
@@ -21,23 +19,21 @@ const page = async () => {
     return (
         <div>
             <form action={signOut}>
-                Home Page
+                <p className='text-2xl font-istok'>homePage</p>
                 <p>
-                    {user.email}
+                    id : {user.id}
                     <br />
-                    {user.phone}
+                    email : {user.email}
                     <br />
-                    {user.created_at}
+                    phone : {user.phone}
                     <br />
-                    {user.updated_at}
+                    created_at : {user.created_at}
                     <br />
-                    {user.id}
+                    role : {user.role}
                     <br />
-                    {user.role}
+                    email confimed : {user.email_confirmed_at}
                     <br />
-                    {user.email_confirmed_at}
-                    <br />
-                    {user.aud}
+                    aud : {user.aud}
 
                 </p>
                 <Button>Sign out</Button>
