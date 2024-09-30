@@ -19,7 +19,6 @@ const CardWrapper = ({ children, title }: Props) => {
                         alt="Logo"
                         width={100}
                         height={100}
-                        className=''
                     />
                     <h1 className='font-istok text-[#323232] text-2xl text-center mt-4'>AeroConnect</h1>
                     <h3 className='text-[#64748B] mt-4'>{title}</h3>

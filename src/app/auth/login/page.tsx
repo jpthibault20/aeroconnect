@@ -1,11 +1,18 @@
 import { Login } from '@/components/auth/login'
-import React from 'react'
+import RequireAuth from '@/components/auth/requireAuth'
+import React, { Suspense } from 'react'
 
-const LoginPage = () => {
+const LoginPage = async () => {
+
+
     return (
-        <div className="">
-            <Login />
-        </div>
+        <RequireAuth redirectToAuth={false}>
+            <Suspense fallback={<div>Loading...</div>}>
+                <div className="">
+                    <Login />
+                </div>
+            </Suspense>
+        </RequireAuth>
     )
 }
 
