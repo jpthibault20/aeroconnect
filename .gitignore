@@ -36,3 +36,4 @@ yarn-error.log*
 next-env.d.ts
 saveClientIdGoogle.txt
 googleOAuth/client_secret_593471036633-d7v8sekoh8u2nmcgfc385puos7u1d7ie.apps.googleusercontent.com.json
+.env
