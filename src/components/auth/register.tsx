@@ -9,7 +9,7 @@ import { useSearchParams } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RegisterSchema, registerSchema } from "../../schemas/registerSchema"; // Assure-toi que le chemin est correct  
-import { signup } from '@/app/auth/login/action';
+import { emailSignup } from '@/app/auth/login/action';
 
 const Register = () => {
     const [loading, setLoading] = useState(false);
@@ -43,7 +43,7 @@ const Register = () => {
         formData.append('phone', data.phone);
 
         // Logique de soumission du formulaire, comme un appel API
-        await signup(formData);
+        await emailSignup(formData);
 
         reset();
         setLoading(false);

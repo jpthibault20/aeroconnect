@@ -6,12 +6,13 @@ import InputString from './InputString';
 import ButtonForm from './buttonForm'
 import CardWrapper from './cardWrapper';
 import Link from 'next/link';
-import { set, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginSchema, loginSchema } from "../../schemas/loginSchema"; // Assure-toi que le chemin est correct
 import { emailLogin } from '@/app/auth/login/action';
 import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import OauthSignin from './oauthSignin';
 
 
 export const Login = () => {
@@ -96,15 +97,20 @@ export const Login = () => {
                         loading={loading}
                     />
                 </div>
-                <div className='mt-10'>
-                    <Link
-                        href={'/auth/register'}
-                        className='flex items-center justify-center text-sm text-gray-500 hover:text-gray-700'
-                    >
-                        S&apos;inscrire
-                    </Link>
-                </div>
             </form>
+
+            <div className='px-8 mt-4'>
+                <OauthSignin />
+            </div>
+
+            <div className='mt-10'>
+                <Link
+                    href={'/auth/register'}
+                    className='flex items-center justify-center text-sm text-gray-500 hover:text-gray-700'
+                >
+                    S&apos;inscrire
+                </Link>
+            </div>
         </CardWrapper>
     );
 }
