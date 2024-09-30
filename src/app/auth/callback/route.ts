@@ -37,16 +37,16 @@ export async function GET(request: Request) {
                 firstName,
                 lastName,
                 email,
-                phone: phone ?? " ", // Utilisation de null pour les données manquantes
+                phone: phone ?? " ",
             });
         } catch (error) {
             console.error("Error creating user:", error);
             return redirect('/auth/register?message=User creation failed');
         }
 
-        const forwardedHost = request.headers.get('x-forwarded-host');
-        const isLocalEnv = process.env.NODE_ENV === 'development';
-        const redirectUrl = isLocalEnv ? `${origin}${next}` : `https://${forwardedHost || origin}${next}`;
+        // const forwardedHost = request.headers.get('x-forwarded-host');
+        // const isLocalEnv = process.env.NODE_ENV === 'development';
+        const redirectUrl =  `${process.env.WEBSITE_LINK}${next}`;
 
         return NextResponse.redirect(redirectUrl);
     } else {
