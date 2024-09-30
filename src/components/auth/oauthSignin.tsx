@@ -17,22 +17,27 @@ const OauthSignin = () => {
         name: 'google',
         displayName: 'Google',
         icon: <FcGoogle className='size-5' />,
-    }];
+    },];
 
     return (
-        <div className='font-istok'>
+        <div className='font-istok flex space-x-2'>
             {providers.map((provider) => (
-                <Button 
-                    className='w-full flex items-center justify-center gap-2'
-                    variant={'outline'}
+                <div
                     key={provider.name}
-                    onClick={async() => await oAuthSignin(provider.name)}
+                    className="flex-1"
                 >
-                    {provider.icon}
-                    Se connecter avec {provider.displayName}
-                </Button>
+                    <Button
+                        className='w-full' // Chaque bouton occupe la pleine largeur de son conteneur
+                        variant={'outline'}
+                        onClick={async () => await oAuthSignin(provider.name)}
+                    >
+                        {provider.icon}
+                        {/* Se connecter avec {provider.displayName} */}
+                    </Button>
+                </div>
             ))}
         </div>
+
     )
 }
 
