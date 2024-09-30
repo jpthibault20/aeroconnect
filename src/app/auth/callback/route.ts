@@ -1,6 +1,9 @@
+"use server";
 import { NextResponse } from 'next/server'
 // The client you created from the Server-Side Auth instructions
 import { createClient } from '@/utils/supabase/server'
+import { createUser } from '@/api/db/db'
+import { redirect } from 'next/navigation'
 
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url)
@@ -12,6 +15,32 @@ export async function GET(request: Request) {
         const supabase = createClient()
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
+
+            const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+            if (sessionError || !sessionData.session) {
+                console.log(sessionError)
+            }
+
+            // Récupération des informations de l'utilisateur
+            const user = sessionData.session?.user;
+            const [firstName, lastName] = user!.user_metadata.full_name.split(' ');
+            const { email, phone } = user!.user_metadata;
+
+            try {
+                const res = await createUser({
+                    firstName,
+                    lastName,
+                    email,
+                    phone: phone || " ",
+                })
+                console.log(res)
+
+            } catch (error) {
+                console.log(error)
+                return redirect('/auth/register?message=Could not create privat user')
+            }
+
             const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
             const isLocalEnv = process.env.NODE_ENV === 'development'
             if (isLocalEnv) {

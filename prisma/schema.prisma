@@ -1,15 +1,51 @@
 datasource db {
-  provider          = "postgresql"
-  url               = env("DATABASE_URL")
-  directUrl         = env("DIRECT_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
 }
 
+enum userRole {
+  USER
+  STUDENT
+  PILOT
+  OWNER
+  ADMIN
+}
+
+enum flightType {
+  FIRST_FLIGHT
+  INITATION
+  COURSE
+}
+
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id         Int      @id @unique @default(autoincrement())
+  clubID     Int
+  firstName  String
+  lastName   String
+  email      String   @unique
+  phone      String?
+  adressID   Int      @default(0)
+  role       userRole @default(USER)
+  restricted Boolean  @default(false)
+}
+
+model FLIGHT_SESSION {
+  id                      Int        @id @unique @default(autoincrement())
+  clubID                  Int
+  sessionDateStart        DateTime
+  sessionDateDuration_min Int
+  finalReccurence         Int
+  flightType              flightType
+  pilotID                 Int
+  pilotFirstName          String
+  pilotLastName           String
+  studentID               Int
+  studentFirstName        String
+  studentLastName         String
+  student_type            flightType
 }

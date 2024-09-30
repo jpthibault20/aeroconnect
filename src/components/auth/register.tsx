@@ -36,7 +36,7 @@ const Register = () => {
 
         // Convert the data object to FormData
         const formData = new FormData();
-        formData.append('name', data.name);
+        formData.append('lastName', data.lastName);
         formData.append('firstName', data.firstName);
         formData.append('email', data.email);
         formData.append('password', data.password);
@@ -68,9 +68,9 @@ const Register = () => {
                             placeholder='Doe'
                             type='text'
                             register={register}
-                            id='name'
+                            id='lastName'
                         />
-                        {errors.name && <p className='text-red-500'>{errors.name.message}</p>}
+                        {errors.lastName && <p className='text-red-500'>{errors.lastName.message}</p>}
                     </div>
                     <div>
                         <InputString
@@ -95,7 +95,7 @@ const Register = () => {
                     <div>
                         <InputString
                             title='Numéro de téléphone'
-                            placeholder='******'
+                            placeholder='0612345678'
                             type='tel'
                             register={register}
                             id='phone'
