@@ -11,7 +11,6 @@ interface User {
 }
 
 export const createUser = async (dataUser: User) => {
-    console.log(dataUser)
     if (!dataUser.firstName || !dataUser.lastName || !dataUser.email || !dataUser.phone) {
         return { error: 'Missing required fields' }
     }

@@ -28,13 +28,12 @@ export async function GET(request: Request) {
             const { email, phone } = user!.user_metadata;
 
             try {
-                const res = await createUser({
+                await createUser({
                     firstName,
                     lastName,
                     email,
                     phone: phone || " ",
                 })
-                console.log(res)
 
             } catch (error) {
                 console.log(error)
