@@ -98,26 +98,66 @@ export async function signOut() {
 }
 
 // Fonction pour réinitialiser le mot de passe
-export async function resetPassword(formData: FormData) {
+export async function forgotPassword(formData: FormData) {
     const supabase = createClient()
 
     // Récupérer l'email du formulaire
     const email = formData.get('email') as string
 
     if (!email) {
-        return redirect('/auth/reset-password?message=Email manquant')
+        return redirect('/auth/forgotPassword?message=Email manquant')
     }
 
     // Utiliser Supabase pour envoyer un email de réinitialisation de mot de passe
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.WEBSITE_LINK}/auth/update-password`, // Page vers laquelle rediriger après réinitialisation
+        redirectTo: `${process.env.WEBSITE_LINK}/auth/newPassword`, // Page vers laquelle rediriger après réinitialisation
     })
 
     if (error) {
         console.log('Erreur lors de l\'envoi de l\'email de réinitialisation :', error.message)
-        return redirect(`/auth/reset-password?message=${encodeURIComponent('Erreur lors de l\'envoi de l\'email de réinitialisation')}`)
+        return redirect(`/auth/forgotPassword?message=${encodeURIComponent('Erreur lors de l\'envoi de l\'email de réinitialisation')}`)
     }
 
     // Réponse après envoi réussi
     return redirect(`/auth/login?messageG=${encodeURIComponent('Email de réinitialisation envoyé')}`)
+}
+
+export async function updatePassword(formData: FormData) {
+
+    // Récupérer l'email du formulaire
+    const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirmPassword') as string
+    const code = formData.get('code') as string
+
+    if (!password || !confirmPassword) {
+        return redirect('/auth/forgotPassword?message=Mot de passe manquant')
+    }
+
+    if (password !== confirmPassword) {
+        return redirect('/auth/forgotPassword?message=Les mots de passe ne correspondent pas')
+    }
+
+    const supabase = createClient()
+    const res = await supabase.auth.exchangeCodeForSession(code)
+    const email = res.data.user?.email
+
+    if (!email) {
+        return redirect('/auth/login?message=Une erreur es survenue')
+    }
+
+
+
+
+    // Utiliser Supabase pour mettre à jour le mot de passe
+    const { error } = await supabase.auth.updateUser({
+        password,
+    })
+
+    if (error) {
+        console.log('Erreur lors de la mise à jour du mot de passe :', error.message)
+        return redirect(`/auth/forgotPassword?message=${encodeURIComponent('Erreur lors de la mise à jour du mot de passe')}`)
+    }
+
+    // Réponse après mise à jour réussie
+    return redirect(`/auth/login?messageG=${encodeURIComponent('Mot de passe mis à jour')}`)
 }

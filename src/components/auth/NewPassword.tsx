@@ -1,27 +1,26 @@
 "use client";
-
 import React, { useEffect } from 'react'
 import CardWrapper from './cardWrapper'
-import Link from 'next/link'
 import InputString from './InputString'
-import ButtonForm from './buttonForm'
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { newPasswordSchema, NewPasswordSchema } from "../../schemas/newPasswordSchema"; // Assure-toi que le chemin est correct
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { forgotPassword } from '../../app/auth/login/action';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { updatePasswordSchema, UpdatePasswordSchema } from '../../schemas/newPasswordSchema';
+import ButtonForm from './buttonForm';
+import Link from 'next/link';
+import { updatePassword } from '@/app/auth/login/action';
 import { useSearchParams } from 'next/navigation';
 
-
-const ForgotPassword = () => {
+const NewPassword = () => {
     const [loading, setLoading] = React.useState(false);
     const [message, setMessage] = React.useState('');
     const [messageG, setMessageG] = React.useState('');
+    const [code, setCode] = React.useState('');
     const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
 
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
         setMessageG(searchParams.get('messageG') ?? '');
+        setCode(searchParams.get('code') ?? '');
     }, [searchParams]);
 
     const {
@@ -29,35 +28,47 @@ const ForgotPassword = () => {
         handleSubmit,
         formState: { errors },
         reset,
-    } = useForm<NewPasswordSchema>({
-        resolver: zodResolver(newPasswordSchema),
+    } = useForm<UpdatePasswordSchema>({
+        resolver: zodResolver(updatePasswordSchema),
     });
 
-    const onSubmit = (data: NewPasswordSchema) => {
+    const onSubmit = (data: UpdatePasswordSchema) => {
         setLoading(true);
-        console.log(data);
 
         // Logique de soumission du formulaire, comme un appel API
         const formData = new FormData();
-        formData.append('email', data.email);
-        forgotPassword(formData);
+        formData.append('password', data.password);
+        formData.append('confirmPassword', data.confirmPassword);
+        formData.append('code', code);
+
+        updatePassword(formData);
 
         reset();
         setLoading(false);
     };
 
     return (
-        <CardWrapper title='Changer votre mot de passe'>
+        <CardWrapper title='Votre nouveau mot de passe'>
             <form action="#" onSubmit={handleSubmit(onSubmit)}>
-                <div className='px-8 py-4'>
+                <div className='px-8 py-4 space-y-3'>
                     <InputString
-                        title='Email'
-                        placeholder='John@doe.com'
-                        type='email'
+                        title='password'
+                        placeholder='******'
+                        type='password'
                         register={register}
-                        id='email'
+                        id='password'
                     />
-                    {errors.email && <p className='text-red-500'>{errors.email.message}</p>}
+                    {errors.password && <p className='text-red-500'>{errors.password.message}</p>}
+                    <div>
+                        <InputString
+                            title='confirmPassword'
+                            placeholder='******'
+                            type='password'
+                            register={register}
+                            id='confirmPassword'
+                        />
+                        {errors.confirmPassword && <p className='text-red-500'>{errors.confirmPassword.message}</p>}
+                    </div>
                 </div>
                 <div>
                     {message && (
@@ -86,8 +97,9 @@ const ForgotPassword = () => {
                     </Link>
                 </div>
             </form>
+
         </CardWrapper>
     )
 }
 
-export default ForgotPassword
+export default NewPassword
