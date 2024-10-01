@@ -37,7 +37,7 @@ export async function GET(request: Request) {
                 firstName,
                 lastName,
                 email,
-                phone: phone || " ",
+                phone: phone ?? " ",
             });
         } catch (error) {
             console.error("Error creating user:", error);
@@ -46,9 +46,14 @@ export async function GET(request: Request) {
 
         const forwardedHost = request.headers.get('x-forwarded-host');
         const isLocalEnv = process.env.NODE_ENV === 'development';
-        const redirectUrl = isLocalEnv ? `${origin}${next}` : `https://${forwardedHost || origin}${next}`;
-
-        return NextResponse.redirect(redirectUrl);
+        if (isLocalEnv) {
+            // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
+            return NextResponse.redirect(`${origin}${next}`)
+        } else if (forwardedHost) {
+            return NextResponse.redirect(`https://${forwardedHost}${next}`)
+        } else {
+            return NextResponse.redirect(`${origin}${next}`)
+        }
     } else {
         return redirect('/auth/login?message=Could not retrieve user information');
     }
