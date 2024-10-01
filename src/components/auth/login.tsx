@@ -12,9 +12,6 @@ import { LoginSchema, loginSchema } from "../../schemas/loginSchema"; // Assure-
 import { emailLogin } from '@/app/auth/login/action';
 import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import OauthSignin from './oauthSignin';
-import { set } from 'zod';
-
 
 export const Login = () => {
     const [loading, setLoading] = React.useState(false);
@@ -80,7 +77,7 @@ export const Login = () => {
                         />
                         {errors.password && <p className='text-red-500'>{errors.password.message}</p>}
                         <Link
-                            href={'/auth/newPassword'}
+                            href={'/auth/forgotPassword'}
                             className='flex items-center justify-end mt-1 text-sm text-gray-500 hover:text-gray-700'
                         >
                             Mot de passe oublié ?

@@ -97,3 +97,27 @@ export async function signOut() {
     redirect('/auth/login')
 }
 
+// Fonction pour réinitialiser le mot de passe
+export async function resetPassword(formData: FormData) {
+    const supabase = createClient()
+
+    // Récupérer l'email du formulaire
+    const email = formData.get('email') as string
+
+    if (!email) {
+        return redirect('/auth/reset-password?message=Email manquant')
+    }
+
+    // Utiliser Supabase pour envoyer un email de réinitialisation de mot de passe
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${process.env.WEBSITE_LINK}/auth/update-password`, // Page vers laquelle rediriger après réinitialisation
+    })
+
+    if (error) {
+        console.log('Erreur lors de l\'envoi de l\'email de réinitialisation :', error.message)
+        return redirect(`/auth/reset-password?message=${encodeURIComponent('Erreur lors de l\'envoi de l\'email de réinitialisation')}`)
+    }
+
+    // Réponse après envoi réussi
+    return redirect(`/auth/login?messageG=${encodeURIComponent('Email de réinitialisation envoyé')}`)
+}

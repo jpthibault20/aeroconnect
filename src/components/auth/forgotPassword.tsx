@@ -8,9 +8,11 @@ import ButtonForm from './buttonForm'
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { newPasswordSchema, NewPasswordSchema } from "../../schemas/newPasswordSchema"; // Assure-toi que le chemin est correct
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { resetPassword } from '../../app/auth/login/action';
 
 
-const NewPassword = () => {
+const ForgotPassword = () => {
     const [loading, setLoading] = React.useState(false);
 
     const {
@@ -27,6 +29,9 @@ const NewPassword = () => {
         console.log(data);
 
         // Logique de soumission du formulaire, comme un appel API
+        const formData = new FormData();
+        formData.append('email', data.email);
+        // resetPassword(formData);
 
         reset();
         setLoading(false);
@@ -64,4 +69,4 @@ const NewPassword = () => {
     )
 }
 
-export default NewPassword
+export default ForgotPassword
