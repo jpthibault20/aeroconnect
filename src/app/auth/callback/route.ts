@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation';
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
     const code = searchParams.get('code');
-    // const next = searchParams.get('next') ?? '/homePage';
+    const next = searchParams.get('next') ?? '/homePage';
 
     if (!code) {
         return NextResponse.redirect(`${origin}/auth/login?message=Missing OAuth code`);
@@ -37,18 +37,18 @@ export async function GET(request: Request) {
                 firstName,
                 lastName,
                 email,
-                phone: phone ?? " ",
+                phone: phone || " ",
             });
         } catch (error) {
             console.error("Error creating user:", error);
             return redirect('/auth/register?message=User creation failed');
         }
 
-        // const forwardedHost = request.headers.get('x-forwarded-host');
-        // const isLocalEnv = process.env.NODE_ENV === 'development';
-        // const redirectUrl =  `${process.env.WEBSITE_LINK}${next}`;
+        const forwardedHost = request.headers.get('x-forwarded-host');
+        const isLocalEnv = process.env.NODE_ENV === 'development';
+        const redirectUrl = isLocalEnv ? `${origin}${next}` : `https://${forwardedHost || origin}${next}`;
 
-        return NextResponse.redirect("/homePage");
+        return NextResponse.redirect(redirectUrl);
     } else {
         return redirect('/auth/login?message=Could not retrieve user information');
     }
