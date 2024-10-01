@@ -5,25 +5,25 @@ import { createUser } from '@/api/db/db';
 import { redirect } from 'next/navigation';
 
 export async function GET(request: Request) {
-    const { searchParams, origin } = new URL(request.url);
+    const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const next = searchParams.get('next') ?? '/homePage';
 
     if (!code) {
-        return NextResponse.redirect(`${origin}/auth/login?message=Missing OAuth code`);
+        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/login?message=Missing OAuth code`);
     }
 
     const supabase = createClient();
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeError) {
-        return NextResponse.redirect(`${origin}/auth/login?message=Failed to exchange OAuth code`);
+        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/login?message=Failed to exchange OAuth code`);
     }
 
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
     if (sessionError || !sessionData?.session || !sessionData.session.user) {
-        return redirect('/auth/login?message=Session error');
+        return redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/login?message=Session error`);
     }
 
     const user = sessionData.session.user;
@@ -41,20 +41,15 @@ export async function GET(request: Request) {
             });
         } catch (error) {
             console.error("Error creating user:", error);
-            return redirect('/auth/register?message=User creation failed');
+            return redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/register?message=User creation failed`);
         }
 
         const forwardedHost = request.headers.get('x-forwarded-host');
         const isLocalEnv = process.env.NODE_ENV === 'development';
-        if (isLocalEnv) {
-            // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-            return NextResponse.redirect(`${origin}${next}`)
-        } else if (forwardedHost) {
-            return NextResponse.redirect(`https://${forwardedHost}${next}`)
-        } else {
-            return NextResponse.redirect(`${origin}${next}`)
-        }
+        const baseUrl = isLocalEnv ? `${process.env.NEXT_PUBLIC_BASE_URL}` : `https://${forwardedHost || process.env.NEXT_PUBLIC_BASE_URL}`;
+
+        return NextResponse.redirect(`${baseUrl}${next}`);
     } else {
-        return redirect('/auth/login?message=Could not retrieve user information');
+        return redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/login?message=Could not retrieve user information`);
     }
 }
