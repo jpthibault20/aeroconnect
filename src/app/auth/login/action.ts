@@ -46,6 +46,7 @@ export async function emailSignup(formData: FormData) {
 
     const { error: errorAuth } = await supabase.auth.signUp(data)
     if (errorAuth) {
+        console.log(errorAuth.message)
         redirect('/auth/login?message=Could not create user')
     }
 
@@ -58,13 +59,14 @@ export async function emailSignup(formData: FormData) {
         })
     } catch (error) {
         console.log(error)
-        return redirect('/auth/register?message=Could not create user')
+        return redirect('/auth/register?message=Could not create private user')
     }
 
 
 
     revalidatePath('/', 'layout')
-    redirect('/auth/login')
+    redirect(`/auth/login?messageG=${encodeURIComponent('Email de confirmation envoyé')}`);
+
 }
 
 export async function oAuthSignin(provider: Provider) {

@@ -13,15 +13,18 @@ import { emailLogin } from '@/app/auth/login/action';
 import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import OauthSignin from './oauthSignin';
+import { set } from 'zod';
 
 
 export const Login = () => {
     const [loading, setLoading] = React.useState(false);
     const [message, setMessage] = React.useState('');
+    const [messageG, setMessageG] = React.useState('');
     const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
 
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
+        setMessageG(searchParams.get('messageG') ?? '');
     }, [searchParams]);
 
 
@@ -86,8 +89,13 @@ export const Login = () => {
                 </div>
                 <div>
                     {message && (
-                        <div className="text-sm font-medium text-destructive flex justify-center">
+                        <div className="text-sm font-istok font-medium text-destructive flex justify-center">
                             {message}
+                        </div>
+                    )}
+                    {messageG && (
+                        <div className="font-istok font-medium text-green-600 flex justify-center">
+                            {messageG}
                         </div>
                     )}
                 </div>
