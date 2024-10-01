@@ -99,9 +99,9 @@ export const Login = () => {
                 </div>
             </form>
 
-            <div className='px-8 mt-4'>
+            {/* <div className='px-8 mt-4'>
                 <OauthSignin />
-            </div>
+            </div> */}
 
             <div className='mt-10'>
                 <Link
