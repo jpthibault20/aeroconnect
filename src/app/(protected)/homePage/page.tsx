@@ -1,8 +1,10 @@
+"use server"
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { signOut } from '@/app/auth/login/action'
 import RequireAuth from '@/components/auth/requireAuth'
 import { createClient } from '@/utils/supabase/server'
+import Exemple from '@/components/Exemple'
 
 
 const page = async () => {
@@ -34,6 +36,9 @@ const page = async () => {
                     </p>
                     <Button>Sign out</Button>
                 </form>
+                <div>
+                    <Exemple />
+                </div>
             </div>
         </RequireAuth>
     )

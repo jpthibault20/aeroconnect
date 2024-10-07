@@ -1,3 +1,5 @@
+"use client"
+import { ExempleWrapper } from "../context/useExemple";
 
 export default function ProtectLayout({
     children,
@@ -6,7 +8,9 @@ export default function ProtectLayout({
 }>) {
     return (
         <div>
-            {children}
+            <ExempleWrapper>
+                {children}
+            </ExempleWrapper>
         </div>
     );
 }
