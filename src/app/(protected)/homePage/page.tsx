@@ -1,47 +1,43 @@
-"use server"
+"use client"
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { signOut } from '@/app/auth/login/action'
-import RequireAuth from '@/components/auth/requireAuth'
-import { createClient } from '@/utils/supabase/server'
-import Exemple from '@/components/Exemple'
+import { useCurrentUser } from '@/app/context/useCurrentUser'
 
 
-const page = async () => {
-    const supabase = createClient()
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+const Page = () => {
+    const { currentUser } = useCurrentUser();
+
+    if (currentUser === undefined) {
+        return <div>Loading...</div>;
+    }
 
     return (
-        <RequireAuth redirectToAuth={true}>
-            <div>
-                <form action={signOut}>
-                    <p className='text-2xl font-istok'>homePage</p>
-                    <p>
-                        id : {user?.id}
-                        <br />
-                        email : {user?.email}
-                        <br />
-                        phone : {user?.phone}
-                        <br />
-                        created_at : {user?.created_at}
-                        <br />
-                        role : {user?.role}
-                        <br />
-                        email confimed : {user?.email_confirmed_at}
-                        <br />
-                        aud : {user?.aud}
+        <div>
+            <form action={signOut}>
+                <p className='text-2xl font-istok'>homePage</p>
+                <p>
+                    Hello {currentUser?.firstName} {currentUser?.lastName}
+                    <br />
+                    Email : {currentUser?.email}
+                    <br />
+                    Phone : {currentUser?.phone}
+                    <br />
+                    Id : {currentUser?.id}
+                    <br />
+                    Club : {currentUser?.clubID}
+                    <br />
+                    Role : {currentUser?.role}
+                    <br />
+                    Restrein : {currentUser?.restricted ? "oui" : "non"}
 
-                    </p>
-                    <Button>Sign out</Button>
-                </form>
-                <div>
-                    <Exemple />
-                </div>
+                </p>
+                <Button>Sign out</Button>
+            </form>
+            <div>
             </div>
-        </RequireAuth>
+        </div>
     )
 }
 
-export default page
+export default Page

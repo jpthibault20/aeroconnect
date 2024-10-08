@@ -1,19 +1,24 @@
+import { getSession } from '@/api/db/db'
 import { Login } from '@/components/auth/login'
-import RequireAuth from '@/components/auth/requireAuth'
+import { redirect } from 'next/navigation';
 import React, { Suspense } from 'react'
 
 const LoginPage = async () => {
-
-
-    return (
-        <RequireAuth redirectToAuth={false}>
+    const auth = await getSession();
+    if (!auth) {
+        return (
             <Suspense fallback={<div>Loading...</div>}>
                 <div className="">
                     <Login />
                 </div>
             </Suspense>
-        </RequireAuth>
-    )
+        )
+    }
+    else {
+        redirect('/homePage')
+    }
+
+
 }
 
 export default LoginPage
