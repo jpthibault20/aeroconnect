@@ -13,7 +13,7 @@ interface NavLink {
 export const navigationLinks: NavLink[] = [
     {
         name: "Calendrier",
-        path: "/homePage",
+        path: "/calendar",
         icon: CalendarDays, // Icône JSX
         roles: ["USER", "STUDENT", "PILOT", "OWNER", "ADMIN"], // Rôles autorisés
     },

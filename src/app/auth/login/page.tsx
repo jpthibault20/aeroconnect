@@ -15,7 +15,7 @@ const LoginPage = async () => {
         )
     }
     else {
-        redirect('/homePage')
+        redirect('/calendar')
     }
 
 

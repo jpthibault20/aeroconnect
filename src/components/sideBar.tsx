@@ -1,7 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BetweenHorizontalStart, CalendarDays, Plane, GraduationCap, User, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { navigationLinks } from '@/config/links'
 import { usePathname } from 'next/navigation';
 
