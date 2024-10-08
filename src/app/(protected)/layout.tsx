@@ -4,6 +4,7 @@ import { CurrentUserWrapper } from "../context/useCurrentUser";
 import UpdateContext from "@/components/UpdateContext";
 import { useRouter } from 'next/navigation';
 import { getSession } from "@/api/db/db";
+import Navigation from "@/components/navigation"
 
 export default function ProtectLayout({
     children,
@@ -34,7 +35,9 @@ export default function ProtectLayout({
     return (
         <CurrentUserWrapper>
             <UpdateContext />
-            {children}
+            <Navigation>
+                {children}
+            </Navigation>
         </CurrentUserWrapper>
     );
 }

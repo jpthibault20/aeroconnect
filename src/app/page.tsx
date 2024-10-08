@@ -6,17 +6,17 @@ import { redirect } from "next/navigation";
 export default async function Home() {
   const supabase = createClient()
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (user) {
-        return redirect("/homePage");
-    }
-    else {
-      return redirect("/auth/login");
+  if (user) {
+    return redirect("/calendar");
   }
-    
+  else {
+    return redirect("/auth/login");
+  }
+
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <div className="">
