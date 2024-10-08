@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { LogOut } from 'lucide-react'
 import { navigationLinks } from '@/config/links'
 import { usePathname } from 'next/navigation';
+import { signOut } from '@/app/auth/login/action'
 
 const SideBar = () => {
     const pathname = usePathname();
@@ -37,7 +38,9 @@ const SideBar = () => {
                 })}
             </nav>
 
-            <button className="flex items-center px-4 py-2 hover:bg-slate-800 mt-auto mb-4">
+            <div className='border-1 border-b border-[#797979] mx-3 mb-6' />
+
+            <button className="flex items-center px-4 py-2 hover:bg-slate-800 mt-auto mb-4" onClick={() => signOut()}>
                 <LogOut className="mr-3" size={20} />
                 Déconnexion
             </button>
