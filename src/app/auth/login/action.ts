@@ -25,7 +25,7 @@ export async function emailLogin(formData: FormData) {
     }
 
     revalidatePath('/', 'layout')
-    redirect('/homePage')
+    redirect('/calendar')
 }
 
 export async function emailSignup(formData: FormData) {
