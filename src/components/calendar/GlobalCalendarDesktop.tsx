@@ -1,18 +1,20 @@
 import React, { useEffect } from 'react'
 import InitialLoading from '../InitialLoading'
-import { getDate } from '@/api/date'
+// import { getDate } from '@/api/date'
 
 const GlobalCalendarDesktop = () => {
     useEffect(() => {
-        const fetchDate = async () => {
-            try {
-                const res = await getDate();
-                console.log(res)
-            } catch (error) {
-                console.log(error)
-            }
-        }
-        fetchDate()
+        const date =  new Date();
+        console.log(date)
+        // const fetchDate = async () => {
+        //     try {
+        //         const res = await getDate();
+        //         console.log(res)
+        //     } catch (error) {
+        //         console.log(error)
+        //     }
+        // }
+        // fetchDate()
 
     }, [])
     return (
