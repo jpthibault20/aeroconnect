@@ -23,9 +23,12 @@ const SideBar = () => {
             <div className="bg-[#9BAAD1] p-1 mb-4 flex items-center mx-3 rounded-lg">
                 <Image src="/images/profilePicture.png" alt="User" width={40} height={40} className="rounded-full mr-3" />
                 <div className='w-full'>
-                    <p className="font-semibold">Alex Doe</p>
-                    <p className='border-b border-2 w-2/3' />
-                    <p className="text-sm ">Pilot</p>
+                    <p className="border-b font-medium text-sm w-fit">{currentUser?.lastName} {currentUser?.firstName}</p>
+                    <p className="text-sm ">   {currentUser?.role === 'STUDENT' ? 'Élève' :
+                                                currentUser?.role === "PILOT" ? 'Pilote' :
+                                                currentUser?.role === 'OWNER' ? 'Gérant' :
+                                                currentUser?.role === 'USER' ? 'visiteur' : 
+                                                currentUser?.role}</p>
                 </div>
             </div>
 
