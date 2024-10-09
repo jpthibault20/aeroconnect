@@ -13,7 +13,7 @@ const SideBar = () => {
     const { currentUser } = useCurrentUser();
 
     return (
-        <aside className="hidden lg:flex w-60 h-screen bg-[#212121] text-white flex-col">
+        <aside className="hidden lg:flex w-64 h-screen bg-[#212121] text-white flex-col">
             <Link href={"/"} className="p-4">
                 <Image src="/images/Logo_title.svg" alt="Aero Connect" width={150} height={40} />
             </Link>

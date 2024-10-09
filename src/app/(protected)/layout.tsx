@@ -33,11 +33,13 @@ export default function ProtectLayout({
 
 
     return (
-        <CurrentUserWrapper>
-            <UpdateContext />
-            <Navigation>
-                {children}
-            </Navigation>
-        </CurrentUserWrapper>
+        <div className="">
+            <CurrentUserWrapper>
+                <UpdateContext />
+                <Navigation>
+                    {children}
+                </Navigation>
+            </CurrentUserWrapper>
+        </div>
     );
 }

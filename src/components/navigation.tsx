@@ -7,10 +7,10 @@ interface props {
 }
 const Navigation = ({ children }: props) => {
     return (
-        <div className='flex'>
+        <div className='flex h-screen'>
             <SideBar />
 
-            <main>
+            <main className='flex-1 h-full w-full'>
                 {children}
             </main>
 
