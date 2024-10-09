@@ -5,9 +5,12 @@ import { LogOut } from 'lucide-react'
 import { navigationLinks } from '@/config/links'
 import { usePathname } from 'next/navigation';
 import { signOut } from '@/app/auth/login/action'
+import { useCurrentUser } from '@/app/context/useCurrentUser'
+import { userRole } from '@prisma/client'
 
 const SideBar = () => {
     const pathname = usePathname();
+    const { currentUser } = useCurrentUser();
 
     return (
         <aside className="hidden lg:flex w-60 h-screen bg-[#212121] text-white flex-col">
@@ -27,7 +30,9 @@ const SideBar = () => {
             </div>
 
             <nav className="flex-1">
-                {navigationLinks.map((link) => {
+                {navigationLinks
+                .filter(link => link.roles.includes(currentUser?.role as userRole))
+                .map((link) => {
                     const IconComponent = link.icon
                     return (
                         <Link key={link.name} href={link.path} className={`flex items-center px-4 py-4 mx-3 ${pathname === link.path ? 'rounded-full bg-[#3E3E3E] text-white' : 'text-[#C2C2C2] hover:text-white'}`}>
