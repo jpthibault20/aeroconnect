@@ -1,4 +1,5 @@
 "use server";
+import { createClient } from '@/utils/supabase/server';
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -26,7 +27,7 @@ export const createUser = async (dataUser: User) => {
                 phone: dataUser.phone,
             },
         });
-        return {succes: "User created successfully"};
+        return { succes: "User created successfully" };
 
     } catch (error) {
         // Gestion des erreurs éventuelles
@@ -34,5 +35,47 @@ export const createUser = async (dataUser: User) => {
         return {
             error: 'User creation failed',
         };
+    }
+}
+
+export const getSession = async () => {
+    const supabase = createClient()
+    try {
+        const {
+        data: { user },
+    } = await supabase.auth.getUser();
+    return user;
+    } catch  {
+        return {error: "No session available"}
+    }
+    
+
+    
+}
+
+export const getUser = async () => {
+    const supabase = createClient()
+    let result;
+    let data;
+
+    try {
+        data = await supabase.auth.getUser();
+    } catch (error) {
+        console.log(error)
+        return { error: "Error getting user session" };
+    }
+    
+    try {
+        result = await prisma.user.findUnique({
+            where: { email: data?.data.user?.email},
+        })
+    } catch (error) {
+        console.log(error)
+        return { error: "Error getting user from database" };
+    }
+
+    return {
+        succes : "User retrieved successfully",
+        user : result
     }
 }

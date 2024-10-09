@@ -12,16 +12,16 @@ import { LoginSchema, loginSchema } from "../../schemas/loginSchema"; // Assure-
 import { emailLogin } from '@/app/auth/login/action';
 import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import OauthSignin from './oauthSignin';
-
 
 export const Login = () => {
     const [loading, setLoading] = React.useState(false);
     const [message, setMessage] = React.useState('');
+    const [messageG, setMessageG] = React.useState('');
     const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
 
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
+        setMessageG(searchParams.get('messageG') ?? '');
     }, [searchParams]);
 
 
@@ -77,7 +77,7 @@ export const Login = () => {
                         />
                         {errors.password && <p className='text-red-500'>{errors.password.message}</p>}
                         <Link
-                            href={'/auth/newPassword'}
+                            href={'/auth/forgotPassword'}
                             className='flex items-center justify-end mt-1 text-sm text-gray-500 hover:text-gray-700'
                         >
                             Mot de passe oublié ?
@@ -86,8 +86,13 @@ export const Login = () => {
                 </div>
                 <div>
                     {message && (
-                        <div className="text-sm font-medium text-destructive flex justify-center">
+                        <div className="text-sm font-istok font-medium text-destructive flex justify-center">
                             {message}
+                        </div>
+                    )}
+                    {messageG && (
+                        <div className="font-istok font-medium text-green-600 flex justify-center">
+                            {messageG}
                         </div>
                     )}
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import CardWrapper from './cardWrapper'
 import Link from 'next/link'
 import InputString from './InputString'
@@ -8,10 +8,21 @@ import ButtonForm from './buttonForm'
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { newPasswordSchema, NewPasswordSchema } from "../../schemas/newPasswordSchema"; // Assure-toi que le chemin est correct
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { forgotPassword } from '../../app/auth/login/action';
+import { useSearchParams } from 'next/navigation';
 
 
-const NewPassword = () => {
+const ForgotPassword = () => {
     const [loading, setLoading] = React.useState(false);
+    const [message, setMessage] = React.useState('');
+    const [messageG, setMessageG] = React.useState('');
+    const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
+
+    useEffect(() => {
+        setMessage(searchParams.get('message') ?? '');
+        setMessageG(searchParams.get('messageG') ?? '');
+    }, [searchParams]);
 
     const {
         register,
@@ -27,6 +38,9 @@ const NewPassword = () => {
         console.log(data);
 
         // Logique de soumission du formulaire, comme un appel API
+        const formData = new FormData();
+        formData.append('email', data.email);
+        forgotPassword(formData);
 
         reset();
         setLoading(false);
@@ -44,6 +58,18 @@ const NewPassword = () => {
                         id='email'
                     />
                     {errors.email && <p className='text-red-500'>{errors.email.message}</p>}
+                </div>
+                <div>
+                    {message && (
+                        <div className="text-sm font-istok font-medium text-destructive flex justify-center">
+                            {message}
+                        </div>
+                    )}
+                    {messageG && (
+                        <div className="font-istok font-medium text-green-600 flex justify-center">
+                            {messageG}
+                        </div>
+                    )}
                 </div>
                 <div className='flex justify-center items-center mt-4 w-full px-8'>
                     <ButtonForm
@@ -64,4 +90,4 @@ const NewPassword = () => {
     )
 }
 
-export default NewPassword
+export default ForgotPassword

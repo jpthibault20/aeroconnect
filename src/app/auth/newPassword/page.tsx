@@ -1,10 +1,14 @@
-import React from 'react'
-import NewPassword from '../../../components/auth/newPassword'
+import React, { Suspense } from 'react'
+import NewPassword from '@/components/auth/NewPassword'
 
-const newPasswordPage = () => {
+const NewPasswordPage = () => {
     return (
-        <NewPassword />
+        <Suspense fallback={<div>Loading...</div>}>
+            <div>
+                <NewPassword />
+            </div>
+        </Suspense>
     )
 }
 
-export default newPasswordPage
+export default NewPasswordPage
