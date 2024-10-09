@@ -5,7 +5,7 @@ import { getUser } from "@/api/db/db";
 import { User } from "@prisma/client";
 
 const UpdateContext = () => {
-    const { currentUser, setCurrentUser } = useCurrentUser();
+    const { setCurrentUser } = useCurrentUser();
 
     useEffect(() => {
         const fetchSession = async () => {
@@ -22,7 +22,6 @@ const UpdateContext = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    console.log(currentUser);
     return null
 }
 
