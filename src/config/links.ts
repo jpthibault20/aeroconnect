@@ -25,7 +25,7 @@ export const navigationLinks: NavLink[] = [
     },
     {
         name: "Aéronefs",
-        path: "/plane",
+        path: "/planes",
         icon: Plane, // Icône JSX
         roles: ["PILOT", "OWNER", "ADMIN"],
     },
