@@ -3,13 +3,18 @@
 export const getDate = async () => {
     const currentDate = new Date();
 
-    return {
-        year: currentDate.getFullYear(),
-        month: currentDate.getMonth() + 1,
-        day: currentDate.getDate(),
-        hour: currentDate.getHours(),
-        minute: currentDate.getMinutes(),
-        second: currentDate.getSeconds(),
+    const formattedDate = new Intl.DateTimeFormat('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short',
+      }).format(currentDate);
+
+
+    return {formattedDate
     }
 
 }
