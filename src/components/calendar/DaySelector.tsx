@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import React from 'react'
+
 interface props {
     className?: string;
     onClickNextWeek?: () => void;
@@ -20,7 +21,7 @@ const DaySelector = ({ className, onClickNextWeek, onClickPreviousWeek, onClickT
                 onClick={onClickToday}
                 className='flex bg-[#F2F2F2] px-3 py-0.5 rounded-sm'
             >
-                Aujourd'hui
+                Aujourd&apos;hui
             </button>
             <button
                 onClick={onClickNextWeek}
