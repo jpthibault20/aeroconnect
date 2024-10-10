@@ -4,21 +4,22 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Spinner } from './ui/SpinnerVariants';
 
 interface props {
+    className?: string;
     children: React.ReactNode;
 }
 
-const InitialLoading = ({ children }: props) => {
+const InitialLoading = ({ children, className }: props) => {
     const { currentUser } = useCurrentUser();
 
     if (currentUser === undefined) {
         return (
-            <div className='h-full flex justify-center items-center '>
+            <div className={`${className} flex justify-center items-center`}  >
                 <Spinner>chargement ...</Spinner>
             </div>
         );
     }
     return (
-        <div className='h-full'>
+        <div className={`${className}`}>
             {children}
         </div>
     )

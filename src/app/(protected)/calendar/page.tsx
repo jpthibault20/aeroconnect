@@ -7,7 +7,7 @@ import GlobalCalendarPhone from '@/components/calendar/GlobalCalendarPhone';
 const Page = () => {
 
     return (
-        <div className='h-full'>
+        <div className='h-full w-full'>
             <GlobalCalendarDesktop />
             <GlobalCalendarPhone />
         </div>
