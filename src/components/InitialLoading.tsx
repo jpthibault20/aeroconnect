@@ -12,13 +12,13 @@ const InitialLoading = ({ children }: props) => {
 
     if (currentUser === undefined) {
         return (
-            <div className='h-full flex justify-center items-center'>
+            <div className='h-full flex justify-center items-center '>
                 <Spinner>chargement ...</Spinner>
             </div>
         );
     }
     return (
-        <div>
+        <div className='h-full'>
             {children}
         </div>
     )
