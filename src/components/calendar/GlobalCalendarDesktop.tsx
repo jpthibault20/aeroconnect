@@ -4,6 +4,7 @@ import { dayFr, monthFr } from '@/config/date';
 import DaySelector from './DaySelector';
 import CalendarFilter from './CalendarFilter';
 import { instructorExemple, planeExemple } from '@/config/exempleData';
+import TableColumnNames from './TableColumnNames';
 
 
 const GlobalCalendarDesktop = () => {
@@ -38,12 +39,12 @@ const GlobalCalendarDesktop = () => {
     console.log(plane)
 
     return (
-        <InitialLoading className='hidden lg:block h-full'>
+        <InitialLoading className='hidden xl:block h-full'>
             {/* Conteneur parent en Flexbox */}
             <div className="flex flex-col h-full">
 
                 <div className="w-full flex items-center my-6">
-                    <p className="text-5xl font-istok">
+                    <p className="text-5xl font-istok pl-3">
                         {monthFr[date.getMonth()]}, {date.getFullYear()}
                     </p>
                     <div className='flex-1'>
@@ -72,18 +73,18 @@ const GlobalCalendarDesktop = () => {
                     </div>
                 </div>
 
-
+                <TableColumnNames
+                    className={''}
+                    date={date}
+                />
 
                 {/* Deuxième div : prendra le reste de la hauteur disponible */}
                 <div className='bg-[#E4E7ED] w-full flex-1 border-t-2 border-[#A5A5A5]'>
                     {/* Contenu de la deuxième div */}
                     {dayFr[date.getDay()]} {date.getDate()} {monthFr[date.getMonth()]} {date.getFullYear()}
-
                 </div>
-
             </div>
         </InitialLoading>
-
     )
 }
 

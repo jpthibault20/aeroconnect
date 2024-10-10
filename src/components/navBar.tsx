@@ -10,7 +10,7 @@ const NavBar = () => {
     const { currentUser } = useCurrentUser();
     
     return (
-        <nav className="lg:hidden fixed bottom-4 left-0 right-0 flex justify-center">
+        <nav className="xl:hidden fixed bottom-4 left-0 right-0 flex justify-center">
             <div className="bg-gray-900 flex items-center justify-around w-5/6 h-14 rounded-full shadow-lg">
             {navigationLinks
                 .filter(link => link.roles.includes(currentUser?.role as userRole))
