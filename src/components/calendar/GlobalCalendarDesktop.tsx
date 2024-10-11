@@ -3,8 +3,10 @@ import InitialLoading from '../InitialLoading'
 import { dayFr, monthFr } from '@/config/date';
 import DaySelector from './DaySelector';
 import CalendarFilter from './CalendarFilter';
-import { instructorExemple, planeExemple } from '@/config/exempleData';
+import { instructorExemple, planeExemple, flightsSessionsExemple } from '@/config/exempleData';
 import TableColumnNames from './TableColumnNames';
+import Calendar from './Calendar';
+import TabCalendar from './TabCalendar';
 
 
 const GlobalCalendarDesktop = () => {
@@ -34,9 +36,6 @@ const GlobalCalendarDesktop = () => {
         console.log('Today')
         setDate(new Date())
     }
-
-    console.log(instructor)
-    console.log(plane)
 
     return (
         <InitialLoading className='hidden xl:block h-full'>
@@ -73,15 +72,13 @@ const GlobalCalendarDesktop = () => {
                     </div>
                 </div>
 
-                <TableColumnNames
-                    className={''}
-                    date={date}
-                />
-
                 {/* Deuxième div : prendra le reste de la hauteur disponible */}
-                <div className='bg-[#E4E7ED] w-full flex-1 border-t-2 border-[#A5A5A5]'>
-                    {/* Contenu de la deuxième div */}
-                    {dayFr[date.getDay()]} {date.getDate()} {monthFr[date.getMonth()]} {date.getFullYear()}
+                <div className='h-full'>
+                    <TabCalendar date={date} />
+                    {/* <Calendar
+                        className={''}
+                        flightsSessions={flightsSessionsExemple}
+                    /> */}
                 </div>
             </div>
         </InitialLoading>

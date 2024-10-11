@@ -19,7 +19,7 @@ enum userRole {
 enum flightType {
   FIRST_FLIGHT
   INITATION
-  COURSE
+  TRAINING
 }
 
 model User {
