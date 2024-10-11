@@ -16,7 +16,7 @@ export const flightsSessionsExemple = [
     {
         id: 1,
         clubID: 101,
-        sessionDateStart: new Date('2024-10-10T09:30:00Z'),
+        sessionDateStart: new Date('2024-9-10T09:0:00Z'),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: 'TRAINING', // Exemple de flightType

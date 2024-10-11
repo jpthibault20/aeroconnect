@@ -2,6 +2,8 @@ import React from 'react';
 import { workingHour } from '@/config/configClub';
 import { dayFr } from '@/config/date';
 import { getDaysOfWeek } from '@/api/date';
+import Session from './Session';
+import { flightsSessionsExemple } from "@/config/exempleData"
 
 interface props {
     className?: string;
@@ -9,6 +11,21 @@ interface props {
 }
 const TabCalendar = ({ className, date }: props) => {
     const daysOfWeek = getDaysOfWeek(date);
+    console.log(daysOfWeek);
+
+    const formatTime = (numberValue: number) => {
+        // Sépare la partie entière et la partie décimale
+        const [hours, minutes] = numberValue.toString().split('.');
+
+        // Convertir l'heure en format hh (si c'est un seul chiffre, ajouter un 0 devant)
+        const formattedHours = hours.padStart(2, '0');
+
+        // Si la partie décimale existe, on la garde telle quelle, sinon on utilise '00'
+        const formattedMinutes = minutes ? minutes.padEnd(2, '0') : '00';
+
+        // Retourne l'heure au format hh:mm
+        return `${formattedHours}:${formattedMinutes}`;
+    };
 
     return (
         <div className="w-full h-full">
@@ -41,16 +58,21 @@ const TabCalendar = ({ className, date }: props) => {
                             <div
                                 className={`table-cell pl-3 text-center font-istok font-semibold text-[#646464] align-middle ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''} w-20`}
                             >
-                                {hour}h
+                                {formatTime(hour)}
                             </div>
                             {dayFr.map((item, indexday) => (
                                 <div
                                     className={`table-cell align-middle p-1 border-b border-[#C1C1C1] ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''}`}
                                     key={indexday}
                                 >
-                                    <div className="flex justify-center items-center bg-[#B9DFC1] rounded-md h-full w-full">
-                                        {index} | {indexday}
-                                    </div>
+                                    <Session
+                                        indexX={index}
+                                        indexY={indexday}
+                                        tabDays={dayFr}
+                                        tabHours={workingHour}
+                                        events={flightsSessionsExemple}
+                                        date={date}
+                                    />
                                 </div>
                             ))}
                         </div>

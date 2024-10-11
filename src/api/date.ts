@@ -1,6 +1,7 @@
-interface DayInfo {
+export interface DayInfo {
     dayName: string;   
     dayNumber: number; 
+    month: number; // Ajout du numéro du mois
     isToday: boolean;  
 }
 
@@ -15,12 +16,16 @@ export const getDaysOfWeek = (inputDate: Date): DayInfo[] => {
 
     // Parcourir les 7 jours de la semaine
     for (let i = 0; i < 7; i++) {
-        const day = new Date(date);
+        // Cloner la date pour éviter les effets de bord
+        const day = new Date(date.getTime());
+        
         const dayInfo: DayInfo = {
             dayName: day.toLocaleString('default', { weekday: 'long' }), // Nom du jour
             dayNumber: day.getDate(), // Numéro du jour
+            month: day.getMonth(), // Numéro du mois (ajouter 1 car getMonth() est zéro-indexé)
             isToday: day.toDateString() === currentDate.toDateString(), // Comparaison pour savoir si c'est aujourd'hui
         };
+
         daysOfWeek.push(dayInfo);
         date.setDate(date.getDate() + 1); // Passer au jour suivant
     }

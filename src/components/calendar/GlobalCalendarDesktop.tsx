@@ -1,11 +1,9 @@
 import React, { useState } from 'react'
 import InitialLoading from '../InitialLoading'
-import { dayFr, monthFr } from '@/config/date';
+import { monthFr } from '@/config/date';
 import DaySelector from './DaySelector';
 import CalendarFilter from './CalendarFilter';
-import { instructorExemple, planeExemple, flightsSessionsExemple } from '@/config/exempleData';
-import TableColumnNames from './TableColumnNames';
-import Calendar from './Calendar';
+import { instructorExemple, planeExemple } from '@/config/exempleData';
 import TabCalendar from './TabCalendar';
 
 
@@ -75,10 +73,6 @@ const GlobalCalendarDesktop = () => {
                 {/* Deuxième div : prendra le reste de la hauteur disponible */}
                 <div className='h-full'>
                     <TabCalendar date={date} />
-                    {/* <Calendar
-                        className={''}
-                        flightsSessions={flightsSessionsExemple}
-                    /> */}
                 </div>
             </div>
         </InitialLoading>
