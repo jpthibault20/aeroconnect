@@ -41,7 +41,7 @@ const GlobalCalendarDesktop = () => {
             <div className="flex flex-col h-full">
 
                 <div className="w-full flex items-center my-6">
-                    <p className="text-5xl font-istok pl-3">
+                    <p className="text-5xl font-istok pl-3 w-3/12">
                         {monthFr[date.getMonth()]}, {date.getFullYear()}
                     </p>
                     <div className='flex-1'>
