@@ -1,18 +1,22 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import InitialLoading from '../InitialLoading'
 import { monthFr } from '@/config/date';
 import DaySelector from './DaySelector';
 import CalendarFilter from './CalendarFilter';
 import { instructorExemple, planeExemple } from '@/config/exempleData';
 import TabCalendar from './TabCalendar';
+import { Button } from '../ui/button';
 
 
 const GlobalCalendarDesktop = () => {
     const [date, setDate] = useState(new Date());
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [instructor, setInstructor] = useState("")
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [plane, setPlane] = useState("")
+
+    useEffect(() => {
+        if (instructor === ' ') setInstructor('')
+        if (plane === ' ') setPlane('')
+    },[instructor, plane])
 
     const onClickNextweek = () => {
         console.log('Next day')
@@ -55,6 +59,9 @@ const GlobalCalendarDesktop = () => {
                                 onClickToday={onClickToday}
                             />
                             <div className='flex space-x-2'>
+                                <Button onClick={() => {setInstructor(''); setPlane('')}}>
+                                    reset filter
+                                </Button>
                                 <CalendarFilter
                                     className='h-full flex items-end justify-end'
                                     placeholder='Instructeur'
@@ -74,7 +81,11 @@ const GlobalCalendarDesktop = () => {
 
                 {/* Deuxième div : prendra le reste de la hauteur disponible */}
                 <div className='h-full'>
-                    <TabCalendar date={date} />
+                    <TabCalendar 
+                        date={date} 
+                        instructorFilter={instructor}
+                        planeFilter={plane}
+                    />
                 </div>
             </div>
         </InitialLoading>

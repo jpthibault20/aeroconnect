@@ -1,8 +1,7 @@
 export const instructorExemple = [
-    "J.Stephane",
-    "R.Leroy",
-    "K.Simon",
-    "S.Roussel"
+    "Jeanpierre Stephane",
+    "Jeanpierre Thibault",
+    "Exemple Roussel"
 ]
 
 export const planeExemple = [
@@ -22,7 +21,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING', // Exemple de flightType
         pilotID: 14,
         pilotFirstName: 'Thibault',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: 601,
         studentFirstName: 'Alice',
         studentLastName: 'Smith',
@@ -39,7 +38,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING', // Exemple de flightType
         pilotID: 14,
         pilotFirstName: 'Thibault',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: 601,
         studentFirstName: 'Alice',
         studentLastName: 'Smith',
@@ -56,7 +55,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING', // Exemple de flightType
         pilotID: 14,
         pilotFirstName: 'Thibault',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: 601,
         studentFirstName: 'Alice',
         studentLastName: 'Smith',
@@ -73,7 +72,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING', // Exemple de flightType
         pilotID: 14,
         pilotFirstName: 'Thibault',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: 601,
         studentFirstName: 'Alice',
         studentLastName: 'Smith',
@@ -90,7 +89,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING', // Exemple de flightType
         pilotID: 14,
         pilotFirstName: 'Thibault',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: 601,
         studentFirstName: 'Alice',
         studentLastName: 'Smith',
@@ -107,7 +106,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING',
         pilotID: 14,
         pilotFirstName: 'Thibault',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: 602,
         studentFirstName: 'Bob',
         studentLastName: 'Johnson',
@@ -124,7 +123,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING',
         pilotID: 14,
         pilotFirstName: 'Thibault',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: null,
         studentFirstName: '',
         studentLastName: '',
@@ -141,7 +140,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING',
         pilotID: 14,
         pilotFirstName: 'Thibault',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: null,
         studentFirstName: '',
         studentLastName: '',
@@ -158,7 +157,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING',
         pilotID: 14,
         pilotFirstName: 'Thibault',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: null,
         studentFirstName: '',
         studentLastName: '',
@@ -175,7 +174,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING',
         pilotID: 14,
         pilotFirstName: 'Thibault',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: null,
         studentFirstName: '',
         studentLastName: '',
@@ -192,7 +191,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING',
         pilotID: 14,
         pilotFirstName: 'Thibault',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: null,
         studentFirstName: 'Sophie',
         studentLastName: 'Turner',
@@ -209,7 +208,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING',
         pilotID: 14,
         pilotFirstName: 'Thibault',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: null,
         studentFirstName: 'Sophie',
         studentLastName: 'Turner',
@@ -226,7 +225,7 @@ export const flightsSessionsExemple = [
         flightType: 'TRAINING',
         pilotID: 15,
         pilotFirstName: 'stephane',
-        pilotLastName: 'JEANPIERRE',
+        pilotLastName: 'Jeanpierre',
         studentID: null,
         studentFirstName: '',
         studentLastName: '',

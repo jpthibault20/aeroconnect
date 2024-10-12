@@ -5,25 +5,37 @@ import { getDaysOfWeek } from '@/api/date';
 import Session from './Session';
 import { flightsSessionsExemple } from "@/config/exempleData"
 
-interface props {
+interface Props {
     className?: string;
     date: Date;
+    instructorFilter: string;
+    planeFilter: string;
 }
-const TabCalendar = ({ date }: props) => {
+
+const TabCalendar = ({ date, instructorFilter, planeFilter }: Props) => {
     const daysOfWeek = getDaysOfWeek(date);
-    console.log(flightsSessionsExemple);
+
+    const filteredSessions = flightsSessionsExemple.filter(session => {
+        // Combine pilotFirstName et pilotLastName pour former le nom complet du pilote
+        const fullName = `${session.pilotLastName} ${session.pilotFirstName}`.toLowerCase();
+
+        // Vérification stricte du nom de l'instructeur
+        const instructorMatch = instructorFilter 
+            ? fullName === instructorFilter.toLowerCase() // Comparaison stricte entre le nom complet et le filtre
+            : true;
+
+        // Vérification du modèle d'avion
+        const planeMatch = planeFilter 
+            ? session.planeName.toLowerCase() === planeFilter.toLowerCase() 
+            : true;
+
+        return instructorMatch && planeMatch;
+    });
 
     const formatTime = (numberValue: number) => {
-        // Sépare la partie entière et la partie décimale
         const [hours, minutes] = numberValue.toString().split('.');
-
-        // Convertir l'heure en format hh (si c'est un seul chiffre, ajouter un 0 devant)
         const formattedHours = hours.padStart(2, '0');
-
-        // Si la partie décimale existe, on la garde telle quelle, sinon on utilise '00'
         const formattedMinutes = minutes ? minutes.padEnd(2, '0') : '00';
-
-        // Retourne l'heure au format hh:mm
         return `${formattedHours}:${formattedMinutes}`;
     };
 
@@ -53,7 +65,7 @@ const TabCalendar = ({ date }: props) => {
                 </div>
                 <div className="table-row-group h-full bg-[#E4E7ED]">
                     {workingHour.map((hour, index) => (
-                        <div key={index} className="table-row ">
+                        <div key={index} className="table-row">
                             {/* Première colonne avec largeur fixe */}
                             <div
                                 className={`table-cell pl-3 text-center font-istok font-semibold text-[#646464] align-middle ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''} w-20`}
@@ -70,7 +82,7 @@ const TabCalendar = ({ date }: props) => {
                                         indexY={indexday}
                                         tabDays={dayFr}
                                         tabHours={workingHour}
-                                        events={flightsSessionsExemple}
+                                        events={filteredSessions} // Utilisation de la liste filtrée ici
                                         date={date}
                                     />
                                 </div>

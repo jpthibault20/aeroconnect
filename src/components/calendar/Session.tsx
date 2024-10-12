@@ -84,8 +84,6 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    if (session.length !== 0) console.log(availableSessions)
-
     if (session.length === 0) return null;
 
     const endSessionDate = new Date(session[0].sessionDateStart.getFullYear(), session[0].sessionDateStart.getMonth(), session[0].sessionDateStart.getDate(), session[0].sessionDateStart.getHours(), session[0].sessionDateStart.getMinutes() + session[0].sessionDateDuration_min, 0)
