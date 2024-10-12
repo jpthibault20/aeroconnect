@@ -28,7 +28,7 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
 
     const daysOfWeek = getDaysOfWeek(date);
     const sessionDate = new Date(date.getFullYear(), daysOfWeek[indexY].month, daysOfWeek[indexY].dayNumber, Math.floor(tabHours[indexX]), Number((tabHours[indexX] % 1).toFixed(2).substring(2)), 0)
-    const sessions = getSessionsFromDate(sessionDate, events as FLIGHT_SESSION[])
+    const session = getSessionsFromDate(sessionDate, events as FLIGHT_SESSION[])
 
     const addUniqueValueToSession = (type: 'plane' | 'pilot', value: string) => {
         setAvailableSessions((prevSessions) => {
@@ -63,11 +63,11 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
             avaiblePilot: []
         })
 
-        for (let i = 0; i < sessions.length; i++) {
-            if (sessions[i].studentID === null) {
+        for (let i = 0; i < session.length; i++) {
+            if (session[i].studentID === null) {
 
-                // addUniqueValueToSession('plane', sessions[i].planeName || "")
-                addUniqueValueToSession('pilot', sessions[i].pilotFirstName)
+                addUniqueValueToSession('plane', session[i].planeName || "")
+                addUniqueValueToSession('pilot', session[i].pilotFirstName)
 
                 setAvailableSessions(prevState => ({
                     ...prevState,
@@ -84,29 +84,37 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    if (sessions.length !== 0) console.log(availableSessions)
+    if (session.length !== 0) console.log(availableSessions)
 
-    if (sessions.length === 0) return null;
+    if (session.length === 0) return null;
+
+    const endSessionDate = new Date(session[0].sessionDateStart.getFullYear(), session[0].sessionDateStart.getMonth(), session[0].sessionDateStart.getDate(), session[0].sessionDateStart.getHours(), session[0].sessionDateStart.getMinutes() + session[0].sessionDateDuration_min, 0)
 
     return (
-        <div className={`flex justify-center items-center  rounded-md h-full w-full ${availableSessions.available === 0 ? 'bg-[#CB8A8A] opacity-50' : 'bg-[#B9DFC1]'}`}>
+        <div className={`justify-center items-center p-1 rounded-md h-full w-full ${availableSessions.available === 0 ? 'bg-[#CB8A8A] opacity-50' : 'bg-[#B9DFC1]'}`}>
             <div>
-
+                <p className='text-xs text-[#646464] text-end'>
+                    {session[0].sessionDateStart.getHours().toString().padStart(2, '0')}:
+                    {session[0].sessionDateStart.getMinutes().toString().padStart(2, '0')} -
+                    {endSessionDate.getHours().toString().padStart(2, '0')}:
+                    {endSessionDate.getMinutes().toString().padStart(2, '0')}
+                </p>
             </div>
             {availableSessions.available === 0 ? (
-                <div>
+                <div className='text-s font-istok font-semibold'>
                     <p>
                         Complet
                     </p>
                 </div>
             ) : (
-                <div>
-                    <p>
-                        Aéronef : {availableSessions.availablePlane.length}
+                <div className='text-xs'>
+                    <p className=''>
+                        Avion : {availableSessions.availablePlane.length}
                     </p>
-                    <p>
+                    <p >
                         Pilote : {availableSessions.avaiblePilot.length}
                     </p>
+
                 </div>
             )}
         </div>

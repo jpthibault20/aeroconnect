@@ -53,7 +53,7 @@ const TabCalendar = ({ date }: props) => {
                 </div>
                 <div className="table-row-group h-full bg-[#E4E7ED]">
                     {workingHour.map((hour, index) => (
-                        <div key={index} className="table-row">
+                        <div key={index} className="table-row ">
                             {/* Première colonne avec largeur fixe */}
                             <div
                                 className={`table-cell pl-3 text-center font-istok font-semibold text-[#646464] align-middle ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''} w-20`}
@@ -62,7 +62,7 @@ const TabCalendar = ({ date }: props) => {
                             </div>
                             {dayFr.map((item, indexday) => (
                                 <div
-                                    className={`table-cell align-middle p-1 border-b border-[#C1C1C1] ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''}`}
+                                    className={`table-cell p-1 border-b border-[#C1C1C1] ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''}`}
                                     key={indexday}
                                 >
                                     <Session

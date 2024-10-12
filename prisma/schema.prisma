@@ -1,37 +1,23 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-enum userRole {
-  USER
-  STUDENT
-  PILOT
-  OWNER
-  ADMIN
-}
-
-enum flightType {
-  FIRST_FLIGHT
-  INITATION
-  TRAINING
-}
-
 model User {
   id         Int      @id @unique @default(autoincrement())
+  email      String   @unique
+  adressID   Int      @default(0)
   clubID     Int
   firstName  String
   lastName   String
-  email      String   @unique
   phone      String?
-  adressID   Int      @default(0)
-  role       userRole @default(USER)
   restricted Boolean  @default(false)
+  role       userRole @default(USER)
 }
 
 model FLIGHT_SESSION {
@@ -48,4 +34,20 @@ model FLIGHT_SESSION {
   studentFirstName        String
   studentLastName         String
   student_type            flightType
+  planeID                 Int?
+  planeName               String?
+}
+
+enum userRole {
+  USER
+  STUDENT
+  PILOT
+  OWNER
+  ADMIN
+}
+
+enum flightType {
+  FIRST_FLIGHT
+  INITATION
+  TRAINING
 }
