@@ -9,7 +9,9 @@ import TabCalendar from './TabCalendar';
 
 const GlobalCalendarDesktop = () => {
     const [date, setDate] = useState(new Date());
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [instructor, setInstructor] = useState("")
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [plane, setPlane] = useState("")
 
     const onClickNextweek = () => {
