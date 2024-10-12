@@ -14,6 +14,10 @@ interface props {
 
 
 const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
+    const [reload, setReload] = useState(false);
+    useEffect(() => {
+        setReload(prev => !prev);
+    }, [events])
     const [availableSessions, setAvailableSessions] = useState<{
         available: number;
         book: number;
@@ -81,8 +85,8 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
                 }))
             }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reload])
 
     if (session.length === 0) return null;
 
