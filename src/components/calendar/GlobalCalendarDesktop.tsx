@@ -12,11 +12,18 @@ const GlobalCalendarDesktop = () => {
     const [instructor, setInstructor] = useState("")
     const [plane, setPlane] = useState("")
 
+    // On supprime le filtre si le champ correspond à un carachtère vide " "
     useEffect(() => {
         if (instructor === ' ') setInstructor('')
         if (plane === ' ') setPlane('')
     },[instructor, plane])
 
+    /**
+     * 
+     * @param prevDate 
+     * 
+     * Permet de changer la semaine afficher du calendrier
+     */ 
     const onClickNextweek = () => {
         console.log('Next day')
         setDate(prevDate => {
@@ -26,6 +33,12 @@ const GlobalCalendarDesktop = () => {
         });
     }
 
+    /**
+     * 
+     * @param prevDate
+     * 
+     * Permet de changer la semaine afficher du calendrier
+     */
     const onClickPreviousWeek = () => {
         console.log('Previous day')
         setDate(prevDate => {
@@ -35,6 +48,12 @@ const GlobalCalendarDesktop = () => {
         });
     }
 
+    /**
+     * 
+     * @param 
+     * 
+     * Permet de de revenir a la semaine courante
+     */
     const onClickToday = () => {
         console.log('Today')
         setDate(new Date())

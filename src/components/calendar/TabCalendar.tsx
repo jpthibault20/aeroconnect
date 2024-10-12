@@ -15,16 +15,18 @@ interface Props {
 const TabCalendar = ({ date, instructorFilter, planeFilter }: Props) => {
     const daysOfWeek = getDaysOfWeek(date);
 
+    /**
+     * 
+     * @param session
+     * 
+     * Permet de filtrer les sessions en fonction du filtre de l'instructeur et du filtre de l'avion fournis en parametre de ce composant
+     */
     const filteredSessions = flightsSessionsExemple.filter(session => {
-        // Combine pilotFirstName et pilotLastName pour former le nom complet du pilote
-        const fullName = `${session.pilotLastName} ${session.pilotFirstName}`.toLowerCase();
 
-        // Vérification stricte du nom de l'instructeur
+        const fullName = `${session.pilotLastName} ${session.pilotFirstName}`.toLowerCase();
         const instructorMatch = instructorFilter 
             ? fullName === instructorFilter.toLowerCase() // Comparaison stricte entre le nom complet et le filtre
             : true;
-
-        // Vérification du modèle d'avion
         const planeMatch = planeFilter 
             ? session.planeName.toLowerCase() === planeFilter.toLowerCase() 
             : true;
@@ -32,6 +34,12 @@ const TabCalendar = ({ date, instructorFilter, planeFilter }: Props) => {
         return instructorMatch && planeMatch;
     });
 
+    /**
+     * 
+     * @param numberValue 
+     * 
+     * Permet de formater le temps en heure et minutes
+     */
     const formatTime = (numberValue: number) => {
         const [hours, minutes] = numberValue.toString().split('.');
         const formattedHours = hours.padStart(2, '0');

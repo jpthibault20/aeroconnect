@@ -14,7 +14,7 @@ interface props {
 
 
 const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
-    const [reload, setReload] = useState(false);
+    const [reload, setReload] = useState(false); // Permet de forcer le rechargement de la liste des sessions
     useEffect(() => {
         setReload(prev => !prev);
     }, [events])
@@ -28,12 +28,19 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
         book: 0,
         availablePlane: [],
         avaiblePilot: []
-    });
-
+    }); // Permet de stocker les sessions disponibles
+    // Création de la date de l'éventuelle session a partir des cooedoné du tableau et de la config de la journée (club)
     const daysOfWeek = getDaysOfWeek(date);
-    const sessionDate = new Date(date.getFullYear(), daysOfWeek[indexY].month, daysOfWeek[indexY].dayNumber, Math.floor(tabHours[indexX]), Number((tabHours[indexX] % 1).toFixed(2).substring(2)), 0)
-    const session = getSessionsFromDate(sessionDate, events as FLIGHT_SESSION[])
+    const sessionDate = new Date(date.getFullYear(), daysOfWeek[indexY].month, daysOfWeek[indexY].dayNumber, Math.floor(tabHours[indexX]), Number((tabHours[indexX] % 1).toFixed(2).substring(2)), 0) // Création de la date de la session
+    const session = getSessionsFromDate(sessionDate, events as FLIGHT_SESSION[]) // Récupération des sessions correspondante a la date
 
+    /**
+     * 
+     * @param type  
+     * @param value 
+     * 
+     * Permet de stocker dans une liste local des sessions du crénau horaire les disponibilités des avions et pilotes
+     */
     const addUniqueValueToSession = (type: 'plane' | 'pilot', value: string) => {
         setAvailableSessions((prevSessions) => {
             // Selon le type, on met à jour soit les avions soit les pilotes
@@ -59,6 +66,12 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
         });
     };
 
+    /**
+     * 
+     * @param index 
+     * 
+     * Permet de récupérer les sessions disponibles pour un index donné de la liste des sessions
+     */
     useEffect(() => {
         setAvailableSessions({
             available: 0,
@@ -88,8 +101,9 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reload])
 
-    if (session.length === 0) return null;
+    if (session.length === 0) return null; // Si la session n'existe pas, on ne montre rien (on affiche rien dans le calendrier)
 
+    // Calcul de la date de fin de la session
     const endSessionDate = new Date(session[0].sessionDateStart.getFullYear(), session[0].sessionDateStart.getMonth(), session[0].sessionDateStart.getDate(), session[0].sessionDateStart.getHours(), session[0].sessionDateStart.getMinutes() + session[0].sessionDateDuration_min, 0)
 
     return (

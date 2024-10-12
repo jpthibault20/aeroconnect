@@ -18,7 +18,7 @@ const CalendarFilter = ({ className, placeholder, liste, onValueChange }: props)
                 </SelectTrigger>
                 
                 <SelectContent>
-                    <SelectItem value=" ">{placeholder}</SelectItem>
+                    <SelectItem value=" ">{placeholder}</SelectItem> {/* " " permet de supprimer le filtre */}
                     {liste.map((item) => (
                         <SelectItem key={item} value={item}>{item}</SelectItem>
                     ))}
