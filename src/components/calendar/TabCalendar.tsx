@@ -9,9 +9,9 @@ interface props {
     className?: string;
     date: Date;
 }
-const TabCalendar = ({ className, date }: props) => {
+const TabCalendar = ({ date }: props) => {
     const daysOfWeek = getDaysOfWeek(date);
-    console.log(daysOfWeek);
+    console.log(flightsSessionsExemple);
 
     const formatTime = (numberValue: number) => {
         // Sépare la partie entière et la partie décimale

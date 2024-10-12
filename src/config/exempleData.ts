@@ -16,7 +16,7 @@ export const flightsSessionsExemple = [
     {
         id: 1,
         clubID: 101,
-        sessionDateStart: new Date('2024-9-10T09:0:00Z'),
+        sessionDateStart: new Date(2024, 10-1, 10, 9, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: 'TRAINING', // Exemple de flightType
@@ -31,7 +31,7 @@ export const flightsSessionsExemple = [
     {
         id: 2,
         clubID: 102,
-        sessionDateStart: new Date('2024-10-11T14:00:00Z'),
+        sessionDateStart: new Date(2024, 10-1, 11, 14, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: 'TRAINING',
@@ -46,7 +46,7 @@ export const flightsSessionsExemple = [
     {
         id: 3,
         clubID: 103,
-        sessionDateStart: new Date('2024-10-11T11:15:00Z'),
+        sessionDateStart: new Date(2024, 10-1, 11, 11, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: 'TRAINING',
@@ -61,7 +61,7 @@ export const flightsSessionsExemple = [
     {
         id: 4,
         clubID: 104,
-        sessionDateStart: new Date('2024-10-12T08:45:00Z'),
+        sessionDateStart: new Date(2024, 10-1, 12, 9, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: 'TRAINING',
@@ -76,7 +76,7 @@ export const flightsSessionsExemple = [
     {
         id: 5,
         clubID: 105,
-        sessionDateStart: new Date('2024-10-13T13:00:00Z'),
+        sessionDateStart: new Date(2024, 10-1, 13, 13, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: 'TRAINING',
@@ -91,7 +91,7 @@ export const flightsSessionsExemple = [
     {
         id: 6,
         clubID: 105,
-        sessionDateStart: new Date('2024-10-13T13:00:00Z'),
+        sessionDateStart: new Date(2024, 10-1, 13, 13, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: 'TRAINING',

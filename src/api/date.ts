@@ -1,13 +1,16 @@
+"use client"
+import { FLIGHT_SESSION } from "@prisma/client";
+
 export interface DayInfo {
-    dayName: string;   
-    dayNumber: number; 
+    dayName: string;
+    dayNumber: number;
     month: number; // Ajout du numéro du mois
-    isToday: boolean;  
+    isToday: boolean;
 }
 
 export const getDaysOfWeek = (inputDate: Date): DayInfo[] => {
     const date = new Date(inputDate);
-    const currentDate = new Date(); 
+    const currentDate = new Date();
     const daysOfWeek: DayInfo[] = [];
 
     // Trouver le premier jour de la semaine (lundi)
@@ -18,7 +21,7 @@ export const getDaysOfWeek = (inputDate: Date): DayInfo[] => {
     for (let i = 0; i < 7; i++) {
         // Cloner la date pour éviter les effets de bord
         const day = new Date(date.getTime());
-        
+
         const dayInfo: DayInfo = {
             dayName: day.toLocaleString('default', { weekday: 'long' }), // Nom du jour
             dayNumber: day.getDate(), // Numéro du jour
@@ -32,3 +35,20 @@ export const getDaysOfWeek = (inputDate: Date): DayInfo[] => {
 
     return daysOfWeek;
 };
+
+export const getSessionsFromDate = (date: Date, sessions: FLIGHT_SESSION[]): FLIGHT_SESSION[] => {
+    console.log(date.toLocaleString('default'))
+    console.log(sessions)
+    return sessions.filter((session) => {
+        const sessionDate = session.sessionDateStart;
+
+        // Comparer les dates (année, mois, jour)
+        return sessionDate.getFullYear() === date.getFullYear() &&
+            sessionDate.getMonth() === date.getMonth() &&
+            sessionDate.getDate() === date.getDate() &&
+            sessionDate.getHours() === date.getHours() &&
+            sessionDate.getMinutes() === date.getMinutes();
+    });
+};
+
+
