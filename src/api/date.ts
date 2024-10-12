@@ -37,8 +37,6 @@ export const getDaysOfWeek = (inputDate: Date): DayInfo[] => {
 };
 
 export const getSessionsFromDate = (date: Date, sessions: FLIGHT_SESSION[]): FLIGHT_SESSION[] => {
-    console.log(date.toLocaleString('default'))
-    console.log(sessions)
     return sessions.filter((session) => {
         const sessionDate = session.sessionDateStart;
 
