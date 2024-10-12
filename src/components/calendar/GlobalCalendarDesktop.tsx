@@ -5,7 +5,6 @@ import DaySelector from './DaySelector';
 import CalendarFilter from './CalendarFilter';
 import { instructorExemple, planeExemple } from '@/config/exempleData';
 import TabCalendar from './TabCalendar';
-import { Button } from '../ui/button';
 
 
 const GlobalCalendarDesktop = () => {
@@ -59,9 +58,6 @@ const GlobalCalendarDesktop = () => {
                                 onClickToday={onClickToday}
                             />
                             <div className='flex space-x-2'>
-                                <Button onClick={() => {setInstructor(''); setPlane('')}}>
-                                    reset filter
-                                </Button>
                                 <CalendarFilter
                                     className='h-full flex items-end justify-end'
                                     placeholder='Instructeur'
