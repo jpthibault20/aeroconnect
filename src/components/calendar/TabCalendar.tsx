@@ -71,7 +71,7 @@ const TabCalendar = ({ date, instructorFilter, planeFilter }: Props) => {
                         ))}
                     </div>
                 </div>
-                <div className="table-row-group h-full bg-[#E4E7ED]">
+                <div className="table-row-group h-full bg-[#E4E7ED] ">
                     {workingHour.map((hour, index) => (
                         <div key={index} className="table-row">
                             {/* Première colonne avec largeur fixe */}

@@ -62,7 +62,7 @@ const GlobalCalendarDesktop = () => {
     return (
         <InitialLoading className='hidden xl:block h-full'>
             {/* Conteneur parent en Flexbox */}
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full overflow-y-auto">
 
                 <div className="w-full flex items-center my-6">
                     <p className="text-5xl font-istok pl-3">
