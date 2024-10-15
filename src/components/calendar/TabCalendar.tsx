@@ -24,11 +24,11 @@ const TabCalendar = ({ date, instructorFilter, planeFilter }: Props) => {
     const filteredSessions = flightsSessionsExemple.filter(session => {
 
         const fullName = `${session.pilotLastName} ${session.pilotFirstName}`.toLowerCase();
-        const instructorMatch = instructorFilter 
+        const instructorMatch = instructorFilter
             ? fullName === instructorFilter.toLowerCase() // Comparaison stricte entre le nom complet et le filtre
             : true;
-        const planeMatch = planeFilter 
-            ? session.planeName.toLowerCase() === planeFilter.toLowerCase() 
+        const planeMatch = planeFilter
+            ? session.planeName.toLowerCase() === planeFilter.toLowerCase()
             : true;
 
         return instructorMatch && planeMatch;

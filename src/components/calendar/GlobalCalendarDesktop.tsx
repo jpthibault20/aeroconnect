@@ -16,14 +16,14 @@ const GlobalCalendarDesktop = () => {
     useEffect(() => {
         if (instructor === ' ') setInstructor('')
         if (plane === ' ') setPlane('')
-    },[instructor, plane])
+    }, [instructor, plane])
 
     /**
      * 
      * @param prevDate 
      * 
      * Permet de changer la semaine afficher du calendrier
-     */ 
+     */
     const onClickNextweek = () => {
         console.log('Next day')
         setDate(prevDate => {
@@ -65,7 +65,7 @@ const GlobalCalendarDesktop = () => {
             <div className="flex flex-col h-full">
 
                 <div className="w-full flex items-center my-6">
-                    <p className="text-5xl font-istok pl-3 w-3/12">
+                    <p className="text-5xl font-istok pl-3">
                         {monthFr[date.getMonth()]}, {date.getFullYear()}
                     </p>
                     <div className='flex-1'>
@@ -96,8 +96,8 @@ const GlobalCalendarDesktop = () => {
 
                 {/* Deuxième div : prendra le reste de la hauteur disponible */}
                 <div className='h-full'>
-                    <TabCalendar 
-                        date={date} 
+                    <TabCalendar
+                        date={date}
                         instructorFilter={instructor}
                         planeFilter={plane}
                     />
