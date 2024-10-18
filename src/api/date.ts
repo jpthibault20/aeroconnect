@@ -49,4 +49,86 @@ export const getSessionsFromDate = (date: Date, sessions: FLIGHT_SESSION[]): FLI
     });
 };
 
+type DayType = {
+    date: number;
+    day: string;
+    month: string;
+    year: number;
+    isActualMonth: boolean;
+    isActualDay: boolean;
+    fullDate: Date
+};
 
+export type DaysOfMonthType = Array<DayType[]>;
+
+export function getCompleteWeeks(date: Date) {
+    const addDays = (d: Date, days: number): Date => {
+        const dateCopy = new Date(d);
+        dateCopy.setDate(dateCopy.getDate() + days);
+        return dateCopy;
+    };
+
+    const getMonday = (d: Date): Date => {
+        const dateCopy = new Date(d);
+        const day = dateCopy.getDay();
+        const diff = (day === 0 ? -6 : 1) - day; // Lundi comme premier jour
+        dateCopy.setDate(dateCopy.getDate() + diff);
+        return dateCopy;
+    };
+
+    const formatDay = (d: Date): string => {
+        return d.toLocaleDateString('fr-FR', { weekday: 'long' });
+    };
+
+    const formatMonth = (d: Date): string => {
+        return d.toLocaleDateString('fr-FR', { month: 'long' });
+    };
+
+    const isSameDay = (d1: Date, d2: Date): boolean => {
+        return d1.getFullYear() === d2.getFullYear() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getDate() === d2.getDate();
+    };
+
+    const today = new Date();
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDayOfMonth = new Date(year, month, 1);
+    let currentMonday = getMonday(firstDayOfMonth);
+
+    const weeks: any[][] = [];
+
+    // Tant que le lundi courant est dans le mois ou la semaine inclut des jours du mois courant
+    while (currentMonday.getMonth() === month || addDays(currentMonday, 6).getMonth() === month) {
+        const week: any[] = [];
+        for (let i = 0; i < 7; i++) {
+            const day = addDays(currentMonday, i);
+            const isActualMonth = day.getMonth() === month;
+            const isActualDay = isSameDay(day, today);
+
+            week.push({
+                date: day.getDate(),
+                day: formatDay(day),
+                month: formatMonth(day),
+                year: day.getFullYear(),
+                isActualMonth,
+                isActualDay,
+                fullDate: day,
+            });
+        }
+        weeks.push(week); // Ajouter la semaine complète au tableau
+        currentMonday = addDays(currentMonday, 7); // Passer au lundi suivant
+    }
+
+    return weeks;
+}
+
+export const getFlightSessionsForDay = (dayDate: Date, sessions: FLIGHT_SESSION[]) => {
+    return sessions.filter(session => {
+        return (
+            session.sessionDateStart.getFullYear() === dayDate.getFullYear() &&
+            session.sessionDateStart.getMonth() === dayDate.getMonth() &&
+            session.sessionDateStart.getDate() === dayDate.getDate()
+        );
+    });
+};

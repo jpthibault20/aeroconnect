@@ -3,13 +3,14 @@ import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Settings2 } from 'lucide-react'
 import CalendarFilter from '../CalendarFilter'
-import { instructorExemple } from '@/config/exempleData'
+import { instructorExemple, planeExemple } from '@/config/exempleData'
 
 
 interface props {
     setInstructor: React.Dispatch<React.SetStateAction<string>>;
+    setPlane: React.Dispatch<React.SetStateAction<string>>;
 }
-const Filter = ({ setInstructor }: props) => {
+const Filter = ({ setInstructor, setPlane }: props) => {
     return (
         <div>
             <Popover>
@@ -38,9 +39,9 @@ const Filter = ({ setInstructor }: props) => {
                                 <Label htmlFor="maxWidth">Avion</Label>
                                 <CalendarFilter
                                     className='h-full flex items-end justify-end'
-                                    placeholder='Instructeur'
-                                    liste={instructorExemple}
-                                    onValueChange={setInstructor}
+                                    placeholder='Avion'
+                                    liste={planeExemple}
+                                    onValueChange={setPlane}
                                 />
                             </div>
                         </div>
