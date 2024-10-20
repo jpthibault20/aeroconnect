@@ -96,11 +96,11 @@ export function getCompleteWeeks(date: Date) {
     const firstDayOfMonth = new Date(year, month, 1);
     let currentMonday = getMonday(firstDayOfMonth);
 
-    const weeks: any[][] = [];
+    const weeks = [];
 
     // Tant que le lundi courant est dans le mois ou la semaine inclut des jours du mois courant
     while (currentMonday.getMonth() === month || addDays(currentMonday, 6).getMonth() === month) {
-        const week: any[] = [];
+        const week = [];
         for (let i = 0; i < 7; i++) {
             const day = addDays(currentMonday, i);
             const isActualMonth = day.getMonth() === month;

@@ -1,9 +1,8 @@
-import React, { useState } from 'react'
+import React from 'react'
 import RoundDate from './RoundDate'
 import { DaysOfMonthType } from '@/api/date'
 import { FLIGHT_SESSION } from '@prisma/client'
 import { getFlightSessionsForDay } from "@/api/date"
-import { on } from 'events'
 
 interface props {
     daysOfMonth: DaysOfMonthType | undefined
@@ -14,7 +13,7 @@ interface props {
 
 }
 
-const Calendar = ({ daysOfMonth, date, flightsSessionsExemple, setSelectDate, selectDate }: props) => {
+const Calendar = ({ daysOfMonth, flightsSessionsExemple, setSelectDate, selectDate }: props) => {
 
     const onClickDay = (date: Date) => {
         setSelectDate(date)
@@ -32,6 +31,7 @@ const Calendar = ({ daysOfMonth, date, flightsSessionsExemple, setSelectDate, se
         <table className='min-w-full table-auto mt-6 items-center justify-center'>
             <thead>
                 <tr>
+                    {/* todo : extraire le nombre de colones depuis la config */}
                     <th className='w-[14.2857%]'>L</th>
                     <th className='w-[14.2857%]'>M</th>
                     <th className='w-[14.2857%]'>M</th>

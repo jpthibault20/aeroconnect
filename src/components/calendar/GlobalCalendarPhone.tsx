@@ -1,12 +1,8 @@
 
-import React, { use, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import InitialLoading from '../InitialLoading'
 import DaySelector from './DaySelector'
-import { Settings2 } from 'lucide-react'
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import CalendarFilter from './CalendarFilter'
 import { flightsSessionsExemple } from '@/config/exempleData'
-import { Label } from '../ui/label'
 import Filter from './phone/Filter'
 import { DaysOfMonthType, getCompleteWeeks, getFlightSessionsForDay } from '@/api/date'
 import Calendar from './phone/calendar'
@@ -17,7 +13,9 @@ import { FLIGHT_SESSION } from '@prisma/client'
 
 const GlobalCalendarPhone = () => {
     const [date, setDate] = useState(new Date())
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [instructor, setInstructor] = useState("")
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [plane, setPlane] = useState("")
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>()
     const [sessionOfSelectedDay, setSessionOfSelectedDay] = useState<FLIGHT_SESSION[]>()
@@ -25,6 +23,8 @@ const GlobalCalendarPhone = () => {
 
     useEffect(() => {
         setSessionOfSelectedDay(getFlightSessionsForDay(selectDate, flightsSessionsExemple))
+        console.log(sessionOfSelectedDay)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectDate])
 
     useEffect(() => {
