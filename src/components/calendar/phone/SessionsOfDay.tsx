@@ -15,11 +15,12 @@ const SessionsOfDay = ({ sessionOfSelectedDay, selectDate }: props) => {
                 <p className='font-istok text-2xl p-3'>
                     {selectDate.toLocaleDateString('fr-FR', { day: "2-digit", month: "long", year: "numeric" })}
                 </p>
-                <div className='h-full w-full space-y-6 flex flex-col items-center'>
+                <div className=' w-full space-y-6 flex flex-col items-center'>
                     {sessionOfSelectedDay?.map((session, index) => (
                         <SessionDisplay key={index} session={session} />
                     ))}
 
+                    <div className='h-20' />
 
                 </div>
             </div>
