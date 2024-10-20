@@ -1,5 +1,5 @@
 import { FLIGHT_SESSION } from '@prisma/client'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import SessionDisplay from './SessionDisplay'
 
 interface props {

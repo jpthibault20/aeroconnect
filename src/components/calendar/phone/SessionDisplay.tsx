@@ -2,7 +2,7 @@ import { FLIGHT_SESSION } from '@prisma/client'
 import React from 'react'
 
 interface props {
-    session: FLIGHT_SESSION[]
+    session: FLIGHT_SESSION | undefined
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
