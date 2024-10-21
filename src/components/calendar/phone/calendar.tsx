@@ -7,13 +7,13 @@ import { getFlightSessionsForDay } from "@/api/date"
 interface props {
     daysOfMonth: DaysOfMonthType | undefined
     date: Date
-    flightsSessionsExemple: FLIGHT_SESSION[]
+    flightsSessions: FLIGHT_SESSION[]
     setSelectDate: React.Dispatch<React.SetStateAction<Date>>
     selectDate: Date
 
 }
 
-const Calendar = ({ daysOfMonth, flightsSessionsExemple, setSelectDate, selectDate }: props) => {
+const Calendar = ({ daysOfMonth, flightsSessions, setSelectDate, selectDate }: props) => {
 
     const onClickDay = (date: Date) => {
         setSelectDate(date)
@@ -54,7 +54,7 @@ const Calendar = ({ daysOfMonth, flightsSessionsExemple, setSelectDate, selectDa
                                         date={day.date}
                                         isToday={day.isActualDay}
                                         isActualMonth={day.isActualMonth}
-                                        flightSession={getFlightSessionsForDay(day.fullDate, flightsSessionsExemple)}
+                                        flightSession={getFlightSessionsForDay(day.fullDate, flightsSessions)}
                                         isSelected={checkSelectDate(day.fullDate)}
                                     />
                                 </button>

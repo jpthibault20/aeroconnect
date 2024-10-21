@@ -3,10 +3,9 @@ import InitialLoading from '../InitialLoading'
 import DaySelector from './DaySelector'
 import { flightsSessionsExemple } from '@/config/exempleData'
 import Filter from './phone/Filter'
-import { DaysOfMonthType, getCompleteWeeks, getFlightSessionsForDay } from '@/api/date'
+import { DaysOfMonthType, getCompleteWeeks } from '@/api/date'
 import Calendar from './phone/calendar'
 import SessionOfDay from "@/components/calendar/phone/SessionsOfDay"
-import { FLIGHT_SESSION } from '@prisma/client'
 
 const GlobalCalendarPhone = () => {
     const [date, setDate] = useState(new Date())
@@ -15,12 +14,8 @@ const GlobalCalendarPhone = () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [plane, setPlane] = useState("")
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>()
-    const [sessionOfSelectedDay, setSessionOfSelectedDay] = useState<FLIGHT_SESSION[]>()
     const [selectDate, setSelectDate] = useState(new Date)
 
-    useEffect(() => {
-        setSessionOfSelectedDay(getFlightSessionsForDay(selectDate, flightsSessionsExemple))
-    }, [selectDate])
 
     useEffect(() => {
         try {
@@ -52,7 +47,7 @@ const GlobalCalendarPhone = () => {
     }
 
     return (
-        <InitialLoading className='xl:hidden flex flex-col flex-grow overflow-y-auto'> {/* Use h-screen to ensure the full height */}
+        <InitialLoading className='xl:hidden flex flex-col flex-grow h-full'> {/* Use h-screen to ensure the full height */}
             <p className='text-2xl font-istok font-semibold my-3 w-full text-center'>Calendrier</p>
             <div className='w-full px-6'>
                 <div className='border-b border-[#646464] w-full' />
@@ -74,11 +69,11 @@ const GlobalCalendarPhone = () => {
                     />
                 </div>
 
-                <Calendar daysOfMonth={daysOfMonth} date={date} flightsSessionsExemple={flightsSessionsExemple} setSelectDate={setSelectDate} selectDate={selectDate} />
+                <Calendar daysOfMonth={daysOfMonth} date={date} flightsSessions={flightsSessionsExemple} setSelectDate={setSelectDate} selectDate={selectDate} />
             </div>
 
-            <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 overflow-y-auto'> {/* Make the sessions part scrollable */}
-                <SessionOfDay sessionOfSelectedDay={sessionOfSelectedDay} selectDate={selectDate} />
+            <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 h-full'> {/* Make the sessions part scrollable */}
+                <SessionOfDay selectDate={selectDate} flightsSessions={flightsSessionsExemple} />
             </div>
         </InitialLoading>
     )

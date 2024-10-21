@@ -1,5 +1,6 @@
 import { FLIGHT_SESSION } from '@prisma/client'
 import React from 'react'
+import { formatPilotName } from '@/api/global function/formatPilotName'
 
 interface props {
     session: FLIGHT_SESSION
@@ -30,8 +31,23 @@ const SessionDisplay = ({ session }: props) => {
                     {finalDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 </p>
             </div>
-            {session.pilotFirstName}
-            {session.id}
+            {session.studentID ? (
+                <div className='w-full h-full flex justify-center items-center font-istok font-semibold'>
+                    <p>
+                        - Complet -
+                    </p>
+                </div>
+            ) : (
+                <div className='flex w-full justify-between items-center mx-10 font-istok'>
+                    <p className='w-full'>
+                        {formatPilotName(session.pilotFirstName, session.pilotLastName)}
+                    </p>
+                    <p className='font-semibold w-full text-center'>
+                        {session.planeName}
+                    </p>
+                </div>
+            )}
+
         </div>
     )
 }

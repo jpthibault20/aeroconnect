@@ -29,7 +29,8 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
         availablePlane: [],
         avaiblePilot: []
     }); // Permet de stocker les sessions disponibles
-    // Création de la date de l'éventuelle session a partir des cooedoné du tableau et de la config de la journée (club)
+
+    // Création de la date de l'éventuelle session a partir des cooordoné du tableau et de la config de la journée (club)
     const daysOfWeek = getDaysOfWeek(date);
     const sessionDate = new Date(date.getFullYear(), daysOfWeek[indexY].month, daysOfWeek[indexY].dayNumber, Math.floor(tabHours[indexX]), Number((tabHours[indexX] % 1).toFixed(2).substring(2)), 0) // Création de la date de la session
     const session = getSessionsFromDate(sessionDate, events as FLIGHT_SESSION[]) // Récupération des sessions correspondante a la date
@@ -39,7 +40,7 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
      * @param type  
      * @param value 
      * 
-     * Permet de stocker dans une liste local des sessions du crénau horaire les disponibilités des avions et pilotes
+     * Permet de stocker dans une liste local les sessions du crénau horaire, les disponibilités des avions et pilotes
      */
     const addUniqueValueToSession = (type: 'plane' | 'pilot', value: string) => {
         setAvailableSessions((prevSessions) => {
@@ -98,7 +99,7 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
                 }))
             }
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reload])
 
     if (session.length === 0) return null; // Si la session n'existe pas, on ne montre rien (on affiche rien dans le calendrier)
