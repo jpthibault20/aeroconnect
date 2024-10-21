@@ -8,8 +8,10 @@ import { instructorExemple, planeExemple } from '@/config/exempleData'
 interface props {
     setInstructor: React.Dispatch<React.SetStateAction<string>>;
     setPlane: React.Dispatch<React.SetStateAction<string>>;
+    instructor: string
+    plane: string
 }
-const Filter = ({ setInstructor, setPlane }: props) => {
+const Filter = ({ setInstructor, setPlane, instructor, plane }: props) => {
     return (
         <div>
             <Popover>
@@ -32,6 +34,7 @@ const Filter = ({ setInstructor, setPlane }: props) => {
                                     placeholder='Instructeur'
                                     liste={instructorExemple}
                                     onValueChange={setInstructor}
+                                    value={instructor}
                                 />
                             </div>
                             <div className="grid grid-cols-2 items-center gap-4">
@@ -41,6 +44,7 @@ const Filter = ({ setInstructor, setPlane }: props) => {
                                     placeholder='Avion'
                                     liste={planeExemple}
                                     onValueChange={setPlane}
+                                    value={plane}
                                 />
                             </div>
                         </div>

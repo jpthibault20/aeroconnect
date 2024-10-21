@@ -48,6 +48,7 @@ const Calendar = ({ daysOfMonth, flightsSessions, setSelectDate, selectDate }: p
                             <td key={index} className='w-[14.2857%] text-center'>
                                 <button
                                     onClick={() => onClickDay(day.fullDate)}
+                                    disabled={!day.isActualMonth}
                                     className='flex w-full h-full items-center justify-center mt-4'
                                 >
                                     <RoundDate

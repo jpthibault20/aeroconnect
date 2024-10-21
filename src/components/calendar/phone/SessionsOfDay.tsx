@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import SessionDisplay from './SessionDisplay'
 
 interface props {
-    flightsSessions: FLIGHT_SESSION[] | undefined
+    flightsSessions: FLIGHT_SESSION[]
     selectDate: Date
 }
 

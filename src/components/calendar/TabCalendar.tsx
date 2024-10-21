@@ -4,6 +4,7 @@ import { dayFr } from '@/config/date';
 import { getDaysOfWeek } from '@/api/date';
 import Session from './Session';
 import { flightsSessionsExemple } from "@/config/exempleData"
+import { filterFlightSessions } from '@/api/db/dbClient';
 
 interface Props {
     className?: string;
@@ -15,24 +16,7 @@ interface Props {
 const TabCalendar = ({ date, instructorFilter, planeFilter }: Props) => {
     const daysOfWeek = getDaysOfWeek(date);
 
-    /**
-     * 
-     * @param session
-     * 
-     * Permet de filtrer les sessions en fonction du filtre de l'instructeur et du filtre de l'avion fournis en parametre de ce composant
-     */
-    const filteredSessions = flightsSessionsExemple.filter(session => {
-
-        const fullName = `${session.pilotLastName} ${session.pilotFirstName}`.toLowerCase();
-        const instructorMatch = instructorFilter
-            ? fullName === instructorFilter.toLowerCase() // Comparaison stricte entre le nom complet et le filtre
-            : true;
-        const planeMatch = planeFilter
-            ? session.planeName.toLowerCase() === planeFilter.toLowerCase()
-            : true;
-
-        return instructorMatch && planeMatch;
-    });
+    const filteredSessions = filterFlightSessions(flightsSessionsExemple, instructorFilter, planeFilter)
 
     /**
      * 

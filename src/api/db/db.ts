@@ -42,15 +42,15 @@ export const getSession = async () => {
     const supabase = createClient()
     try {
         const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    return user;
-    } catch  {
-        return {error: "No session available"}
+            data: { user },
+        } = await supabase.auth.getUser();
+        return user;
+    } catch {
+        return { error: "No session available" }
     }
-    
 
-    
+
+
 }
 
 export const getUser = async () => {
@@ -64,10 +64,10 @@ export const getUser = async () => {
         console.log(error)
         return { error: "Error getting user session" };
     }
-    
+
     try {
         result = await prisma.user.findUnique({
-            where: { email: data?.data.user?.email},
+            where: { email: data?.data.user?.email },
         })
     } catch (error) {
         console.log(error)
@@ -75,7 +75,7 @@ export const getUser = async () => {
     }
 
     return {
-        succes : "User retrieved successfully",
-        user : result
+        succes: "User retrieved successfully",
+        user: result
     }
 }

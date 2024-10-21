@@ -6,16 +6,20 @@ import Filter from './phone/Filter'
 import { DaysOfMonthType, getCompleteWeeks } from '@/api/date'
 import Calendar from './phone/calendar'
 import SessionOfDay from "@/components/calendar/phone/SessionsOfDay"
+import { filterFlightSessions } from '@/api/db/dbClient'
 
 const GlobalCalendarPhone = () => {
     const [date, setDate] = useState(new Date())
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [instructor, setInstructor] = useState("")
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [plane, setPlane] = useState("")
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>()
     const [selectDate, setSelectDate] = useState(new Date)
 
+
+    useEffect(() => {
+        if (instructor === ' ') setInstructor('')
+        if (plane === ' ') setPlane('')
+    }, [instructor, plane])
 
     useEffect(() => {
         try {
@@ -46,6 +50,8 @@ const GlobalCalendarPhone = () => {
         setDate(new Date())
     }
 
+    const sessionsFlitered = filterFlightSessions(flightsSessionsExemple, instructor, plane)
+
     return (
         <InitialLoading className='xl:hidden flex flex-col flex-grow h-full'> {/* Use h-screen to ensure the full height */}
             <p className='text-2xl font-istok font-semibold my-3 w-full text-center'>Calendrier</p>
@@ -66,14 +72,16 @@ const GlobalCalendarPhone = () => {
                     <Filter
                         setInstructor={setInstructor}
                         setPlane={setPlane}
+                        instructor={instructor}
+                        plane={plane}
                     />
                 </div>
 
-                <Calendar daysOfMonth={daysOfMonth} date={date} flightsSessions={flightsSessionsExemple} setSelectDate={setSelectDate} selectDate={selectDate} />
+                <Calendar daysOfMonth={daysOfMonth} date={date} flightsSessions={sessionsFlitered} setSelectDate={setSelectDate} selectDate={selectDate} />
             </div>
 
             <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 h-full'> {/* Make the sessions part scrollable */}
-                <SessionOfDay selectDate={selectDate} flightsSessions={flightsSessionsExemple} />
+                <SessionOfDay selectDate={selectDate} flightsSessions={sessionsFlitered} />
             </div>
         </InitialLoading>
     )
