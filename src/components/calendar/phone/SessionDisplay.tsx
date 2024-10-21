@@ -18,7 +18,7 @@ const SessionDisplay = ({ session }: props) => {
     return (
         <div
             style={backgroundStyle}
-            className='w-3/4 h-[50px] flex rounded-xl px-3'
+            className={`w-3/4 h-[50px] flex rounded-xl px-3 ${session.studentID ? 'opacity-60' : ''} `}
         >
             <div className='text-xs text-[#646464] flex flex-col justify-center items-center'>
                 <p className=''>
