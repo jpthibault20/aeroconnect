@@ -21,7 +21,7 @@ const SessionsOfDay = ({ flightsSessions, selectDate }: props) => {
             console.log(error)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectDate])
+    }, [selectDate, flightsSessions])
 
     /**
  * Fonction pour filtrer les sessions de vol selon la date donnée et les trier par ordre chronologique

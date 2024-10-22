@@ -7,6 +7,7 @@ import { DaysOfMonthType, getCompleteWeeks } from '@/api/date'
 import Calendar from './phone/calendar'
 import SessionOfDay from "@/components/calendar/phone/SessionsOfDay"
 import { filterFlightSessions } from '@/api/db/dbClient'
+import { FLIGHT_SESSION } from '@prisma/client'
 
 const GlobalCalendarPhone = () => {
     const [date, setDate] = useState(new Date())
@@ -14,11 +15,31 @@ const GlobalCalendarPhone = () => {
     const [plane, setPlane] = useState("")
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>()
     const [selectDate, setSelectDate] = useState(new Date)
+    const [sessionFiltered, setSessionFiltered] = useState<FLIGHT_SESSION[]>([{
+        id: 0,
+        clubID: 0,
+        sessionDateStart: new Date,
+        sessionDateDuration_min: 0,
+        finalReccurence: 0,
+        flightType: "FIRST_FLIGHT",
+        pilotID: 0,
+        pilotFirstName: "",
+        pilotLastName: "",
+        studentID: 0,
+        studentFirstName: "",
+        studentLastName: "",
+        student_type: "FIRST_FLIGHT",
+        planeID: 0,
+        planeName: "",
+    }]);
 
 
     useEffect(() => {
         if (instructor === ' ') setInstructor('')
         if (plane === ' ') setPlane('')
+
+        setSessionFiltered(filterFlightSessions(flightsSessionsExemple, instructor, plane))
+
     }, [instructor, plane])
 
     useEffect(() => {
@@ -50,8 +71,6 @@ const GlobalCalendarPhone = () => {
         setDate(new Date())
     }
 
-    const sessionsFlitered = filterFlightSessions(flightsSessionsExemple, instructor, plane)
-
     return (
         <InitialLoading className='xl:hidden flex flex-col flex-grow h-full'> {/* Use h-screen to ensure the full height */}
             <p className='text-2xl font-istok font-semibold my-3 w-full text-center'>Calendrier</p>
@@ -77,11 +96,11 @@ const GlobalCalendarPhone = () => {
                     />
                 </div>
 
-                <Calendar daysOfMonth={daysOfMonth} date={date} flightsSessions={sessionsFlitered} setSelectDate={setSelectDate} selectDate={selectDate} />
+                <Calendar daysOfMonth={daysOfMonth} date={date} flightsSessions={sessionFiltered} setSelectDate={setSelectDate} selectDate={selectDate} />
             </div>
 
             <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 h-full'> {/* Make the sessions part scrollable */}
-                <SessionOfDay selectDate={selectDate} flightsSessions={sessionsFlitered} />
+                <SessionOfDay selectDate={selectDate} flightsSessions={sessionFiltered} />
             </div>
         </InitialLoading>
     )

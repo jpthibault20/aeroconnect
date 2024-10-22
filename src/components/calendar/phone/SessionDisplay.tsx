@@ -1,5 +1,5 @@
 import { FLIGHT_SESSION } from '@prisma/client'
-import React from 'react'
+import React, { } from 'react'
 import { formatPilotName } from '@/api/global function/formatPilotName'
 
 interface props {
@@ -7,6 +7,7 @@ interface props {
 }
 
 const SessionDisplay = ({ session }: props) => {
+
 
     const backgroundStyle = {
         backgroundColor: session.studentID ? "#CB8A8A" : "#B9DFC1",
