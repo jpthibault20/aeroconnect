@@ -34,7 +34,7 @@ const Filter = ({ filterAvailable, filterReccurence, setFilterAvailable, setFilt
 
                     <input
                         type="date"
-                        className="w-full p-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full p-2 text-base border border-gray-300 rounded-md"
                         onChange={(e) => setFilterDate(new Date(e.target.value))}
                     />
 
