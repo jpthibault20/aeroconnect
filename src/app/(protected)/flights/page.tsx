@@ -1,25 +1,24 @@
-"use client"
-import React, { useEffect, useState } from 'react'
-import InitialLoading from '@/components/InitialLoading'
-import TableComponent from "@/components/flights/TableComponent"
-import { flightsSessionsExemple } from '@/config/exempleData'
-import { Button } from '@/components/ui/button'
+"use client";
+import React, { useEffect, useState } from 'react';
+import InitialLoading from '@/components/InitialLoading';
+import TableComponent from "@/components/flights/TableComponent";
+import { flightsSessionsExemple } from '@/config/exempleData';
+import { Button } from '@/components/ui/button';
 import { LuSettings2 } from "react-icons/lu";
 
-
 const Page = () => {
-    const [sessionChecked, setSessionChecked] = useState<number[]>([])
+    const [sessionChecked, setSessionChecked] = useState<number[]>([]);
 
     useEffect(() => {
-        console.log(sessionChecked)
-    }, [sessionChecked])
+        console.log(sessionChecked); // Log selected session IDs when changed
+    }, [sessionChecked]);
 
     const onClickAction = () => {
-        console.log("action")
-    }
+        console.log("action");
+    };
     const onClickfilter = () => {
-        console.log("filter")
-    }
+        console.log("filter");
+    };
 
     return (
         <InitialLoading className='h-full p-6'>
@@ -40,7 +39,7 @@ const Page = () => {
                 setSessionChecked={setSessionChecked}
             />
         </InitialLoading>
-    )
-}
+    );
+};
 
-export default Page
+export default Page;

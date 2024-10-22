@@ -1,36 +1,44 @@
-import React from 'react'
-import { TableCell, TableRow } from '../ui/table'
-import { Checkbox } from '../ui/checkbox'
-import { FLIGHT_SESSION } from '@prisma/client'
+import React, { useState, useEffect } from 'react';
+import { TableCell, TableRow } from '../ui/table';
+import { Checkbox } from '../ui/checkbox';
+import { FLIGHT_SESSION } from '@prisma/client';
 
 interface props {
-    session: FLIGHT_SESSION
-    setSessionChecked: React.Dispatch<React.SetStateAction<number[]>>
-
+    session: FLIGHT_SESSION;
+    setSessionChecked: React.Dispatch<React.SetStateAction<number[]>>;
+    isAllChecked: boolean; // Prop to know if "select all" is checked
 }
 
-const TableRowComponent = ({ session, setSessionChecked }: props) => {
+const TableRowComponent = ({ session, setSessionChecked, isAllChecked }: props) => {
+    const [isChecked, setIsChecked] = useState(false); // State for each checkbox
 
-    const finalDate = new Date(session.sessionDateStart)
-    finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min)
+    const finalDate = new Date(session.sessionDateStart);
+    finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min);
 
-    const onChecked = (sessionId: number) => {
+    // Handle individual checkbox change
+    const onChecked = (sessionId: number, checked: boolean) => {
+        setIsChecked(checked);
         setSessionChecked((prev) => {
-            if (prev.includes(sessionId)) {
-                // Si l'ID de session est déjà dans l'état, retire-le
-                return prev.filter(id => id !== sessionId);
+            if (checked) {
+                return [...prev, sessionId]; // Add ID if checked
             } else {
-                // Sinon, ajoute l'ID de session
-                return [...prev, sessionId];
+                return prev.filter(id => id !== sessionId); // Remove ID if unchecked
             }
         });
     };
-    ;
+
+    // Sync individual checkbox with "select all"
+    useEffect(() => {
+        setIsChecked(isAllChecked);
+    }, [isAllChecked]);
 
     return (
         <TableRow className='font-istok'>
             <TableCell>
-                <Checkbox onCheckedChange={() => onChecked(session.id)} />
+                <Checkbox 
+                    checked={isChecked} 
+                    onCheckedChange={(checked) => onChecked(session.id, !!checked)} 
+                />
             </TableCell>
             <TableCell>
                 {session.sessionDateStart.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -42,7 +50,7 @@ const TableRowComponent = ({ session, setSessionChecked }: props) => {
                 {finalDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </TableCell>
             <TableCell>
-                {session.finalReccurence !== null ? ('OUI') : ('NON')}
+                {session.finalReccurence !== null ? 'OUI' : 'NON'}
             </TableCell>
             <TableCell>
                 {session.studentFirstName}
@@ -54,7 +62,7 @@ const TableRowComponent = ({ session, setSessionChecked }: props) => {
                 action
             </TableCell>
         </TableRow>
-    )
-}
+    );
+};
 
-export default TableRowComponent
+export default TableRowComponent;
