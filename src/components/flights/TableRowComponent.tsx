@@ -41,7 +41,7 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked }: props) 
                 />
             </TableCell>
             <TableCell>
-                {session.sessionDateStart.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {session.sessionDateStart.toLocaleDateString('fr-FR', { day: 'numeric', month: '2-digit', year: 'numeric' })}
             </TableCell>
             <TableCell>
                 {session.sessionDateStart.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -49,8 +49,8 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked }: props) 
             <TableCell>
                 {finalDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </TableCell>
-            <TableCell>
-                {session.finalReccurence !== null ? 'OUI' : 'NON'}
+            <TableCell className=''>
+                {session.finalReccurence !== null ? (session.finalReccurence.toLocaleDateString('fr-FR', { day: 'numeric', month: '2-digit', year: 'numeric' })) : 'NON'}
             </TableCell>
             <TableCell>
                 {session.studentFirstName}
