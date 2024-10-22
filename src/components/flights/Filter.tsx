@@ -1,17 +1,26 @@
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Checkbox } from "@/components/ui/checkbox"
-import { LuSettings2 } from "react-icons/lu"
+import React, { useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { LuSettings2 } from "react-icons/lu";
+import DatePicker from 'react-datepicker'; // Import du sélecteur de date
+import 'react-datepicker/dist/react-datepicker.css'; // Import du CSS du sélecteur
 
 interface props {
     filterAvailable: boolean;
     filterReccurence: boolean;
-    // filterDate: Date | null;
     setFilterAvailable: React.Dispatch<React.SetStateAction<boolean>>;
     setFilterReccurence: React.Dispatch<React.SetStateAction<boolean>>;
     setFilterDate: React.Dispatch<React.SetStateAction<Date | null>>;
 }
 
 const Filter = ({ filterAvailable, filterReccurence, setFilterAvailable, setFilterReccurence, setFilterDate }: props) => {
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Garde une copie locale de la date sélectionnée
+
+    const handleDateChange = (date: Date | null) => {
+        setSelectedDate(date);
+        setFilterDate(date); // Met à jour l'état de la date dans le composant parent
+    };
+
     return (
         <Popover>
             <PopoverTrigger className='bg-[#774BBE] rounded-full flex items-center justify-center p-2'>
@@ -30,18 +39,21 @@ const Filter = ({ filterAvailable, filterReccurence, setFilterAvailable, setFilt
                         Filtrer les vols récurrents
                     </button>
                 </div>
-                <div className='flex space-x-2 py-2'>
-
-                    <input
-                        type="date"
+                <div className='flex space-x-2 py-2 items-center'>
+                    {/* Sélecteur de date avec popover */}
+                    <DatePicker
+                        selected={selectedDate}
+                        onChange={handleDateChange}
+                        dateFormat="dd/MM/yyyy"
+                        placeholderText="Sélectionnez une date"
                         className="w-full p-2 text-base border border-gray-300 rounded-md"
-                        onChange={(e) => setFilterDate(new Date(e.target.value))}
+                        todayButton="Aujourd'hui"
+                        isClearable
                     />
-
                 </div>
             </PopoverContent>
         </Popover>
-    )
-}
+    );
+};
 
-export default Filter
+export default Filter;
