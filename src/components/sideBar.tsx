@@ -14,8 +14,15 @@ const SideBar = () => {
 
     return (
         <aside className="hidden xl:flex w-64 h-screen bg-[#212121] text-white flex-col">
-            <Link href={"/"} className="p-4">
-                <Image src="/images/Logo_title.svg" alt="Aero Connect" width={150} height={40} />
+            <Link href="/" className="p-4 flex items-center">
+                <Image
+                    src="/images/Logo_title.svg"
+                    alt="Aero Connect"
+                    width={150}
+                    height={40}
+                    priority
+                    className="w-auto h-auto"
+                />
             </Link>
 
             <div className='border-1 border-b border-[#797979] mx-3 mb-6' />

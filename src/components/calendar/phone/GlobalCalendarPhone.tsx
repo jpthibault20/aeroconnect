@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import InitialLoading from '../InitialLoading'
-import DaySelector from './DaySelector'
+import InitialLoading from '../../InitialLoading'
+import DaySelector from './../DaySelector'
 import { flightsSessionsExemple } from '@/config/exempleData'
-import Filter from './phone/Filter'
+import Filter from './../phone/Filter'
 import { DaysOfMonthType, getCompleteWeeks } from '@/api/date'
-import Calendar from './phone/calendar'
+import Calendar from './../phone/calendar'
 import SessionOfDay from "@/components/calendar/phone/SessionsOfDay"
 import { filterFlightSessions } from '@/api/db/dbClient'
 import { FLIGHT_SESSION } from '@prisma/client'
+import NewSession from "@/components/calendar/NewSession";
 
 const GlobalCalendarPhone = () => {
     const [date, setDate] = useState(new Date())
@@ -78,9 +79,15 @@ const GlobalCalendarPhone = () => {
                 <div className='border-b border-[#646464] w-full' />
             </div>
             <div className='w-full mt-6'> {/* flex-grow and overflow-y-auto for scrollable content */}
-                <p className='text-4xl font-istok pl-6 mb-3'>
-                    {date.toLocaleDateString('fr-FR', { month: 'long' })}, {date.toLocaleDateString('fr-FR', { year: 'numeric' })}
-                </p>
+                <div className='flex justify-between px-6'>
+                    <p className='text-4xl font-istok mb-3'>
+                        {date.toLocaleDateString('fr-FR', { month: 'long' })}, {date.toLocaleDateString('fr-FR', { year: 'numeric' })}
+                    </p>
+                    <div>
+                        <NewSession display='phone' />
+                    </div>
+
+                </div>
                 <div className='flex w-full px-6'>
                     <DaySelector
                         className='w-full flex'

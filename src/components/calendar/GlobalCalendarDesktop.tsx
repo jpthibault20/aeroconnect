@@ -5,6 +5,7 @@ import DaySelector from './DaySelector';
 import CalendarFilter from './CalendarFilter';
 import { instructorExemple, planeExemple } from '@/config/exempleData';
 import TabCalendar from './TabCalendar';
+import NewSession from "@/components/calendar/NewSession"
 
 
 const GlobalCalendarDesktop = () => {
@@ -77,6 +78,7 @@ const GlobalCalendarDesktop = () => {
                                 onClickToday={onClickToday}
                             />
                             <div className='flex space-x-2'>
+                                <NewSession display='desktop' style='h-full flex items-center justify-center' />
                                 <CalendarFilter
                                     className='h-full flex items-end justify-end'
                                     placeholder='Instructeur'

@@ -1,7 +1,7 @@
 "use client"
 import React from 'react'
 import GlobalCalendarDesktop from '@/components/calendar/GlobalCalendarDesktop';
-import GlobalCalendarPhone from '@/components/calendar/GlobalCalendarPhone';
+import GlobalCalendarPhone from '@/components/calendar/phone/GlobalCalendarPhone';
 
 
 const Page = () => {

@@ -6,6 +6,12 @@ export const instructorExemple = [
     "Exemple Roussel"
 ]
 
+export const StudentExemple = [
+    "Jeanpierre Stephane",
+    "Jeanpierre Thibault",
+    "Exemple Roussel"
+]
+
 export const planeExemple = [
     "P92",
     "Coyotte",
