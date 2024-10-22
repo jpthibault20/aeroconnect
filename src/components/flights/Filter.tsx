@@ -31,8 +31,13 @@ const Filter = ({ filterAvailable, filterReccurence, setFilterAvailable, setFilt
                     </button>
                 </div>
                 <div className='flex space-x-2 py-2'>
-                    
-                    <input type='date' className='w-full' onChange={(e) => setFilterDate(new Date(e.target.value))} />
+
+                    <input
+                        type="date"
+                        className="w-full p-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        onChange={(e) => setFilterDate(new Date(e.target.value))}
+                    />
+
                 </div>
             </PopoverContent>
         </Popover>
