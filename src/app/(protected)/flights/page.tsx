@@ -66,6 +66,7 @@ const Page = () => {
                 <Filter 
                     filterAvailable={filterAvailable}
                     filterReccurence={filterReccurence}
+                    filterDate={filterDate}
                     setFilterAvailable={setFilterAvailable}
                     setFilterReccurence={setFilterReccurence}
                     setFilterDate={setFilterDate}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LuSettings2 } from "react-icons/lu";
@@ -8,16 +8,15 @@ import 'react-datepicker/dist/react-datepicker.css'; // Import du CSS du sélect
 interface props {
     filterAvailable: boolean;
     filterReccurence: boolean;
+    filterDate: Date | null;
     setFilterAvailable: React.Dispatch<React.SetStateAction<boolean>>;
     setFilterReccurence: React.Dispatch<React.SetStateAction<boolean>>;
     setFilterDate: React.Dispatch<React.SetStateAction<Date | null>>;
 }
 
-const Filter = ({ filterAvailable, filterReccurence, setFilterAvailable, setFilterReccurence, setFilterDate }: props) => {
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Garde une copie locale de la date sélectionnée
+const Filter = ({ filterAvailable, filterReccurence, filterDate, setFilterAvailable, setFilterReccurence, setFilterDate }: props) => {
 
     const handleDateChange = (date: Date | null) => {
-        setSelectedDate(date);
         setFilterDate(date); // Met à jour l'état de la date dans le composant parent
     };
 
@@ -42,7 +41,8 @@ const Filter = ({ filterAvailable, filterReccurence, setFilterAvailable, setFilt
                 <div className='flex space-x-2 py-2 items-center'>
                     {/* Sélecteur de date avec popover */}
                     <DatePicker
-                        selected={selectedDate}
+                        showIcon
+                        selected={filterDate}
                         onChange={handleDateChange}
                         dateFormat="dd/MM/yyyy"
                         placeholderText="Sélectionnez une date"
