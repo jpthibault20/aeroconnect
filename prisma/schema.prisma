@@ -23,9 +23,8 @@ model User {
 model FLIGHT_SESSION {
   id                      Int         @id @unique @default(autoincrement())
   clubID                  Int
-  sessionDateStart        DateTime
+  sessionDateStart        DateTime    @db.Timestamptz(6)
   sessionDateDuration_min Int
-  finalReccurence         Int?
   flightType              flightType
   pilotID                 Int
   pilotFirstName          String
@@ -36,6 +35,7 @@ model FLIGHT_SESSION {
   student_type            flightType?
   planeID                 Int?
   planeName               String?
+  finalReccurence         DateTime?   @db.Timestamptz(6)
 }
 
 enum userRole {

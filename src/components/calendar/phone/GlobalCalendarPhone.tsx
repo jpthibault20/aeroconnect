@@ -21,7 +21,7 @@ const GlobalCalendarPhone = () => {
         clubID: 0,
         sessionDateStart: new Date,
         sessionDateDuration_min: 0,
-        finalReccurence: 0,
+        finalReccurence: null,
         flightType: "FIRST_FLIGHT",
         pilotID: 0,
         pilotFirstName: "",
