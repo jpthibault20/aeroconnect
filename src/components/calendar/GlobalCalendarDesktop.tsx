@@ -60,6 +60,8 @@ const GlobalCalendarDesktop = () => {
         setDate(new Date())
     }
 
+    const planes: string[] = planeExemple.map(plane => plane.name)
+
     return (
         <InitialLoading className='hidden xl:block h-full'>
             {/* Conteneur parent en Flexbox */}
@@ -88,7 +90,7 @@ const GlobalCalendarDesktop = () => {
                                 <CalendarFilter
                                     className='h-full flex items-end justify-end pr-6'
                                     placeholder='aéronef'
-                                    liste={planeExemple}
+                                    liste={planes}
                                     onValueChange={setPlane}
                                 />
                             </div>
