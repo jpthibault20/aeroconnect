@@ -12,6 +12,7 @@ interface props {
     plane: string
 }
 const Filter = ({ setInstructor, setPlane, instructor, plane }: props) => {
+    const planes: string[] = planeExemple.map(plane => plane.name)
     return (
         <div>
             <Popover>
@@ -42,7 +43,7 @@ const Filter = ({ setInstructor, setPlane, instructor, plane }: props) => {
                                 <CalendarFilter
                                     className='h-full flex items-end justify-end'
                                     placeholder='Avion'
-                                    liste={planeExemple}
+                                    liste={planes}
                                     onValueChange={setPlane}
                                     value={plane}
                                 />
