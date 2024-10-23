@@ -1,4 +1,4 @@
-import { flightType } from "@prisma/client";
+import { flightType, userRole } from "@prisma/client";
 
 export const instructorExemple = [
     "Jeanpierre Stephane",
@@ -11,6 +11,65 @@ export const StudentExemple = [
     "Jeanpierre Thibault",
     "Exemple Roussel"
 ]
+
+
+export const UserExemple = [
+    {
+        id: 1,
+        email: "stephane@primservice.fr",
+        adressID: 101,
+        clubID: 5722,
+        firstName: "stephane",
+        lastName: "jeanpierre",
+        phone: "611106199",
+        restricted: false,
+        role: userRole.PILOT
+    },
+    {
+        id: 2,
+        email: "marie@primservice.fr",
+        adressID: 102,
+        clubID: 8321,
+        firstName: "marie",
+        lastName: "dupont",
+        phone: "612345678",
+        restricted: false,
+        role: userRole.STUDENT
+    },
+    {
+        id: 3,
+        email: "jean@primservice.fr",
+        adressID: 103,
+        clubID: 9354,
+        firstName: "jean",
+        lastName: "durand",
+        phone: "621987654",
+        restricted: true,
+        role: userRole.STUDENT
+    },
+    {
+        id: 4,
+        email: "paul@primservice.fr",
+        adressID: 104,
+        clubID: 6745,
+        firstName: "paul",
+        lastName: "martin",
+        phone: "634567890",
+        restricted: false,
+        role: userRole.STUDENT
+    },
+    {
+        id: 5,
+        email: "laura@primservice.fr",
+        adressID: 105,
+        clubID: 9832,
+        firstName: "laura",
+        lastName: "bernard",
+        phone: "645678901",
+        restricted: false,
+        role: userRole.OWNER
+    }
+];
 
 export const planeExemple = [
     {
@@ -47,7 +106,7 @@ export const flightsSessionsExemple = [
     {
         id: 1,
         clubID: 101,
-        sessionDateStart: new Date(2024, 10-1, 21, 17, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 21, 17, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING, // Exemple de flightType
@@ -64,7 +123,7 @@ export const flightsSessionsExemple = [
     {
         id: 2,
         clubID: 101,
-        sessionDateStart: new Date(2024, 10-1, 21, 18, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 21, 18, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING, // Exemple de flightType
@@ -81,7 +140,7 @@ export const flightsSessionsExemple = [
     {
         id: 3,
         clubID: 101,
-        sessionDateStart: new Date(2024, 10-1, 21, 19, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 21, 19, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING, // Exemple de flightType
@@ -98,7 +157,7 @@ export const flightsSessionsExemple = [
     {
         id: 4,
         clubID: 101,
-        sessionDateStart: new Date(2024, 10-1, 24, 9, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 24, 9, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING, // Exemple de flightType
@@ -115,7 +174,7 @@ export const flightsSessionsExemple = [
     {
         id: 5,
         clubID: 101,
-        sessionDateStart: new Date(2024, 10-1, 24, 10, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 24, 10, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING, // Exemple de flightType
@@ -132,7 +191,7 @@ export const flightsSessionsExemple = [
     {
         id: 6,
         clubID: 102,
-        sessionDateStart: new Date(2024, 10-1, 25, 14, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 25, 14, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
@@ -149,7 +208,7 @@ export const flightsSessionsExemple = [
     {
         id: 7,
         clubID: 103,
-        sessionDateStart: new Date(2024, 10-1, 25, 11, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 25, 11, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
@@ -166,7 +225,7 @@ export const flightsSessionsExemple = [
     {
         id: 8,
         clubID: 104,
-        sessionDateStart: new Date(2024, 10-1, 26, 9, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 26, 9, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
@@ -183,7 +242,7 @@ export const flightsSessionsExemple = [
     {
         id: 9,
         clubID: 104,
-        sessionDateStart: new Date(2024, 10-1, 26, 16, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 26, 16, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
@@ -200,7 +259,7 @@ export const flightsSessionsExemple = [
     {
         id: 10,
         clubID: 104,
-        sessionDateStart: new Date(2024, 10-1, 26, 15, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 26, 15, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
@@ -217,7 +276,7 @@ export const flightsSessionsExemple = [
     {
         id: 11,
         clubID: 105,
-        sessionDateStart: new Date(2024, 10-1, 27, 12, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 27, 12, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
@@ -234,9 +293,9 @@ export const flightsSessionsExemple = [
     {
         id: 12,
         clubID: 105,
-        sessionDateStart: new Date(2024, 10-1, 27, 13, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 27, 13, 0, 0),
         sessionDateDuration_min: 60,
-        finalReccurence: new Date(2024, 11-1, 27, 13, 0, 0),
+        finalReccurence: new Date(2024, 11 - 1, 27, 13, 0, 0),
         flightType: flightType.TRAINING,
         pilotID: 14,
         pilotFirstName: 'Thibault',
@@ -251,7 +310,7 @@ export const flightsSessionsExemple = [
     {
         id: 13,
         clubID: 105,
-        sessionDateStart: new Date(2024, 10-1, 27, 13, 0, 0),
+        sessionDateStart: new Date(2024, 10 - 1, 27, 13, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
