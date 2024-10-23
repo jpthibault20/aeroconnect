@@ -23,8 +23,8 @@ const PlanesPage = () => {
     }
 
     return (
-        <div className='p-6 font-istok'>
-            <div className='font-istok flex space-x-3'>
+        <div className='p-6'>
+            <div className='flex space-x-3'>
                 <p className='font-medium text-3xl'>Les avions</p>
                 <p className='text-[#797979] text-3xl'>{planeExemple.length}</p>
             </div>
@@ -33,18 +33,18 @@ const PlanesPage = () => {
                     Nouveau
                 </Button>
             </div>
-            <Table>
+            <Table className='bg-white rounded-lg'>
                 <TableHeader>
-                    <TableRow>
-                        <TableHead>Nom</TableHead>
-                        <TableHead>Immatriculation</TableHead>
-                        <TableHead>État</TableHead>
-                        <TableHead>Actions</TableHead>
+                    <TableRow className='font-semibold text-lg'>
+                        <TableHead className='text-black text-center'>Nom</TableHead>
+                        <TableHead className='text-black text-center'>Immatriculation</TableHead>
+                        <TableHead className='text-black text-center'>État</TableHead>
+                        <TableHead className='text-black text-center'>Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {planeExemple.map((plane, index) => (
-                        <TableRow key={index}>
+                        <TableRow key={index} className='text-center'>
                             <TableCell>{plane.name}</TableCell>
                             <TableCell>{plane.immatriculation}</TableCell>
                             <TableCell>{plane.operational ? 'Opérationnel' : 'En maintenance'}</TableCell>

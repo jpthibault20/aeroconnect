@@ -145,13 +145,13 @@ const StudentsPage = () => {
                 <TableBody>
                     {sortedUsers.map((user, index) => (
                         <TableRow key={index}>
-                            <TableCell className='flex h-full items-center'>
+                            <TableCell className='md:flex h-full items-center'>
                                 <Image
                                     src={userPicture}
                                     alt='User Image'
                                     height={50}
                                     width={50}
-                                    className='rounded-full'
+                                    className='rounded-full hidden md:flex justify-center'
                                     priority
                                 />
                                 <div className='ml-4 h-full w-full flex flex-col justify-center items-start'>

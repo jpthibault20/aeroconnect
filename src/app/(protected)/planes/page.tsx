@@ -4,7 +4,7 @@ import PlanesPage from '@/components/plane/PlanesPage'
 
 const Page = () => {
     return (
-        <InitialLoading>
+        <InitialLoading className='bg-gray-100 h-full'>
             <PlanesPage />
         </InitialLoading>
 

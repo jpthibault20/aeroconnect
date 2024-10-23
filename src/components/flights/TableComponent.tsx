@@ -23,22 +23,22 @@ const TableComponent = ({ sessions, setSessionChecked }: props) => {
     };
 
     return (
-        <Table className="w-full">
-            <TableHeader>
-                <TableRow>
-                    <TableHead>
-                        <Checkbox 
-                            checked={isAllChecked} 
-                            onCheckedChange={(checked) => handleSelectAll(!!checked)} 
+        <Table className="w-full bg-white rounded-lg">
+            <TableHeader className='ml-2'>
+                <TableRow className='font-semibold text-lg'>
+                    <TableHead className='text-center'>
+                        <Checkbox
+                            checked={isAllChecked}
+                            onCheckedChange={(checked) => handleSelectAll(!!checked)}
                         />
                     </TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Heure de début</TableHead>
-                    <TableHead>Heure de fin</TableHead>
-                    <TableHead>Récurrent / Fin</TableHead>
-                    <TableHead>Élève inscrit</TableHead>
-                    <TableHead>Type de vol</TableHead>
-                    <TableHead>Action</TableHead>
+                    <TableHead className='text-black text-center'>Date</TableHead>
+                    <TableHead className='text-black text-center'>Heure de début</TableHead>
+                    <TableHead className='text-black text-center'>Heure de fin</TableHead>
+                    <TableHead className='text-black text-center'>Récurrent / Fin</TableHead>
+                    <TableHead className='text-black text-center'>Élève inscrit</TableHead>
+                    <TableHead className='text-black text-center'>Type de vol</TableHead>
+                    <TableHead className='text-black text-center'>Action</TableHead>
                 </TableRow>
             </TableHeader>
 
