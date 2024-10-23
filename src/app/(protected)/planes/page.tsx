@@ -1,14 +1,11 @@
-import InitialLoading from '@/components/InitialLoading'
 import React from 'react'
+import InitialLoading from '@/components/InitialLoading'
+import PlanesPage from '@/components/plane/PlanesPage'
 
 const Page = () => {
     return (
         <InitialLoading>
-            <div className='justify-center items-center h-full flex'>
-                <p className='text-2xl font-istok'>
-                    plane page
-                </p>
-            </div>
+            <PlanesPage />
         </InitialLoading>
 
     )

@@ -13,10 +13,34 @@ export const StudentExemple = [
 ]
 
 export const planeExemple = [
-    "P92",
-    "Coyotte",
-    "A320",
-    "Savana"
+    {
+        id: 1,
+        clubId: 0,
+        name: "P92",
+        immatriculation: "F-HDPL",
+        operational: true
+    },
+    {
+        id: 2,
+        clubId: 0,
+        name: "Coyotte",
+        immatriculation: "T-OVEL",
+        operational: true
+    },
+    {
+        id: 3,
+        clubId: 0,
+        name: "A320",
+        immatriculation: "O-ABEL",
+        operational: false
+    },
+    {
+        id: 4,
+        clubId: 0,
+        name: "Savana",
+        immatriculation: "N-UIYU",
+        operational: true
+    }
 ]
 
 export const flightsSessionsExemple = [
