@@ -9,6 +9,10 @@ import { User, userRole } from '@prisma/client'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from '../ui/button'
 import { IoChevronDown } from "react-icons/io5";
+import Image from 'next/image';
+import userPicture from '../../../public/images/userProfil.png'
+import Restricted from './Restricted'
+
 
 
 
@@ -62,9 +66,10 @@ const StudentsPage = () => {
     const onClickUpdateUser = (userId: number) => () => {
         console.log('Update user : ', userId)
     }
+
     return (
-        <div className='p-6 font-istok'>
-            <div className='font-istok flex space-x-3'>
+        <div className='p-6 '>
+            <div className='flex space-x-3'>
                 <p className='font-medium text-3xl'>Les élèves</p>
                 <p className='text-[#797979] text-3xl'>{UserExemple.length}</p>
             </div>
@@ -128,24 +133,42 @@ const StudentsPage = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
-            <Table>
+            <Table className='bg-white rounded-lg'>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Nom</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Utilisateur restreint</TableHead>
-                        <TableHead>tel</TableHead>
-                        <TableHead>email</TableHead>
+                        <TableHead className='font-semibold text-lg text-black'>Nom</TableHead>
+                        <TableHead className='font-semibold text-lg text-black text-center'>Role</TableHead>
+                        <TableHead className='font-semibold text-lg text-black text-center'>Utilisateur restreint</TableHead>
+                        <TableHead className='font-semibold text-lg text-black text-center'>Téléphone</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {sortedUsers.map((user, index) => (
                         <TableRow key={index}>
-                            <TableCell>{user.lastName.toUpperCase()} {user.firstName}</TableCell>
-                            <TableCell>{user.role}</TableCell>
-                            <TableCell>{user.restricted ? 'Oui' : 'Non'}</TableCell>
-                            <TableCell>0{user.phone}</TableCell>
-                            <TableCell>{user.email}</TableCell>
+                            <TableCell className='flex h-full items-center'>
+                                <Image
+                                    src={userPicture}
+                                    alt='User Image'
+                                    height={50}
+                                    width={50}
+                                    className='rounded-full'
+                                    priority
+                                />
+                                <div className='ml-4 h-full w-full flex flex-col justify-center items-start'>
+                                    <div className='font-medium text-left'>
+                                        {user.lastName.toUpperCase()}{' '}
+                                        {user.firstName}
+                                    </div>
+                                    <div className='text-left text-gray-500'>
+                                        {user.email}
+                                    </div>
+                                </div>
+                            </TableCell>
+                            <TableCell className='text-center'>{user.role}</TableCell>
+                            <TableCell className='text-center'>
+                                <Restricted user={user} />
+                            </TableCell>
+                            <TableCell className='text-center'>0{user.phone}</TableCell>
                             <TableCell className='flex flex-col items-center space-y-3 justify-center xl:block xl:space-x-5'>
                                 <button onClick={onClickUpdateUser(user.id)}>
                                     <FaPen color='blue' size={15} />

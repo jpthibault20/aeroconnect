@@ -4,7 +4,7 @@ import React from 'react'
 
 const Page = () => {
     return (
-        <InitialLoading>
+        <InitialLoading className='w-full h-full bg-gray-100'>
             <StudentsPage />
         </InitialLoading>
     )
