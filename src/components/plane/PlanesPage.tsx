@@ -29,7 +29,7 @@ const PlanesPage = () => {
                 <p className='text-[#797979] text-3xl'>{planeExemple.length}</p>
             </div>
             <div className='my-3 flex justify-end'>
-                <Button onClick={onClickNewPlane} className='bg-[#774BBE]'>
+                <Button onClick={onClickNewPlane} className='bg-[#774BBE] hover:bg-[#3d2365]'>
                     Nouveau
                 </Button>
             </div>

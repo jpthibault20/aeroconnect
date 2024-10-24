@@ -1,25 +1,44 @@
-import React, { useEffect, useState } from 'react'
-import InitialLoading from '../../InitialLoading'
-import DaySelector from './../DaySelector'
-import { flightsSessionsExemple } from '@/config/exempleData'
-import Filter from './../phone/Filter'
-import { DaysOfMonthType, getCompleteWeeks } from '@/api/date'
-import Calendar from './../phone/calendar'
-import SessionOfDay from "@/components/calendar/phone/SessionsOfDay"
-import { filterFlightSessions } from '@/api/db/dbClient'
-import { FLIGHT_SESSION } from '@prisma/client'
+/**
+ * @file GlobalCalendarPhone.tsx
+ * @brief This component renders a calendar view for mobile devices.
+ * It allows users to select a date, filter flight sessions by instructor and plane,
+ * and view sessions for a specific day. It also includes functionalities for navigating
+ * between weeks and creating new flight sessions.
+ * 
+ * @details
+ * - Utilizes React hooks for state management and lifecycle methods.
+ * - Integrates components for loading states, day selection, filtering, and session display.
+ * - Fetches and filters flight session data based on user input.
+ */
+
+import React, { useEffect, useState } from 'react';
+import InitialLoading from '../../InitialLoading';
+import DaySelector from './../DaySelector';
+import { flightsSessionsExemple } from '@/config/exempleData';
+import Filter from './../phone/Filter';
+import { DaysOfMonthType, getCompleteWeeks } from '@/api/date';
+import Calendar from './../phone/calendar';
+import SessionOfDay from "@/components/calendar/phone/SessionsOfDay";
+import { filterFlightSessions } from '@/api/db/dbClient';
+import { FLIGHT_SESSION } from '@prisma/client';
 import NewSession from "@/components/calendar/NewSession";
 
+/**
+ * @component GlobalCalendarPhone
+ * @description Main component for displaying a calendar on mobile devices.
+ * Handles date selection, session filtering, and session display.
+ */
 const GlobalCalendarPhone = () => {
-    const [date, setDate] = useState(new Date())
-    const [instructor, setInstructor] = useState("")
-    const [plane, setPlane] = useState("")
-    const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>()
-    const [selectDate, setSelectDate] = useState(new Date)
+    // State variables for managing date, instructor, plane, and filtered sessions
+    const [date, setDate] = useState(new Date());
+    const [instructor, setInstructor] = useState("");
+    const [plane, setPlane] = useState("");
+    const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>();
+    const [selectDate, setSelectDate] = useState(new Date());
     const [sessionFiltered, setSessionFiltered] = useState<FLIGHT_SESSION[]>([{
         id: 0,
         clubID: 0,
-        sessionDateStart: new Date,
+        sessionDateStart: new Date(),
         sessionDateDuration_min: 0,
         finalReccurence: null,
         flightType: "FIRST_FLIGHT",
@@ -34,43 +53,48 @@ const GlobalCalendarPhone = () => {
         planeName: "",
     }]);
 
-
+    // Effect to filter sessions when instructor or plane changes
     useEffect(() => {
-        if (instructor === ' ') setInstructor('')
-        if (plane === ' ') setPlane('')
+        // Reset instructor and plane if they are empty strings
+        if (instructor === ' ') setInstructor('');
+        if (plane === ' ') setPlane('');
 
-        setSessionFiltered(filterFlightSessions(flightsSessionsExemple, instructor, plane))
+        // Filter flight sessions based on instructor and plane
+        setSessionFiltered(filterFlightSessions(flightsSessionsExemple, instructor, plane));
+    }, [instructor, plane]);
 
-    }, [instructor, plane])
-
+    // Effect to get complete weeks for the selected date
     useEffect(() => {
         try {
-            const res = getCompleteWeeks(date)
-            setDaysOfMonth(res)
+            const res = getCompleteWeeks(date);
+            setDaysOfMonth(res);
         } catch (error) {
-            console.log(error)
+            console.log(error);
         }
-    }, [date])
+    }, [date]);
 
+    // Handler to navigate to the next month
     const onClickNextweek = () => {
         setDate(prevDate => {
             const newDate = new Date(prevDate);
             newDate.setMonth(newDate.getMonth() + 1);
             return newDate;
         });
-    }
+    };
 
+    // Handler to navigate to the previous month
     const onClickPreviousWeek = () => {
         setDate(prevDate => {
             const newDate = new Date(prevDate);
             newDate.setMonth(newDate.getMonth() - 1);
             return newDate;
         });
-    }
+    };
 
+    // Handler to set the date to today
     const onClickToday = () => {
-        setDate(new Date())
-    }
+        setDate(new Date());
+    };
 
     return (
         <InitialLoading className='xl:hidden flex flex-col flex-grow h-full'> {/* Use h-screen to ensure the full height */}
@@ -86,7 +110,6 @@ const GlobalCalendarPhone = () => {
                     <div>
                         <NewSession display='phone' />
                     </div>
-
                 </div>
                 <div className='flex w-full px-6'>
                     <DaySelector
@@ -103,14 +126,20 @@ const GlobalCalendarPhone = () => {
                     />
                 </div>
 
-                <Calendar daysOfMonth={daysOfMonth} date={date} flightsSessions={sessionFiltered} setSelectDate={setSelectDate} selectDate={selectDate} />
+                <Calendar
+                    daysOfMonth={daysOfMonth}
+                    date={date}
+                    flightsSessions={sessionFiltered}
+                    setSelectDate={setSelectDate}
+                    selectDate={selectDate}
+                />
             </div>
 
             <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 h-full'> {/* Make the sessions part scrollable */}
                 <SessionOfDay selectDate={selectDate} flightsSessions={sessionFiltered} />
             </div>
         </InitialLoading>
-    )
-}
+    );
+};
 
-export default GlobalCalendarPhone
+export default GlobalCalendarPhone;

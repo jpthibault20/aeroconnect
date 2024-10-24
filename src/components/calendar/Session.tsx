@@ -11,8 +11,17 @@ interface props {
     date: Date;
 }
 
-
-
+/**
+ * 
+ * @param indexX 
+ * @param indexY 
+ * @param tabDays 
+ * @param tabHours 
+ * @param events 
+ * @param date 
+ * 
+ * Permet de récupérer les sessions disponibles pour un jour donné
+ */
 const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
     const [reload, setReload] = useState(false); // Permet de forcer le rechargement de la liste des sessions
     useEffect(() => {

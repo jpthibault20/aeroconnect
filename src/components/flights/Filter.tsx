@@ -22,7 +22,7 @@ const Filter = ({ filterAvailable, filterReccurence, filterDate, setFilterAvaila
 
     return (
         <Popover>
-            <PopoverTrigger className='bg-[#774BBE] rounded-full flex items-center justify-center p-2'>
+            <PopoverTrigger className='bg-[#774BBE] rounded-full flex items-center justify-center p-2 hover:bg-[#3d2365]'>
                 <LuSettings2 size={20} color='white' />
             </PopoverTrigger>
             <PopoverContent className="w-80">

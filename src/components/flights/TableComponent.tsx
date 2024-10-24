@@ -35,7 +35,7 @@ const TableComponent = ({ sessions, setSessionChecked }: props) => {
                     <TableHead className='text-black text-center'>Date</TableHead>
                     <TableHead className='text-black text-center'>Heure de début</TableHead>
                     <TableHead className='text-black text-center'>Heure de fin</TableHead>
-                    <TableHead className='text-black text-center'>Récurrent / Fin</TableHead>
+                    <TableHead className='text-black text-center'>Récurrence</TableHead>
                     <TableHead className='text-black text-center'>Élève inscrit</TableHead>
                     <TableHead className='text-black text-center'>Type de vol</TableHead>
                     <TableHead className='text-black text-center'>Action</TableHead>

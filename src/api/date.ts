@@ -132,3 +132,10 @@ export const getFlightSessionsForDay = (dayDate: Date, sessions: FLIGHT_SESSION[
         );
     });
 };
+
+export const formatTime = (numberValue: number) => {
+    const [hours, minutes] = numberValue.toString().split('.');
+    const formattedHours = hours.padStart(2, '0');
+    const formattedMinutes = minutes ? minutes.padEnd(2, '0') : '00';
+    return `${formattedHours}:${formattedMinutes}`;
+};

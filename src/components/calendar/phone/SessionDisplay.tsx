@@ -1,25 +1,48 @@
-import { FLIGHT_SESSION } from '@prisma/client'
-import React, { } from 'react'
-import { formatPilotName } from '@/api/global function/formatPilotName'
+/**
+ * @file SessionDisplay.tsx
+ * @brief Component that displays a flight session in the calendar.
+ * 
+ * @details
+ * This component renders the details of a flight session, including the start
+ * and end times, pilot name, and plane name. The display changes based on 
+ * whether the session is booked or available.
+ */
 
-interface props {
-    session: FLIGHT_SESSION
+import { FLIGHT_SESSION } from '@prisma/client';
+import React from 'react';
+import { formatPilotName } from '@/api/global function/formatPilotName';
+
+/**
+ * @interface Props
+ * @brief Interface for the component props.
+ * @property {FLIGHT_SESSION} session - The flight session to display.
+ */
+interface Props {
+    session: FLIGHT_SESSION;
 }
 
-const SessionDisplay = ({ session }: props) => {
+/**
+ * @component SessionDisplay
+ * @description Renders the details of a flight session.
+ * 
+ * @param {Props} props - The component props.
+ * @returns {JSX.Element} The rendered component.
+ */
+const SessionDisplay = ({ session }: Props) => {
 
-
+    // Set the background color based on whether the session is booked
     const backgroundStyle = {
         backgroundColor: session.studentID ? "#CB8A8A" : "#B9DFC1",
     };
 
-    const finalDate = new Date(session.sessionDateStart)
-    finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min)
+    // Calculate the final date by adding the session duration to the start date
+    const finalDate = new Date(session.sessionDateStart);
+    finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min);
 
     return (
         <div
             style={backgroundStyle}
-            className={`w-3/4 h-[50px] flex rounded-xl px-3 ${session.studentID ? 'opacity-60' : ''} `}
+            className={`w-3/4 h-[50px] flex rounded-xl px-3 ${session.studentID ? 'opacity-60' : ''}`}
         >
             <div className='text-xs text-[#646464] flex flex-col justify-center items-center'>
                 <p className=''>
@@ -48,9 +71,8 @@ const SessionDisplay = ({ session }: props) => {
                     </p>
                 </div>
             )}
-
         </div>
-    )
+    );
 }
 
-export default SessionDisplay
+export default SessionDisplay;
