@@ -1,23 +1,46 @@
+/**
+ * @file Filter.tsx
+ * @brief A React component for filtering flight sessions.
+ * 
+ * This component provides options to filter flight sessions based on availability, recurrence, and a specific date.
+ * It uses a popover interface to present the filtering options to the user.
+ * 
+ * @param {Object} props - Component props.
+ * @param {boolean} props.filterAvailable - Indicates if the filter for available flights is active.
+ * @param {boolean} props.filterReccurence - Indicates if the filter for recurring flights is active.
+ * @param {Date | null} props.filterDate - The selected date for filtering.
+ * @param {React.Dispatch<React.SetStateAction<boolean>>} props.setFilterAvailable - Function to set the availability filter state.
+ * @param {React.Dispatch<React.SetStateAction<boolean>>} props.setFilterReccurence - Function to set the recurrence filter state.
+ * @param {React.Dispatch<React.SetStateAction<Date | null>>} props.setFilterDate - Function to set the selected date for filtering.
+ * 
+ * @returns {JSX.Element} The rendered filter component.
+ */
+
 import React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LuSettings2 } from "react-icons/lu";
-import DatePicker from 'react-datepicker'; // Import du sélecteur de date
-import 'react-datepicker/dist/react-datepicker.css'; // Import du CSS du sélecteur
+import DatePicker from 'react-datepicker'; // Import the date picker component
+import 'react-datepicker/dist/react-datepicker.css'; // Import CSS for the date picker
 
 interface props {
-    filterAvailable: boolean;
-    filterReccurence: boolean;
-    filterDate: Date | null;
-    setFilterAvailable: React.Dispatch<React.SetStateAction<boolean>>;
-    setFilterReccurence: React.Dispatch<React.SetStateAction<boolean>>;
-    setFilterDate: React.Dispatch<React.SetStateAction<Date | null>>;
+    filterAvailable: boolean; ///< Indicates if the filter for available flights is active
+    filterReccurence: boolean; ///< Indicates if the filter for recurring flights is active
+    filterDate: Date | null; ///< The selected date for filtering
+    setFilterAvailable: React.Dispatch<React.SetStateAction<boolean>>; ///< Function to update availability filter state
+    setFilterReccurence: React.Dispatch<React.SetStateAction<boolean>>; ///< Function to update recurrence filter state
+    setFilterDate: React.Dispatch<React.SetStateAction<Date | null>>; ///< Function to update selected date for filtering
 }
 
 const Filter = ({ filterAvailable, filterReccurence, filterDate, setFilterAvailable, setFilterReccurence, setFilterDate }: props) => {
 
+    /**
+     * Handles date changes from the date picker.
+     *
+     * @param {Date | null} date - The selected date or null.
+     */
     const handleDateChange = (date: Date | null) => {
-        setFilterDate(date); // Met à jour l'état de la date dans le composant parent
+        setFilterDate(date); // Updates the date state in the parent component
     };
 
     return (
@@ -29,25 +52,25 @@ const Filter = ({ filterAvailable, filterReccurence, filterDate, setFilterAvaila
                 <div className="flex space-x-2 justify-start items-center border-b border-gray-300 py-2">
                     <Checkbox checked={filterAvailable} onCheckedChange={(checked) => setFilterAvailable(!!checked)} />
                     <button onClick={() => setFilterAvailable(!filterAvailable)} className='flex items-center justify-center'>
-                        Filtrer les vols disponibles
+                        Filter available flights
                     </button>
                 </div>
                 <div className="flex space-x-2 justify-statr items-center border-b border-gray-300 py-2">
                     <Checkbox checked={filterReccurence} onCheckedChange={(checked) => setFilterReccurence(!!checked)} />
                     <button onClick={() => setFilterReccurence(!filterReccurence)} className='flex items-center justify-center'>
-                        Filtrer les vols récurrents
+                        Filter recurring flights
                     </button>
                 </div>
                 <div className='flex space-x-2 py-2 items-center'>
-                    {/* Sélecteur de date avec popover */}
+                    {/* Date picker for filtering */}
                     <DatePicker
                         showIcon
                         selected={filterDate}
                         onChange={handleDateChange}
                         dateFormat="dd/MM/yyyy"
-                        placeholderText="Sélectionnez une date"
+                        placeholderText="Select a date"
                         className="w-full p-2 text-base border border-gray-300 rounded-md"
-                        todayButton="Aujourd'hui"
+                        todayButton="Today"
                         isClearable
                     />
                 </div>

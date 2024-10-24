@@ -1,3 +1,12 @@
+/**
+ * @file PlanePageComponent.tsx
+ * @brief Component for displaying flight sessions and filters.
+ * 
+ * @details
+ * This component handles the display of flight sessions, allows filtering
+ * options, and manages session selection.
+ */
+
 "use client";
 import React, { useEffect, useState } from 'react';
 import TableComponent from "@/components/flights/TableComponent";
@@ -5,30 +14,35 @@ import { flightsSessionsExemple } from '@/config/exempleData';
 import { Button } from '@/components/ui/button';
 import Filter from '@/components/flights/Filter';
 
-const PlanePageComponent = () => {
+/**
+ * @component PlanePageComponent
+ * @description Component for managing and displaying flight sessions.
+ * 
+ * @returns  The rendered component.
+ */
+const FlightsPageComponent = () => {
     const [sessionChecked, setSessionChecked] = useState<number[]>([]);
     const [filterAvailable, setFilterAvailable] = useState(false);
     const [filterReccurence, setFilterReccurence] = useState(false);
     const [filterDate, setFilterDate] = useState<Date | null>(null);
-    const [filteredSessions, setFilteredSessions] = useState(flightsSessionsExemple); // Nouvel état pour les sessions filtrées
+    const [filteredSessions, setFilteredSessions] = useState(flightsSessionsExemple); // State for filtered sessions
 
-    // Logique de filtrage dans le useEffect
+    // Logic for filtering sessions based on selected filters
     useEffect(() => {
-
         const filtered = flightsSessionsExemple.filter(session => {
             let isValid = true;
 
-            // Filtrer par disponibilité (par exemple, en fonction d'une propriété comme session.isAvailable)
+            // Filter by availability (for example, based on a property like session.isAvailable)
             if (filterAvailable) {
                 isValid = isValid && session.studentID === null;
             }
 
-            // Filtrer par récurrence (par exemple, si la session a une récurrence)
+            // Filter by recurrence (for example, if the session has a recurrence)
             if (filterReccurence) {
                 isValid = isValid && session.finalReccurence !== null;
             }
 
-            // Filtrer par date (si une date de filtre est sélectionnée)
+            // Filter by date (if a filter date is selected)
             if (isValidDate(filterDate)) {
                 const sessionDate = new Date(session.sessionDateStart);
                 isValid = isValid && sessionDate.toDateString() === filterDate!.toDateString();
@@ -37,13 +51,20 @@ const PlanePageComponent = () => {
             return isValid;
         });
 
-        setFilteredSessions(filtered); // Mise à jour des sessions filtrées
-    }, [filterAvailable, filterReccurence, filterDate]); // Le filtre est recalculé quand un filtre change
+        setFilteredSessions(filtered); // Update the filtered sessions
+    }, [filterAvailable, filterReccurence, filterDate]); // Recalculate filters when any filter changes
 
+    // Log selected session IDs when they change
     useEffect(() => {
-        console.log(sessionChecked); // Log selected session IDs when changed
+        console.log(sessionChecked);
     }, [sessionChecked]);
 
+    /**
+     * Function to check if a given value is a valid date.
+     * 
+     * @param date - The value to check.
+     * @returns {boolean} True if valid date, otherwise false.
+     */
     const isValidDate = (date: unknown): boolean => {
         return date instanceof Date && !isNaN(date.getTime());
     };
@@ -51,6 +72,7 @@ const PlanePageComponent = () => {
     const onClickAction = () => {
         console.log("action");
     };
+
     const onClickNewSession = () => {
         console.log("new session");
     };
@@ -79,13 +101,13 @@ const PlanePageComponent = () => {
                     setFilterDate={setFilterDate}
                 />
             </div>
-            {/* Utiliser les sessions filtrées dans le tableau */}
+            {/* Use filtered sessions in the table */}
             <TableComponent
-                sessions={filteredSessions} // Passer les sessions filtrées ici
+                sessions={filteredSessions} // Pass filtered sessions here
                 setSessionChecked={setSessionChecked}
             />
         </div>
     );
 };
 
-export default PlanePageComponent
+export default FlightsPageComponent;

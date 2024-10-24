@@ -11,6 +11,7 @@
 import React from 'react'
 import GlobalCalendarDesktop from '@/components/calendar/GlobalCalendarDesktop';
 import GlobalCalendarPhone from '@/components/calendar/phone/GlobalCalendarPhone';
+import InitialLoading from '@/components/InitialLoading';
 
 /**
  * @function Page
@@ -20,18 +21,15 @@ import GlobalCalendarPhone from '@/components/calendar/phone/GlobalCalendarPhone
  * Inside the `<div>`, it renders two components: one for the desktop view (`GlobalCalendarDesktop`) 
  * and one for the mobile view (`GlobalCalendarPhone`).
  * 
- * @returns {JSX.Element} The rendered responsive calendar page.
  */
 const Page = () => {
 
     return (
         // Full height and width container to ensure the calendar takes up the entire page space.
-        <div className='h-full w-full'>
-            {/* Renders the desktop version of the calendar */}
+        <InitialLoading className='h-full w-full'>
             <GlobalCalendarDesktop />
-            {/* Renders the mobile version of the calendar */}
             <GlobalCalendarPhone />
-        </div>
+        </InitialLoading>
     )
 }
 

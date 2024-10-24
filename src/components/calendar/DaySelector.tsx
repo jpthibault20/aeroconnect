@@ -29,7 +29,6 @@ interface props {
  * @param {function} onClickPreviousWeek - Callback for navigating to the previous week.
  * @param {function} onClickToday - Callback for resetting to today's date.
  * 
- * @returns {JSX.Element} The rendered navigation button group.
  */
 const DaySelector = ({ className, onClickNextWeek, onClickPreviousWeek, onClickToday }: props) => {
     return (

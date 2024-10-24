@@ -40,8 +40,8 @@ const Filter = ({ setInstructor, setPlane, instructor, plane }: props) => {
     return (
         <div>
             <Popover>
-                <PopoverTrigger asChild>
-                    <div><Settings2 /></div>  {/* Icon trigger for opening the popover */}
+                <PopoverTrigger >
+                    <Settings2 />  {/* Icon trigger for opening the popover */}
                 </PopoverTrigger>
                 <PopoverContent className="w-80">
                     <div className="grid gap-4">

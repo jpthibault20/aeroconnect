@@ -1,25 +1,36 @@
-"use client"
-import React, { useState } from 'react'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
-import { FaPen } from 'react-icons/fa'
-import { IoMdClose } from 'react-icons/io'
-import { UserExemple } from '@/config/exempleData'
-import { Input } from '../ui/input'
-import { User, userRole } from '@prisma/client'
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Button } from '../ui/button'
+/**
+ * @file StudentsPage.tsx
+ * @brief A React component that displays a list of students with filtering, searching, and action functionalities.
+ * 
+ * This component allows filtering students by their roles, searching by name, and provides actions
+ * to update or delete user entries. The data is displayed in a table format, showing each user's
+ * information, including their name, role, restricted status, and phone number.
+ * 
+ * @returns The rendered StudentsPage component.
+ */
+
+"use client";
+import React, { useState } from 'react';
+import { UserExemple } from '@/config/exempleData';
+import { Input } from '../ui/input';
+import { User, userRole } from '@prisma/client';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from '../ui/button';
 import { IoChevronDown } from "react-icons/io5";
-import Image from 'next/image';
-import userPicture from '../../../public/images/userProfil.png'
-import Restricted from './Restricted'
-
-
-
+import TableComponent from './TableComponent';
 
 const StudentsPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState<userRole | 'all'>('all');
 
+    /**
+     * @function sortUser
+     * @description Filters and sorts the user list based on role and search query.
+     * @param {User[]} users - The array of users to be filtered and sorted.
+     * @param {userRole | 'all'} roleFilter - The selected role to filter users by.
+     * @param {string} searchQuery - The search query to filter users by their names.
+     * @returns {User[]} The filtered and sorted array of users.
+     */
     const sortUser = (
         users: User[],
         roleFilter: 'all' | userRole,
@@ -27,17 +38,9 @@ const StudentsPage = () => {
     ) => {
         let filteredUsers = users;
 
-        // Filter by rol
-        if (roleFilter === 'OWNER') {
-            filteredUsers = filteredUsers.filter((user) => user.role === 'OWNER');
-        } else if (roleFilter === 'ADMIN') {
-            filteredUsers = filteredUsers.filter((user) => user.role === 'ADMIN');
-        } else if (roleFilter === 'PILOT') {
-            filteredUsers = filteredUsers.filter((user) => user.role === 'PILOT');
-        } else if (roleFilter === 'STUDENT') {
-            filteredUsers = filteredUsers.filter((user) => user.role === 'STUDENT');
-        } else if (roleFilter === 'USER') {
-            filteredUsers = filteredUsers.filter((user) => user.role === 'USER');
+        // Filter by role
+        if (roleFilter !== 'all') {
+            filteredUsers = filteredUsers.filter((user) => user.role === roleFilter);
         }
 
         // Filter by firstname and lastname
@@ -59,13 +62,6 @@ const StudentsPage = () => {
         setRoleFilter(value);
     };
 
-    const onClickDeleteUser = (userId: number) => () => {
-        console.log('Delete user : ', userId)
-    }
-
-    const onClickUpdateUser = (userId: number) => () => {
-        console.log('Update user : ', userId)
-    }
 
     return (
         <div className='p-6 '>
@@ -115,7 +111,7 @@ const StudentsPage = () => {
                             checked={roleFilter === 'STUDENT'}
                             onCheckedChange={() => handleRoleFilterChange('STUDENT')}
                         >
-                            Elève
+                            Élève
                         </DropdownMenuCheckboxItem>
                         <DropdownMenuCheckboxItem
                             checked={roleFilter === 'USER'}
@@ -127,62 +123,15 @@ const StudentsPage = () => {
                 </DropdownMenu>
                 <Input
                     type="text"
-                    placeholder="recherche..."
+                    placeholder="Recherche..."
                     className="p-2 rounded-lg w-full md:w-1/3 mr-10 bg-white"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
-            <Table className='bg-white rounded-lg'>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className='font-semibold text-lg text-black'>Nom</TableHead>
-                        <TableHead className='font-semibold text-lg text-black text-center'>Role</TableHead>
-                        <TableHead className='font-semibold text-lg text-black text-center'>Utilisateur restreint</TableHead>
-                        <TableHead className='font-semibold text-lg text-black text-center'>Téléphone</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {sortedUsers.map((user, index) => (
-                        <TableRow key={index}>
-                            <TableCell className='md:flex h-full items-center'>
-                                <Image
-                                    src={userPicture}
-                                    alt='User Image'
-                                    height={50}
-                                    width={50}
-                                    className='rounded-full hidden md:flex justify-center'
-                                    priority
-                                />
-                                <div className='ml-4 h-full w-full flex flex-col justify-center items-start'>
-                                    <div className='font-medium text-left'>
-                                        {user.lastName.toUpperCase()}{' '}
-                                        {user.firstName}
-                                    </div>
-                                    <div className='text-left text-gray-500'>
-                                        {user.email}
-                                    </div>
-                                </div>
-                            </TableCell>
-                            <TableCell className='text-center'>{user.role}</TableCell>
-                            <TableCell className='text-center'>
-                                <Restricted user={user} />
-                            </TableCell>
-                            <TableCell className='text-center'>0{user.phone}</TableCell>
-                            <TableCell className='flex flex-col items-center space-y-3 justify-center xl:block xl:space-x-5'>
-                                <button onClick={onClickUpdateUser(user.id)}>
-                                    <FaPen color='blue' size={15} />
-                                </button>
-                                <button onClick={onClickDeleteUser(user.id)}>
-                                    <IoMdClose color='red' size={20} />
-                                </button>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+            <TableComponent users={sortedUsers} />
         </div>
-    )
+    );
 }
 
-export default StudentsPage
+export default StudentsPage;

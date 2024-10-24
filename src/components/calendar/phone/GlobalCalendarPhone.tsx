@@ -12,7 +12,6 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import InitialLoading from '../../InitialLoading';
 import DaySelector from './../DaySelector';
 import { flightsSessionsExemple } from '@/config/exempleData';
 import Filter from './../phone/Filter';
@@ -97,7 +96,7 @@ const GlobalCalendarPhone = () => {
     };
 
     return (
-        <InitialLoading className='xl:hidden flex flex-col flex-grow h-full'> {/* Use h-screen to ensure the full height */}
+        <div className='xl:hidden flex flex-col flex-grow h-full'> {/* Use h-screen to ensure the full height */}
             <p className='text-2xl font-istok font-semibold my-3 w-full text-center'>Calendrier</p>
             <div className='w-full px-6'>
                 <div className='border-b border-[#646464] w-full' />
@@ -138,7 +137,7 @@ const GlobalCalendarPhone = () => {
             <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 h-full'> {/* Make the sessions part scrollable */}
                 <SessionOfDay selectDate={selectDate} flightsSessions={sessionFiltered} />
             </div>
-        </InitialLoading>
+        </div>
     );
 };
 

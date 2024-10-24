@@ -102,6 +102,14 @@ export const planeExemple = [
     }
 ]
 
+export interface Plane {
+    id: number;
+    clubId: number;
+    name: string;
+    immatriculation: string;
+    operational: boolean;
+}
+
 export const flightsSessionsExemple = [
     {
         id: 1,

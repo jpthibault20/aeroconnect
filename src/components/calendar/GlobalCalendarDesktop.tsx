@@ -5,9 +5,7 @@
  * The component includes logic for navigating through weeks, selecting the current day, and filtering by instructor and plane. 
  * It is optimized for larger screens (hidden on smaller screens) and provides a smooth user experience for scheduling sessions.
  */
-
 import React, { useEffect, useState } from 'react'
-import InitialLoading from '../InitialLoading'
 import { monthFr } from '@/config/date';
 import DaySelector from './DaySelector';
 import CalendarFilter from './CalendarFilter';
@@ -23,7 +21,6 @@ import NewSession from "@/components/calendar/NewSession"
  * and filter calendar sessions by instructor and plane. It renders the calendar 
  * within a desktop-only layout, hidden on mobile devices.
  * 
- * @returns {JSX.Element} The rendered calendar with controls and filters.
  */
 const GlobalCalendarDesktop = () => {
     const [date, setDate] = useState(new Date());
@@ -82,7 +79,7 @@ const GlobalCalendarDesktop = () => {
 
     return (
         // Only rendered on large screens (hidden on smaller screens), includes a loading state.
-        <InitialLoading className='hidden xl:block h-full'>
+        <div className='hidden xl:block h-full'>
             <div className="flex flex-col h-full overflow-y-auto">
                 <div className="w-full flex items-center my-6">
                     {/* Displays the current month and year at the top of the calendar. */}
@@ -129,7 +126,7 @@ const GlobalCalendarDesktop = () => {
                     />
                 </div>
             </div>
-        </InitialLoading>
+        </div>
     )
 }
 

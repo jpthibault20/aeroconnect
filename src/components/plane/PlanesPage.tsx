@@ -1,26 +1,31 @@
-"use client"
-import React from 'react'
-import { planeExemple } from '@/config/exempleData'
-import { Button } from '../ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
-import { IoMdClose } from "react-icons/io";
-import { FaPen } from "react-icons/fa";
+"use client";
+/**
+ * @file PlanesPage.tsx
+ * @brief A React component for displaying a list of planes.
+ * 
+ * This component shows the number of planes available and provides a button
+ * to create a new plane. It also renders a table of planes using the 
+ * `TableComponent`.
+ * 
+ * @returns The rendered planes page component.
+ */
 
-
+import React from 'react';
+import { planeExemple } from '@/config/exempleData';
+import { Button } from '../ui/button';
+import TableComponent from './TableComponent';
 
 const PlanesPage = () => {
-
+    /**
+     * @function onClickNewPlane
+     * @brief Handles the click event for creating a new plane.
+     * 
+     * This function logs a message to the console when the "New" button
+     * is clicked.
+     */
     const onClickNewPlane = () => {
-        console.log('new plane')
-    }
-
-    const onClickDeletePlane = (planeId: number) => () => {
-        console.log('Delete plane : ', planeId)
-    }
-
-    const onClickUpdatePlane = (planeId: number) => () => {
-        console.log('Update plane : ', planeId)
-    }
+        console.log('new plane');
+    };
 
     return (
         <div className='p-6'>
@@ -33,35 +38,9 @@ const PlanesPage = () => {
                     Nouveau
                 </Button>
             </div>
-            <Table className='bg-white rounded-lg'>
-                <TableHeader>
-                    <TableRow className='font-semibold text-lg'>
-                        <TableHead className='text-black text-center'>Nom</TableHead>
-                        <TableHead className='text-black text-center'>Immatriculation</TableHead>
-                        <TableHead className='text-black text-center'>État</TableHead>
-                        <TableHead className='text-black text-center'>Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {planeExemple.map((plane, index) => (
-                        <TableRow key={index} className='text-center'>
-                            <TableCell>{plane.name}</TableCell>
-                            <TableCell>{plane.immatriculation}</TableCell>
-                            <TableCell>{plane.operational ? 'Opérationnel' : 'En maintenance'}</TableCell>
-                            <TableCell className='flex flex-col items-center space-y-3 justify-center xl:block xl:space-x-5'>
-                                <button onClick={onClickUpdatePlane(plane.id)}>
-                                    <FaPen color='blue' size={15} />
-                                </button>
-                                <button onClick={onClickDeletePlane(plane.id)}>
-                                    <IoMdClose color='red' size={20} />
-                                </button>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+            <TableComponent planes={planeExemple} />
         </div>
-    )
-}
+    );
+};
 
-export default PlanesPage
+export default PlanesPage;
