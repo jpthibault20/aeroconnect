@@ -58,17 +58,17 @@ const TableRowComponent = ({ user }: props): JSX.Element => {
                     </div>
                 </div>
             </TableCell>
-            <TableCell className='text-center'>{user.role}</TableCell>  {/*< Displays the user's role in the system.*/}
+            <TableCell className='text-center'>{user.role}</TableCell>{/* Displays the user's role in the system. */}
             <TableCell className='text-center'>
-                <Restricted user={user} />  {/*< Displays the restricted status of the user.*/}
+                <Restricted user={user} />{/*< Displays the restricted status of the user.*/}
             </TableCell>
-            <TableCell className='text-center'>0{user.phone}</TableCell>  {/*< Displays the user's phone number.*/}
+            <TableCell className='text-center'>0{user.phone}</TableCell>{/*< Displays the user's phone number.*/}
             <TableCell className='flex flex-col items-center space-y-3 justify-center xl:block xl:space-x-5'>
                 <button onClick={onClickUpdateUser}>
-                    <FaPen color='blue' size={15} />  {/*< Icon for updating the user.*/}
+                    <FaPen color='blue' size={15} />{/*< Icon for updating the user.*/}
                 </button>
                 <button onClick={onClickDeleteUser}>
-                    <IoMdClose color='red' size={20} />  {/*< Icon for deleting the user.*/}
+                    <IoMdClose color='red' size={20} />{/*< Icon for deleting the user.*/}
                 </button>
             </TableCell>
         </TableRow>

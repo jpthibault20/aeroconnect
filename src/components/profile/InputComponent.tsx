@@ -30,7 +30,7 @@ const InputComponent = ({ title, defaultValue, placeholder, disabled, className,
                 </label>
                 <div className="mt-1 relative">
                     <Input
-                        id='password'
+                        id={id}
                         placeholder={placeholder}
                         defaultValue={defaultValue ?? ''}
                         disabled={disabled}

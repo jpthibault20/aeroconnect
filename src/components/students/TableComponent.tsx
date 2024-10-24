@@ -26,10 +26,10 @@ const TableComponent = ({ users }: props): JSX.Element => {
         <Table className='bg-white rounded-lg'>
             <TableHeader>
                 <TableRow>
-                    <TableHead className='font-semibold text-lg text-black'>Nom</TableHead>  {/*< Column header for user name.*/}
-                    <TableHead className='font-semibold text-lg text-black text-center'>Rôle</TableHead>  {/*< Column header for user role.*/}
-                    <TableHead className='font-semibold text-lg text-black text-center'>Utilisateur restreint</TableHead>  {/*< Column header for restricted user status.*/}
-                    <TableHead className='font-semibold text-lg text-black text-center'>Téléphone</TableHead>  {/*< Column header for user phone number.*/}
+                    <TableHead className='font-semibold text-lg text-black'>Nom</TableHead>{/*< Column header for user name.*/}
+                    <TableHead className='font-semibold text-lg text-black text-center'>Rôle</TableHead>{/*< Column header for user role.*/}
+                    <TableHead className='font-semibold text-lg text-black text-center'>Utilisateur restreint</TableHead>{/*< Column header for restricted user status.*/}
+                    <TableHead className='font-semibold text-lg text-black text-center'>Téléphone</TableHead>{/*< Column header for user phone number.*/}
                 </TableRow>
             </TableHeader>
             <TableBody>
