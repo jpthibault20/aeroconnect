@@ -2,20 +2,25 @@ import React, { useState } from 'react'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { Eye } from 'lucide-react'
+import { UseFormRegister } from 'react-hook-form'
 
 interface props {
     title: string
-    defaultValue: string | null | undefined
+    value: string | null | undefined
     placeholder?: string
     disabled: boolean
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    register: UseFormRegister<any>
     className?: string
-    htmlFor: string
+    htmlFor?: string
     type: string
     id: string
 }
 
-const InputComponent = ({ title, defaultValue, placeholder, disabled, className, htmlFor, type, id }: props) => {
+const InputComponent = ({ title, value, placeholder, disabled, className, htmlFor, type, id, register }: props) => {
     const [visibilityPassword, setVisibilityPassword] = useState("password")
+    const [input, setInput] = useState(value ?? '')
+
     const onClickVisibilityPassword = () => {
         if (visibilityPassword == "password") setVisibilityPassword("text");
         else setVisibilityPassword("password");
@@ -32,9 +37,11 @@ const InputComponent = ({ title, defaultValue, placeholder, disabled, className,
                     <Input
                         id={id}
                         placeholder={placeholder}
-                        defaultValue={defaultValue ?? ''}
+                        value={input}
                         disabled={disabled}
                         type={visibilityPassword}
+                        {...register(id)}
+                        onChange={(e) => setInput(e.target.value)}
                         className='p-3 bg-white border border-gray-300'
                     />
                     <Button className="absolute bottom-1 right-1 h-7 w-7" size="icon" variant="ghost" type="button" onClick={onClickVisibilityPassword}>
@@ -55,7 +62,9 @@ const InputComponent = ({ title, defaultValue, placeholder, disabled, className,
                 type={type}
                 id={id}
                 className='p-3 bg-white border border-gray-300'
-                defaultValue={defaultValue ?? ''}
+                value={input}
+                {...register(id)}
+                onChange={(e) => setInput(e.target.value)}
                 placeholder={placeholder}
                 disabled={disabled}
             />
