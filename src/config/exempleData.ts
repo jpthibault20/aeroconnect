@@ -12,7 +12,6 @@ export const StudentExemple = [
     "Exemple Roussel"
 ]
 
-
 export const UserExemple = [
     {
         id: 1,
@@ -109,7 +108,7 @@ export const planeExemple = [
     {
         id: 3,
         clubId: "LF5722",
-        name: "A320",
+        name: "CT Super",
         immatriculation: "O-ABEL",
         operational: false
     },
@@ -117,6 +116,48 @@ export const planeExemple = [
         id: 4,
         clubId: "LF5722",
         name: "Savana",
+        immatriculation: "N-UIYU",
+        operational: true
+    },
+    {
+        id: 5,
+        clubId: "LF5722",
+        name: "MCR",
+        immatriculation: "N-UIYU",
+        operational: true
+    },
+    {
+        id: 6,
+        clubId: "LF5722",
+        name: "FK12",
+        immatriculation: "N-UIYU",
+        operational: true
+    },
+    {
+        id: 7,
+        clubId: "LF5722",
+        name: "FK14",
+        immatriculation: "N-UIYU",
+        operational: true
+    },
+    {
+        id: 8,
+        clubId: "LF5722",
+        name: "Skylark",
+        immatriculation: "N-UIYU",
+        operational: true
+    },
+    {
+        id: 9,
+        clubId: "LF5722",
+        name: "Comette",
+        immatriculation: "N-UIYU",
+        operational: true
+    },
+    {
+        id: 10,
+        clubId: "LF5722",
+        name: "SYD",
         immatriculation: "N-UIYU",
         operational: true
     }

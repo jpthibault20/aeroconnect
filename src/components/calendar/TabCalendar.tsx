@@ -34,7 +34,7 @@ interface Props {
  * @param {string} instructorFilter - Filter for displaying only sessions of a specific instructor.
  * @param {string} planeFilter - Filter for displaying only sessions of a specific plane.
  * 
- * @returns {JSX.Element} The rendered weekly calendar with filtered sessions.
+ * @returns The rendered weekly calendar with filtered sessions.
  */
 const TabCalendar = ({ date, instructorFilter, planeFilter }: Props) => {
     // Get the days of the current week based on the reference date
