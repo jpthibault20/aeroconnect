@@ -20,7 +20,7 @@ export const createUser = async (dataUser: User) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const user = await prisma.user.create({
             data: {
-                clubID: 1,
+                clubID: "LF5722",
                 firstName: dataUser.firstName,
                 lastName: dataUser.lastName,
                 email: dataUser.email,
