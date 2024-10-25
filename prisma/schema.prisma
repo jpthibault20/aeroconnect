@@ -11,7 +11,7 @@ datasource db {
 model User {
   id         Int      @id @unique @default(autoincrement())
   email      String   @unique
-  clubID     Int
+  clubID     String
   firstName  String
   lastName   String
   phone      String?
@@ -25,7 +25,7 @@ model User {
 
 model FLIGHT_SESSION {
   id                      Int         @id @unique @default(autoincrement())
-  clubID                  Int
+  clubID                  String
   sessionDateStart        DateTime    @db.Timestamptz(6)
   sessionDateDuration_min Int
   flightType              flightType

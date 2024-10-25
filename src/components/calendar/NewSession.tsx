@@ -10,9 +10,19 @@
 
 import React from 'react'
 import { IoMdAddCircle } from "react-icons/io";
-import { Button } from '../ui/button';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { userRole } from '@prisma/client';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { Button } from '../ui/button';
 
 interface props {
     display: string;  ///< Defines how the button should be displayed ("phone" or "desktop").
@@ -28,48 +38,44 @@ interface props {
  * handles the event when the user clicks to create a session.
  * 
  * @param {string} display - Mode of display, either "phone" or "desktop".
- * @param {string} style - Optional additional CSS classes for phone mode button styling.
  * 
- * @returns {JSX.Element|null} The rendered button or `null` if the user does not have permission.
+ * @returns  The rendered button or `null` if the user does not have permission.
  */
-const NewSession = ({ display, style }: props) => {
+const NewSession = ({ display }: props) => {
     const { currentUser } = useCurrentUser();
-
-    /**
-     * @function onClick
-     * @brief Handles the click event to create a new session.
-     */
-    const onClick = () => {
-        console.log("~ new session ~")
-    }
 
     // Only render the button if the user is an admin, owner, or pilot.
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT))) {
         return null;
     }
 
-    // Display for phone: icon button
-    if (display === "phone") {
-        return (
-            <button
-                className={`${style}`}
-                onClick={onClick}
-            >
-                <IoMdAddCircle size={27} color='#774BBE' />
-            </button>
-        );
-    }
-    // Display for desktop: text button
-    else if (display === "desktop") {
-        return (
-            <Button
-                className='bg-[#774BBE] hover:bg-[#3d2365]'
-                onClick={onClick}
-            >
-                Nouvelle session
-            </Button>
-        );
-    }
+
+    return (
+        <Dialog>
+            <DialogTrigger className={`${display === "desktop" ? "bg-[#774BBE] hover:bg-[#3d2365] text-white" : "bg-white"} rounded-md px-2 font-medium`}>
+                {display === "desktop" ? (
+                    <p>Nouvelle session</p>
+                ) : (
+                    <IoMdAddCircle size={27} color='#774BBE' />
+                )}
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Nouvelle session</DialogTitle>
+                    <DialogDescription>
+                        Configuration de la nouvelle session
+                    </DialogDescription>
+                </DialogHeader>
+                ttttt
+                <DialogFooter>
+                    <DialogClose>Cancel</DialogClose>
+                    <Button>Enregistrer</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+    );
 }
+
 
 export default NewSession

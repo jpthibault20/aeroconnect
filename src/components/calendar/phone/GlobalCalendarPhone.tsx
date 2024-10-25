@@ -36,7 +36,7 @@ const GlobalCalendarPhone = () => {
     const [selectDate, setSelectDate] = useState(new Date());
     const [sessionFiltered, setSessionFiltered] = useState<FLIGHT_SESSION[]>([{
         id: 0,
-        clubID: 0,
+        clubID: "",
         sessionDateStart: new Date(),
         sessionDateDuration_min: 0,
         finalReccurence: null,
