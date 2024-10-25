@@ -11,13 +11,16 @@ datasource db {
 model User {
   id         Int      @id @unique @default(autoincrement())
   email      String   @unique
-  adressID   Int      @default(0)
   clubID     Int
   firstName  String
   lastName   String
   phone      String?
   restricted Boolean  @default(false)
   role       userRole @default(USER)
+  country    String?
+  zipCode    String?
+  adress     String?
+  city       String?
 }
 
 model FLIGHT_SESSION {
