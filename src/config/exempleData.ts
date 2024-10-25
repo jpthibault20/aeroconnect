@@ -23,7 +23,11 @@ export const UserExemple = [
         lastName: "jeanpierre",
         phone: "611106199",
         restricted: false,
-        role: userRole.PILOT
+        role: userRole.PILOT,
+        city: "",
+        adress: "",
+        country: "",
+        zipCode: "",
     },
     {
         id: 2,
@@ -34,7 +38,11 @@ export const UserExemple = [
         lastName: "dupont",
         phone: "612345678",
         restricted: false,
-        role: userRole.STUDENT
+        role: userRole.STUDENT,
+        city: "",
+        adress: "",
+        country: "",
+        zipCode: "",
     },
     {
         id: 3,
@@ -45,7 +53,11 @@ export const UserExemple = [
         lastName: "durand",
         phone: "621987654",
         restricted: true,
-        role: userRole.STUDENT
+        role: userRole.STUDENT,
+        city: "",
+        adress: "",
+        country: "",
+        zipCode: "",
     },
     {
         id: 4,
@@ -56,7 +68,11 @@ export const UserExemple = [
         lastName: "martin",
         phone: "634567890",
         restricted: false,
-        role: userRole.STUDENT
+        role: userRole.STUDENT,
+        city: "",
+        adress: "",
+        country: "",
+        zipCode: "",
     },
     {
         id: 5,
@@ -67,7 +83,11 @@ export const UserExemple = [
         lastName: "bernard",
         phone: "645678901",
         restricted: false,
-        role: userRole.OWNER
+        role: userRole.OWNER,
+        city: "",
+        adress: "",
+        country: "",
+        zipCode: "",
     }
 ];
 
