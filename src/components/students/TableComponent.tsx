@@ -1,12 +1,3 @@
-/**
- * @file TableComponent.tsx
- * @brief This component renders a table displaying user information.
- * It utilizes Tailwind CSS for styling and Prisma's User type for type safety.
- * 
- * @details The component receives a list of users and displays their names, roles, restricted user status, 
- * and phone numbers in a structured format. The layout is responsive and styled for better usability.
- */
-
 import React from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '../ui/table';
 import { User } from '@prisma/client';
@@ -23,21 +14,23 @@ interface props {
  */
 const TableComponent = ({ users }: props): JSX.Element => {
     return (
-        <Table className='bg-white rounded-lg'>
-            <TableHeader>
-                <TableRow>
-                    <TableHead className='font-semibold text-lg text-black'>Nom</TableHead>{/*< Column header for user name.*/}
-                    <TableHead className='font-semibold text-lg text-black text-center'>Rôle</TableHead>{/*< Column header for user role.*/}
-                    <TableHead className='font-semibold text-lg text-black text-center'>Utilisateur restreint</TableHead>{/*< Column header for restricted user status.*/}
-                    <TableHead className='font-semibold text-lg text-black text-center'>Téléphone</TableHead>{/*< Column header for user phone number.*/}
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {users.map((user, index) => (
-                    <TableRowComponent user={user} key={index} />  ///< Renders a row for each user.
-                ))}
-            </TableBody>
-        </Table>
+        <div className="max-h-[70vh] overflow-y-auto bg-white rounded-lg"> {/* Conteneur avec scroll */}
+            <Table className='w-full'>
+                <TableHeader className='sticky top-0 bg-white z-10'> {/* Sticky header */}
+                    <TableRow>
+                        <TableHead className='font-semibold text-lg text-black'>Nom</TableHead>
+                        <TableHead className='font-semibold text-lg text-black text-center'>Rôle</TableHead>
+                        <TableHead className='font-semibold text-lg text-black text-center'>Utilisateur restreint</TableHead>
+                        <TableHead className='font-semibold text-lg text-black text-center'>Téléphone</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody className="max-h-[60vh] overflow-y-auto"> {/* Body du tableau avec scroll */}
+                    {users.map((user, index) => (
+                        <TableRowComponent user={user} key={index} />  ///< Renders a row for each user.
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
     );
 }
 

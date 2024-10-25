@@ -34,7 +34,7 @@ export default function ProtectLayout({
 
     return (
         <div className="h-full">
-            <CurrentUserWrapper>
+            <CurrentUserWrapper >
                 <UpdateContext />
                 <Navigation>
                     {children}

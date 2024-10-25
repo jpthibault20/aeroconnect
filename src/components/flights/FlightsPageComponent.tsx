@@ -78,7 +78,7 @@ const FlightsPageComponent = () => {
     };
 
     return (
-        <div>
+        <div className='h-full'>
             <div className='flex space-x-3'>
                 <p className='font-medium text-3xl'>Les vols</p>
                 <p className='text-[#797979] text-3xl'>{filteredSessions.length}</p>
