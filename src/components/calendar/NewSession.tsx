@@ -35,7 +35,7 @@ interface Props {
 
 const NewSession = ({ display }: Props) => {
     const { currentUser } = useCurrentUser();
-    
+
     const [sessionData, setSessionData] = useState<{
         date: Date | undefined;
         startHour: string;
@@ -94,8 +94,8 @@ const NewSession = ({ display }: Props) => {
             <DialogTrigger className={`${display === "desktop" ? "bg-[#774BBE] hover:bg-[#3d2365] text-white" : "bg-white"} rounded-md px-2 font-medium`}>
                 {display === "desktop" ? <p>Nouvelle session</p> : <IoMdAddCircle size={27} color='#774BBE' />}
             </DialogTrigger>
-            <DialogContent className='bg-gray-100'>
-                <DialogHeader>
+            <DialogContent className='bg-gray-100 max-h-screen overflow-y-auto'>
+                <DialogHeader className='flex flex-col items-center mb-3'>
                     <DialogTitle>Nouvelle session</DialogTitle>
                     <DialogDescription>Configuration de la nouvelle session</DialogDescription>
                 </DialogHeader>
@@ -172,6 +172,12 @@ const NewSession = ({ display }: Props) => {
                     ))}
                 </div>
                 <div className='grid grid-cols-3 gap-4'>
+                    <Button
+                        className={`w-full justify-center text-left font-normal ${allPlanesSelected ? "bg-red-500" : "bg-gray-100 "} rounded-md text-black hover:bg-gray-200`}
+                        onClick={toggleSelectAllPlanes}
+                    >
+                        {allPlanesSelected ? "Effacer" : "Tous"}
+                    </Button>
                     {planeExemple.map((plane, index) => (
                         <Button
                             key={index}
@@ -181,25 +187,39 @@ const NewSession = ({ display }: Props) => {
                             {plane.name}
                         </Button>
                     ))}
-                    <Button
-                        className={`w-full justify-center text-left font-normal ${allPlanesSelected ? "bg-red-500" : "bg-gray-100 "} rounded-md text-black hover:bg-gray-200`}
-                        onClick={toggleSelectAllPlanes}
-                    >
-                        {allPlanesSelected ? "Effacer la sélection" : "Tous sélectionner"}
-                    </Button>
+
                 </div>
 
-                    <Label>Récurrence</Label>
-                    <div className='flex items-center justify-between'>
-                        <p>Répéter cette session chaque semaine</p>
-                        <div className='flex items-center space-x-2'>
-                            <FaCheck color='green'/>
-                            <Switch />
-                            <RxCross2 color='red'/>
-                        </div>
+                <Label>Récurrence</Label>
+                <div className='flex items-center justify-between'>
+                    <p>Répéter cette session chaque semaine</p>
+                    <div className='flex items-center space-x-2'>
+                        <FaCheck color='green' />
+                        <Switch />
+                        <RxCross2 color='red' />
                     </div>
+                </div>
 
-                <DialogFooter>
+                <Label>Date de la dernière session</Label>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant={"outline"} className={cn("justify-start text-left font-normal", !sessionData.date && "text-muted-foreground")}>
+                            <CalendarIcon />
+                            {sessionData.date ? format(sessionData.date, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0">
+                        <Calendar
+                            mode="single"
+                            // selected={sessionData.date}
+                            // onSelect={(date) => setSessionData(prev => ({ ...prev, date }))}
+                            initialFocus
+                            locale={fr}
+                        />
+                    </PopoverContent>
+                </Popover>
+
+                <DialogFooter className='mt-3'>
                     <DialogClose>Cancel</DialogClose>
                     <Button>Enregistrer</Button>
                 </DialogFooter>
