@@ -24,9 +24,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { minutes, sessionDurationMin, workingHour } from '@/config/configClub';
 import { FaArrowRightLong, FaCheck } from "react-icons/fa6";
 import { planeExemple } from '@/config/exempleData';
-import { Switch } from "@/components/ui/switch"
+import { Switch } from "@/components/ui/switch";
 import { RxCross2 } from "react-icons/rx";
-
 
 interface Props {
     display: string;
@@ -35,7 +34,7 @@ interface Props {
 
 const NewSession = ({ display }: Props) => {
     const { currentUser } = useCurrentUser();
-
+    const [switchReccurence, setSwitchReccurence] = useState(false);
     const [sessionData, setSessionData] = useState<{
         date: Date | undefined;
         startHour: string;
@@ -87,7 +86,7 @@ const NewSession = ({ display }: Props) => {
         }));
     };
 
-    console.log(finalDate)
+    console.log(finalDate);
 
     return (
         <Dialog>
@@ -187,37 +186,40 @@ const NewSession = ({ display }: Props) => {
                             {plane.name}
                         </Button>
                     ))}
-
                 </div>
 
                 <Label>Récurrence</Label>
                 <div className='flex items-center justify-between'>
                     <p>Répéter cette session chaque semaine</p>
                     <div className='flex items-center space-x-2'>
-                        <FaCheck color='green' />
-                        <Switch />
                         <RxCross2 color='red' />
+                        <Switch onCheckedChange={() => setSwitchReccurence(!switchReccurence)} checked={switchReccurence} />
+                        <FaCheck color='green' />
                     </div>
                 </div>
 
-                <Label>Date de la dernière session</Label>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant={"outline"} className={cn("justify-start text-left font-normal", !sessionData.date && "text-muted-foreground")}>
-                            <CalendarIcon />
-                            {sessionData.date ? format(sessionData.date, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0">
-                        <Calendar
-                            mode="single"
-                            // selected={sessionData.date}
-                            // onSelect={(date) => setSessionData(prev => ({ ...prev, date }))}
-                            initialFocus
-                            locale={fr}
-                        />
-                    </PopoverContent>
-                </Popover>
+                {switchReccurence && (
+                    <div className='flex flex-col space-y-3'>
+                        <Label>Date de la dernière session</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant={"outline"} className={cn("justify-start text-left font-normal", !sessionData.date && "text-muted-foreground")}>
+                                    <CalendarIcon />
+                                    {sessionData.date ? format(sessionData.date, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={sessionData.date}
+                                    onSelect={(date) => setSessionData(prev => ({ ...prev, date }))}
+                                    initialFocus
+                                    locale={fr}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                )}
 
                 <DialogFooter className='mt-3'>
                     <DialogClose>Cancel</DialogClose>
