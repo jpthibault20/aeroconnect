@@ -93,7 +93,7 @@ const NewSession = ({ display }: Props) => {
             <DialogTrigger className={`${display === "desktop" ? "bg-[#774BBE] hover:bg-[#3d2365] text-white" : "bg-white"} rounded-md px-2 font-medium`}>
                 {display === "desktop" ? <p>Nouvelle session</p> : <IoMdAddCircle size={27} color='#774BBE' />}
             </DialogTrigger>
-            <DialogContent className='bg-gray-100 max-h-screen overflow-y-auto'>
+            <DialogContent className='bg-[#ffffff] max-h-screen overflow-y-auto'>
                 <DialogHeader className='flex flex-col items-center mb-3'>
                     <DialogTitle>Nouvelle session</DialogTitle>
                     <DialogDescription>Configuration de la nouvelle session</DialogDescription>
@@ -122,7 +122,7 @@ const NewSession = ({ display }: Props) => {
                     <div className="flex items-center space-x-2">
                         <Clock className="h-4 w-4 text-gray-500" />
                         <Select value={sessionData.startHour} onValueChange={(value) => setSessionData(prev => ({ ...prev, startHour: value }))}>
-                            <SelectTrigger className="w-[65px]">
+                            <SelectTrigger className="w-[65px] bg-white">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -135,7 +135,7 @@ const NewSession = ({ display }: Props) => {
                         </Select>
                         <p>h</p>
                         <Select value={sessionData.startMinute} onValueChange={(value) => setSessionData(prev => ({ ...prev, startMinute: value }))}>
-                            <SelectTrigger className="w-[65px]">
+                            <SelectTrigger className="w-[65px] bg-white">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -147,20 +147,20 @@ const NewSession = ({ display }: Props) => {
                             </SelectContent>
                         </Select>
                     </div>
-                    <FaArrowRightLong color="gray" size={20} />
+                    <FaArrowRightLong color="black" size={20} />
                     <div className="flex items-center space-x-2">
-                        <div className="text-gray-500 border border-gray-200 p-1 px-3 rounded-md shadow-sm">
+                        <div className="text-gray-500 border border-gray-200 p-1 px-3 rounded-md shadow-sm bg-white">
                             {endTime.getHours().toString().padStart(2, '0')}
                         </div>
                         <p>h</p>
-                        <div className="text-gray-500 border border-gray-200 p-1 px-3 rounded-md shadow-sm">
+                        <div className="text-gray-500 border border-gray-200 p-1 px-3 rounded-md shadow-sm bg-white">
                             {endTime.getMinutes().toString().padStart(2, '0')}
                         </div>
                     </div>
                 </div>
 
                 <Label>Avion(s)</Label>
-                <div className='w-full h-fit min-h-10 border border-gray-200 rounded-md shadow-sm flex flex-wrap p-2 gap-2'>
+                <div className='w-full h-fit min-h-10 border border-gray-200 rounded-md shadow-sm flex flex-wrap p-2 gap-2 bg-gray-100'>
                     {sessionData.plane.map((plane, index) => (
                         <div
                             key={index}
@@ -172,7 +172,7 @@ const NewSession = ({ display }: Props) => {
                 </div>
                 <div className='grid grid-cols-3 gap-4'>
                     <Button
-                        className={`w-full justify-center text-left font-normal ${allPlanesSelected ? "bg-red-500" : "bg-gray-100 "} rounded-md text-black hover:bg-gray-200`}
+                        className={`w-full justify-center text-left font-normal ${allPlanesSelected ? "bg-red-500" : "bg-gray-200 "} rounded-md text-black hover:bg-gray-300`}
                         onClick={toggleSelectAllPlanes}
                     >
                         {allPlanesSelected ? "Effacer" : "Tous"}
@@ -180,7 +180,7 @@ const NewSession = ({ display }: Props) => {
                     {planeExemple.map((plane, index) => (
                         <Button
                             key={index}
-                            className={`w-full justify-center text-left font-normal bg-gray-100 hover:bg-gray-200 rounded-md text-black ${sessionData.plane.includes(plane.name) && "bg-red-500"}`}
+                            className={`w-full justify-center text-left border border-gray-200 font-normal bg-gray-200 hover:bg-gray-300 rounded-md text-black ${sessionData.plane.includes(plane.name) && "bg-red-500"}`}
                             onClick={() => onClickPlane(plane.name)}
                         >
                             {plane.name}
@@ -189,11 +189,11 @@ const NewSession = ({ display }: Props) => {
                 </div>
 
                 <Label>Récurrence</Label>
-                <div className='flex items-center justify-between'>
+                <div className='flex items-center justify-between '>
                     <p>Répéter cette session chaque semaine</p>
                     <div className='flex items-center space-x-2'>
                         <RxCross2 color='red' />
-                        <Switch onCheckedChange={() => setSwitchReccurence(!switchReccurence)} checked={switchReccurence} />
+                        <Switch onCheckedChange={() => setSwitchReccurence(!switchReccurence)} checked={switchReccurence}/>
                         <FaCheck color='green' />
                     </div>
                 </div>
