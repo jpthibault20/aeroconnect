@@ -26,31 +26,29 @@ import { FaArrowRightLong } from "react-icons/fa6";
 import { planeExemple } from '@/config/exempleData';
 
 interface Props {
-    display: string;  ///< Defines how the button should be displayed ("phone" or "desktop").
-    style?: string;   ///< Optional CSS classes for styling the button in phone mode.
+    display: string;
+    style?: string;
 }
 
 const NewSession = ({ display }: Props) => {
     const { currentUser } = useCurrentUser();
-
-    // Regrouping date and time states to avoid multiple useState hooks
+    
     const [sessionData, setSessionData] = useState<{
         date: Date | undefined;
         startHour: string;
         startMinute: string;
-        plane: string[];  // Correction : explicitement un tableau de chaînes de caractères
+        plane: string[];
     }>({
         date: undefined,
         startHour: "9",
         startMinute: "30",
-        plane: [],  // Maintenant de type string[]
+        plane: [],
     });
-    // Memoize end time calculation based on start hour and minute
+
     const endTime = useMemo(() => {
         return new Date(1999, 0, 0, Number(sessionData.startHour), Number(sessionData.startMinute) + sessionDurationMin);
     }, [sessionData.startHour, sessionData.startMinute]);
 
-    // Memoize final date only when date changes
     const finalDate = useMemo(() => {
         if (sessionData.date) {
             return new Date(
@@ -64,21 +62,29 @@ const NewSession = ({ display }: Props) => {
         return undefined;
     }, [sessionData.date, sessionData.startHour, sessionData.startMinute]);
 
-    // If user is not allowed to create a session, return null
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT))) {
         return null;
     }
 
+    const allPlanesSelected = planeExemple.length === sessionData.plane.length;
+
     const onClickPlane = (plane: string) => {
         setSessionData(prev => ({
-            ...prev, // Copie de tous les autres champs de sessionData
+            ...prev,
             plane: prev.plane.includes(plane)
-                ? prev.plane.filter(p => p !== plane) // Supprime l'avion s'il est déjà dans la liste
-                : [...prev.plane, plane] // Ajoute l'avion à la liste s'il n'y est pas
+                ? prev.plane.filter(p => p !== plane)
+                : [...prev.plane, plane]
         }));
     };
 
-    console.log(finalDate);
+    const toggleSelectAllPlanes = () => {
+        setSessionData(prev => ({
+            ...prev,
+            plane: allPlanesSelected ? [] : planeExemple.map(p => p.name)
+        }));
+    };
+
+    console.log(finalDate)
 
     return (
         <Dialog>
@@ -91,7 +97,6 @@ const NewSession = ({ display }: Props) => {
                     <DialogDescription>Configuration de la nouvelle session</DialogDescription>
                 </DialogHeader>
 
-                {/* Selection of start date */}
                 <Label>Date de la session</Label>
                 <Popover>
                     <PopoverTrigger asChild>
@@ -111,7 +116,6 @@ const NewSession = ({ display }: Props) => {
                     </PopoverContent>
                 </Popover>
 
-                {/* Time selection */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                         <Clock className="h-4 w-4 text-gray-500" />
@@ -153,7 +157,6 @@ const NewSession = ({ display }: Props) => {
                     </div>
                 </div>
 
-                {/* Selection plane */}
                 <Label>Avion(s)</Label>
                 <div className='w-full h-fit min-h-10 border border-gray-200 rounded-md shadow-sm flex flex-wrap p-2 gap-2'>
                     {sessionData.plane.map((plane, index) => (
@@ -166,7 +169,7 @@ const NewSession = ({ display }: Props) => {
                     ))}
                 </div>
 
-                <div className='grid grid-cols-4 gap-4'>
+                <div className='grid grid-cols-3 gap-4'>
                     {planeExemple.map((plane, index) => (
                         <Button
                             key={index}
@@ -176,6 +179,12 @@ const NewSession = ({ display }: Props) => {
                             {plane.name}
                         </Button>
                     ))}
+                    <Button
+                        className={`w-full justify-center text-left font-normal ${allPlanesSelected ? "bg-red-500" : "bg-gray-100 "} rounded-md text-black hover:bg-gray-200`}
+                        onClick={toggleSelectAllPlanes}
+                    >
+                        {allPlanesSelected ? "Effacer la sélection" : "Tous sélectionner"}
+                    </Button>
                 </div>
 
                 <DialogFooter>
