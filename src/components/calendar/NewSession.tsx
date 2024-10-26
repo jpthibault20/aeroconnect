@@ -22,8 +22,11 @@ import { fr } from "date-fns/locale";
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { minutes, sessionDurationMin, workingHour } from '@/config/configClub';
-import { FaArrowRightLong } from "react-icons/fa6";
+import { FaArrowRightLong, FaCheck } from "react-icons/fa6";
 import { planeExemple } from '@/config/exempleData';
+import { Switch } from "@/components/ui/switch"
+import { RxCross2 } from "react-icons/rx";
+
 
 interface Props {
     display: string;
@@ -91,7 +94,7 @@ const NewSession = ({ display }: Props) => {
             <DialogTrigger className={`${display === "desktop" ? "bg-[#774BBE] hover:bg-[#3d2365] text-white" : "bg-white"} rounded-md px-2 font-medium`}>
                 {display === "desktop" ? <p>Nouvelle session</p> : <IoMdAddCircle size={27} color='#774BBE' />}
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className='bg-gray-100'>
                 <DialogHeader>
                     <DialogTitle>Nouvelle session</DialogTitle>
                     <DialogDescription>Configuration de la nouvelle session</DialogDescription>
@@ -168,7 +171,6 @@ const NewSession = ({ display }: Props) => {
                         </div>
                     ))}
                 </div>
-
                 <div className='grid grid-cols-3 gap-4'>
                     {planeExemple.map((plane, index) => (
                         <Button
@@ -186,6 +188,16 @@ const NewSession = ({ display }: Props) => {
                         {allPlanesSelected ? "Effacer la sélection" : "Tous sélectionner"}
                     </Button>
                 </div>
+
+                    <Label>Récurrence</Label>
+                    <div className='flex items-center justify-between'>
+                        <p>Répéter cette session chaque semaine</p>
+                        <div className='flex items-center space-x-2'>
+                            <FaCheck color='green'/>
+                            <Switch />
+                            <RxCross2 color='red'/>
+                        </div>
+                    </div>
 
                 <DialogFooter>
                     <DialogClose>Cancel</DialogClose>
