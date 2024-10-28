@@ -43,13 +43,13 @@ const NewSession = ({ display }: Props) => {
         startHour: string;
         startMinute: string;
         endReccurence: Date | null;
-        plane: string[];
+        planeId: number[];
     }>({
         date: undefined,
         startHour: "9",
         startMinute: "00",
         endReccurence: null,
-        plane: [],
+        planeId: [],
     });
 
     // calcul de l'heure de fin de la session (en fonction de l'heure de début et de la durée de la session définit par le club)
@@ -80,15 +80,15 @@ const NewSession = ({ display }: Props) => {
     }
 
     // permet de verifier si tous les avions sont séléctioné ou pas boolean variable
-    const allPlanesSelected = planeExemple.length === sessionData.plane.length;
+    const allPlanesSelected = planeExemple.length === sessionData.planeId.length;
 
     // fonction permettant de sélectionner un avion pour l'affichage dans la liste des avions
-    const onClickPlane = (plane: string) => {
+    const onClickPlane = (plane: number) => {
         setSessionData(prev => ({
             ...prev,
-            plane: prev.plane.includes(plane)
-                ? prev.plane.filter(p => p !== plane)
-                : [...prev.plane, plane]
+            planeId: prev.planeId.includes(plane)
+                ? prev.planeId.filter(p => p !== plane)
+                : [...prev.planeId, plane]
         }));
     };
 
@@ -96,7 +96,7 @@ const NewSession = ({ display }: Props) => {
     const toggleSelectAllPlanes = () => {
         setSessionData(prev => ({
             ...prev,
-            plane: allPlanesSelected ? [] : planeExemple.map(p => p.name)
+            planeId: allPlanesSelected ? [] : planeExemple.map(p => p.id)
         }));
     };
 
@@ -174,12 +174,13 @@ const NewSession = ({ display }: Props) => {
 
                 <Label>Avion(s)</Label>
                 <div className='w-full h-fit min-h-10 border border-gray-200 rounded-md shadow-sm flex flex-wrap p-2 gap-2 bg-gray-100'>
-                    {sessionData.plane.map((plane, index) => (
+                    {sessionData.planeId.map((plane, index) => (
                         <div
                             key={index}
                             className='flex items-center justify-between bg-gray-200 rounded-md px-4 py-1'
                         >
-                            <p>{plane}</p>
+                            {/* récupération du nom de l'avion à partir de l'id */}
+                            <p>{planeExemple.find(p => p.id === plane)?.name}</p>
                         </div>
                     ))}
                 </div>
@@ -193,8 +194,8 @@ const NewSession = ({ display }: Props) => {
                     {planeExemple.map((plane, index) => (
                         <Button
                             key={index}
-                            className={`w-full justify-center text-left border border-gray-200 font-normal bg-gray-200 hover:bg-gray-300 rounded-md text-black ${sessionData.plane.includes(plane.name) && "bg-red-500"}`}
-                            onClick={() => onClickPlane(plane.name)}
+                            className={`w-full justify-center text-left border border-gray-200 font-normal bg-gray-200 hover:bg-gray-300 rounded-md text-black ${sessionData.planeId.includes(plane.id) && "bg-red-500"}`}
+                            onClick={() => onClickPlane(plane.id)}
                         >
                             {plane.name}
                         </Button>
