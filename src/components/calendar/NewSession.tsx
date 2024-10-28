@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoMdAddCircle } from "react-icons/io";
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { userRole } from '@prisma/client';
@@ -37,6 +37,8 @@ const NewSession = ({ display }: Props) => {
     const { currentUser } = useCurrentUser();
 
     // initialisation des variables
+    const [isOpenCal1, setIsOpenCal1] = useState(false);
+    const [isOpenCal2, setIsOpenCal2] = useState(false);
     const [switchReccurence, setSwitchReccurence] = useState(false);
     const [sessionData, setSessionData] = useState<{
         date: Date | undefined;
@@ -44,43 +46,35 @@ const NewSession = ({ display }: Props) => {
         startMinute: string;
         endHour: string;
         endMinute: string;
-        endReccurence: Date | null;
+        endReccurence: Date | undefined;
         planeId: number[];
     }>({
         date: undefined,
         startHour: "9",
         startMinute: "00",
-        endHour: "10",
+        endHour: "11",
         endMinute: "00",
-        endReccurence: null,
+        endReccurence: undefined,
         planeId: [],
     });
 
+    // Calul de la date de fin de reccurence en fonction de la date de début avec 1 semaine de plus (delais minimum)
+    useEffect(() => {
+        if (switchReccurence && sessionData.date) {
+            const dateStart = new Date(sessionData.date!.getFullYear(), sessionData.date!.getMonth(), sessionData.date!.getDate())
+            const dateEnd = new Date(dateStart)
+            dateEnd.setDate(dateStart.getDate() + 14)
+            setSessionData(prev => ({ ...prev, endReccurence: dateEnd }))
+        }
+    }, [switchReccurence, sessionData.date])
+
+    // Calcul de l'heure de fin par défault en fonction de l'heure de début
     useEffect(() => {
         const startTime = new Date(1999, 0, 0, Number(sessionData.startHour), Number(sessionData.startMinute))
         const endTime = new Date(startTime)
-
         endTime.setMinutes(endTime.getMinutes() + sessionDurationMin)
-
         setSessionData(prev => ({ ...prev, endHour: String(endTime.getHours()), endMinute: endTime.getMinutes() === 0 ? "00" : String(endTime.getMinutes()) }))
-
     }, [sessionData.startHour, sessionData.startMinute])
-
-    // calcule de la date de début de la session en récupérant l'heure dans les autres variables
-    // utilisation d'un useMemo pour un gain de performance
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const finalDate = useMemo(() => {
-        if (sessionData.date) {
-            return new Date(
-                sessionData.date.getFullYear(),
-                sessionData.date.getMonth(),
-                sessionData.date.getDate(),
-                Number(sessionData.startHour),
-                Number(sessionData.startMinute)
-            );
-        }
-        return undefined;
-    }, [sessionData.date, sessionData.startHour, sessionData.startMinute]);
 
     // si l'utilisateur n'as pas le bon role il ne pourras pas voir cette page de création de session
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT))) {
@@ -121,7 +115,7 @@ const NewSession = ({ display }: Props) => {
                 </DialogHeader>
 
                 <Label>Date de la session</Label>
-                <Popover>
+                <Popover open={isOpenCal1} onOpenChange={setIsOpenCal1}>
                     <PopoverTrigger asChild>
                         <Button variant={"outline"} className={cn("justify-start text-left font-normal", !sessionData.date && "text-muted-foreground")}>
                             <CalendarIcon />
@@ -132,7 +126,10 @@ const NewSession = ({ display }: Props) => {
                         <Calendar
                             mode="single"
                             selected={sessionData.date}
-                            onSelect={(date) => setSessionData(prev => ({ ...prev, date }))}
+                            onSelect={(date) => {
+                                setSessionData(prev => ({ ...prev, date }))
+                                setIsOpenCal1(false)
+                            }}
                             initialFocus
                             locale={fr}
                         />
@@ -244,18 +241,23 @@ const NewSession = ({ display }: Props) => {
                 {switchReccurence && (
                     <div className='flex flex-col space-y-3'>
                         <Label>Date de la dernière session</Label>
-                        <Popover>
+                        <Popover open={isOpenCal2} onOpenChange={setIsOpenCal2}>
                             <PopoverTrigger asChild>
                                 <Button variant={"outline"} className={cn("justify-start text-left font-normal", !sessionData.date && "text-muted-foreground")}>
                                     <CalendarIcon />
-                                    {sessionData.date ? format(sessionData.date, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
+                                    {sessionData.endReccurence ? format(sessionData.endReccurence, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="p-0">
                                 <Calendar
+                                    key={sessionData?.endReccurence?.toISOString()}
                                     mode="single"
-                                    selected={sessionData.date}
-                                    onSelect={(date) => setSessionData(prev => ({ ...prev, date }))}
+                                    selected={sessionData?.endReccurence}
+                                    defaultMonth={sessionData?.endReccurence || undefined}
+                                    onSelect={(date) => {
+                                        setSessionData(prev => ({ ...prev, endReccurence: date }))
+                                        setIsOpenCal2(false)
+                                    }}
                                     initialFocus
                                     locale={fr}
                                 />
