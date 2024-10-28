@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Settings2 } from 'lucide-react';
 import CalendarFilter from '../CalendarFilter';
-import { instructorExemple, planeExemple } from '@/config/exempleData';
+import { instructorExemple } from '@/config/exempleData';
+import { planeExemple } from '@/config/configClub';
 
 interface props {
     setInstructor: React.Dispatch<React.SetStateAction<string>>; ///< Function to update the selected instructor.
@@ -32,7 +33,7 @@ interface props {
  * @param {string} instructor - The currently selected instructor.
  * @param {string} plane - The currently selected plane.
  * 
- * @returns {JSX.Element} The rendered filter popover.
+ * @returns  The rendered filter popover.
  */
 const Filter = ({ setInstructor, setPlane, instructor, plane }: props) => {
     const planes: string[] = planeExemple.map(plane => plane.name);

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { IoMdAddCircle } from "react-icons/io";
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { userRole } from '@prisma/client';
@@ -23,7 +23,7 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { minutes, sessionDurationMin, workingHour } from '@/config/configClub';
 import { FaArrowRightLong, FaCheck } from "react-icons/fa6";
-import { planeExemple } from '@/config/exempleData';
+import { planeExemple } from '@/config/configClub';
 import { Switch } from "@/components/ui/switch";
 import { RxCross2 } from "react-icons/rx";
 
@@ -42,21 +42,29 @@ const NewSession = ({ display }: Props) => {
         date: Date | undefined;
         startHour: string;
         startMinute: string;
+        endHour: string;
+        endMinute: string;
         endReccurence: Date | null;
         planeId: number[];
     }>({
         date: undefined,
         startHour: "9",
         startMinute: "00",
+        endHour: "10",
+        endMinute: "00",
         endReccurence: null,
         planeId: [],
     });
 
-    // calcul de l'heure de fin de la session (en fonction de l'heure de début et de la durée de la session définit par le club)
-    // TODO: possibilité d'indiquer une session de plusieurs heures (splittage de la session par bloque d'heure définir par le club)
-    const endTime = useMemo(() => {
-        return new Date(1999, 0, 0, Number(sessionData.startHour), Number(sessionData.startMinute) + sessionDurationMin);
-    }, [sessionData.startHour, sessionData.startMinute]);
+    useEffect(() => {
+        const startTime = new Date(1999, 0, 0, Number(sessionData.startHour), Number(sessionData.startMinute))
+        const endTime = new Date(startTime)
+
+        endTime.setMinutes(endTime.getMinutes() + sessionDurationMin)
+
+        setSessionData(prev => ({ ...prev, endHour: String(endTime.getHours()), endMinute: endTime.getMinutes() === 0 ? "00" : String(endTime.getMinutes()) }))
+
+    }, [sessionData.startHour, sessionData.startMinute])
 
     // calcule de la date de début de la session en récupérant l'heure dans les autres variables
     // utilisation d'un useMemo pour un gain de performance
@@ -160,15 +168,36 @@ const NewSession = ({ display }: Props) => {
                             </SelectContent>
                         </Select>
                     </div>
+
                     <FaArrowRightLong color="black" size={20} />
+
                     <div className="flex items-center space-x-2">
-                        <div className="text-gray-500 border border-gray-200 p-1 px-3 rounded-md shadow-sm bg-white">
-                            {endTime.getHours().toString().padStart(2, '0')}
-                        </div>
+                        <Clock className="h-4 w-4 text-gray-500" />
+                        <Select value={sessionData.endHour} onValueChange={(value) => setSessionData(prev => ({ ...prev, endHourHour: value }))}>
+                            <SelectTrigger className="w-[65px] bg-white">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {workingHour.map((h) => (
+                                    <SelectItem key={`end-${h}`} value={h.toString()}>
+                                        {h}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         <p>h</p>
-                        <div className="text-gray-500 border border-gray-200 p-1 px-3 rounded-md shadow-sm bg-white">
-                            {endTime.getMinutes().toString().padStart(2, '0')}
-                        </div>
+                        <Select value={sessionData.endMinute} onValueChange={(value) => setSessionData(prev => ({ ...prev, endMinute: value }))}>
+                            <SelectTrigger className="w-[65px] bg-white">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {minutes.map((m) => (
+                                    <SelectItem key={`end-${m}`} value={m}>
+                                        {m}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 

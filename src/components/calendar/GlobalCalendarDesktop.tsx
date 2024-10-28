@@ -9,7 +9,8 @@ import React, { useEffect, useState } from 'react'
 import { monthFr } from '@/config/date';
 import DaySelector from './DaySelector';
 import CalendarFilter from './CalendarFilter';
-import { instructorExemple, planeExemple } from '@/config/exempleData';
+import { instructorExemple } from '@/config/exempleData';
+import { planeExemple } from '@/config/configClub';
 import TabCalendar from './TabCalendar';
 import NewSession from "@/components/calendar/NewSession"
 
