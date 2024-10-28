@@ -12,6 +12,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { IoIosWarning } from "react-icons/io";
 import { Button } from '../ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon, Clock } from 'lucide-react';
@@ -26,6 +27,7 @@ import { FaArrowRightLong, FaCheck } from "react-icons/fa6";
 import { planeExemple } from '@/config/configClub';
 import { Switch } from "@/components/ui/switch";
 import { RxCross2 } from "react-icons/rx";
+import { interfaceSessoin, newSession } from '@/api/db/newSession';
 
 interface Props {
     display: string;
@@ -37,18 +39,12 @@ const NewSession = ({ display }: Props) => {
     const { currentUser } = useCurrentUser();
 
     // initialisation des variables
+    const [error, setError] = useState("");
+    const [isOpenPopover, setIsPopoverOpen] = useState(false);
     const [isOpenCal1, setIsOpenCal1] = useState(false);
     const [isOpenCal2, setIsOpenCal2] = useState(false);
     const [switchReccurence, setSwitchReccurence] = useState(false);
-    const [sessionData, setSessionData] = useState<{
-        date: Date | undefined;
-        startHour: string;
-        startMinute: string;
-        endHour: string;
-        endMinute: string;
-        endReccurence: Date | undefined;
-        planeId: number[];
-    }>({
+    const [sessionData, setSessionData] = useState<interfaceSessoin>({
         date: undefined,
         startHour: "9",
         startMinute: "00",
@@ -102,22 +98,46 @@ const NewSession = ({ display }: Props) => {
         }));
     };
 
+    const onConfirm = () => {
+        console.log(sessionData.date)
+
+        const sendData = async () => {
+            const res = await newSession(sessionData)
+            if (res.error) {
+                setError(res.error)
+            }
+            else {
+                setError("")
+                setIsPopoverOpen(false)
+            }
+            console.log(res)
+        }
+        try {
+            sendData()
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
     // affichage du composant(bouton de nouvelle session et card de configuration)
     return (
-        <Dialog>
+        <Dialog open={isOpenPopover} onOpenChange={setIsPopoverOpen}>
             <DialogTrigger className={`${display === "desktop" ? "bg-[#774BBE] hover:bg-[#3d2365] text-white" : "bg-white"} rounded-md px-2 font-medium`}>
                 {display === "desktop" ? <p>Nouvelle session</p> : <IoMdAddCircle size={27} color='#774BBE' />}
             </DialogTrigger>
-            <DialogContent className='bg-[#ffffff] max-h-screen overflow-y-auto'>
+
+            {/* Limite la largeur pour les petits écrans, mais garde un affichage large pour les grands écrans */}
+            <DialogContent className='bg-[#ffffff] max-h-screen overflow-y-auto w-full lg:max-w-[600px] p-4 sm:p-6'>
                 <DialogHeader className='flex flex-col items-center mb-3'>
                     <DialogTitle>Nouvelle session</DialogTitle>
                     <DialogDescription>Configuration de la nouvelle session</DialogDescription>
                 </DialogHeader>
 
+                {/* Date de la session */}
                 <Label>Date de la session</Label>
                 <Popover open={isOpenCal1} onOpenChange={setIsOpenCal1}>
                     <PopoverTrigger asChild>
-                        <Button variant={"outline"} className={cn("justify-start text-left font-normal", !sessionData.date && "text-muted-foreground")}>
+                        <Button variant={"outline"} className={cn("justify-start text-left font-normal w-full", !sessionData.date && "text-muted-foreground")}>
                             <CalendarIcon />
                             {sessionData.date ? format(sessionData.date, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
                         </Button>
@@ -127,6 +147,7 @@ const NewSession = ({ display }: Props) => {
                             mode="single"
                             selected={sessionData.date}
                             onSelect={(date) => {
+                                // date?.setMinutes(date.getMinutes() + date.getTimezoneOffset())
                                 setSessionData(prev => ({ ...prev, date }))
                                 setIsOpenCal1(false)
                             }}
@@ -136,7 +157,8 @@ const NewSession = ({ display }: Props) => {
                     </PopoverContent>
                 </Popover>
 
-                <div className="flex items-center justify-between">
+                {/* Sélection des heures et minutes */}
+                <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4 mt-4">
                     <div className="flex items-center space-x-2">
                         <Clock className="h-4 w-4 text-gray-500" />
                         <Select value={sessionData.startHour} onValueChange={(value) => setSessionData(prev => ({ ...prev, startHour: value }))}>
@@ -170,7 +192,7 @@ const NewSession = ({ display }: Props) => {
 
                     <div className="flex items-center space-x-2">
                         <Clock className="h-4 w-4 text-gray-500" />
-                        <Select value={sessionData.endHour} onValueChange={(value) => setSessionData(prev => ({ ...prev, endHourHour: value }))}>
+                        <Select value={sessionData.endHour} onValueChange={(value) => setSessionData(prev => ({ ...prev, endHour: value }))}>
                             <SelectTrigger className="w-[65px] bg-white">
                                 <SelectValue />
                             </SelectTrigger>
@@ -198,19 +220,18 @@ const NewSession = ({ display }: Props) => {
                     </div>
                 </div>
 
+                {/* Avion(s) */}
                 <Label>Avion(s)</Label>
                 <div className='w-full h-fit min-h-10 border border-gray-200 rounded-md shadow-sm flex flex-wrap p-2 gap-2 bg-gray-100'>
                     {sessionData.planeId.map((plane, index) => (
-                        <div
-                            key={index}
-                            className='flex items-center justify-between bg-gray-200 rounded-md px-4 py-1'
-                        >
-                            {/* récupération du nom de l'avion à partir de l'id */}
+                        <div key={index} className='flex items-center justify-between bg-gray-200 rounded-md px-4 py-1'>
                             <p>{planeExemple.find(p => p.id === plane)?.name}</p>
                         </div>
                     ))}
                 </div>
-                <div className='grid grid-cols-3 gap-4'>
+
+                {/* Grille responsive pour les avions */}
+                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4'>
                     <Button
                         className={`w-full justify-center text-left font-normal ${allPlanesSelected ? "bg-red-500" : "bg-gray-200 "} rounded-md text-black hover:bg-gray-300`}
                         onClick={toggleSelectAllPlanes}
@@ -228,8 +249,9 @@ const NewSession = ({ display }: Props) => {
                     ))}
                 </div>
 
+                {/* Récurrence */}
                 <Label>Récurrence</Label>
-                <div className='flex items-center justify-between '>
+                <div className='flex items-center justify-between mt-4'>
                     <p>Répéter cette session chaque semaine</p>
                     <div className='flex items-center space-x-2'>
                         <RxCross2 color='red' />
@@ -238,12 +260,13 @@ const NewSession = ({ display }: Props) => {
                     </div>
                 </div>
 
+                {/* Récurrence avec Popover pour la date */}
                 {switchReccurence && (
-                    <div className='flex flex-col space-y-3'>
+                    <div className='flex flex-col space-y-3 mt-4'>
                         <Label>Date de la dernière session</Label>
                         <Popover open={isOpenCal2} onOpenChange={setIsOpenCal2}>
                             <PopoverTrigger asChild>
-                                <Button variant={"outline"} className={cn("justify-start text-left font-normal", !sessionData.date && "text-muted-foreground")}>
+                                <Button variant={"outline"} className={cn("justify-start text-left font-normal w-full", !sessionData.date && "text-muted-foreground")}>
                                     <CalendarIcon />
                                     {sessionData.endReccurence ? format(sessionData.endReccurence, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
                                 </Button>
@@ -265,13 +288,24 @@ const NewSession = ({ display }: Props) => {
                         </Popover>
                     </div>
                 )}
+                {error && (
+                    <div className='text-red-500 w-full p-2  bg-[#FFF4F4] rounded-lg flex items-center space-x-2'>
+                        <IoIosWarning size={20} />
+                        <div>
+                            {error}
+                        </div>
+                    </div>
+                )}
 
-                <DialogFooter className='mt-3'>
+
+                <DialogFooter className='mt-4'>
                     <DialogClose>Cancel</DialogClose>
-                    <Button>Enregistrer</Button>
+                    <Button onClick={onConfirm}>Enregistrer</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+
     );
 };
 

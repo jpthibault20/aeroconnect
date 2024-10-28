@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { planeExemple } from '@/config/exempleData';
+import { planeExemple } from '@/config/configClub';
 import { Button } from '../ui/button';
 import TableComponent from './TableComponent';
 
