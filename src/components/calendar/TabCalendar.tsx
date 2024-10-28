@@ -11,7 +11,7 @@ import React from 'react';
 import { workingHour } from '@/config/configClub';
 import { dayFr } from '@/config/date';
 import { formatTime, getDaysOfWeek } from '@/api/date';
-import Session from './Session';
+import Session from '../Session';
 import { flightsSessionsExemple } from "@/config/exempleData"
 import { filterFlightSessions } from '@/api/db/dbClient';
 

@@ -31,26 +31,36 @@ interface Props {
     display: string;
     style?: string;
 }
-
+// début de composant
 const NewSession = ({ display }: Props) => {
+    // récupération de l'utilisateur courant
     const { currentUser } = useCurrentUser();
+
+    // initialisation des variables
     const [switchReccurence, setSwitchReccurence] = useState(false);
     const [sessionData, setSessionData] = useState<{
         date: Date | undefined;
         startHour: string;
         startMinute: string;
+        endReccurence: Date | null;
         plane: string[];
     }>({
         date: undefined,
         startHour: "9",
-        startMinute: "30",
+        startMinute: "00",
+        endReccurence: null,
         plane: [],
     });
 
+    // calcul de l'heure de fin de la session (en fonction de l'heure de début et de la durée de la session définit par le club)
+    // TODO: possibilité d'indiquer une session de plusieurs heures (splittage de la session par bloque d'heure définir par le club)
     const endTime = useMemo(() => {
         return new Date(1999, 0, 0, Number(sessionData.startHour), Number(sessionData.startMinute) + sessionDurationMin);
     }, [sessionData.startHour, sessionData.startMinute]);
 
+    // calcule de la date de début de la session en récupérant l'heure dans les autres variables
+    // utilisation d'un useMemo pour un gain de performance
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const finalDate = useMemo(() => {
         if (sessionData.date) {
             return new Date(
@@ -64,12 +74,15 @@ const NewSession = ({ display }: Props) => {
         return undefined;
     }, [sessionData.date, sessionData.startHour, sessionData.startMinute]);
 
+    // si l'utilisateur n'as pas le bon role il ne pourras pas voir cette page de création de session
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT))) {
         return null;
     }
 
+    // permet de verifier si tous les avions sont séléctioné ou pas boolean variable
     const allPlanesSelected = planeExemple.length === sessionData.plane.length;
 
+    // fonction permettant de sélectionner un avion pour l'affichage dans la liste des avions
     const onClickPlane = (plane: string) => {
         setSessionData(prev => ({
             ...prev,
@@ -79,6 +92,7 @@ const NewSession = ({ display }: Props) => {
         }));
     };
 
+    // fonction permettant de séléctionner ou non tous les avions
     const toggleSelectAllPlanes = () => {
         setSessionData(prev => ({
             ...prev,
@@ -86,8 +100,7 @@ const NewSession = ({ display }: Props) => {
         }));
     };
 
-    console.log(finalDate);
-
+    // affichage du composant(bouton de nouvelle session et card de configuration)
     return (
         <Dialog>
             <DialogTrigger className={`${display === "desktop" ? "bg-[#774BBE] hover:bg-[#3d2365] text-white" : "bg-white"} rounded-md px-2 font-medium`}>
@@ -193,7 +206,7 @@ const NewSession = ({ display }: Props) => {
                     <p>Répéter cette session chaque semaine</p>
                     <div className='flex items-center space-x-2'>
                         <RxCross2 color='red' />
-                        <Switch onCheckedChange={() => setSwitchReccurence(!switchReccurence)} checked={switchReccurence}/>
+                        <Switch onCheckedChange={() => setSwitchReccurence(!switchReccurence)} checked={switchReccurence} />
                         <FaCheck color='green' />
                     </div>
                 </div>
