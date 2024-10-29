@@ -20,7 +20,7 @@ import Calendar from './../phone/calendar';
 import SessionOfDay from "@/components/calendar/phone/SessionsOfDay";
 import { filterFlightSessions } from '@/api/db/dbClient';
 import { FLIGHT_SESSION } from '@prisma/client';
-import NewSession from "@/components/calendar/NewSession";
+import NewSession from "@/components/NewSession";
 
 /**
  * @component GlobalCalendarPhone

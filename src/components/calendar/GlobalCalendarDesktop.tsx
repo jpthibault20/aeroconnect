@@ -12,7 +12,7 @@ import CalendarFilter from './CalendarFilter';
 import { instructorExemple } from '@/config/exempleData';
 import { planeExemple } from '@/config/configClub';
 import TabCalendar from './TabCalendar';
-import NewSession from "@/components/calendar/NewSession"
+import NewSession from "@/components/NewSession"
 
 /**
  * @function GlobalCalendarDesktop

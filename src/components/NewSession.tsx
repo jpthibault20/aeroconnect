@@ -13,15 +13,15 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { IoIosWarning } from "react-icons/io";
-import { Button } from '../ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Button } from '../components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { CalendarIcon, Clock } from 'lucide-react';
-import { Calendar } from '../ui/calendar';
+import { Calendar } from '../components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fr } from "date-fns/locale";
-import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Label } from '../components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { minutes, sessionDurationMin, workingHour } from '@/config/configClub';
 import { FaArrowRightLong, FaCheck } from "react-icons/fa6";
 import { planeExemple } from '@/config/configClub';
