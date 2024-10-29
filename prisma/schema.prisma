@@ -23,12 +23,12 @@ model User {
   city       String?
 }
 
-model FLIGHT_SESSION {
+model flight_sessions {
   id                      Int         @id @unique @default(autoincrement())
   clubID                  String
   sessionDateStart        DateTime    @db.Timestamptz(6)
   sessionDateDuration_min Int
-  flightType              flightType
+  flightType              flightType?
   pilotID                 Int
   pilotFirstName          String
   pilotLastName           String
@@ -36,9 +36,17 @@ model FLIGHT_SESSION {
   studentFirstName        String?
   studentLastName         String?
   student_type            flightType?
-  planeID                 Int?
-  planeName               String?
   finalReccurence         DateTime?   @db.Timestamptz(6)
+  planeID                 Int[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model planes {
+  id              Int     @id @default(autoincrement())
+  clubID          String
+  name            String
+  immatriculation String
+  operational     Boolean @default(true)
 }
 
 enum userRole {

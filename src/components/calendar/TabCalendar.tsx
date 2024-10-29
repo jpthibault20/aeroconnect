@@ -41,7 +41,7 @@ const TabCalendar = ({ date, instructorFilter, planeFilter }: Props) => {
     const daysOfWeek = getDaysOfWeek(date);
 
     // Filter flight sessions based on instructor and plane
-    const filteredSessions = filterFlightSessions(flightsSessionsExemple, instructorFilter, planeFilter)
+    const filteredSessions = flightsSessionsExemple //filterFlightSessions(flightsSessionsExemple, instructorFilter, planeFilter)
 
     return (
         <div className="w-full h-full">

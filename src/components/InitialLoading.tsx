@@ -26,7 +26,7 @@ interface props {
 const InitialLoading = ({ children, className }: props) => {
     const { currentUser } = useCurrentUser();
 
-    if (currentUser === undefined) {
+    if (!currentUser) {
         return (
             <div className={`${className} flex justify-center items-center`}>
                 <Spinner>Loading...</Spinner>

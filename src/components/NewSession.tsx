@@ -27,7 +27,10 @@ import { FaArrowRightLong, FaCheck } from "react-icons/fa6";
 import { planeExemple } from '@/config/configClub';
 import { Switch } from "@/components/ui/switch";
 import { RxCross2 } from "react-icons/rx";
-import { interfaceSessoin, newSession } from '@/api/db/newSession';
+import { interfaceSessions, newSession } from '@/api/db/newSession';
+import { useToast } from "@/hooks/use-toast"
+
+
 
 interface Props {
     display: string;
@@ -39,17 +42,21 @@ const NewSession = ({ display }: Props) => {
     const { currentUser } = useCurrentUser();
 
     // initialisation des variables
+    const { toast } = useToast()
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [warning, setWarning] = useState("");
     const [isOpenPopover, setIsPopoverOpen] = useState(false);
     const [isOpenCal1, setIsOpenCal1] = useState(false);
     const [isOpenCal2, setIsOpenCal2] = useState(false);
     const [switchReccurence, setSwitchReccurence] = useState(false);
-    const [sessionData, setSessionData] = useState<interfaceSessoin>({
+    const [sessionData, setSessionData] = useState<interfaceSessions>({
         date: undefined,
         startHour: "9",
         startMinute: "00",
         endHour: "11",
         endMinute: "00",
+        duration: sessionDurationMin,
         endReccurence: undefined,
         planeId: [],
     });
@@ -71,6 +78,15 @@ const NewSession = ({ display }: Props) => {
         endTime.setMinutes(endTime.getMinutes() + sessionDurationMin)
         setSessionData(prev => ({ ...prev, endHour: String(endTime.getHours()), endMinute: endTime.getMinutes() === 0 ? "00" : String(endTime.getMinutes()) }))
     }, [sessionData.startHour, sessionData.startMinute])
+
+    useEffect(() => {
+        if (sessionData.planeId.length === 0) {
+            setWarning("Attention, aucun avion n'a été sélectionné")
+        }
+        else {
+            setWarning("")
+        }
+    }, [sessionData])
 
     // si l'utilisateur n'as pas le bon role il ne pourras pas voir cette page de création de session
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT))) {
@@ -98,26 +114,29 @@ const NewSession = ({ display }: Props) => {
         }));
     };
 
-    const onConfirm = () => {
-        console.log(sessionData.date)
-
-        const sendData = async () => {
-            const res = await newSession(sessionData)
-            if (res.error) {
-                setError(res.error)
-            }
-            else {
-                setError("")
-                setIsPopoverOpen(false)
-            }
-            console.log(res)
-        }
+    const onConfirm = async () => {
+        setLoading(true); // Démarrer le chargement
         try {
-            sendData()
+            const res = await newSession(sessionData, currentUser); // Attendre la réponse
+            if (res.error) {
+                setError(res.error);
+            } else if (res.success) {
+                toast({
+                    title: res.success,
+                });
+                setIsPopoverOpen(false);
+            } else {
+                setError("Une erreur est survenue (E_002: res.error is undefined)");
+            }
+            console.log(res);
         } catch (error) {
-            console.log(error)
+            console.error(error);
+            setError("Une erreur est survenue lors de l'envoi des données.");
+        } finally {
+            setLoading(false); // Toujours arrêter le chargement
         }
-    }
+    };
+
 
     // affichage du composant(bouton de nouvelle session et card de configuration)
     return (
@@ -137,7 +156,7 @@ const NewSession = ({ display }: Props) => {
                 <Label>Date de la session</Label>
                 <Popover open={isOpenCal1} onOpenChange={setIsOpenCal1}>
                     <PopoverTrigger asChild>
-                        <Button variant={"outline"} className={cn("justify-start text-left font-normal w-full", !sessionData.date && "text-muted-foreground")}>
+                        <Button variant={"outline"} className={cn("justify-start text-left font-normal w-full", !sessionData.date && "text-muted-foreground")} disabled={loading}>
                             <CalendarIcon />
                             {sessionData.date ? format(sessionData.date, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
                         </Button>
@@ -162,7 +181,7 @@ const NewSession = ({ display }: Props) => {
                     <div className="flex items-center space-x-2">
                         <Clock className="h-4 w-4 text-gray-500" />
                         <Select value={sessionData.startHour} onValueChange={(value) => setSessionData(prev => ({ ...prev, startHour: value }))}>
-                            <SelectTrigger className="w-[65px] bg-white">
+                            <SelectTrigger className="w-[65px] bg-white" disabled={loading}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -175,7 +194,7 @@ const NewSession = ({ display }: Props) => {
                         </Select>
                         <p>h</p>
                         <Select value={sessionData.startMinute} onValueChange={(value) => setSessionData(prev => ({ ...prev, startMinute: value }))}>
-                            <SelectTrigger className="w-[65px] bg-white">
+                            <SelectTrigger className="w-[65px] bg-white" disabled={loading}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -193,7 +212,7 @@ const NewSession = ({ display }: Props) => {
                     <div className="flex items-center space-x-2">
                         <Clock className="h-4 w-4 text-gray-500" />
                         <Select value={sessionData.endHour} onValueChange={(value) => setSessionData(prev => ({ ...prev, endHour: value }))}>
-                            <SelectTrigger className="w-[65px] bg-white">
+                            <SelectTrigger className="w-[65px] bg-white" disabled={loading}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -206,7 +225,7 @@ const NewSession = ({ display }: Props) => {
                         </Select>
                         <p>h</p>
                         <Select value={sessionData.endMinute} onValueChange={(value) => setSessionData(prev => ({ ...prev, endMinute: value }))}>
-                            <SelectTrigger className="w-[65px] bg-white">
+                            <SelectTrigger className="w-[65px] bg-white" disabled={loading}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -235,6 +254,7 @@ const NewSession = ({ display }: Props) => {
                     <Button
                         className={`w-full justify-center text-left font-normal ${allPlanesSelected ? "bg-red-500" : "bg-gray-200 "} rounded-md text-black hover:bg-gray-300`}
                         onClick={toggleSelectAllPlanes}
+                        disabled={loading}
                     >
                         {allPlanesSelected ? "Effacer" : "Tous"}
                     </Button>
@@ -243,11 +263,20 @@ const NewSession = ({ display }: Props) => {
                             key={index}
                             className={`w-full justify-center text-left border border-gray-200 font-normal bg-gray-200 hover:bg-gray-300 rounded-md text-black ${sessionData.planeId.includes(plane.id) && "bg-red-500"}`}
                             onClick={() => onClickPlane(plane.id)}
+                            disabled={loading}
                         >
                             {plane.name}
                         </Button>
                     ))}
                 </div>
+                {warning && (
+                    <div className='text-orange-500 w-full p-2  bg-[#FFF9F4] rounded-lg flex items-center space-x-2'>
+                        <IoIosWarning size={20} />
+                        <div>
+                            {warning}
+                        </div>
+                    </div>
+                )}
 
                 {/* Récurrence */}
                 <Label>Récurrence</Label>
@@ -255,7 +284,7 @@ const NewSession = ({ display }: Props) => {
                     <p>Répéter cette session chaque semaine</p>
                     <div className='flex items-center space-x-2'>
                         <RxCross2 color='red' />
-                        <Switch onCheckedChange={() => setSwitchReccurence(!switchReccurence)} checked={switchReccurence} />
+                        <Switch onCheckedChange={() => setSwitchReccurence(!switchReccurence)} checked={switchReccurence} disabled={loading} />
                         <FaCheck color='green' />
                     </div>
                 </div>
@@ -265,8 +294,8 @@ const NewSession = ({ display }: Props) => {
                     <div className='flex flex-col space-y-3 mt-4'>
                         <Label>Date de la dernière session</Label>
                         <Popover open={isOpenCal2} onOpenChange={setIsOpenCal2}>
-                            <PopoverTrigger asChild>
-                                <Button variant={"outline"} className={cn("justify-start text-left font-normal w-full", !sessionData.date && "text-muted-foreground")}>
+                            <PopoverTrigger asChild disabled={loading}>
+                                <Button variant={"outline"} className={cn("justify-start text-left font-normal w-full", !sessionData.date && "text-muted-foreground")} disabled={loading}>
                                     <CalendarIcon />
                                     {sessionData.endReccurence ? format(sessionData.endReccurence, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
                                 </Button>
@@ -300,7 +329,7 @@ const NewSession = ({ display }: Props) => {
 
                 <DialogFooter className='mt-4'>
                     <DialogClose>Cancel</DialogClose>
-                    <Button onClick={onConfirm}>Enregistrer</Button>
+                    <Button onClick={onConfirm} disabled={loading}>Enregistrer</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

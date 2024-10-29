@@ -48,8 +48,7 @@ const GlobalCalendarPhone = () => {
         studentFirstName: "",
         studentLastName: "",
         student_type: "FIRST_FLIGHT",
-        planeID: 0,
-        planeName: "",
+        planeID: [],
     }]);
 
     // Effect to filter sessions when instructor or plane changes
@@ -59,7 +58,7 @@ const GlobalCalendarPhone = () => {
         if (plane === ' ') setPlane('');
 
         // Filter flight sessions based on instructor and plane
-        setSessionFiltered(filterFlightSessions(flightsSessionsExemple, instructor, plane));
+        // setSessionFiltered(filterFlightSessions(flightsSessionsExemple, instructor, plane));
     }, [instructor, plane]);
 
     // Effect to get complete weeks for the selected date
