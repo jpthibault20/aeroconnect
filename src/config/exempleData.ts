@@ -113,8 +113,7 @@ export const flightsSessionsExemple = [
         studentFirstName: 'Alice',
         studentLastName: 'Smith',
         student_type: flightType.TRAINING, // Exemple de student_type
-        planeID: 1,
-        planeName: 'SAVANA'
+        planeID: [1],
     },
     {
         id: 2,
@@ -130,8 +129,7 @@ export const flightsSessionsExemple = [
         studentFirstName: 'Alice',
         studentLastName: 'Smith',
         student_type: flightType.TRAINING, // Exemple de student_type
-        planeID: 1,
-        planeName: 'SAVANA'
+        planeID: [1],
     },
     {
         id: 3,
@@ -147,8 +145,7 @@ export const flightsSessionsExemple = [
         studentFirstName: 'Alice',
         studentLastName: 'Smith',
         student_type: flightType.TRAINING, // Exemple de student_type
-        planeID: 1,
-        planeName: 'SAVANA'
+        planeID: [1],
     },
     {
         id: 4,
@@ -164,8 +161,7 @@ export const flightsSessionsExemple = [
         studentFirstName: 'Alice',
         studentLastName: 'Smith',
         student_type: flightType.TRAINING, // Exemple de student_type
-        planeID: 1,
-        planeName: 'SAVANA'
+        planeID:[1],
     },
     {
         id: 5,
@@ -181,8 +177,7 @@ export const flightsSessionsExemple = [
         studentFirstName: 'Alice',
         studentLastName: 'Smith',
         student_type: flightType.TRAINING, // Exemple de student_type
-        planeID: 1,
-        planeName: 'SAVANA'
+        planeID: [1],
     },
     {
         id: 6,
@@ -198,8 +193,7 @@ export const flightsSessionsExemple = [
         studentFirstName: 'Bob',
         studentLastName: 'Johnson',
         student_type: flightType.TRAINING,
-        planeID: 9,
-        planeName: 'A320'
+        planeID: [9],
     },
     {
         id: 7,
@@ -215,8 +209,7 @@ export const flightsSessionsExemple = [
         studentFirstName: null,
         studentLastName: null,
         student_type: null,
-        planeID: 1,
-        planeName: 'P92'
+        planeID: [1],
     },
     {
         id: 8,
@@ -232,8 +225,7 @@ export const flightsSessionsExemple = [
         studentFirstName: null,
         studentLastName: null,
         student_type: null,
-        planeID: 3,
-        planeName: 'SAVANA'
+        planeID: [3],
     },
     {
         id: 9,
@@ -249,8 +241,7 @@ export const flightsSessionsExemple = [
         studentFirstName: null,
         studentLastName: null,
         student_type: null,
-        planeID: 3,
-        planeName: 'COYOTTE'
+        planeID: [3],
     },
     {
         id: 10,
@@ -266,8 +257,7 @@ export const flightsSessionsExemple = [
         studentFirstName: null,
         studentLastName: null,
         student_type: null,
-        planeID: 3,
-        planeName: 'P92'
+        planeID: [3],
     },
     {
         id: 11,
@@ -283,8 +273,7 @@ export const flightsSessionsExemple = [
         studentFirstName: 'Sophie',
         studentLastName: 'Turner',
         student_type: flightType.TRAINING,
-        planeID: 0,
-        planeName: 'P92'
+        planeID: [0],
     },
     {
         id: 12,
@@ -300,8 +289,7 @@ export const flightsSessionsExemple = [
         studentFirstName: '',
         studentLastName: '',
         student_type: null,
-        planeID: 0,
-        planeName: 'P92'
+        planeID: [0],
     },
     {
         id: 13,
@@ -317,7 +305,6 @@ export const flightsSessionsExemple = [
         studentFirstName: null,
         studentLastName: null,
         student_type: null,
-        planeID: 1,
-        planeName: 'P92'
+        planeID: [1,3,4,6],
     }
 ];

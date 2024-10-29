@@ -14,12 +14,9 @@
 import React, { useEffect, useState } from 'react';
 import DaySelector from './../DaySelector';
 import { flightsSessionsExemple } from '@/config/exempleData';
-import Filter from './../phone/Filter';
 import { DaysOfMonthType, getCompleteWeeks } from '@/api/date';
 import Calendar from './../phone/calendar';
 import SessionOfDay from "@/components/calendar/phone/SessionsOfDay";
-import { filterFlightSessions } from '@/api/db/dbClient';
-import { FLIGHT_SESSION } from '@prisma/client';
 import NewSession from "@/components/NewSession";
 
 /**
@@ -30,36 +27,12 @@ import NewSession from "@/components/NewSession";
 const GlobalCalendarPhone = () => {
     // State variables for managing date, instructor, plane, and filtered sessions
     const [date, setDate] = useState(new Date());
-    const [instructor, setInstructor] = useState("");
-    const [plane, setPlane] = useState("");
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>();
     const [selectDate, setSelectDate] = useState(new Date());
-    const [sessionFiltered, setSessionFiltered] = useState<FLIGHT_SESSION[]>([{
-        id: 0,
-        clubID: "",
-        sessionDateStart: new Date(),
-        sessionDateDuration_min: 0,
-        finalReccurence: null,
-        flightType: "FIRST_FLIGHT",
-        pilotID: 0,
-        pilotFirstName: "",
-        pilotLastName: "",
-        studentID: 0,
-        studentFirstName: "",
-        studentLastName: "",
-        student_type: "FIRST_FLIGHT",
-        planeID: [],
-    }]);
+
 
     // Effect to filter sessions when instructor or plane changes
-    useEffect(() => {
-        // Reset instructor and plane if they are empty strings
-        if (instructor === ' ') setInstructor('');
-        if (plane === ' ') setPlane('');
 
-        // Filter flight sessions based on instructor and plane
-        // setSessionFiltered(filterFlightSessions(flightsSessionsExemple, instructor, plane));
-    }, [instructor, plane]);
 
     // Effect to get complete weeks for the selected date
     useEffect(() => {
@@ -116,25 +89,20 @@ const GlobalCalendarPhone = () => {
                         onClickPreviousWeek={onClickPreviousWeek}
                         onClickToday={onClickToday}
                     />
-                    <Filter
-                        setInstructor={setInstructor}
-                        setPlane={setPlane}
-                        instructor={instructor}
-                        plane={plane}
-                    />
+
                 </div>
 
                 <Calendar
                     daysOfMonth={daysOfMonth}
                     date={date}
-                    flightsSessions={sessionFiltered}
+                    flightsSessions={flightsSessionsExemple}
                     setSelectDate={setSelectDate}
                     selectDate={selectDate}
                 />
             </div>
 
             <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 h-full'> {/* Make the sessions part scrollable */}
-                <SessionOfDay selectDate={selectDate} flightsSessions={sessionFiltered} />
+                <SessionOfDay selectDate={selectDate} flightsSessions={flightsSessionsExemple} />
             </div>
         </div>
     );

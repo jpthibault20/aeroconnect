@@ -13,13 +13,11 @@ import { dayFr } from '@/config/date';
 import { formatTime, getDaysOfWeek } from '@/api/date';
 import Session from '../Session';
 import { flightsSessionsExemple } from "@/config/exempleData"
-import { filterFlightSessions } from '@/api/db/dbClient';
 
 interface Props {
     className?: string;          ///< Optional CSS class for styling.
     date: Date;                  ///< The date from which the week is displayed.
-    instructorFilter: string;    ///< Filter to display sessions for a specific instructor.
-    planeFilter: string;         ///< Filter to display sessions for a specific plane.
+    ///< Filter to display sessions for a specific plane.
 }
 
 /**
@@ -36,12 +34,9 @@ interface Props {
  * 
  * @returns The rendered weekly calendar with filtered sessions.
  */
-const TabCalendar = ({ date, instructorFilter, planeFilter }: Props) => {
+const TabCalendar = ({ date }: Props) => {
     // Get the days of the current week based on the reference date
     const daysOfWeek = getDaysOfWeek(date);
-
-    // Filter flight sessions based on instructor and plane
-    const filteredSessions = flightsSessionsExemple //filterFlightSessions(flightsSessionsExemple, instructorFilter, planeFilter)
 
     return (
         <div className="w-full h-full">
@@ -89,7 +84,7 @@ const TabCalendar = ({ date, instructorFilter, planeFilter }: Props) => {
                                         indexY={indexday}   ///< Index for the day.
                                         tabDays={dayFr}     ///< List of days (e.g., Monday to Sunday).
                                         tabHours={workingHour} ///< List of working hours.
-                                        events={filteredSessions} ///< List of filtered sessions.
+                                        events={flightsSessionsExemple} ///< List of filtered sessions.
                                         date={date}         ///< The current reference date.
                                     />
                                 </div>
