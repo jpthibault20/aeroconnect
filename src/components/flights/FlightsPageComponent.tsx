@@ -21,7 +21,7 @@ import Filter from '@/components/flights/Filter';
  * @returns  The rendered component.
  */
 const FlightsPageComponent = () => {
-    const [sessionChecked, setSessionChecked] = useState<number[]>([]);
+    const [sessionChecked, setSessionChecked] = useState<string[]>([]);
     const [filterAvailable, setFilterAvailable] = useState(false);
     const [filterReccurence, setFilterReccurence] = useState(false);
     const [filterDate, setFilterDate] = useState<Date | null>(null);
