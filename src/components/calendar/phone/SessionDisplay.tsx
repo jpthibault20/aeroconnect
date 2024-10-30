@@ -8,17 +8,17 @@
  * whether the session is booked or available.
  */
 
-import { FLIGHT_SESSION } from '@prisma/client';
+import { flight_sessions } from '@prisma/client';
 import React from 'react';
 import { formatPilotName } from '@/api/global function/formatPilotName';
 
 /**
  * @interface Props
  * @brief Interface for the component props.
- * @property {FLIGHT_SESSION} session - The flight session to display.
+ * @property {flight_sessions} session - The flight session to display.
  */
 interface Props {
-    session: FLIGHT_SESSION;
+    session: flight_sessions;
 }
 
 /**
@@ -67,7 +67,7 @@ const SessionDisplay = ({ session }: Props) => {
                         {formatPilotName(session.pilotFirstName, session.pilotLastName)}
                     </p>
                     <p className='font-semibold w-full text-center'>
-                        {session.planeName}
+                        {session.planeID}
                     </p>
                 </div>
             )}
