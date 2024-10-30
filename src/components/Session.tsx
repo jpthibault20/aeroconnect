@@ -130,10 +130,10 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
             ) : (
                 <div className='text-xs'>
                     <p className=''>
-                        Avion : {availableSessions.availablePlane.length}
+                        {availableSessions.availablePlane.length} {availableSessions.availablePlane.length > 1 ? 'Avions libres' : 'Avion libre'}
                     </p>
                     <p >
-                        Pilote : {availableSessions.avaiblePilot.length}
+                        {availableSessions.avaiblePilot.length} {availableSessions.avaiblePilot.length > 1 ? 'Pilotes libres' : 'Pilote libre'}
                     </p>
 
                 </div>

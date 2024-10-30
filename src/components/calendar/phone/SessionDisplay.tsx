@@ -67,7 +67,7 @@ const SessionDisplay = ({ session }: Props) => {
                         {formatPilotName(session.pilotFirstName, session.pilotLastName)}
                     </p>
                     <p className='font-semibold w-full text-center'>
-                        {session.planeID}
+                        {session.planeID.length} {session.planeID.length > 1 ? 'Avions libres' : 'Avion libre'}
                     </p>
                 </div>
             )}

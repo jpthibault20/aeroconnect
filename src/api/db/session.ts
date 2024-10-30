@@ -134,3 +134,4 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
         await prisma.$disconnect();
     }
 };
+

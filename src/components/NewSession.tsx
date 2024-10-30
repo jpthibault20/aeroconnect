@@ -27,7 +27,7 @@ import { FaArrowRightLong, FaCheck } from "react-icons/fa6";
 import { planeExemple } from '@/config/configClub';
 import { Switch } from "@/components/ui/switch";
 import { RxCross2 } from "react-icons/rx";
-import { interfaceSessions, newSession } from '@/api/db/newSession';
+import { interfaceSessions, newSession } from '@/api/db/session';
 import { useToast } from "@/hooks/use-toast"
 
 
