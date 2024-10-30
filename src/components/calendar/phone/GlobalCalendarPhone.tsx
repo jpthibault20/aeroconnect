@@ -81,9 +81,9 @@ const GlobalCalendarPhone = () => {
                     <p className='text-4xl font-istok mb-3'>
                         {date.toLocaleDateString('fr-FR', { month: 'long' })}, {date.toLocaleDateString('fr-FR', { year: 'numeric' })}
                     </p>
-                    <div className='flex'>
+                    <div className='flex items-center space-x-3'>
                         <NewSession display='phone' />
-                        <Filter sessions={flightsSessionsExemple} setSessionsFiltered={setSessionsFiltered} />
+                        <Filter sessions={flightsSessionsExemple} setSessionsFiltered={setSessionsFiltered} display='phone' />
                     </div>
                 </div>
                 <div className='flex w-full px-6'>

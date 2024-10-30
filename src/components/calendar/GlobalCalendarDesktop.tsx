@@ -91,7 +91,7 @@ const GlobalCalendarDesktop = () => {
                             <div className='flex space-x-2 px-3'>
                                 {/* Button to create a new session (desktop view only). */}
                                 <NewSession display='desktop' style='h-full flex items-center justify-center' />
-                                <Filter sessions={flightsSessionsExemple} setSessionsFiltered={setSessionsFiltered} />
+                                <Filter sessions={flightsSessionsExemple} setSessionsFiltered={setSessionsFiltered} display='desktop' />
 
                             </div>
                         </div>
