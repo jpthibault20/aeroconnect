@@ -29,6 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import { RxCross2 } from "react-icons/rx";
 import { interfaceSessions, newSession } from '@/api/db/session';
 import { useToast } from "@/hooks/use-toast"
+import { Spinner } from './ui/SpinnerVariants';
 
 
 
@@ -340,7 +341,7 @@ const NewSession = ({ display }: Props) => {
 
                 <DialogFooter className='mt-4'>
                     <DialogClose>Cancel</DialogClose>
-                    <Button onClick={onConfirm} disabled={loading}>Enregistrer</Button>
+                    {loading ? <Spinner /> : <Button onClick={onConfirm} disabled={loading}>Enregistrer</Button>}
                 </DialogFooter>
             </DialogContent>
         </Dialog>
