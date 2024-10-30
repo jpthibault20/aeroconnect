@@ -1,5 +1,5 @@
 "use client"
-import { FLIGHT_SESSION } from "@prisma/client";
+import { flight_sessions } from "@prisma/client";
 
 export interface DayInfo {
     dayName: string;
@@ -36,7 +36,7 @@ export const getDaysOfWeek = (inputDate: Date): DayInfo[] => {
     return daysOfWeek;
 };
 
-export const getSessionsFromDate = (date: Date, sessions: FLIGHT_SESSION[]): FLIGHT_SESSION[] => {
+export const getSessionsFromDate = (date: Date, sessions: flight_sessions[]): flight_sessions[] => {
     return sessions.filter((session) => {
         const sessionDate = session.sessionDateStart;
 
@@ -123,7 +123,7 @@ export function getCompleteWeeks(date: Date) {
     return weeks;
 }
 
-export const getFlightSessionsForDay = (dayDate: Date, sessions: FLIGHT_SESSION[]) => {
+export const getFlightSessionsForDay = (dayDate: Date, sessions: flight_sessions[]) => {
     return sessions.filter(session => {
         return (
             session.sessionDateStart.getFullYear() === dayDate.getFullYear() &&
