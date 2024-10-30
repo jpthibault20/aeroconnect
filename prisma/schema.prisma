@@ -9,7 +9,7 @@ datasource db {
 }
 
 model User {
-  id         Int      @id @unique @default(autoincrement())
+  id         String   @id @unique @default(uuid())
   email      String   @unique
   clubID     String
   firstName  String
@@ -24,7 +24,7 @@ model User {
 }
 
 model flight_sessions {
-  id                      Int         @id @unique @default(autoincrement())
+  id                      String      @id @unique @default(uuid())
   clubID                  String
   sessionDateStart        DateTime    @db.Timestamptz(6)
   sessionDateDuration_min Int
@@ -42,7 +42,7 @@ model flight_sessions {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model planes {
-  id              Int     @id @default(autoincrement())
+  id              String  @id @unique @default(uuid())
   clubID          String
   name            String
   immatriculation String
