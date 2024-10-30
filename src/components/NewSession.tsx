@@ -36,9 +36,11 @@ import { Spinner } from './ui/SpinnerVariants';
 interface Props {
     display: string;
     style?: string;
+    reload: boolean;
+    setReload: React.Dispatch<React.SetStateAction<boolean>>;
 }
 // début de composant
-const NewSession = ({ display }: Props) => {
+const NewSession = ({ display, reload, setReload }: Props) => {
     // récupération de l'utilisateur courant
     const { currentUser } = useCurrentUser();
 
@@ -137,6 +139,7 @@ const NewSession = ({ display }: Props) => {
             console.error(error);
             setError("Une erreur est survenue lors de l'envoi des données.");
         } finally {
+            setReload(!reload);
             setLoading(false); // Toujours arrêter le chargement
         }
     };

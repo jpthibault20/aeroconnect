@@ -17,7 +17,6 @@ export default function ProtectLayout({
         const fetchSession = async () => {
             try {
                 const auth = await getSession();
-                console.log(auth)
                 if (!auth) {
                     router.push('/auth/login')
                 }

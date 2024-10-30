@@ -8,10 +8,13 @@
  */
 
 "use client"
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import GlobalCalendarDesktop from '@/components/calendar/GlobalCalendarDesktop';
 import GlobalCalendarPhone from '@/components/calendar/phone/GlobalCalendarPhone';
 import InitialLoading from '@/components/InitialLoading';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { getAllSessions } from '@/api/db/session';
+import { flight_sessions } from '@prisma/client';
 
 /**
  * @function Page
@@ -23,12 +26,38 @@ import InitialLoading from '@/components/InitialLoading';
  * 
  */
 const Page = () => {
+    const { currentUser } = useCurrentUser();
+    const [sessions, setSessions] = useState<flight_sessions[]>([]);
+    const [reload, setReload] = useState(false);
+
+    useEffect(() => {
+        const fetchSessions = async () => {
+            if (currentUser) {
+                try {
+                    const res = await getAllSessions(currentUser.clubID);
+                    if (Array.isArray(res)) {
+                        setSessions(res);
+                    } else {
+                        console.log('Unexpected response format:', res);
+                    }
+                } catch (error) {
+                    console.log(error);
+                }
+            }
+        }
+
+        fetchSessions();
+    }, [currentUser, reload]);
+
+    useEffect(() => {
+        console.log(sessions);
+    }, [sessions]);
 
     return (
         // Full height and width container to ensure the calendar takes up the entire page space.
         <InitialLoading className='h-full w-full'>
-            <GlobalCalendarDesktop />
-            <GlobalCalendarPhone />
+            <GlobalCalendarDesktop sessions={sessions} reload={reload} setReload={setReload} />
+            <GlobalCalendarPhone sessions={sessions} reload={reload} setReload={setReload} />
         </InitialLoading>
     )
 }

@@ -137,3 +137,20 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
         await prisma.$disconnect();
     }
 };
+
+export const getAllSessions = async (clubID: string) => {
+    try {
+        const sessions = await prisma.flight_sessions.findMany({
+            where: {
+                clubID: clubID,
+            }
+        });
+        return sessions;
+    } catch (error) {
+        console.error('Error getting flight sessions:', error);
+        return { error: "Erreur lors de la récupération des sessions de vol" };
+    }
+    finally {
+        await prisma.$disconnect();
+    }
+}

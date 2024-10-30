@@ -11,8 +11,13 @@ import DaySelector from './DaySelector';
 import TabCalendar from './TabCalendar';
 import NewSession from "@/components/NewSession"
 import Filter from './Filter';
-import { flightsSessionsExemple } from '@/config/exempleData';
 import { flight_sessions } from '@prisma/client';
+
+interface Props {
+    sessions: flight_sessions[];
+    reload: boolean;
+    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+}
 
 /**
  * @function GlobalCalendarDesktop
@@ -23,9 +28,9 @@ import { flight_sessions } from '@prisma/client';
  * within a desktop-only layout, hidden on mobile devices.
  * 
  */
-const GlobalCalendarDesktop = () => {
+const GlobalCalendarDesktop = ({ sessions, reload, setReload }: Props) => {
     const [date, setDate] = useState(new Date());
-    const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(flightsSessionsExemple);
+    const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
 
 
 
@@ -90,8 +95,8 @@ const GlobalCalendarDesktop = () => {
                             />
                             <div className='flex space-x-2 px-3'>
                                 {/* Button to create a new session (desktop view only). */}
-                                <NewSession display='desktop' style='h-full flex items-center justify-center' />
-                                <Filter sessions={flightsSessionsExemple} setSessionsFiltered={setSessionsFiltered} display='desktop' />
+                                <NewSession display='desktop' reload={reload} setReload={setReload} />
+                                <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='desktop' />
 
                             </div>
                         </div>

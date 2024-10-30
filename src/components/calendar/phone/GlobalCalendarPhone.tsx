@@ -13,7 +13,6 @@
 
 import React, { useEffect, useState } from 'react';
 import DaySelector from './../DaySelector';
-import { flightsSessionsExemple } from '@/config/exempleData';
 import { DaysOfMonthType, getCompleteWeeks } from '@/api/date';
 import Calendar from './../phone/calendar';
 import SessionOfDay from "@/components/calendar/phone/SessionsOfDay";
@@ -21,17 +20,23 @@ import NewSession from "@/components/NewSession";
 import Filter from '../Filter';
 import { flight_sessions } from '@prisma/client';
 
+interface Props {
+    sessions: flight_sessions[];
+    reload: boolean;
+    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
 /**
  * @component GlobalCalendarPhone
  * @description Main component for displaying a calendar on mobile devices.
  * Handles date selection, session filtering, and session display.
  */
-const GlobalCalendarPhone = () => {
+const GlobalCalendarPhone = ({ sessions, reload, setReload }: Props) => {
     // State variables for managing date, instructor, plane, and filtered sessions
     const [date, setDate] = useState(new Date());
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>();
     const [selectDate, setSelectDate] = useState(new Date());
-    const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(flightsSessionsExemple);
+    const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
 
 
     // Effect to filter sessions when instructor or plane changes
@@ -82,8 +87,8 @@ const GlobalCalendarPhone = () => {
                         {date.toLocaleDateString('fr-FR', { month: 'long' })}, {date.toLocaleDateString('fr-FR', { year: 'numeric' })}
                     </p>
                     <div className='flex items-center space-x-3'>
-                        <NewSession display='phone' />
-                        <Filter sessions={flightsSessionsExemple} setSessionsFiltered={setSessionsFiltered} display='phone' />
+                        <NewSession display='phone' reload={reload} setReload={setReload} />
+                        <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='phone' />
                     </div>
                 </div>
                 <div className='flex w-full px-6'>
