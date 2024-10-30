@@ -12,7 +12,7 @@ export interface interfaceSessions {
     endMinute: string;
     duration: number;
     endReccurence: Date | undefined;
-    planeId: number[];
+    planeId: string[];
 }
 
 export const newSession = async (sessionData: interfaceSessions, user: User) => {

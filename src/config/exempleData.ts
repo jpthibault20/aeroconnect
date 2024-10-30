@@ -1,7 +1,7 @@
 import { flightType, userRole } from "@prisma/client";
 
 export interface Plane {
-    id: number;
+    id: string;
     clubId: string;
     name: string;
     immatriculation: string;

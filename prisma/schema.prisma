@@ -29,7 +29,7 @@ model flight_sessions {
   sessionDateStart        DateTime    @db.Timestamptz(6)
   sessionDateDuration_min Int
   flightType              flightType?
-  pilotID                 Int
+  pilotID                 String
   pilotFirstName          String
   pilotLastName           String
   studentID               Int?
@@ -37,7 +37,7 @@ model flight_sessions {
   studentLastName         String?
   student_type            flightType?
   finalReccurence         DateTime?   @db.Timestamptz(6)
-  planeID                 Int[]
+  planeID                 String[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
