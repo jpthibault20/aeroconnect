@@ -1,5 +1,5 @@
 import { getDaysOfWeek, getSessionsFromDate } from '@/api/date';
-import { FLIGHT_SESSION } from '@prisma/client';
+import { flight_sessions } from '@prisma/client';
 import React, { useEffect, useState } from 'react'
 
 interface props {
@@ -7,7 +7,7 @@ interface props {
     indexY: number;
     tabDays: string[];
     tabHours: number[];
-    events: FLIGHT_SESSION | unknown[];
+    events: flight_sessions | unknown[];
     date: Date;
 }
 
@@ -42,7 +42,7 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
     // Création de la date de l'éventuelle session a partir des cooordoné du tableau et de la config de la journée (club)
     const daysOfWeek = getDaysOfWeek(date);
     const sessionDate = new Date(date.getFullYear(), daysOfWeek[indexY].month, daysOfWeek[indexY].dayNumber, Math.floor(tabHours[indexX]), Number((tabHours[indexX] % 1).toFixed(2).substring(2)), 0) // Création de la date de la session
-    const session = getSessionsFromDate(sessionDate, events as FLIGHT_SESSION[]) // Récupération des sessions correspondante a la date
+    const session = getSessionsFromDate(sessionDate, events as flight_sessions[]) // Récupération des sessions correspondante a la date
 
     /**
      * 
@@ -51,27 +51,22 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
      * 
      * Permet de stocker dans une liste local les sessions du crénau horaire, les disponibilités des avions et pilotes
      */
-    const addUniqueValueToSession = (type: 'plane' | 'pilot', value: string) => {
+    const addUniqueValueToSession = (type: 'plane' | 'pilot', value: string[] | string) => {
+        const values = Array.isArray(value) ? value : [value];
         setAvailableSessions((prevSessions) => {
-            // Selon le type, on met à jour soit les avions soit les pilotes
             if (type === 'plane') {
-                // Ajout unique dans availablePlane
-                if (!prevSessions.availablePlane.includes(value)) {
-                    return {
-                        ...prevSessions,
-                        availablePlane: [...prevSessions.availablePlane, value]
-                    };
-                }
+                const newAvailablePlanes = prevSessions.availablePlane.concat(values.filter(v => !prevSessions.availablePlane.includes(v)));
+                return {
+                    ...prevSessions,
+                    availablePlane: newAvailablePlanes
+                };
             } else if (type === 'pilot') {
-                // Ajout unique dans avaiblePilot
-                if (!prevSessions.avaiblePilot.includes(value)) {
-                    return {
-                        ...prevSessions,
-                        avaiblePilot: [...prevSessions.avaiblePilot, value]
-                    };
-                }
+                const newAvailablePilots = prevSessions.avaiblePilot.concat(values.filter(v => !prevSessions.avaiblePilot.includes(v)));
+                return {
+                    ...prevSessions,
+                    avaiblePilot: newAvailablePilots
+                };
             }
-            // Si la valeur existe déjà, on ne change pas l'état
             return prevSessions;
         });
     };
@@ -93,7 +88,7 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
         for (let i = 0; i < session.length; i++) {
             if (session[i].studentID === null) {
 
-                addUniqueValueToSession('plane', session[i].planeName || "")
+                addUniqueValueToSession('plane', session[i].planeID || "")
                 addUniqueValueToSession('pilot', session[i].pilotFirstName)
 
                 setAvailableSessions(prevState => ({
