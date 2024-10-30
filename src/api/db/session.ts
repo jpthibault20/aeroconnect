@@ -16,23 +16,20 @@ export interface interfaceSessions {
 }
 
 export const newSession = async (sessionData: interfaceSessions, user: User) => {
-    // Vérifier si les données de session sont définies
     if (!sessionData) {
         return { error: "Une erreur est survenue (E_001: sessionData is undefined)" };
     }
 
-    // Vérifier si la date de session est fournie
     if (!sessionData.date) {
         return { error: "La date de la session est obligatoire" };
     }
 
-    // Vérifier si la date est dans le futur
     const now = new Date();
+
     if (sessionData.date < now) {
         return { error: "La date de session doit être dans le futur" };
     }
 
-    // Vérifier si l'heure de début est dans le futur si la date est aujourd'hui
     if (sessionData.date.toUTCString().slice(0, 16) === now.toUTCString().slice(0, 16)) {
         const startHour = Number(sessionData.startHour);
         const startMinute = Number(sessionData.startMinute);
@@ -44,26 +41,19 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
     const débutTotalMinutes = parseInt(sessionData.startHour) * 60 + parseInt(sessionData.startMinute);
     const finTotalMinutes = parseInt(sessionData.endHour) * 60 + parseInt(sessionData.endMinute);
 
-    // Vérifier si l'heure de début est avant l'heure de fin
     if (débutTotalMinutes >= finTotalMinutes) {
         return { error: "L'heure de fin doit être après l'heure de début" };
     }
 
-    // Vérifier la durée de la session
     const différenceMinutes = finTotalMinutes - débutTotalMinutes;
-    if (différenceMinutes < sessionData.duration) {
-        return { error: `La durée de la session doit être supérieure à ${sessionData.duration} minutes` };
-    }
-    if (différenceMinutes % sessionData.duration !== 0) {
-        return { error: `La durée de la session doit être un multiple de ${sessionData.duration} minutes` };
+    if (différenceMinutes < sessionData.duration || différenceMinutes % sessionData.duration !== 0) {
+        return { error: `La durée de la session doit être supérieure à ${sessionData.duration} minutes et un multiple de ${sessionData.duration} minutes` };
     }
 
-    // Vérifier les règles de récurrence
     if (sessionData.endReccurence && sessionData.endReccurence <= sessionData.date) {
         return { error: "La date de fin de récurrence doit être après la date de début" };
     }
 
-    // Préparer les dates pour la création de la session en UTC
     const baseSessionDateStart = new Date(Date.UTC(
         sessionData.date.getUTCFullYear(),
         sessionData.date.getUTCMonth(),
@@ -73,7 +63,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
         0
     ));
 
-    const sessionsToCreate = [];
+    const sessionsToCreate: Date[] = [];
     const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
     const dateEndSession = new Date(Date.UTC(
         baseSessionDateStart.getUTCFullYear(),
@@ -84,26 +74,13 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
         0
     ));
 
-    // Créer des sessions hebdomadaires jusqu'à la date de fin
     if (sessionData.endReccurence) {
         sessionData.endReccurence.setUTCDate(sessionData.endReccurence.getUTCDate() + 1);
         for (let current = baseSessionDateStart; current <= sessionData.endReccurence; current = new Date(current.getTime() + oneWeekInMs)) {
-            const sartCurrent = new Date(Date.UTC(
-                current.getUTCFullYear(),
-                current.getUTCMonth(),
-                current.getUTCDate(),
-                Number(sessionData.startHour),
-                Number(sessionData.startMinute),
-                0
-            ));
-            const endCurrent = new Date(Date.UTC(
-                current.getUTCFullYear(),
-                current.getUTCMonth(),
-                current.getUTCDate(),
-                Number(sessionData.endHour),
-                Number(sessionData.endMinute),
-                0
-            ));
+            const sartCurrent = new Date(current.getTime());
+            const endCurrent = new Date(current.getTime());
+            endCurrent.setUTCHours(Number(sessionData.endHour), Number(sessionData.endMinute), 0);
+
             while (sartCurrent.getTime() < endCurrent.getTime()) {
                 sessionsToCreate.push(new Date(sartCurrent));
                 sartCurrent.setUTCMinutes(sartCurrent.getUTCMinutes() + sessionData.duration);
@@ -116,41 +93,41 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
         }
     }
 
-    // Vérifier les conflits pour chaque session à créer
-    for (const sessionDateStart of sessionsToCreate) {
-        const existingSession = await prisma.flight_sessions.findFirst({
-            where: {
-                clubID: user.clubID,
-                pilotID: user.id,
-                sessionDateStart,
-            }
-        });
-
-        if (existingSession) {
-            return { error: "Une session existe déjà avec cette configuration pour l'une des dates." };
+    // Vérifier les conflits pour chaque session à créer avec une seule requête
+    const existingSessions = await prisma.flight_sessions.findMany({
+        where: {
+            clubID: user.clubID,
+            pilotID: user.id,
+            sessionDateStart: { in: sessionsToCreate },
         }
+    });
+
+    if (existingSessions.length > 0) {
+        return { error: "Une session existe déjà avec cette configuration pour l'une des dates." };
     }
 
-    // Envoi des sessions à la base de données avec Prisma
+    // Envoi des sessions à la base de données avec Prisma en une seule transaction
     try {
-        for (const sessionDateStart of sessionsToCreate) {
-            await prisma.flight_sessions.create({
-                data: {
-                    clubID: user.clubID,
-                    sessionDateStart,
-                    sessionDateDuration_min: sessionData.duration,
-                    finalReccurence: sessionData.endReccurence,
-                    pilotID: user.id,
-                    pilotFirstName: user.firstName,
-                    pilotLastName: user.lastName,
-                    studentID: null,
-                    studentFirstName: null,
-                    studentLastName: null,
-                    student_type: null,
-                    planeID: sessionData.planeId,
-                }
-            });
-        }
+        await prisma.$transaction(
+            sessionsToCreate.map(sessionDateStart =>
+                prisma.flight_sessions.create({
+                    data: {
+                        clubID: user.clubID,
+                        sessionDateStart,
+                        sessionDateDuration_min: sessionData.duration,
+                        finalReccurence: sessionData.endReccurence,
+                        pilotID: user.id,
+                        pilotFirstName: user.firstName,
+                        pilotLastName: user.lastName,
+                        studentID: null,
+                        studentFirstName: null,
+                        studentLastName: null,
+                        student_type: null,
+                        planeID: sessionData.planeId,
+                    }
+                })
+            )
+        );
         console.log('Sessions created successfully');
         return { success: "Les sessions ont été créées !" };
     } catch (error) {
@@ -160,5 +137,3 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
         await prisma.$disconnect();
     }
 };
-
-
