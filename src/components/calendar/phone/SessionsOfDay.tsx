@@ -7,18 +7,18 @@
  * and displays them using the SessionDisplay component.
  */
 
-import { FLIGHT_SESSION } from '@prisma/client';
+import { flight_sessions } from '@prisma/client';
 import React, { useEffect, useState } from 'react';
 import SessionDisplay from './SessionDisplay';
 
 /**
  * @interface Props
  * @brief Interface for the component props.
- * @property {FLIGHT_SESSION[]} flightsSessions - Array of flight sessions to filter and display.
+ * @property {flight_sessions[]} flightsSessions - Array of flight sessions to filter and display.
  * @property {Date} selectDate - The date for which to display flight sessions.
  */
 interface Props {
-    flightsSessions: FLIGHT_SESSION[];
+    flightsSessions: flight_sessions[];
     selectDate: Date;
 }
 
@@ -30,7 +30,7 @@ interface Props {
  * @returns {JSX.Element} The rendered component.
  */
 const SessionsOfDay = ({ flightsSessions, selectDate }: Props) => {
-    const [sessionOfTheDay, setSessionOfTheDay] = useState<FLIGHT_SESSION[]>();
+    const [sessionOfTheDay, setSessionOfTheDay] = useState<flight_sessions[]>();
 
     useEffect(() => {
         try {
@@ -49,10 +49,10 @@ const SessionsOfDay = ({ flightsSessions, selectDate }: Props) => {
     /**
      * Function to filter flight sessions by the target date and sort them chronologically.
      * @param {Date} targetDate - The target date for filtering sessions.
-     * @param {FLIGHT_SESSION[]} sessions - Array of FLIGHT_SESSION objects.
-     * @returns {FLIGHT_SESSION[]} An array of flight sessions that match the target date, sorted chronologically.
+     * @param {flight_sessions[]} sessions - Array of flight_sessions objects.
+     * @returns {flight_sessions[]} An array of flight sessions that match the target date, sorted chronologically.
      */
-    function filterAndSortFlightSessionsByDate(targetDate: Date, sessions: FLIGHT_SESSION[]): FLIGHT_SESSION[] {
+    function filterAndSortFlightSessionsByDate(targetDate: Date, sessions: flight_sessions[]): flight_sessions[] {
         // Filter sessions based on the target date
         const filteredSessions = sessions.filter(session => {
             const sessionDate = session.sessionDateStart;
