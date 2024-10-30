@@ -63,12 +63,14 @@ const NewSession = ({ display }: Props) => {
 
     // Calul de la date de fin de reccurence en fonction de la date de début avec 1 semaine de plus (delais minimum)
     useEffect(() => {
+        if (!switchReccurence) sessionData.endReccurence = undefined
         if (switchReccurence && sessionData.date) {
             const dateStart = new Date(sessionData.date!.getFullYear(), sessionData.date!.getMonth(), sessionData.date!.getDate())
             const dateEnd = new Date(dateStart)
-            dateEnd.setDate(dateStart.getDate() + 14)
+            dateEnd.setDate(dateStart.getDate() + 7)
             setSessionData(prev => ({ ...prev, endReccurence: dateEnd }))
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [switchReccurence, sessionData.date])
 
     // Calcul de l'heure de fin par défault en fonction de l'heure de début
@@ -121,6 +123,7 @@ const NewSession = ({ display }: Props) => {
             if (res.error) {
                 setError(res.error);
             } else if (res.success) {
+                setError("")
                 toast({
                     title: res.success,
                 });
@@ -166,9 +169,17 @@ const NewSession = ({ display }: Props) => {
                             mode="single"
                             selected={sessionData.date}
                             onSelect={(date) => {
-                                // date?.setMinutes(date.getMinutes() + date.getTimezoneOffset())
-                                setSessionData(prev => ({ ...prev, date }))
-                                setIsOpenCal1(false)
+                                if (date) { // Vérifiez que la date n'est pas undefined
+                                    console.log(date)
+                                    const localDate = new Date(date);
+
+                                    // Créer une date UTC à partir de l'heure locale
+                                    const utcDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), localDate.getHours(), localDate.getMinutes(), localDate.getSeconds()));
+
+                                    // Mise à jour de la date de session avec la date UTC
+                                    setSessionData(prev => ({ ...prev, date: utcDate }));
+                                }
+                                setIsOpenCal1(false);
                             }}
                             initialFocus
                             locale={fr}

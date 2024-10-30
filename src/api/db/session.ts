@@ -33,10 +33,10 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
     }
 
     // Vérifier si l'heure de début est dans le futur si la date est aujourd'hui
-    if (sessionData.date.toDateString() === now.toDateString()) {
+    if (sessionData.date.toUTCString().slice(0, 16) === now.toUTCString().slice(0, 16)) {
         const startHour = Number(sessionData.startHour);
         const startMinute = Number(sessionData.startMinute);
-        if (startHour < now.getHours() || (startHour === now.getHours() && startMinute <= now.getMinutes())) {
+        if (startHour < now.getUTCHours() || (startHour === now.getUTCHours() && startMinute <= now.getUTCMinutes())) {
             return { error: "La session est aujourd'hui mais l'heure doit être dans le futur" };
         }
     }
@@ -63,30 +63,56 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
         return { error: "La date de fin de récurrence doit être après la date de début" };
     }
 
-    // Préparer les dates pour la création de la session
-    const baseSessionDateStart = new Date(sessionData.date);
-    baseSessionDateStart.setHours(Number(sessionData.startHour), Number(sessionData.startMinute), 0);
+    // Préparer les dates pour la création de la session en UTC
+    const baseSessionDateStart = new Date(Date.UTC(
+        sessionData.date.getUTCFullYear(),
+        sessionData.date.getUTCMonth(),
+        sessionData.date.getUTCDate(),
+        Number(sessionData.startHour),
+        Number(sessionData.startMinute),
+        0
+    ));
 
     const sessionsToCreate = [];
     const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
-    const dateEndSession = new Date(baseSessionDateStart.getFullYear(), baseSessionDateStart.getMonth(), baseSessionDateStart.getDate(), Number(sessionData.endHour), Number(sessionData.endMinute), 0);
+    const dateEndSession = new Date(Date.UTC(
+        baseSessionDateStart.getUTCFullYear(),
+        baseSessionDateStart.getUTCMonth(),
+        baseSessionDateStart.getUTCDate(),
+        Number(sessionData.endHour),
+        Number(sessionData.endMinute),
+        0
+    ));
 
     // Créer des sessions hebdomadaires jusqu'à la date de fin
     if (sessionData.endReccurence) {
-        sessionData.endReccurence.setDate(sessionData.endReccurence.getDate() + 1);
+        sessionData.endReccurence.setUTCDate(sessionData.endReccurence.getUTCDate() + 1);
         for (let current = baseSessionDateStart; current <= sessionData.endReccurence; current = new Date(current.getTime() + oneWeekInMs)) {
-            const sartCurrent = new Date(current.getFullYear(), current.getMonth(), current.getDate(), Number(sessionData.startHour), Number(sessionData.startMinute), 0);
-            const endCurrent = new Date(current.getFullYear(), current.getMonth(), current.getDate(), Number(sessionData.endHour), Number(sessionData.endMinute), 0);
+            const sartCurrent = new Date(Date.UTC(
+                current.getUTCFullYear(),
+                current.getUTCMonth(),
+                current.getUTCDate(),
+                Number(sessionData.startHour),
+                Number(sessionData.startMinute),
+                0
+            ));
+            const endCurrent = new Date(Date.UTC(
+                current.getUTCFullYear(),
+                current.getUTCMonth(),
+                current.getUTCDate(),
+                Number(sessionData.endHour),
+                Number(sessionData.endMinute),
+                0
+            ));
             while (sartCurrent.getTime() < endCurrent.getTime()) {
                 sessionsToCreate.push(new Date(sartCurrent));
-                sartCurrent.setMinutes(sartCurrent.getMinutes() + sessionData.duration);
+                sartCurrent.setUTCMinutes(sartCurrent.getUTCMinutes() + sessionData.duration);
             }
         }
-    }
-    else {
+    } else {
         while (baseSessionDateStart.getTime() < dateEndSession.getTime()) {
             sessionsToCreate.push(new Date(baseSessionDateStart));
-            baseSessionDateStart.setMinutes(baseSessionDateStart.getMinutes() + sessionData.duration);
+            baseSessionDateStart.setUTCMinutes(baseSessionDateStart.getUTCMinutes() + sessionData.duration);
         }
     }
 
@@ -134,4 +160,5 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
         await prisma.$disconnect();
     }
 };
+
 
