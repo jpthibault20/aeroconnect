@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FLIGHT_SESSION } from '@prisma/client';
+import { flight_sessions } from '@prisma/client';
 import TableRowComponent from './TableRowComponent';
 import { Checkbox } from '../ui/checkbox';
 
 interface props {
-    sessions: FLIGHT_SESSION[];  ///< Array of flight session objects
-    setSessionChecked: React.Dispatch<React.SetStateAction<number[]>>; ///< Function to update selected session IDs
+    sessions: flight_sessions[];  ///< Array of flight session objects
+    setSessionChecked: React.Dispatch<React.SetStateAction<string[]>>; ///< Function to update selected session IDs
 }
 
 const TableComponent = ({ sessions, setSessionChecked }: props) => {

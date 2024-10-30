@@ -9,7 +9,7 @@
  */
 
 "use client";
-import { FLIGHT_SESSION } from "@prisma/client";
+import { flight_sessions } from "@prisma/client";
 import React from "react";
 
 /**
@@ -19,14 +19,14 @@ import React from "react";
  * @property {boolean} isToday - Indicates if the date is today.
  * @property {boolean} isActualMonth - Indicates if the date is in the current month.
  * @property {boolean} [isSelected] - Indicates if the date is selected.
- * @property {FLIGHT_SESSION[]} flightSession - List of flight sessions associated with the date.
+ * @property {flight_sessions[]} flightSession - List of flight sessions associated with the date.
  */
 interface Props {
     date: number;
     isToday: boolean;
     isActualMonth: boolean;
     isSelected?: boolean;
-    flightSession: FLIGHT_SESSION[];
+    flightSession: flight_sessions[];
 }
 
 /**

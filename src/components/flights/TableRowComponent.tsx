@@ -6,7 +6,7 @@
  * for selecting the session, updating, and deleting it.
  * 
  * @param {Object} props - Component props.
- * @param {FLIGHT_SESSION} props.session - The flight session object to display.
+ * @param {flight_sessions} props.session - The flight session object to display.
  * @param {React.Dispatch<React.SetStateAction<number[]>>} props.setSessionChecked - Function to set the IDs of checked sessions.
  * @param {boolean} props.isAllChecked - Indicates if the "select all" checkbox is checked.
  * 
@@ -16,13 +16,13 @@
 import React, { useState, useEffect } from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { Checkbox } from '../ui/checkbox';
-import { FLIGHT_SESSION } from '@prisma/client';
+import { flight_sessions } from '@prisma/client';
 import { FaPen } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 
 interface props {
-    session: FLIGHT_SESSION;  ///< The flight session object
-    setSessionChecked: React.Dispatch<React.SetStateAction<number[]>>; ///< Function to update selected session IDs
+    session: flight_sessions;  ///< The flight session object
+    setSessionChecked: React.Dispatch<React.SetStateAction<string[]>>; ///< Function to update selected session IDs
     isAllChecked: boolean; ///< Indicates if "select all" is checked
 }
 
@@ -35,10 +35,10 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked }: props) 
     /**
      * Handles individual checkbox change.
      *
-     * @param {number} sessionId - The ID of the flight session.
+     * @param {string} sessionId - The ID of the flight session.
      * @param {boolean} checked - The checked state of the checkbox.
      */
-    const onChecked = (sessionId: number, checked: boolean) => {
+    const onChecked = (sessionId: string, checked: boolean) => {
         setIsChecked(checked);
         setSessionChecked((prev) => {
             if (checked) {
@@ -57,20 +57,20 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked }: props) 
     /**
      * Handles the delete action for flights.
      *
-     * @param {number} flightsId - The ID of the flight to delete.
+     * @param {string} flightsId - The ID of the flight to delete.
      * @returns {Function} The click event handler.
      */
-    const onClickDeleteFlights = (flightsId: number) => () => {
+    const onClickDeleteFlights = (flightsId: string) => () => {
         console.log('Delete flights : ', flightsId);
     };
 
     /**
      * Handles the update action for flights.
      *
-     * @param {number} flightsId - The ID of the flight to update.
+     * @param {string} flightsId - The ID of the flight to update.
      * @returns {Function} The click event handler.
      */
-    const onClickUpdateFlights = (flightsId: number) => () => {
+    const onClickUpdateFlights = (flightsId: string) => () => {
         console.log('Update flights : ', flightsId);
     };
 

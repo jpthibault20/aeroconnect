@@ -10,13 +10,13 @@
 import React from 'react';
 import RoundDate from './RoundDate';
 import { DaysOfMonthType } from '@/api/date';
-import { FLIGHT_SESSION } from '@prisma/client';
+import { flight_sessions } from '@prisma/client';
 import { getFlightSessionsForDay } from "@/api/date";
 
 interface props {
     daysOfMonth: DaysOfMonthType | undefined;  ///< List of weeks and days in the month.
     date: Date;                                ///< Current reference date.
-    flightsSessions: FLIGHT_SESSION[];         ///< List of flight sessions.
+    flightsSessions: flight_sessions[];         ///< List of flight sessions.
     setSelectDate: React.Dispatch<React.SetStateAction<Date>>; ///< Function to update the selected date.
     selectDate: Date;                          ///< Currently selected date.
 }
@@ -31,7 +31,7 @@ interface props {
  * 
  * @param {DaysOfMonthType | undefined} daysOfMonth - List of weeks and days for the current month.
  * @param {Date} date - The reference date for the current month.
- * @param {FLIGHT_SESSION[]} flightsSessions - List of flight sessions to display on the calendar.
+ * @param {flight_sessions[]} flightsSessions - List of flight sessions to display on the calendar.
  * @param {React.Dispatch<React.SetStateAction<Date>>} setSelectDate - Function to update the selected date.
  * @param {Date} selectDate - The currently selected date.
  * 

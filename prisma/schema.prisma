@@ -32,7 +32,7 @@ model flight_sessions {
   pilotID                 String
   pilotFirstName          String
   pilotLastName           String
-  studentID               Int?
+  studentID               String?
   studentFirstName        String?
   studentLastName         String?
   student_type            flightType?
