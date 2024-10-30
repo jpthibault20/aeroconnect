@@ -97,7 +97,7 @@ const NewSession = ({ display }: Props) => {
     const allPlanesSelected = planeExemple.length === sessionData.planeId.length;
 
     // fonction permettant de sélectionner un avion pour l'affichage dans la liste des avions
-    const onClickPlane = (plane: number) => {
+    const onClickPlane = (plane: string) => {
         setSessionData(prev => ({
             ...prev,
             planeId: prev.planeId.includes(plane)
