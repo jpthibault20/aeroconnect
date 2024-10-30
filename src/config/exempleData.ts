@@ -8,17 +8,6 @@ export interface Plane {
     operational: boolean;
 }
 
-export const instructorExemple = [
-    "Jeanpierre Stephane",
-    "Jeanpierre Thibault",
-    "Exemple Roussel"
-]
-
-export const StudentExemple = [
-    "Jeanpierre Stephane",
-    "Jeanpierre Thibault",
-    "Exemple Roussel"
-]
 
 export const UserExemple = [
     {
@@ -30,7 +19,7 @@ export const UserExemple = [
         lastName: "jeanpierre",
         phone: "611106199",
         restricted: false,
-        role: userRole.PILOT,
+        role: userRole.INSTRUCTOR,
         city: "",
         adress: "",
         country: "",
@@ -41,11 +30,11 @@ export const UserExemple = [
         email: "marie@primservice.fr",
         adressID: 102,
         clubID: "LF5722",
-        firstName: "marie",
-        lastName: "dupont",
+        firstName: "thibault",
+        lastName: "jeanpierre",
         phone: "612345678",
         restricted: false,
-        role: userRole.STUDENT,
+        role: userRole.INSTRUCTOR,
         city: "",
         adress: "",
         country: "",
@@ -105,14 +94,14 @@ export const flightsSessionsExemple = [
         sessionDateStart: new Date(2024, 10 - 1, 28, 17, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
-        flightType: flightType.TRAINING, // Exemple de flightType
-        pilotID: "14",
+        flightType: flightType.TRAINING,
+        pilotID: "2", // Pilot: Thibault Jeanpierre
         pilotFirstName: 'Thibault',
         pilotLastName: 'Jeanpierre',
-        studentID: "601",
-        studentFirstName: 'Alice',
-        studentLastName: 'Smith',
-        student_type: flightType.TRAINING, // Exemple de student_type
+        studentID: "3", // Student: Jean Durand
+        studentFirstName: 'Jean',
+        studentLastName: 'Durand',
+        student_type: flightType.TRAINING,
         planeID: ["1"],
     },
     {
@@ -121,14 +110,14 @@ export const flightsSessionsExemple = [
         sessionDateStart: new Date(2024, 10 - 1, 28, 18, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
-        flightType: flightType.TRAINING, // Exemple de flightType
-        pilotID: "14",
+        flightType: flightType.TRAINING,
+        pilotID: "2", // Pilot: Thibault Jeanpierre
         pilotFirstName: 'Thibault',
         pilotLastName: 'Jeanpierre',
-        studentID: "601",
-        studentFirstName: 'Alice',
-        studentLastName: 'Smith',
-        student_type: flightType.TRAINING, // Exemple de student_type
+        studentID: "3", // Student: Jean Durand
+        studentFirstName: 'Jean',
+        studentLastName: 'Durand',
+        student_type: flightType.TRAINING,
         planeID: ["1"],
     },
     {
@@ -137,14 +126,14 @@ export const flightsSessionsExemple = [
         sessionDateStart: new Date(2024, 10 - 1, 29, 19, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
-        flightType: flightType.TRAINING, // Exemple de flightType
-        pilotID: "14",
+        flightType: flightType.TRAINING,
+        pilotID: "2", // Pilot: Thibault Jeanpierre
         pilotFirstName: 'Thibault',
         pilotLastName: 'Jeanpierre',
-        studentID: "601",
-        studentFirstName: 'Alice',
-        studentLastName: 'Smith',
-        student_type: flightType.TRAINING, // Exemple de student_type
+        studentID: "3", // Student: Jean Durand
+        studentFirstName: 'Jean',
+        studentLastName: 'Durand',
+        student_type: flightType.TRAINING,
         planeID: ["1"],
     },
     {
@@ -153,15 +142,15 @@ export const flightsSessionsExemple = [
         sessionDateStart: new Date(2024, 10 - 1, 29, 9, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
-        flightType: flightType.TRAINING, // Exemple de flightType
-        pilotID: "14",
+        flightType: flightType.TRAINING,
+        pilotID: "2", // Pilot: Thibault Jeanpierre
         pilotFirstName: 'Thibault',
         pilotLastName: 'Jeanpierre',
-        studentID: "601",
-        studentFirstName: 'Alice',
-        studentLastName: 'Smith',
-        student_type: flightType.TRAINING, // Exemple de student_type
-        planeID:["1"],
+        studentID: "3", // Student: Jean Durand
+        studentFirstName: 'Jean',
+        studentLastName: 'Durand',
+        student_type: flightType.TRAINING,
+        planeID: ["1"],
     },
     {
         id: "5",
@@ -169,14 +158,14 @@ export const flightsSessionsExemple = [
         sessionDateStart: new Date(2024, 10 - 1, 30, 10, 0, 0),
         sessionDateDuration_min: 60,
         finalReccurence: null,
-        flightType: flightType.TRAINING, // Exemple de flightType
-        pilotID: "14",
+        flightType: flightType.TRAINING,
+        pilotID: "2", // Pilot: Thibault Jeanpierre
         pilotFirstName: 'Thibault',
         pilotLastName: 'Jeanpierre',
-        studentID: "601",
-        studentFirstName: 'Alice',
-        studentLastName: 'Smith',
-        student_type: flightType.TRAINING, // Exemple de student_type
+        studentID: "3", // Student: Jean Durand
+        studentFirstName: 'Jean',
+        studentLastName: 'Durand',
+        student_type: flightType.TRAINING,
         planeID: ["1"],
     },
     {
@@ -186,12 +175,12 @@ export const flightsSessionsExemple = [
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
-        pilotID: "14",
+        pilotID: "2", // Pilot: Thibault Jeanpierre
         pilotFirstName: 'Thibault',
         pilotLastName: 'Jeanpierre',
-        studentID: "602",
-        studentFirstName: 'Bob',
-        studentLastName: 'Johnson',
+        studentID: "4", // Student: Paul Martin
+        studentFirstName: 'Paul',
+        studentLastName: 'Martin',
         student_type: flightType.TRAINING,
         planeID: ["9"],
     },
@@ -202,10 +191,10 @@ export const flightsSessionsExemple = [
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
-        pilotID: "14",
+        pilotID: "2", // Pilot: Thibault Jeanpierre
         pilotFirstName: 'Thibault',
         pilotLastName: 'Jeanpierre',
-        studentID: null,
+        studentID: null, // No student
         studentFirstName: null,
         studentLastName: null,
         student_type: null,
@@ -218,10 +207,10 @@ export const flightsSessionsExemple = [
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
-        pilotID: "14",
+        pilotID: "2", // Pilot: Thibault Jeanpierre
         pilotFirstName: 'Thibault',
         pilotLastName: 'Jeanpierre',
-        studentID: null,
+        studentID: null, // No student
         studentFirstName: null,
         studentLastName: null,
         student_type: null,
@@ -234,10 +223,10 @@ export const flightsSessionsExemple = [
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
-        pilotID: "14",
+        pilotID: "2", // Pilot: Thibault Jeanpierre
         pilotFirstName: 'Thibault',
         pilotLastName: 'Jeanpierre',
-        studentID: null,
+        studentID: null, // No student
         studentFirstName: null,
         studentLastName: null,
         student_type: null,
@@ -250,10 +239,10 @@ export const flightsSessionsExemple = [
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
-        pilotID: "14",
+        pilotID: "2", // Pilot: Thibault Jeanpierre
         pilotFirstName: 'Thibault',
         pilotLastName: 'Jeanpierre',
-        studentID: null,
+        studentID: null, // No student
         studentFirstName: null,
         studentLastName: null,
         student_type: null,
@@ -266,12 +255,12 @@ export const flightsSessionsExemple = [
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
-        pilotID: "14",
+        pilotID: "2", // Pilot: Thibault Jeanpierre
         pilotFirstName: 'Thibault',
         pilotLastName: 'Jeanpierre',
-        studentID: "5678",
-        studentFirstName: 'Sophie',
-        studentLastName: 'Turner',
+        studentID: "3", // Student: Jean Durand
+        studentFirstName: 'Jean',
+        studentLastName: 'Durand',
         student_type: flightType.TRAINING,
         planeID: ["0"],
     },
@@ -282,10 +271,10 @@ export const flightsSessionsExemple = [
         sessionDateDuration_min: 60,
         finalReccurence: new Date(2024, 11 - 1, 27, 13, 0, 0),
         flightType: flightType.TRAINING,
-        pilotID: "14",
+        pilotID: "2", // Pilot: Thibault Jeanpierre
         pilotFirstName: 'Thibault',
         pilotLastName: 'Jeanpierre',
-        studentID: null,
+        studentID: null, // No student
         studentFirstName: '',
         studentLastName: '',
         student_type: null,
@@ -298,13 +287,13 @@ export const flightsSessionsExemple = [
         sessionDateDuration_min: 60,
         finalReccurence: null,
         flightType: flightType.TRAINING,
-        pilotID: "15",
-        pilotFirstName: 'stephane',
+        pilotID: "1", // Pilot: Stephane Jeanpierre
+        pilotFirstName: 'Stephane',
         pilotLastName: 'Jeanpierre',
-        studentID: null,
+        studentID: null, // No student
         studentFirstName: null,
         studentLastName: null,
         student_type: null,
-        planeID: ["1","3","4","6"],
+        planeID: ["1", "3", "4", "6"],
     }
 ];

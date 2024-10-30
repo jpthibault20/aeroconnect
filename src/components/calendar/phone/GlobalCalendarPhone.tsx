@@ -18,6 +18,8 @@ import { DaysOfMonthType, getCompleteWeeks } from '@/api/date';
 import Calendar from './../phone/calendar';
 import SessionOfDay from "@/components/calendar/phone/SessionsOfDay";
 import NewSession from "@/components/NewSession";
+import Filter from '../Filter';
+import { flight_sessions } from '@prisma/client';
 
 /**
  * @component GlobalCalendarPhone
@@ -29,6 +31,7 @@ const GlobalCalendarPhone = () => {
     const [date, setDate] = useState(new Date());
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>();
     const [selectDate, setSelectDate] = useState(new Date());
+    const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(flightsSessionsExemple);
 
 
     // Effect to filter sessions when instructor or plane changes
@@ -78,8 +81,9 @@ const GlobalCalendarPhone = () => {
                     <p className='text-4xl font-istok mb-3'>
                         {date.toLocaleDateString('fr-FR', { month: 'long' })}, {date.toLocaleDateString('fr-FR', { year: 'numeric' })}
                     </p>
-                    <div>
+                    <div className='flex'>
                         <NewSession display='phone' />
+                        <Filter sessions={flightsSessionsExemple} setSessionsFiltered={setSessionsFiltered} />
                     </div>
                 </div>
                 <div className='flex w-full px-6'>
@@ -95,14 +99,14 @@ const GlobalCalendarPhone = () => {
                 <Calendar
                     daysOfMonth={daysOfMonth}
                     date={date}
-                    flightsSessions={flightsSessionsExemple}
+                    flightsSessions={sessionsFlitered}
                     setSelectDate={setSelectDate}
                     selectDate={selectDate}
                 />
             </div>
 
             <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 h-full'> {/* Make the sessions part scrollable */}
-                <SessionOfDay selectDate={selectDate} flightsSessions={flightsSessionsExemple} />
+                <SessionOfDay selectDate={selectDate} flightsSessions={sessionsFlitered} />
             </div>
         </div>
     );

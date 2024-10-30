@@ -12,12 +12,12 @@ import { workingHour } from '@/config/configClub';
 import { dayFr } from '@/config/date';
 import { formatTime, getDaysOfWeek } from '@/api/date';
 import Session from '../Session';
-import { flightsSessionsExemple } from "@/config/exempleData"
+import { flight_sessions } from '@prisma/client';
 
 interface Props {
     className?: string;          ///< Optional CSS class for styling.
     date: Date;                  ///< The date from which the week is displayed.
-    ///< Filter to display sessions for a specific plane.
+    sessions: flight_sessions[]///< Filter to display sessions for a specific plane.
 }
 
 /**
@@ -34,7 +34,7 @@ interface Props {
  * 
  * @returns The rendered weekly calendar with filtered sessions.
  */
-const TabCalendar = ({ date }: Props) => {
+const TabCalendar = ({ date, sessions }: Props) => {
     // Get the days of the current week based on the reference date
     const daysOfWeek = getDaysOfWeek(date);
 
@@ -84,7 +84,7 @@ const TabCalendar = ({ date }: Props) => {
                                         indexY={indexday}   ///< Index for the day.
                                         tabDays={dayFr}     ///< List of days (e.g., Monday to Sunday).
                                         tabHours={workingHour} ///< List of working hours.
-                                        events={flightsSessionsExemple} ///< List of filtered sessions.
+                                        events={sessions} ///< List of filtered sessions.
                                         date={date}         ///< The current reference date.
                                     />
                                 </div>

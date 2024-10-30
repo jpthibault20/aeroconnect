@@ -10,6 +10,9 @@ import { monthFr } from '@/config/date';
 import DaySelector from './DaySelector';
 import TabCalendar from './TabCalendar';
 import NewSession from "@/components/NewSession"
+import Filter from './Filter';
+import { flightsSessionsExemple } from '@/config/exempleData';
+import { flight_sessions } from '@prisma/client';
 
 /**
  * @function GlobalCalendarDesktop
@@ -22,6 +25,8 @@ import NewSession from "@/components/NewSession"
  */
 const GlobalCalendarDesktop = () => {
     const [date, setDate] = useState(new Date());
+    const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(flightsSessionsExemple);
+
 
 
     /**
@@ -83,9 +88,10 @@ const GlobalCalendarDesktop = () => {
                                 onClickPreviousWeek={onClickPreviousWeek}
                                 onClickToday={onClickToday}
                             />
-                            <div className='flex space-x-2'>
+                            <div className='flex space-x-2 px-3'>
                                 {/* Button to create a new session (desktop view only). */}
                                 <NewSession display='desktop' style='h-full flex items-center justify-center' />
+                                <Filter sessions={flightsSessionsExemple} setSessionsFiltered={setSessionsFiltered} />
 
                             </div>
                         </div>
@@ -95,6 +101,7 @@ const GlobalCalendarDesktop = () => {
                     {/* Main calendar table with the applied filters (instructor and plane). */}
                     <TabCalendar
                         date={date}
+                        sessions={sessionsFlitered}
                     />
                 </div>
             </div>

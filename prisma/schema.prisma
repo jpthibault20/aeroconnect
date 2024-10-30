@@ -52,6 +52,7 @@ model planes {
 enum userRole {
   USER
   STUDENT
+  INSTRUCTOR
   PILOT
   OWNER
   ADMIN
