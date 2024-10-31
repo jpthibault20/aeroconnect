@@ -35,11 +35,8 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload }: Props) => {
     // State variables for managing date, instructor, plane, and filtered sessions
     const [date, setDate] = useState(new Date());
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>();
-    const [selectDate, setSelectDate] = useState(new Date());
+    const [selectDate, setSelectDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
-
-
-    // Effect to filter sessions when instructor or plane changes
 
 
     // Effect to get complete weeks for the selected date
@@ -72,7 +69,7 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload }: Props) => {
 
     // Handler to set the date to today
     const onClickToday = () => {
-        setDate(new Date());
+        setDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
     };
 
     return (
