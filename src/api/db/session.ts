@@ -26,14 +26,16 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
 
     const now = new Date();
 
-    if (sessionData.date < now) {
+    if (sessionData.date < new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)) {
         return { error: "La date de session doit être dans le futur" };
     }
 
     if (sessionData.date.toUTCString().slice(0, 16) === now.toUTCString().slice(0, 16)) {
         const startHour = Number(sessionData.startHour);
         const startMinute = Number(sessionData.startMinute);
-        if (startHour < now.getUTCHours() || (startHour === now.getUTCHours() && startMinute <= now.getUTCMinutes())) {
+        const startTimeMinute = startHour * 60 + startMinute + now.getTimezoneOffset();
+        console.log(startHour, startMinute, now.getUTCHours(), now.getUTCMinutes());
+        if (startTimeMinute <= (now.getUTCHours() * 60 + now.getUTCMinutes())) {
             return { error: "La session est aujourd'hui mais l'heure doit être dans le futur" };
         }
     }
