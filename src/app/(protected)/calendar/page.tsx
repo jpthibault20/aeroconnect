@@ -35,11 +35,18 @@ const Page = () => {
             if (currentUser) {
                 try {
                     const res = await getAllSessions(currentUser.clubID);
+
                     if (Array.isArray(res)) {
-                        // for (let i = 0; i < sessions.length; i++) {
-                        //     sessions[i].sessionDateStart.setUTCHours(sessions[i].sessionDateStart.getUTCHours())
-                        // }
-                        setSessions(res);
+                        // Convert all session dates to UTC dates
+                        const sessionsWithUTC = res.map(session => {
+                            return {
+                                ...session,
+                                sessionDateStart: new Date(session.sessionDateStart.toISOString()), // Conversion UTC
+                                sessionDateEnd: session.finalReccurence ? new Date(session.finalReccurence).toISOString() : null // Conversion UTC si une fin est définie
+                            };
+                        });
+
+                        setSessions(sessionsWithUTC);
                     } else {
                         console.log('Unexpected response format:', res);
                     }
@@ -47,7 +54,7 @@ const Page = () => {
                     console.log(error);
                 }
             }
-        }
+        };
 
         fetchSessions();
         // eslint-disable-next-line react-hooks/exhaustive-deps
