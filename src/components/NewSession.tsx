@@ -200,7 +200,7 @@ const NewSession = ({ display, reload, setReload }: Props) => {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {workingHour.map((h) => (
+                                {workingHour.slice(0, -1).map((h) => (
                                     <SelectItem key={`start-${h}`} value={h.toString()}>
                                         {h}
                                     </SelectItem>
