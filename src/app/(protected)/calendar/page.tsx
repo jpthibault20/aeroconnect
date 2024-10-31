@@ -37,7 +37,7 @@ const Page = () => {
                     const res = await getAllSessions(currentUser.clubID);
                     if (Array.isArray(res)) {
                         for (let i = 0; i < sessions.length; i++) {
-                            sessions[i].sessionDateStart = new Date(sessions[i].sessionDateStart.getUTCFullYear(), sessions[i].sessionDateStart.getUTCMonth(), sessions[i].sessionDateStart.getUTCDate(), sessions[i].sessionDateStart.getUTCHours(), sessions[i].sessionDateStart.getUTCMinutes(), 0);
+                            sessions[i].sessionDateStart.setUTCHours(sessions[i].sessionDateStart.getUTCHours())
                         }
                         setSessions(res);
                     } else {
