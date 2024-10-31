@@ -93,9 +93,11 @@ const GlobalCalendarDesktop = ({ sessions, reload, setReload }: Props) => {
                                 onClickPreviousWeek={onClickPreviousWeek}
                                 onClickToday={onClickToday}
                             />
-                            <div className='flex space-x-2 px-3'>
+                            <div className='flex space-x-2 px-3 '>
                                 {/* Button to create a new session (desktop view only). */}
-                                <NewSession display='desktop' reload={reload} setReload={setReload} />
+                                <div>
+                                    <NewSession display='desktop' reload={reload} setReload={setReload} />
+                                </div>
                                 <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='desktop' />
 
                             </div>

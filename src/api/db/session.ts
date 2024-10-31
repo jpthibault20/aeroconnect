@@ -156,3 +156,23 @@ export const getAllSessions = async (clubID: string) => {
         await prisma.$disconnect();
     }
 }
+
+export const getAllFutureSessions = async (clubID: string) => {
+    try {
+        const sessions = await prisma.flight_sessions.findMany({
+            where: {
+                clubID: clubID,
+                sessionDateStart: {
+                    gte: new Date()
+                }
+            }
+        })
+        return sessions;
+    } catch (error) {
+        console.error('Error getting flight sessions:', error);
+        return { error: "Erreur lors de la récupération des sessions de vol" };
+    }
+    finally {
+        await prisma.$disconnect();
+    }
+}

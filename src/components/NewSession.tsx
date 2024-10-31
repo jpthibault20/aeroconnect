@@ -148,7 +148,7 @@ const NewSession = ({ display, reload, setReload }: Props) => {
     // affichage du composant(bouton de nouvelle session et card de configuration)
     return (
         <Dialog open={isOpenPopover} onOpenChange={setIsPopoverOpen}>
-            <DialogTrigger className={`${display === "desktop" ? "bg-[#774BBE] hover:bg-[#3d2365] text-white" : "bg-white"} rounded-md px-2 font-medium`}>
+            <DialogTrigger className={`${display === "desktop" ? "bg-[#774BBE] hover:bg-[#3d2365] text-white" : ""} h-full rounded-md px-2 font-medium`}>
                 {display === "desktop" ? <p>Nouvelle session</p> : <IoMdAddCircle size={27} color='#774BBE' />}
             </DialogTrigger>
 

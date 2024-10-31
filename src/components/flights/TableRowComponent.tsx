@@ -86,20 +86,20 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked }: props) 
                 {session.sessionDateStart.toLocaleDateString('fr-FR', { day: 'numeric', month: '2-digit', year: 'numeric' })}
             </TableCell>
             <TableCell className='text-center'>
-                {session.sessionDateStart.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                {session.sessionDateStart.toISOString().slice(11, 16)}
             </TableCell>
             <TableCell className='text-center'>
-                {finalDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                {finalDate.toISOString().slice(11, 16)}
             </TableCell>
             <TableCell className='text-center'>
                 {session.finalReccurence !== null ? (session.finalReccurence.toLocaleDateString('fr-FR', { day: 'numeric', month: '2-digit', year: 'numeric' })) : 'NON'}
             </TableCell>
             <TableCell className='text-center'>
-                {session.studentFirstName}
+                {session.studentFirstName ? session.studentFirstName : '...'}
             </TableCell>
-            <TableCell className='text-center'>
+            {/* <TableCell className='text-center'>
                 {session.flightType}
-            </TableCell>
+            </TableCell> */}
             <TableCell className='flex flex-col items-center space-y-3 justify-center xl:block xl:space-x-5'>
                 <button onClick={onClickUpdateFlights(session.id)}>
                     <FaPen color='blue' size={15} />

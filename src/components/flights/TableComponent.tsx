@@ -43,7 +43,7 @@ const TableComponent = ({ sessions, setSessionChecked }: props) => {
                         <TableHead className='text-black text-center'>Heure de fin</TableHead>
                         <TableHead className='text-black text-center'>Récurrence</TableHead>
                         <TableHead className='text-black text-center'>Élève inscrit</TableHead>
-                        <TableHead className='text-black text-center'>Type de vol</TableHead>
+                        {/* <TableHead className='text-black text-center'>Type de vol</TableHead> */}
                         <TableHead className='text-black text-center'>Action</TableHead>
                     </TableRow>
                 </TableHeader>
