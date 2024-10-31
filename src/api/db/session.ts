@@ -147,9 +147,6 @@ export const getAllSessions = async (clubID: string) => {
                 clubID: clubID,
             }
         });
-        for (let i = 0; i < sessions.length; i++) {
-            sessions[i].sessionDateStart = new Date(sessions[i].sessionDateStart.getUTCFullYear(), sessions[i].sessionDateStart.getUTCMonth(), sessions[i].sessionDateStart.getUTCDate(), sessions[i].sessionDateStart.getUTCHours(), sessions[i].sessionDateStart.getUTCMinutes(), 0);
-        }
         return sessions;
     } catch (error) {
         console.error('Error getting flight sessions:', error);
