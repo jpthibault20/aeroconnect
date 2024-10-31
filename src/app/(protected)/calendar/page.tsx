@@ -50,14 +50,6 @@ const Page = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser, reload]);
 
-    useEffect(() => {
-        if (sessions.length > 0) {
-            console.log(sessions[0].sessionDateStart.getFullYear(), sessions[0].sessionDateStart.getMonth(), sessions[0].sessionDateStart.getDate(), sessions[0].sessionDateStart.getHours(), sessions[0].sessionDateStart.getMinutes());
-            console.log(sessions[0].sessionDateStart.getUTCFullYear(), sessions[0].sessionDateStart.getUTCMonth(), sessions[0].sessionDateStart.getUTCDate(), sessions[0].sessionDateStart.getUTCHours(), sessions[0].sessionDateStart.getUTCMinutes());
-            console.log(sessions[0].sessionDateStart.getTimezoneOffset())
-        }
-    }, [sessions]);
-
     return (
         // Full height and width container to ensure the calendar takes up the entire page space.
         <InitialLoading className='h-full w-full'>

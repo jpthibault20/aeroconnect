@@ -10,18 +10,44 @@
  */
 
 "use client";
-import React, { useState } from 'react';
-import { UserExemple } from '@/config/exempleData';
+import React, { useEffect, useState } from 'react';
 import { Input } from '../ui/input';
 import { User, userRole } from '@prisma/client';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from '../ui/button';
 import { IoChevronDown } from "react-icons/io5";
 import TableComponent from './TableComponent';
+import { getAllUser } from '@/api/db/db';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { Spinner } from '../ui/SpinnerVariants';
 
 const StudentsPage = () => {
+    const { currentUser } = useCurrentUser();
+    const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [users, setUsers] = useState<User[]>([]);
     const [roleFilter, setRoleFilter] = useState<userRole | 'all'>('all');
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            setLoading(true);
+            if (currentUser) {
+                try {
+                    const res = await getAllUser(currentUser.clubID);
+                    if (Array.isArray(res)) {
+                        setUsers(res);
+                        setLoading(false);
+                    } else {
+                        console.log('Unexpected response format:', res);
+                    }
+                } catch (error) {
+                    console.log(error);
+                }
+            }
+        };
+
+        fetchUsers();
+    }, [currentUser]);
 
     /**
      * @function sortUser
@@ -56,7 +82,7 @@ const StudentsPage = () => {
         return filteredUsers;
     };
 
-    const sortedUsers = sortUser(UserExemple, roleFilter, searchQuery);
+    const sortedUsers = sortUser(users, roleFilter, searchQuery);
 
     const handleRoleFilterChange = (value: 'all' | userRole) => {
         setRoleFilter(value);
@@ -67,7 +93,7 @@ const StudentsPage = () => {
         <div className='p-6 '>
             <div className='flex space-x-3'>
                 <p className='font-medium text-3xl'>Les élèves</p>
-                <p className='text-[#797979] text-3xl'>{UserExemple.length}</p>
+                <p className='text-[#797979] text-3xl'>{users?.length}</p>
             </div>
             <div className='my-3 flex justify-end space-x-3'>
                 <DropdownMenu>
@@ -129,7 +155,13 @@ const StudentsPage = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
-            <TableComponent users={sortedUsers} />
+            {loading ? (
+                <div className='flex justify-center items-center h-full'>
+                    <Spinner />
+                </div>
+            ) : (
+                <TableComponent users={sortedUsers} />
+            )}
         </div>
     );
 }

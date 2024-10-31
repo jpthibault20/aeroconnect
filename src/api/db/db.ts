@@ -85,6 +85,24 @@ export const createPlane = async (dataPlane: AddPlane) => {
     }
 };
 
+export const getAllUser = async (clubID: string) => {
+    try {
+        const users = await prisma.user.findMany({
+            where: {
+                clubID: clubID
+            }
+        })
+        return users;
+    } catch (error) {
+        console.error('Error getting user:', error);
+        return { error: "Erreur lors de la récupération des utilisateurs" };
+    }
+    finally {
+        await prisma.$disconnect();
+    }
+}
+
+// récupération de la session de l'utilisateur
 export const getSession = async () => {
     const supabase = createClient()
     try {

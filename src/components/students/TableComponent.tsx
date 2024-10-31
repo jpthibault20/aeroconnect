@@ -14,9 +14,9 @@ interface props {
  */
 const TableComponent = ({ users }: props): JSX.Element => {
     return (
-        <div className="max-h-[70vh] overflow-y-auto bg-white rounded-lg"> {/* Conteneur avec scroll */}
+        <div className="max-h-[70vh] overflow-y-auto bg-white rounded-lg">
             <Table className='w-full'>
-                <TableHeader className='sticky top-0 bg-white z-10'> {/* Sticky header */}
+                <TableHeader className='sticky top-0 bg-white z-10'>
                     <TableRow>
                         <TableHead className='font-semibold text-lg text-black'>Nom</TableHead>
                         <TableHead className='font-semibold text-lg text-black text-center'>Rôle</TableHead>
@@ -24,10 +24,11 @@ const TableComponent = ({ users }: props): JSX.Element => {
                         <TableHead className='font-semibold text-lg text-black text-center'>Téléphone</TableHead>
                     </TableRow>
                 </TableHeader>
-                <TableBody className="max-h-[60vh] overflow-y-auto"> {/* Body du tableau avec scroll */}
+                <TableBody className="max-h-[60vh] overflow-y-auto w-full">
                     {users.map((user, index) => (
                         <TableRowComponent user={user} key={index} />  ///< Renders a row for each user.
-                    ))}
+                    ))
+                    }
                 </TableBody>
             </Table>
         </div>
