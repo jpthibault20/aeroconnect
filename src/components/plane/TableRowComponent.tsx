@@ -17,10 +17,10 @@ import React from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { FaPen } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
-import { Plane } from '@/config/exempleData';
+import { planes } from '@prisma/client';
 
 interface Props {
-    plane: Plane; // Utiliser le type Plane ici
+    plane: planes; // Utiliser le type Plane ici
 }
 
 const TableRowComponent = ({ plane }: Props) => {
