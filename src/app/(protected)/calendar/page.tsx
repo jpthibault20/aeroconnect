@@ -36,6 +36,9 @@ const Page = () => {
                 try {
                     const res = await getAllSessions(currentUser.clubID);
                     if (Array.isArray(res)) {
+                        for (let i = 0; i < sessions.length; i++) {
+                            sessions[i].sessionDateStart = new Date(sessions[i].sessionDateStart.getUTCFullYear(), sessions[i].sessionDateStart.getUTCMonth(), sessions[i].sessionDateStart.getUTCDate(), sessions[i].sessionDateStart.getUTCHours(), sessions[i].sessionDateStart.getUTCMinutes(), 0);
+                        }
                         setSessions(res);
                     } else {
                         console.log('Unexpected response format:', res);
@@ -47,6 +50,7 @@ const Page = () => {
         }
 
         fetchSessions();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser, reload]);
 
     useEffect(() => {
