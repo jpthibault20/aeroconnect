@@ -35,18 +35,11 @@ const Page = () => {
             if (currentUser) {
                 try {
                     const res = await getAllSessions(currentUser.clubID);
-
                     if (Array.isArray(res)) {
-                        // Convert all session dates to UTC dates
-                        const sessionsWithUTC = res.map(session => {
-                            return {
-                                ...session,
-                                sessionDateStart: new Date(session.sessionDateStart.toISOString()), // Conversion UTC
-                                sessionDateEnd: session.finalReccurence ? new Date(session.finalReccurence).toISOString() : null // Conversion UTC si une fin est définie
-                            };
-                        });
-
-                        setSessions(sessionsWithUTC);
+                        // for (let i = 0; i < sessions.length; i++) {
+                        //     sessions[i].sessionDateStart.setUTCHours(sessions[i].sessionDateStart.getUTCHours())
+                        // }
+                        setSessions(res);
                     } else {
                         console.log('Unexpected response format:', res);
                     }
@@ -54,7 +47,7 @@ const Page = () => {
                     console.log(error);
                 }
             }
-        };
+        }
 
         fetchSessions();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -64,6 +57,7 @@ const Page = () => {
         if (sessions.length > 0) {
             console.log(sessions[0].sessionDateStart.getFullYear(), sessions[0].sessionDateStart.getMonth(), sessions[0].sessionDateStart.getDate(), sessions[0].sessionDateStart.getHours(), sessions[0].sessionDateStart.getMinutes());
             console.log(sessions[0].sessionDateStart.getUTCFullYear(), sessions[0].sessionDateStart.getUTCMonth(), sessions[0].sessionDateStart.getUTCDate(), sessions[0].sessionDateStart.getUTCHours(), sessions[0].sessionDateStart.getUTCMinutes());
+            console.log(sessions[0].sessionDateStart.getTimezoneOffset())
         }
     }, [sessions]);
 
