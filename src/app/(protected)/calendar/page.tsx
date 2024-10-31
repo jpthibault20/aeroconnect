@@ -36,9 +36,9 @@ const Page = () => {
                 try {
                     const res = await getAllSessions(currentUser.clubID);
                     if (Array.isArray(res)) {
-                        for (let i = 0; i < sessions.length; i++) {
-                            sessions[i].sessionDateStart.setUTCHours(sessions[i].sessionDateStart.getUTCHours())
-                        }
+                        // for (let i = 0; i < sessions.length; i++) {
+                        //     sessions[i].sessionDateStart.setUTCHours(sessions[i].sessionDateStart.getUTCHours())
+                        // }
                         setSessions(res);
                     } else {
                         console.log('Unexpected response format:', res);
@@ -54,7 +54,8 @@ const Page = () => {
     }, [currentUser, reload]);
 
     useEffect(() => {
-        console.log(sessions);
+        console.log(sessions[0].sessionDateStart.getFullYear(), sessions[0].sessionDateStart.getMonth(), sessions[0].sessionDateStart.getDate(), sessions[0].sessionDateStart.getHours(), sessions[0].sessionDateStart.getMinutes());
+        console.log(sessions[0].sessionDateStart.getUTCFullYear(), sessions[0].sessionDateStart.getUTCMonth(), sessions[0].sessionDateStart.getUTCDate(), sessions[0].sessionDateStart.getUTCHours(), sessions[0].sessionDateStart.getUTCMinutes());
     }, [sessions]);
 
     return (
