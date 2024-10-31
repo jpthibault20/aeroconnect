@@ -126,9 +126,9 @@ export function getCompleteWeeks(date: Date) {
 export const getFlightSessionsForDay = (dayDate: Date, sessions: flight_sessions[]) => {
     return sessions.filter(session => {
         return (
-            session.sessionDateStart.getFullYear() === dayDate.getFullYear() &&
-            session.sessionDateStart.getMonth() === dayDate.getMonth() &&
-            session.sessionDateStart.getDate() === dayDate.getDate()
+            session.sessionDateStart.getUTCFullYear() === dayDate.getFullYear() &&
+            session.sessionDateStart.getUTCMonth() === dayDate.getMonth() &&
+            session.sessionDateStart.getUTCDate() === dayDate.getDate()
         );
     });
 };

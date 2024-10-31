@@ -46,13 +46,13 @@ const SessionDisplay = ({ session }: Props) => {
         >
             <div className='text-xs text-[#646464] flex flex-col justify-center items-center'>
                 <p className=''>
-                    {session.sessionDateStart.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    {session.sessionDateStart.toISOString().slice(11, 16)}
                 </p>
                 <p>
                     |
                 </p>
                 <p>
-                    {finalDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    {finalDate.toISOString().slice(11, 16)}
                 </p>
             </div>
             {session.studentID ? (
