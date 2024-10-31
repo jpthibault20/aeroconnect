@@ -26,19 +26,19 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
 
     const now = new Date();
 
-    if (sessionData.date < new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)) {
+    if (new Date(sessionData.date.getFullYear(), sessionData.date.getMonth(), sessionData.date.getDate()) <= new Date(now.getFullYear(), now.getMonth(), now.getDate())) {
         return { error: "La date de session doit être dans le futur" };
     }
 
-    if (sessionData.date.toUTCString().slice(0, 16) === now.toUTCString().slice(0, 16)) {
-        const startHour = Number(sessionData.startHour);
-        const startMinute = Number(sessionData.startMinute);
-        const startTimeMinute = startHour * 60 + startMinute + now.getTimezoneOffset();
-        console.log(startHour, startMinute, now.getUTCHours(), now.getUTCMinutes());
-        if (startTimeMinute <= (now.getUTCHours() * 60 + now.getUTCMinutes())) {
-            return { error: "La session est aujourd'hui mais l'heure doit être dans le futur" };
-        }
-    }
+    // if (sessionData.date.toUTCString().slice(0, 16) === now.toUTCString().slice(0, 16)) {
+    //     const startHour = Number(sessionData.startHour);
+    //     const startMinute = Number(sessionData.startMinute);
+    //     const startTimeMinute = startHour * 60 + startMinute + now.getTimezoneOffset();
+    //     console.log(startHour, startMinute, now.getUTCHours(), now.getUTCMinutes());
+    //     if (startTimeMinute <= (now.getUTCHours() * 60 + now.getUTCMinutes())) {
+    //         return { error: "La session est aujourd'hui mais l'heure doit être dans le futur" };
+    //     }
+    // }
 
     const débutTotalMinutes = parseInt(sessionData.startHour) * 60 + parseInt(sessionData.startMinute);
     const finTotalMinutes = parseInt(sessionData.endHour) * 60 + parseInt(sessionData.endMinute);
