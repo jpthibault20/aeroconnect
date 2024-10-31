@@ -109,14 +109,14 @@ const Session = ({ indexX, indexY, tabHours, events, date }: props) => {
     if (session.length === 0) return null; // Si la session n'existe pas, on ne montre rien (on affiche rien dans le calendrier)
 
     // Calcul de la date de fin de la session
-    const endSessionDate = new Date(session[0].sessionDateStart.getFullYear(), session[0].sessionDateStart.getMonth(), session[0].sessionDateStart.getDate(), session[0].sessionDateStart.getHours(), session[0].sessionDateStart.getMinutes() + session[0].sessionDateDuration_min, 0)
+    const endSessionDate = new Date(session[0].sessionDateStart.getUTCFullYear(), session[0].sessionDateStart.getUTCMonth(), session[0].sessionDateStart.getUTCDate(), session[0].sessionDateStart.getUTCHours(), session[0].sessionDateStart.getUTCMinutes() + session[0].sessionDateDuration_min, 0)
 
     return (
         <div className={`justify-center items-center p-1 rounded-md h-full w-full ${availableSessions.available === 0 ? 'bg-[#CB8A8A] opacity-50' : 'bg-[#B9DFC1]'}`}>
             <div>
                 <p className='text-xs text-[#646464] text-end'>
-                    {session[0].sessionDateStart.getHours().toString().padStart(2, '0')}:
-                    {session[0].sessionDateStart.getMinutes().toString().padStart(2, '0')} -
+                    {session[0].sessionDateStart.getUTCHours().toString().padStart(2, '0')}:
+                    {session[0].sessionDateStart.getUTCMinutes().toString().padStart(2, '0')} -
                     {endSessionDate.getHours().toString().padStart(2, '0')}:
                     {endSessionDate.getMinutes().toString().padStart(2, '0')}
                 </p>

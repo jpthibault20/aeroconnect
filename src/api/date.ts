@@ -41,11 +41,11 @@ export const getSessionsFromDate = (date: Date, sessions: flight_sessions[]): fl
         const sessionDate = session.sessionDateStart;
 
         // Comparer les dates (année, mois, jour)
-        return sessionDate.getFullYear() === date.getFullYear() &&
-            sessionDate.getMonth() === date.getMonth() &&
-            sessionDate.getDate() === date.getDate() &&
-            sessionDate.getHours() === date.getHours() &&
-            sessionDate.getMinutes() === date.getMinutes();
+        return sessionDate.getUTCFullYear() === date.getFullYear() &&
+            sessionDate.getUTCMonth() === date.getMonth() &&
+            sessionDate.getUTCDate() === date.getDate() &&
+            sessionDate.getUTCHours() === date.getHours() &&
+            sessionDate.getUTCMinutes() === date.getMinutes();
     });
 };
 

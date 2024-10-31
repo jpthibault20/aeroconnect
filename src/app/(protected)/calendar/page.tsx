@@ -36,9 +36,6 @@ const Page = () => {
                 try {
                     const res = await getAllSessions(currentUser.clubID);
                     if (Array.isArray(res)) {
-                        // for (let i = 0; i < sessions.length; i++) {
-                        //     sessions[i].sessionDateStart.setUTCHours(sessions[i].sessionDateStart.getUTCHours())
-                        // }
                         setSessions(res);
                     } else {
                         console.log('Unexpected response format:', res);
