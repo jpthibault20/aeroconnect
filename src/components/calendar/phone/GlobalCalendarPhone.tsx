@@ -35,7 +35,7 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload }: Props) => {
     // State variables for managing date, instructor, plane, and filtered sessions
     const [date, setDate] = useState(new Date());
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>();
-    const [selectDate, setSelectDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    const [selectDate, setSelectDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
 
 
@@ -52,6 +52,7 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload }: Props) => {
     // Handler to navigate to the next month
     const onClickNextweek = () => {
         setDate(prevDate => {
+            prevDate.setDate(1);
             const newDate = new Date(prevDate);
             newDate.setMonth(newDate.getMonth() + 1);
             return newDate;
@@ -61,6 +62,7 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload }: Props) => {
     // Handler to navigate to the previous month
     const onClickPreviousWeek = () => {
         setDate(prevDate => {
+            prevDate.setDate(1);
             const newDate = new Date(prevDate);
             newDate.setMonth(newDate.getMonth() - 1);
             return newDate;
@@ -69,7 +71,7 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload }: Props) => {
 
     // Handler to set the date to today
     const onClickToday = () => {
-        setDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+        setDate(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
     };
 
     return (
