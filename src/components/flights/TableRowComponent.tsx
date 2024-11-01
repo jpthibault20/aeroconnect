@@ -18,15 +18,18 @@ import { TableCell, TableRow } from '../ui/table';
 import { Checkbox } from '../ui/checkbox';
 import { flight_sessions } from '@prisma/client';
 import { FaPen } from 'react-icons/fa';
+import { RemoveConfirm } from './RemoveConfirm';
 import { IoMdClose } from 'react-icons/io';
 
 interface props {
     session: flight_sessions;  ///< The flight session object
     setSessionChecked: React.Dispatch<React.SetStateAction<string[]>>; ///< Function to update selected session IDs
     isAllChecked: boolean; ///< Indicates if "select all" is checked
+    reload: boolean;
+    setReload: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const TableRowComponent = ({ session, setSessionChecked, isAllChecked }: props) => {
+const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, setReload }: props) => {
     const [isChecked, setIsChecked] = useState(false); // State for individual checkbox
 
     const finalDate = new Date(session.sessionDateStart);
@@ -49,20 +52,15 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked }: props) 
         });
     };
 
+    useEffect(() => {
+        setIsChecked(false);
+    }, [session]);
+
     // Sync individual checkbox state with "select all"
     useEffect(() => {
         setIsChecked(isAllChecked);
     }, [isAllChecked]);
 
-    /**
-     * Handles the delete action for flights.
-     *
-     * @param {string} flightsId - The ID of the flight to delete.
-     * @returns {Function} The click event handler.
-     */
-    const onClickDeleteFlights = (flightsId: string) => () => {
-        console.log('Delete flights : ', flightsId);
-    };
 
     /**
      * Handles the update action for flights.
@@ -104,9 +102,11 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked }: props) 
                 <button onClick={onClickUpdateFlights(session.id)}>
                     <FaPen color='blue' size={15} />
                 </button>
-                <button onClick={onClickDeleteFlights(session.id)}>
-                    <IoMdClose color='red' size={20} />
-                </button>
+                <RemoveConfirm sessionChecked={[session.id]} reload={reload} setReload={setReload}>
+                    <button>
+                        <IoMdClose color='red' size={20} />
+                    </button>
+                </RemoveConfirm>
             </TableCell>
         </TableRow>
     );

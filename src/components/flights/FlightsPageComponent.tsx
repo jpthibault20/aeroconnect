@@ -10,12 +10,14 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import TableComponent from "@/components/flights/TableComponent";
-import { Button } from '@/components/ui/button';
 import Filter from '@/components/flights/Filter';
 import { getAllFutureSessions } from '@/api/db/session';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { flight_sessions } from '@prisma/client';
 import NewSession from '../NewSession';
+import { Spinner } from '../ui/SpinnerVariants';
+import { RemoveConfirm } from './RemoveConfirm';
+import { Button } from '../ui/button';
 
 /**
  * @component PlanePageComponent
@@ -31,11 +33,13 @@ const FlightsPageComponent = () => {
     const [sessions, setSessions] = useState<flight_sessions[]>([]);
     const [filteredSessions, setFilteredSessions] = useState(sessions); // State for filtered sessions
     const [reload, setReload] = useState(false);
+    const [loading, setLoading] = useState(false);
     const { currentUser } = useCurrentUser();
 
     useEffect(() => {
         const fetchSessions = async () => {
             if (currentUser) {
+                setLoading(true);
                 try {
                     const res = await getAllFutureSessions(currentUser.clubID);
                     if (Array.isArray(res)) {
@@ -44,6 +48,7 @@ const FlightsPageComponent = () => {
                             new Date(a.sessionDateStart).getTime() - new Date(b.sessionDateStart).getTime()
                         );
                         setSessions(sortedSessions);
+                        setLoading(false);
                     } else {
                         console.log('Unexpected response format:', res);
                     }
@@ -83,11 +88,6 @@ const FlightsPageComponent = () => {
         setFilteredSessions(filtered); // Update the filtered sessions
     }, [filterAvailable, filterReccurence, filterDate, sessions]); // Recalculate filters when any filter changes
 
-    // Log selected session IDs when they change
-    useEffect(() => {
-        console.log(sessionChecked);
-    }, [sessionChecked]);
-
     /**
      * Function to check if a given value is a valid date.
      * 
@@ -98,10 +98,6 @@ const FlightsPageComponent = () => {
         return date instanceof Date && !isNaN(date.getTime());
     };
 
-    const onClickAction = () => {
-        console.log("action");
-    };
-
     return (
         <div className='h-full'>
             <div className='flex space-x-3'>
@@ -110,9 +106,9 @@ const FlightsPageComponent = () => {
             </div>
             <div className='my-3 flex justify-between'>
                 <div className='flex space-x-3'>
-                    <Button onClick={onClickAction} className='bg-[#774BBE] hover:bg-[#3d2365]'>
-                        Action
-                    </Button>
+                    <RemoveConfirm sessionChecked={sessionChecked} reload={reload} setReload={setReload}>
+                        <Button className='bg-red-700 hover:bg-red-800 text-white'>Supprimer</Button>
+                    </RemoveConfirm>
                     <div className='hidden lg:block h-full'>
                         <NewSession display={'desktop'} reload={reload} setReload={setReload} />
                     </div>
@@ -131,10 +127,18 @@ const FlightsPageComponent = () => {
                 />
             </div>
             {/* Use filtered sessions in the table */}
-            <TableComponent
-                sessions={filteredSessions} // Pass filtered sessions here
-                setSessionChecked={setSessionChecked}
-            />
+            {loading ? (
+                <div className='flex justify-center items-center'>
+                    <Spinner />
+                </div>
+            ) : (
+                <TableComponent
+                    sessions={filteredSessions} // Pass filtered sessions here
+                    setSessionChecked={setSessionChecked}
+                    reload={reload}
+                    setReload={setReload}
+                />
+            )}
         </div>
     );
 };

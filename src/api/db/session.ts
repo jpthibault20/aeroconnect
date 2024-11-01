@@ -194,3 +194,22 @@ export const getPlanes = async (clubID: string) => {
         await prisma.$disconnect();
     }
 }
+
+export const removeSessionsByID = async (sessionID: string[]) => {
+    try {
+        await prisma.flight_sessions.deleteMany({
+            where: {
+                id: {
+                    in: sessionID
+                }
+            }
+        });
+        console.log('Sessions deleted successfully');
+        return { success: "Les sessions ont été supprimées !" };
+    } catch (error) {
+        console.error('Error deleting flight sessions:', error);
+        return { error: "Erreur lors de la suppression des sessions de vol" };
+    } finally {
+        await prisma.$disconnect();
+    }
+}
