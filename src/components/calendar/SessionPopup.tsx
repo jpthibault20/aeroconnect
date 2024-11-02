@@ -11,11 +11,14 @@ const SessionPopup = ({ sessions }: prop) => {
 
     // Function to format the session date
     const formatDate = (dateString: Date) => {
-        const date = new Date(dateString); // Convert to Date object
+        const day = dateString.getUTCDate();
+        const month = dateString.getUTCMonth() + 1;
+        const year = dateString.getUTCFullYear();
+        const hour = dateString.getUTCHours();
+        const minute = dateString.getUTCMinutes();
+        const second = dateString.getUTCSeconds();
 
-        // Format date and time separately
-        const formattedDate = date.toLocaleDateString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); // French format
-
+        const formattedDate = `${day}/${month}/${year} ${hour}:${minute === 0 ? '00' : minute}:${second === 0 ? '00' : second}`;
         return `${formattedDate} `; // Combine
     };
 

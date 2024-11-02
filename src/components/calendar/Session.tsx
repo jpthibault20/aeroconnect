@@ -57,7 +57,7 @@ const Session = ({ indexX, indexY, tabHours = [], events = [], date }: Props) =>
         };
     }, [events, sessionDate]); // `sessionDate` est maintenant stable
 
-    const endSessionDate = new Date(sessionDate.getFullYear(), sessionDate.getMonth(), sessionDate.getDate(), sessionDate.getHours(), sessionDate.getMinutes() + events[0].sessionDateDuration_min, 0)
+    const endSessionDate = new Date(sessionDate.getFullYear(), sessionDate.getMonth(), sessionDate.getDate(), sessionDate.getHours(), sessionDate.getMinutes() + events[0]?.sessionDateDuration_min, 0)
 
     // Si aucune session à afficher, on ne rend rien
     if (availableSessions.length === 0 && bookedSessions.length === 0) return null;

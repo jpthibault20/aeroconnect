@@ -11,6 +11,8 @@
 import { flight_sessions } from '@prisma/client';
 import React from 'react';
 import { formatPilotName } from '@/api/global function/formatPilotName';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import SessionPopup from '../SessionPopup';
 
 /**
  * @interface Props
@@ -40,38 +42,44 @@ const SessionDisplay = ({ session }: Props) => {
     finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min);
 
     return (
-        <div
-            style={backgroundStyle}
-            className={`w-3/4 h-[50px] flex rounded-xl px-3 ${session.studentID ? 'opacity-60' : ''}`}
-        >
-            <div className='text-xs text-[#646464] flex flex-col justify-center items-center'>
-                <p className=''>
-                    {session.sessionDateStart.toISOString().slice(11, 16)}
-                </p>
-                <p>
-                    |
-                </p>
-                <p>
-                    {finalDate.toISOString().slice(11, 16)}
-                </p>
-            </div>
-            {session.studentID ? (
-                <div className='w-full h-full flex justify-center items-center font-istok font-semibold'>
-                    <p>
-                        - Complet -
-                    </p>
+        <Dialog>
+            <DialogTrigger asChild>
+                <div
+                    style={backgroundStyle}
+                    className={`w-3/4 h-[50px] flex rounded-xl px-3 ${session.studentID ? 'opacity-60' : ''}`}
+                >
+                    <div className='text-xs text-[#646464] flex flex-col justify-center items-center'>
+                        <p className=''>
+                            {session.sessionDateStart.toISOString().slice(11, 16)}
+                        </p>
+                        <p>
+                            |
+                        </p>
+                        <p>
+                            {finalDate.toISOString().slice(11, 16)}
+                        </p>
+                    </div>
+                    {session.studentID ? (
+                        <div className='w-full h-full flex justify-center items-center font-istok font-semibold'>
+                            <p>
+                                - Complet -
+                            </p>
+                        </div>
+                    ) : (
+                        <div className='flex w-full justify-between items-center mx-10 font-istok'>
+                            <p className='w-full'>
+                                {formatPilotName(session.pilotFirstName, session.pilotLastName)}
+                            </p>
+                            <p className='font-semibold w-full text-center'>
+                                {session.planeID.length} {session.planeID.length > 1 ? 'Avions libres' : 'Avion libre'}
+                            </p>
+                        </div>
+                    )}
                 </div>
-            ) : (
-                <div className='flex w-full justify-between items-center mx-10 font-istok'>
-                    <p className='w-full'>
-                        {formatPilotName(session.pilotFirstName, session.pilotLastName)}
-                    </p>
-                    <p className='font-semibold w-full text-center'>
-                        {session.planeID.length} {session.planeID.length > 1 ? 'Avions libres' : 'Avion libre'}
-                    </p>
-                </div>
-            )}
-        </div>
+            </DialogTrigger>
+            <SessionPopup sessions={[session]} />
+
+        </Dialog >
     );
 }
 
