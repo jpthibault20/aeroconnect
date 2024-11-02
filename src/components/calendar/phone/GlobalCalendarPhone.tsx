@@ -19,11 +19,13 @@ import SessionOfDay from "@/components/calendar/phone/SessionsOfDay";
 import NewSession from "@/components/NewSession";
 import Filter from '../Filter';
 import { flight_sessions } from '@prisma/client';
+import { Spinner } from '@/components/ui/SpinnerVariants';
 
 interface Props {
     sessions: flight_sessions[];
     reload: boolean;
     setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    loading: boolean;
 }
 
 /**
@@ -31,7 +33,7 @@ interface Props {
  * @description Main component for displaying a calendar on mobile devices.
  * Handles date selection, session filtering, and session display.
  */
-const GlobalCalendarPhone = ({ sessions, reload, setReload }: Props) => {
+const GlobalCalendarPhone = ({ sessions, reload, setReload, loading }: Props) => {
     // State variables for managing date, instructor, plane, and filtered sessions
     const [date, setDate] = useState(new Date());
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>();
@@ -99,14 +101,22 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload }: Props) => {
                     />
 
                 </div>
-
-                <Calendar
-                    daysOfMonth={daysOfMonth}
-                    date={date}
-                    flightsSessions={sessionsFlitered}
-                    setSelectDate={setSelectDate}
-                    selectDate={selectDate}
-                />
+                {loading ? (
+                    <div>
+                        <Spinner />
+                        <p className='text-center'>
+                            Chargement des sessions ...
+                        </p>
+                    </div>
+                ) : (
+                    <Calendar
+                        daysOfMonth={daysOfMonth}
+                        date={date}
+                        flightsSessions={sessionsFlitered}
+                        setSelectDate={setSelectDate}
+                        selectDate={selectDate}
+                    />
+                )}
             </div>
 
             <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 h-full'> {/* Make the sessions part scrollable */}

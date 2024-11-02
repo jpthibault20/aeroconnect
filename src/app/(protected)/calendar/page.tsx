@@ -29,11 +29,13 @@ const Page = () => {
     const { currentUser } = useCurrentUser();
     const [sessions, setSessions] = useState<flight_sessions[]>([]);
     const [reload, setReload] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const fetchSessions = async () => {
             if (currentUser) {
                 try {
+                    setLoading(true);
                     const res = await getAllSessions(currentUser.clubID);
                     if (Array.isArray(res)) {
                         setSessions(res);
@@ -42,6 +44,8 @@ const Page = () => {
                     }
                 } catch (error) {
                     console.log(error);
+                } finally {
+                    setLoading(false);
                 }
             }
         }
@@ -53,8 +57,8 @@ const Page = () => {
     return (
         // Full height and width container to ensure the calendar takes up the entire page space.
         <InitialLoading className='h-full w-full'>
-            <GlobalCalendarDesktop sessions={sessions} reload={reload} setReload={setReload} />
-            <GlobalCalendarPhone sessions={sessions} reload={reload} setReload={setReload} />
+            <GlobalCalendarDesktop sessions={sessions} reload={reload} setReload={setReload} loading={loading} />
+            <GlobalCalendarPhone sessions={sessions} reload={reload} setReload={setReload} loading={loading} />
         </InitialLoading>
     )
 }
