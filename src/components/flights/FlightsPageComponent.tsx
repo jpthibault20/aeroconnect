@@ -128,8 +128,11 @@ const FlightsPageComponent = () => {
             </div>
             {/* Use filtered sessions in the table */}
             {loading ? (
-                <div className='flex justify-center items-center'>
+                <div className='justify-center items-center'>
                     <Spinner />
+                    <p className='text-center'>
+                        Chargement ...
+                    </p>
                 </div>
             ) : (
                 <TableComponent
