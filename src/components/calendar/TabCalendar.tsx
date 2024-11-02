@@ -53,7 +53,7 @@ const TabCalendar = ({ date, sessions }: Props) => {
                                         indexX={index}
                                         indexY={indexday}
                                         tabDays={dayFr}
-                                        tabHours={workingHour} // Assure-toi que `workingHour` contient bien les données
+                                        tabHours={workingHour}
                                         events={sessions}
                                         date={date}
                                     />

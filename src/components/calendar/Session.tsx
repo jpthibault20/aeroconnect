@@ -3,6 +3,8 @@ import { flight_sessions } from '@prisma/client';
 import React, { useMemo } from 'react';
 import AvailableSession from './AvailableSession';
 import BookedSession from './BookedSession';
+import SessionPopup from './SessionPopup';
+import { Dialog, DialogTrigger } from '../ui/dialog';
 
 interface Props {
     indexX: number;
@@ -14,6 +16,7 @@ interface Props {
 }
 
 const Session = ({ indexX, indexY, tabHours = [], events = [], date }: Props) => {
+
     // Récupère les jours de la semaine
     const daysOfWeek = getDaysOfWeek(date);
 
@@ -54,27 +57,39 @@ const Session = ({ indexX, indexY, tabHours = [], events = [], date }: Props) =>
         };
     }, [events, sessionDate]); // `sessionDate` est maintenant stable
 
+    const endSessionDate = new Date(sessionDate.getFullYear(), sessionDate.getMonth(), sessionDate.getDate(), sessionDate.getHours(), sessionDate.getMinutes() + events[0].sessionDateDuration_min, 0)
 
     // Si aucune session à afficher, on ne rend rien
     if (availableSessions.length === 0 && bookedSessions.length === 0) return null;
 
     return (
-        <div className={`justify-center items-center p-1 rounded-md h-full w-full ${availableSessions.length === 0 ? 'bg-[#CB8A8A] opacity-50' : 'bg-[#B9DFC1]'}`}>
-            <div>
-                <p className="text-xs text-[#646464] text-end">
-                    {sessionDate.getUTCHours().toString().padStart(2, '0')}:
-                    {sessionDate.getUTCMinutes().toString().padStart(2, '0')} -
-                    {(sessionDate.getUTCHours() + 1).toString().padStart(2, '0')}:
-                    {sessionDate.getUTCMinutes().toString().padStart(2, '0')}
-                </p>
-            </div>
-            {availableSessions.length > 0 && (
-                <AvailableSession availablePlanes={availablePlanes} availablePilots={availablePilots} />
-            )}
-            {bookedSessions.length > 0 && (
-                <BookedSession sessions={bookedSessions} />
-            )}
-        </div>
+        <Dialog>
+            <DialogTrigger asChild>
+                <div
+                    className={`p-1 rounded-md flex flex-col h-full w-full ${availableSessions.length === 0 ? 'bg-[#CB8A8A] opacity-50' : 'bg-[#B9DFC1]'}`}
+                >
+                    <div className='w-full items-end'>
+                        <p className="text-xs text-[#646464] text-end">
+                            {sessionDate.getHours().toString().padStart(2, '0')}:
+                            {sessionDate.getMinutes().toString().padStart(2, '0')} -
+                            {endSessionDate.getHours().toString().padStart(2, '0')}:
+                            {endSessionDate.getMinutes().toString().padStart(2, '0')}
+                        </p>
+                    </div>
+                    <div className='w-full h-full flex items-center'>
+                        {availableSessions.length > 0 && (
+                            <AvailableSession availablePlanes={availablePlanes} availablePilots={availablePilots} />
+                        )}
+                        {bookedSessions.length > 0 && (
+                            <BookedSession sessions={bookedSessions} />
+                        )}
+                    </div>
+                </div>
+            </DialogTrigger>
+            <SessionPopup sessions={availableSessions} />
+
+        </Dialog>
+
     );
 };
 
