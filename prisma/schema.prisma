@@ -40,7 +40,6 @@ model flight_sessions {
   planeID                 String[]
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model planes {
   id              String  @id @unique @default(uuid())
   clubID          String

@@ -42,7 +42,7 @@ export const RemoveConfirm = ({ sessionChecked, reload, setReload, children }: p
                     <AlertDialogDescription>
                         Cette action est irréversible.
                         <br />
-                        {sessionChecked.length} vols seront supprimés.
+                        {sessionChecked.length > 1 ? `${sessionChecked.length} vols seront supprimés.` : `${sessionChecked.length} vol sera supprimé.`}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
