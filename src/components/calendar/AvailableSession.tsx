@@ -12,7 +12,7 @@ const AvailableSession = ({ availablePlanes, availablePilots }: AvailableSession
                 {availablePlanes.length} {availablePlanes.length > 1 ? 'Avions libres' : 'Avion libre'}
             </p>
             <p>
-                {availablePilots.length} {availablePilots.length > 1 ? 'Pilotes libres' : 'Pilote libre'}
+                {availablePilots.length} {availablePilots.length > 1 ? 'Instructeurs libres' : 'Instructeur libre'}
             </p>
         </div>
     );
