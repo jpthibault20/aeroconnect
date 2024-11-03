@@ -1,22 +1,19 @@
 # AeroConnect
 
 ## todo
-- affichage popup session calendrier
-- logique reservation
-- modifier une session page flights
+- page calendar: affichage popup session calendrier
+- page calendar: logique reservation
+- page flights: modifier une session
 - page flights retirer un elèves
 - page planes: modifier un avion
 - page planes: supprimer un avion
-- page planes: switch  état avion
+- page planes: switch état avion
 - page students: logique utilisateur restreint
 - page students: modifier un user
 - page students: supprimer un user
 - page profile: enregistrement des modifications
 - page profile: modification du mot de passe
 
-## Introduction
-
-AeroConnect est un site web dédié aux élèves de l'école de l'air et de l'espace de l'aéronautique de l'Université de Sherbrooke. Il permet aux élèves de gérer leurs vols, de voir les vols disponibles et les vols réservés, et de gérer leur profil.
 
 ## Fonctionnalités
 
