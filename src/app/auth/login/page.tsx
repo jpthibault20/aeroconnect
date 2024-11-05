@@ -1,4 +1,4 @@
-import { getSession } from '@/api/db/db'
+import { getSession } from '@/api/db/users'
 import { Login } from '@/components/auth/login'
 import { redirect } from 'next/navigation';
 import React, { Suspense } from 'react'

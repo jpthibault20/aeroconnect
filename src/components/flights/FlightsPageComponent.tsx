@@ -11,7 +11,7 @@
 import React, { useEffect, useState } from 'react';
 import TableComponent from "@/components/flights/TableComponent";
 import Filter from '@/components/flights/Filter';
-import { getAllFutureSessions, removeSessionsByID } from '@/api/db/session';
+import { getAllFutureSessions, removeSessionsByID } from '@/api/db/sessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { flight_sessions } from '@prisma/client';
 import NewSession from '../NewSession';

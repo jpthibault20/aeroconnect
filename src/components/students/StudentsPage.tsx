@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { Button } from '../ui/button';
 import { IoChevronDown } from "react-icons/io5";
 import TableComponent from './TableComponent';
-import { getAllUser } from '@/api/db/db';
+import { getAllUser } from '@/api/db/users';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Spinner } from '../ui/SpinnerVariants';
 

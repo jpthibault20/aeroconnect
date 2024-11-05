@@ -13,7 +13,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Spinner } from '../ui/SpinnerVariants';
-import { createPlane } from '@/api/db/db';
+import { createPlane } from '@/api/db/users';
 import { toast } from '@/hooks/use-toast';
 import { IoIosWarning } from 'react-icons/io';
 

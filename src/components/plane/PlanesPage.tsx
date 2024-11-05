@@ -12,7 +12,7 @@
 
 import React, { useEffect, useState } from 'react';
 import TableComponent from './TableComponent';
-import { getPlanes } from '@/api/db/session';
+import { getPlanes } from '@/api/db/sessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { planes } from '@prisma/client';
 import NewPlane from './NewPlane';

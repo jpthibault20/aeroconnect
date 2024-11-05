@@ -213,3 +213,26 @@ export const removeSessionsByID = async (sessionID: string[]) => {
         await prisma.$disconnect();
     }
 }
+
+export const removeStudentFromSessionID = async (sessionID: string) => {
+    try {
+        await prisma.flight_sessions.update({
+            where: {
+                id: sessionID
+            },
+            data: {
+                studentID: null,
+                studentFirstName: null,
+                studentLastName: null,
+                student_type: null,
+            }
+        });
+        console.log('Session deleted successfully');
+        return { success: "L'élève a été désinscrit de la session !" };
+    } catch (error) {
+        console.error('Error deleting flight session:', error);
+        return { error: "Erreur lors de la suppression de la session de vol" };
+    } finally {
+        await prisma.$disconnect();
+    }
+}

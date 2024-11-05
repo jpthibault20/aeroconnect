@@ -13,7 +13,7 @@ import GlobalCalendarDesktop from '@/components/calendar/GlobalCalendarDesktop';
 import GlobalCalendarPhone from '@/components/calendar/phone/GlobalCalendarPhone';
 import InitialLoading from '@/components/InitialLoading';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { getAllSessions } from '@/api/db/session';
+import { getAllSessions } from '@/api/db/sessions';
 import { flight_sessions } from '@prisma/client';
 
 /**

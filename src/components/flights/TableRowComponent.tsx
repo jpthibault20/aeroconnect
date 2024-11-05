@@ -20,7 +20,8 @@ import { flight_sessions } from '@prisma/client';
 import { FaPen } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
-import { removeSessionsByID } from '@/api/db/session';
+import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/sessions';
+import { toast } from '@/hooks/use-toast';
 
 interface props {
     session: flight_sessions;  ///< The flight session object
@@ -81,15 +82,37 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
         removeSessions();
     }
 
-
-    /**
-     * Handles the update action for flights.
-     *
-     * @param {string} flightsId - The ID of the flight to update.
-     * @returns {Function} The click event handler.
-     */
     const onClickUpdateFlights = (flightsId: string) => () => {
         console.log('Update flights : ', flightsId);
+    };
+
+    const removeStudent = (sessionID: string | null) => {
+        const removeSessions = async () => {
+            if (sessionID) {
+                setLoading(true);
+                try {
+                    const res = await removeStudentFromSessionID(sessionID);
+                    if (res.success) {
+                        toast({
+                            title: res.success,
+                        });
+                    }
+                    if (res.error) {
+                        toast({
+                            title: "Oups, une erreur est survenue",
+                            description: res.error,
+                        });
+                    }
+                } catch (error) {
+                    console.log(error);
+                } finally {
+                    setLoading(false);
+                    setReload(!reload);
+                }
+            }
+        };
+
+        removeSessions();
     };
 
     return (
@@ -116,9 +139,18 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                 {session.studentFirstName ? (
                     <div className='flex items-center justify-center space-x-1.5'>
                         <p>{session.studentFirstName}</p>
-                        <button onClick={() => { console.log('Delete'); }}>
-                            <IoMdClose color='red' size={20} />
-                        </button>
+                        <AlertConfirmDeleted
+                            title="Etes vous sur de vouloir Désinscrire l'élève ?"
+                            description={`vous allez désinscrire ${session.studentFirstName} ${session.studentLastName} de ce vol.`}
+                            cancel='Annuler'
+                            confirm='Supprimer'
+                            confirmAction={() => removeStudent(session.id)}
+                            loading={loading}
+                        >
+                            <button>
+                                <IoMdClose color='red' size={20} />
+                            </button>
+                        </AlertConfirmDeleted>
                     </div>
                 ) : (
                     '...'

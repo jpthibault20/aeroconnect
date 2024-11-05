@@ -22,6 +22,8 @@ const SessionPopup = ({ sessions }: prop) => {
         return `${formattedDate} `; // Combine
     };
 
+    if (sessions.length === 0) return null;
+
     return (
 
         <DialogContent>

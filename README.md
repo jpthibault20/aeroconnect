@@ -4,7 +4,6 @@
 - page calendar: affichage popup session calendrier
 - page calendar: logique reservation
 - page flights: modifier une session
-- page flights retirer un elèves
 - page planes: modifier un avion
 - page planes: supprimer un avion
 - page planes: switch état avion
