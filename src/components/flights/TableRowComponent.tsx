@@ -18,8 +18,9 @@ import { TableCell, TableRow } from '../ui/table';
 import { Checkbox } from '../ui/checkbox';
 import { flight_sessions } from '@prisma/client';
 import { FaPen } from 'react-icons/fa';
-import { RemoveConfirm } from './RemoveConfirm';
 import { IoMdClose } from 'react-icons/io';
+import AlertConfirmDeleted from '../AlertConfirmDeleted';
+import { removeSessionsByID } from '@/api/db/session';
 
 interface props {
     session: flight_sessions;  ///< The flight session object
@@ -31,6 +32,7 @@ interface props {
 
 const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, setReload }: props) => {
     const [isChecked, setIsChecked] = useState(false); // State for individual checkbox
+    const [loading, setLoading] = useState(false);
 
     const finalDate = new Date(session.sessionDateStart);
     finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min); // Calculate end time of the session
@@ -60,6 +62,24 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
     useEffect(() => {
         setIsChecked(isAllChecked);
     }, [isAllChecked]);
+
+    const removeFlight = (sessions: string[]) => {
+        const removeSessions = async () => {
+            if (sessions.length > 0) {
+                setLoading(true);
+                try {
+                    await removeSessionsByID(sessions);
+                } catch (error) {
+                    console.log(error);
+                } finally {
+                    setLoading(false);
+                    setReload(!reload);
+                }
+            }
+        };
+
+        removeSessions();
+    }
 
 
     /**
@@ -93,7 +113,16 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                 {session.finalReccurence !== null ? (session.finalReccurence.toLocaleDateString('fr-FR', { day: 'numeric', month: '2-digit', year: 'numeric' })) : 'NON'}
             </TableCell>
             <TableCell className='text-center'>
-                {session.studentFirstName ? session.studentFirstName : '...'}
+                {session.studentFirstName ? (
+                    <div className='flex items-center justify-center space-x-1.5'>
+                        <p>{session.studentFirstName}</p>
+                        <button onClick={() => { console.log('Delete'); }}>
+                            <IoMdClose color='red' size={20} />
+                        </button>
+                    </div>
+                ) : (
+                    '...'
+                )}
             </TableCell>
             {/* <TableCell className='text-center'>
                 {session.flightType}
@@ -102,11 +131,18 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                 <button onClick={onClickUpdateFlights(session.id)}>
                     <FaPen color='blue' size={15} />
                 </button>
-                <RemoveConfirm sessionChecked={[session.id]} reload={reload} setReload={setReload}>
+                <AlertConfirmDeleted
+                    title='Etes vous sur de vouloir supprimer ce vol ?'
+                    description={'Ce vol sera supprimé définitivement'}
+                    cancel='Annuler'
+                    confirm='Supprimer'
+                    confirmAction={() => removeFlight([session.id])}
+                    loading={loading}
+                >
                     <button>
                         <IoMdClose color='red' size={20} />
                     </button>
-                </RemoveConfirm>
+                </AlertConfirmDeleted>
             </TableCell>
         </TableRow>
     );

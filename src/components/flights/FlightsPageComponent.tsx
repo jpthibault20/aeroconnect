@@ -11,13 +11,13 @@
 import React, { useEffect, useState } from 'react';
 import TableComponent from "@/components/flights/TableComponent";
 import Filter from '@/components/flights/Filter';
-import { getAllFutureSessions } from '@/api/db/session';
+import { getAllFutureSessions, removeSessionsByID } from '@/api/db/session';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { flight_sessions } from '@prisma/client';
 import NewSession from '../NewSession';
 import { Spinner } from '../ui/SpinnerVariants';
-import { RemoveConfirm } from './RemoveConfirm';
 import { Button } from '../ui/button';
+import AlertConfirmDeleted from '../AlertConfirmDeleted';
 
 /**
  * @component PlanePageComponent
@@ -88,6 +88,24 @@ const FlightsPageComponent = () => {
         setFilteredSessions(filtered); // Update the filtered sessions
     }, [filterAvailable, filterReccurence, filterDate, sessions]); // Recalculate filters when any filter changes
 
+    const removeFlight = (sessions: string[]) => {
+        const removeSessions = async () => {
+            if (sessions.length > 0) {
+                setLoading(true);
+                try {
+                    await removeSessionsByID(sessions);
+                } catch (error) {
+                    console.log(error);
+                } finally {
+                    setLoading(false);
+                    setReload(!reload);
+                }
+            }
+        };
+
+        removeSessions();
+    }
+
     /**
      * Function to check if a given value is a valid date.
      * 
@@ -106,9 +124,17 @@ const FlightsPageComponent = () => {
             </div>
             <div className='my-3 flex justify-between'>
                 <div className='flex space-x-3'>
-                    <RemoveConfirm sessionChecked={sessionChecked} reload={reload} setReload={setReload}>
+                    <AlertConfirmDeleted
+                        title="Etes vous sur de vouloir supprimer ces vols ?"
+                        description={sessionChecked.length > 1 ? `${sessionChecked.length} vols seront supprimés.` : `1 vol sera supprimé.`}
+                        cancel='Annuler'
+                        confirm='Supprimer'
+                        confirmAction={() => removeFlight(sessionChecked)}
+                        loading={loading}
+                    >
                         <Button className='bg-red-700 hover:bg-red-800 text-white'>Supprimer</Button>
-                    </RemoveConfirm>
+                    </AlertConfirmDeleted>
+
                     <div className='hidden lg:block h-full'>
                         <NewSession display={'desktop'} reload={reload} setReload={setReload} />
                     </div>
