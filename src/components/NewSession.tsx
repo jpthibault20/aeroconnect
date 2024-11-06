@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IoMdAddCircle } from "react-icons/io";
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { userRole } from '@prisma/client';
+import { planes, userRole } from '@prisma/client';
 import {
     Dialog,
     DialogClose,
@@ -24,12 +24,12 @@ import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { minutes, sessionDurationMin, workingHour } from '@/config/configClub';
 import { FaArrowRightLong, FaCheck } from "react-icons/fa6";
-import { planeExemple } from '@/config/configClub';
 import { Switch } from "@/components/ui/switch";
 import { RxCross2 } from "react-icons/rx";
 import { interfaceSessions, newSession } from '@/api/db/sessions';
 import { useToast } from "@/hooks/use-toast"
 import { Spinner } from './ui/SpinnerVariants';
+import { getPlanes } from '@/api/db/planes';
 
 
 
@@ -53,6 +53,7 @@ const NewSession = ({ display, reload, setReload }: Props) => {
     const [isOpenCal1, setIsOpenCal1] = useState(false);
     const [isOpenCal2, setIsOpenCal2] = useState(false);
     const [switchReccurence, setSwitchReccurence] = useState(false);
+    const [planes, setPlanes] = useState<planes[]>()
     const [sessionData, setSessionData] = useState<interfaceSessions>({
         date: undefined,
         startHour: "9",
@@ -63,6 +64,17 @@ const NewSession = ({ display, reload, setReload }: Props) => {
         endReccurence: undefined,
         planeId: [],
     });
+
+    useEffect(() => {
+        const fetchPlanes = async () => {
+            const res = await getPlanes(currentUser!.clubID);
+            if (Array.isArray(res)) {
+                setPlanes(res);
+            }
+        };
+        fetchPlanes();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Calul de la date de fin de reccurence en fonction de la date de début avec 1 semaine de plus (delais minimum)
     useEffect(() => {
@@ -99,7 +111,7 @@ const NewSession = ({ display, reload, setReload }: Props) => {
     }
 
     // permet de verifier si tous les avions sont séléctioné ou pas boolean variable
-    const allPlanesSelected = planeExemple.length === sessionData.planeId.length;
+    const allPlanesSelected = planes?.length === sessionData.planeId.length;
 
     // fonction permettant de sélectionner un avion pour l'affichage dans la liste des avions
     const onClickPlane = (plane: string) => {
@@ -115,7 +127,7 @@ const NewSession = ({ display, reload, setReload }: Props) => {
     const toggleSelectAllPlanes = () => {
         setSessionData(prev => ({
             ...prev,
-            planeId: allPlanesSelected ? [] : planeExemple.map(p => p.id)
+            planeId: allPlanesSelected ? [] : planes!.map(p => p.id)
         }));
     };
 
@@ -259,7 +271,7 @@ const NewSession = ({ display, reload, setReload }: Props) => {
                 <div className='w-full h-fit min-h-10 border border-gray-200 rounded-md shadow-sm flex flex-wrap p-2 gap-2 bg-gray-100'>
                     {sessionData.planeId.map((plane, index) => (
                         <div key={index} className='flex items-center justify-between bg-gray-200 rounded-md px-4 py-1'>
-                            <p>{planeExemple.find(p => p.id === plane)?.name}</p>
+                            <p>{planes?.find(p => p.id === plane)?.name}</p>
                         </div>
                     ))}
                 </div>
@@ -273,7 +285,7 @@ const NewSession = ({ display, reload, setReload }: Props) => {
                     >
                         {allPlanesSelected ? "Effacer" : "Tous"}
                     </Button>
-                    {planeExemple.map((plane, index) => (
+                    {planes?.map((plane, index) => (
                         <Button
                             key={index}
                             className={`w-full justify-center text-left border border-gray-200 font-normal bg-gray-200 hover:bg-gray-300 rounded-md text-black ${sessionData.planeId.includes(plane.id) && "bg-red-500"}`}

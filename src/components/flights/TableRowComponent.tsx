@@ -22,6 +22,8 @@ import { IoMdClose } from 'react-icons/io';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/sessions';
 import { toast } from '@/hooks/use-toast';
+import AddStudent from './AddStudent';
+
 
 interface props {
     session: flight_sessions;  ///< The flight session object
@@ -64,6 +66,11 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
         setIsChecked(isAllChecked);
     }, [isAllChecked]);
 
+    const onClickUpdateFlights = (flightsId: string) => () => {
+        console.log('Update flights : ', flightsId);
+    };
+
+
     const removeFlight = (sessions: string[]) => {
         const removeSessions = async () => {
             if (sessions.length > 0) {
@@ -81,10 +88,6 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
 
         removeSessions();
     }
-
-    const onClickUpdateFlights = (flightsId: string) => () => {
-        console.log('Update flights : ', flightsId);
-    };
 
     const removeStudent = (sessionID: string | null) => {
         const removeSessions = async () => {
@@ -153,7 +156,7 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                         </AlertConfirmDeleted>
                     </div>
                 ) : (
-                    '...'
+                    <AddStudent sessionID={session.id} reload={reload} setReload={setReload} />
                 )}
             </TableCell>
             {/* <TableCell className='text-center'>

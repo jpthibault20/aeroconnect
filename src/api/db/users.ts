@@ -97,3 +97,28 @@ export const getUser = async () => {
         user: result
     }
 }
+
+export const addStudentToSession = async (sessionID: string, student: { id: string, firstName: string, lastName: string, planeId: string }) => {
+    if (!sessionID && !student.id && !student.firstName && !student.lastName) {
+        return { error: "Une erreur est survenue (E_001: sessionID ou student.id is undefined)" };
+    }
+    try {
+        await prisma.flight_sessions.update({
+            where: {
+                id: sessionID
+            },
+            data: {
+                studentID: student.id,
+                studentFirstName: student.firstName,
+                studentLastName: student.lastName,
+                studentPlaneID: student.planeId,
+                // student_type: student.type,
+            }
+        });
+        console.log('Student added successfully');
+        return { success: "L'élève a été ajouté au vol !" };
+    } catch (error) {
+        console.error('Error adding student:', error);
+        return { error: "Erreur lors de l'ajout de l'élève au vol" };
+    }
+}

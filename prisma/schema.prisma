@@ -35,6 +35,7 @@ model flight_sessions {
   studentID               String?
   studentFirstName        String?
   studentLastName         String?
+  studentPlaneID          String?
   student_type            flightType?
   finalReccurence         DateTime?   @db.Timestamptz(6)
   planeID                 String[]

@@ -1,3 +1,4 @@
+"use server";
 import { PrismaClient } from "@prisma/client";
 
 
@@ -47,5 +48,23 @@ export const createPlane = async (dataPlane: AddPlane) => {
         return {
             error: 'Plane creation failed',
         };
+    }
+};
+
+export const getPlanes = async (clubID: string) => {
+    if (!clubID) {
+        return { error: 'Missing clubID' };
+    }
+    try {
+        const planes = await prisma.planes.findMany({
+            where: {
+                clubID: clubID
+            }
+        });
+
+        return planes;
+    } catch (error) {
+        console.error('Error getting planes:', error);
+        return [];
     }
 };

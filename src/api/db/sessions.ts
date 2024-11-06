@@ -236,3 +236,36 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
         await prisma.$disconnect();
     }
 }
+
+export const getSessionPlanes = async (sessionID: string) => {
+    try {
+        // Récupère la session pour obtenir les IDs des avions
+        const session = await prisma.flight_sessions.findUnique({
+            where: {
+                id: sessionID
+            },
+        });
+
+        // Si aucun planeID n'est trouvé, retourne un tableau vide
+        if (!session?.planeID || session.planeID.length === 0) {
+            return [];
+        }
+
+        // Recherche des informations sur les avions dans la table `planes` pour chaque ID dans `planeID`
+        const planes = await prisma.planes.findMany({
+            where: {
+                id: {
+                    in: session.planeID // Utilise `in` pour rechercher tous les avions correspondant aux IDs dans le tableau
+                }
+            },
+            select: {
+                id: true,
+                name: true
+            }
+        });
+        return planes; // Retourne le tableau d'avions avec `id` et `name`
+    } catch (error) {
+        console.error('Error getting session planes:', error);
+        return [];
+    }
+};

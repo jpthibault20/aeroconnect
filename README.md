@@ -1,6 +1,6 @@
 # AeroConnect
 
-## todo
+## todo VERSION 1.0
 - page calendar: affichage popup session calendrier
 - page calendar: logique reservation
 - page flights: modifier une session
@@ -12,7 +12,18 @@
 - page students: supprimer un user
 - page profile: enregistrement des modifications
 - page profile: modification du mot de passe
+- mail
 
+## todo VERSION 2.0
+    - sessions: stockage dans un usememo
+    - sessions: fetch sessions sur 2 mois puis plus si changement de la date s'affichage
+    - club: page config club
+    - club: inscription : demande de code club => validation par le club en question
+    - all pages: fetch data en arrière plan
+
+## todo VERSION 3.0
+    - add méthode de paiement
+    - add méthode de facturation
 
 ## Fonctionnalités
 
