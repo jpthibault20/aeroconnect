@@ -1,12 +1,41 @@
 # AeroConnect
 
 ## todo VERSION 1.0
-- page calendar: affichage popup session calendrier
-- page calendar: logique reservation
+    - page calendar: 
+        UI/UX popup affichage session
+        litle update for instructor create this session or admin or owner (REMOVE, remove student, ...)
+        logisue book session: 
+            user have minimal autorisation for tyis action
+            student student available for this time session 
+            plane student selected isn't book per another student 
+        autorisation : 
+            full acces : ADMIN / OWNER / INSTRUCTOR
+            student acces: STUDENT (see and book session)
+            another role: can just see session 
+
+    - page session flight:
+        add pilote col for all access
+        ADMIN: can see all session, can choice club 
+        OWNER: can see all session of your club and modify it
+        INSTRUCTOR: can see all session of your club and modify it if is your session
+        STUDENT: can see all session of your club
+
+    - mail for: 
+        user book session 
+        user free session
+        session deleted
+        
+    - check up:
+        control for foms 
+        delete user => delete auth user
+        login (tim for register, confrim page,
+
+
 - mail
 - Controle Formulaire Modification user
 - delet userb => delet user in auth table
 - check création d'un nouvezu compte
+- 
 
 ## todo VERSION 2.0
     - sessions: stockage dans un usememo
