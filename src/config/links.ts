@@ -15,30 +15,30 @@ export const navigationLinks: NavLink[] = [
         name: "Calendrier",
         path: "/calendar",
         icon: CalendarDays, // Icône JSX
-        roles: ["USER", "STUDENT", "PILOT", "OWNER", "ADMIN"], // Rôles autorisés
+        roles: ["USER", "STUDENT", "PILOT", "OWNER", "ADMIN", "INSTRUCTOR"], // Rôles autorisés
     },
     {
         name: "Vols",
         path: "/flights",
         icon: BetweenHorizontalStart, // Icône JSX
-        roles: ["USER", "STUDENT", "PILOT", "OWNER", "ADMIN"],
+        roles: ["USER", "STUDENT", "PILOT", "OWNER", "ADMIN", "INSTRUCTOR"],
     },
     {
         name: "Avions",
         path: "/planes",
         icon: Plane, // Icône JSX
-        roles: ["PILOT", "OWNER", "ADMIN"],
+        roles: ["PILOT", "OWNER", "ADMIN", "INSTRUCTOR"],
     },
     {
         name: "Elèves",
         path: "/students",
         icon: GraduationCap, // Icône JSX
-        roles: ["PILOT", "OWNER", "ADMIN"],
+        roles: ["PILOT", "OWNER", "ADMIN", "INSTRUCTOR"],
     },
     {
         name: "Profil",
         path: "/profile",
         icon: User, // Icône JSX
-        roles: ["USER", "STUDENT", "PILOT", "OWNER", "ADMIN"],
+        roles: ["USER", "STUDENT", "PILOT", "OWNER", "ADMIN", "INSTRUCTOR"],
     }
 ]
