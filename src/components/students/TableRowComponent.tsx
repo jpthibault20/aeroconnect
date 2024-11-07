@@ -100,13 +100,20 @@ const TableRowComponent = ({ user, setReload, reload }: props) => {
                     </div>
                 </div>
             </TableCell>
-            <TableCell className='text-center'>{user.role}</TableCell>
+            <TableCell className='text-center'>
+                {user.role === "USER" && "Utilisateur"}
+                {user.role === "STUDENT" && "Elève"}
+                {user.role === "INSTRUCTOR" && "Instructeur"}
+                {user.role === "PILOT" && "Pilote"}
+                {user.role === "OWNER" && "Gérant"}
+                {user.role === "ADMIN" && "Administrateur"}
+            </TableCell>
             <TableCell className='text-center'>
                 <Restricted user={user} />
             </TableCell>
             <TableCell className='text-center'>{user.phone}</TableCell>
             <TableCell className='flex flex-col items-center space-y-3 justify-center '>
-                <UpdateUserComponent showPopup={showPopup} setShowPopup={setShowPopup} reload={reload} setReload={setReload}>
+                <UpdateUserComponent showPopup={showPopup} setShowPopup={setShowPopup} reload={reload} setReload={setReload} user={user}>
                     <Button onClick={onClickUpdateUser} className='w-fit bg-blue-600 hover:bg-blue-700'>
                         Modifier
                     </Button>

@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
-import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { User, userRole } from '@prisma/client'
 import { updateUser } from '@/api/db/users'
@@ -20,24 +19,24 @@ interface Props {
     setShowPopup: React.Dispatch<React.SetStateAction<boolean>>
     reload: boolean;
     setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    user: User
 }
 
-const UpdateUserComponent = ({ children, showPopup, setShowPopup, reload, setReload }: Props) => {
-    const { currentUser } = useCurrentUser()
+const UpdateUserComponent = ({ children, showPopup, setShowPopup, reload, setReload, user }: Props) => {
     const [loading, setLoading] = useState(false);
     const [userState, setUserState] = useState<User>({
-        id: currentUser?.id || '',
-        firstName: currentUser?.firstName || '',
-        lastName: currentUser?.lastName || '',
-        email: currentUser?.email || '',
-        phone: currentUser?.phone || null,
-        adress: currentUser?.adress || null,
-        city: currentUser?.city || null,
-        zipCode: currentUser?.zipCode || null,
-        role: currentUser?.role || userRole.USER,
-        clubID: currentUser?.clubID || '',
-        restricted: currentUser?.restricted || false,
-        country: currentUser?.country || null,
+        id: user.id || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || null,
+        adress: user.adress || null,
+        city: user.city || null,
+        zipCode: user.zipCode || null,
+        role: user.role || userRole.USER,
+        clubID: user.clubID || '',
+        restricted: user.restricted || false,
+        country: user.country || null,
     })
 
     const onChangeUserState = (key: keyof typeof userState, value: string | boolean) => {
@@ -181,7 +180,12 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, reload, setRel
                             <SelectContent>
                                 {Object.entries(userRole).map(([key, value]) => (
                                     <SelectItem key={key} value={value}>
-                                        {key}
+                                        {key === "USER" && "Utilisateur"}
+                                        {key === "STUDENT" && "Elève"}
+                                        {key === "INSTRUCTOR" && "Instructeur"}
+                                        {key === "PILOT" && "Pilote"}
+                                        {key === "OWNER" && "Gérant"}
+                                        {key === "ADMIN" && "Administrateur"}
                                     </SelectItem>
                                 ))}
                             </SelectContent>

@@ -3,47 +3,63 @@
 import React, { useState } from 'react';
 import InputComponent from './InputComponent';
 import { Button } from '../ui/button';
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { updateProfileSchema, UpdateProfileSchema } from '../../schemas/updateProfil'; // Assurez-vous que le chemin est correct
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import PhoneLogoutButton from './PhoneLogoutButton';
+import { User, userRole } from '@prisma/client';
+import { updateUser } from '@/api/db/users';
+import { toast } from '@/hooks/use-toast';
 
 const ProfilePage = () => {
     const [loading, setLoading] = useState(false);
     const { currentUser } = useCurrentUser();
 
-    const {
-        handleSubmit,
-        register,
-        formState: { errors },
-        reset,
-    } = useForm<UpdateProfileSchema>({
-        resolver: zodResolver(updateProfileSchema),
-        values: {
-            firstName: currentUser?.firstName || '',
-            lastName: currentUser?.lastName || '',
-            email: currentUser?.email || '',
-            phone: currentUser?.phone || '',
-            adress: "29 rue du moulin",
-            city: "Alaincourt la cote",
-            zipCode: "57590",
-            country: "France"
+    const [userState, setUserState] = useState<User>({
+        id: currentUser?.id || '',
+        firstName: currentUser?.firstName || '',
+        lastName: currentUser?.lastName || '',
+        email: currentUser?.email || '',
+        phone: currentUser?.phone || null,
+        adress: currentUser?.adress || null,
+        city: currentUser?.city || null,
+        zipCode: currentUser?.zipCode || null,
+        role: currentUser?.role || userRole.USER,
+        clubID: currentUser?.clubID || '',
+        restricted: currentUser?.restricted || false,
+        country: currentUser?.country || null,
+    })
+
+    const onChangeUserState = (key: keyof typeof userState, value: string | boolean) => {
+        setUserState((prev) => ({
+            ...prev,
+            [key]: value,
+        }))
+    }
+
+    const onClickSubmit = () => {
+        const updateUserAction = async () => {
+            setLoading(true);
+            try {
+                const res = await updateUser(userState);
+                if (res.success) {
+                    setLoading(false);
+                    toast({
+                        title: "Utilisateur mis à jour avec succès",
+                    });
+
+                }
+                if (res.error) {
+                    console.log(res.error);
+                    setLoading(false);
+                    toast({
+                        title: " Oups, une erreur est survenue",
+                    });
+                }
+            } catch (error) {
+                console.log(error);
+            }
         }
-    });
-
-    const onSubmit = async (data: UpdateProfileSchema) => {
-        setLoading(true);
-        console.log(data); // Affichez les données dans la console ou envoyez-les à votre API
-
-        // Réinitialisez le formulaire après soumission
-        reset();
-        setLoading(false);
-    };
-
-    const onClickResetPassword = () => {
-        console.log('Reset password');
-    };
+        updateUserAction();
+    }
 
     return (
         <div className="h-full bg-gray-100 font-istok p-6 space-y-6 max-h-[100vh] overflow-y-auto pb-20">
@@ -52,127 +68,105 @@ const ProfilePage = () => {
                 <p className='text-gray-600'>Vos informations personnelles</p>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)}>
-                <div className='w-full flex flex-col justify-center items-center'>
-                    <div className='w-fit border-t border-gray-300 py-6 px-6 space-y-3'>
-                        <div className='grid grid-cols-2 gap-6'>
-                            <div>
-                                <InputComponent
-                                    title='Prénom'
-                                    type='text'
-                                    id='firstName'
-                                    value={currentUser?.firstName}
-                                    disabled={loading}
-                                    register={register}
-                                />
-                                {errors.firstName && <p className='text-red-500'>{errors.firstName.message}</p>}
-                            </div>
-                            <div>
-                                <InputComponent
-                                    title='Nom'
-                                    type='text'
-                                    id='lastName'
-                                    value={currentUser?.lastName}
-                                    disabled={loading}
-                                    register={register}
-                                />
-                                {errors.lastName && <p className='text-red-500'>{errors.lastName.message}</p>}
-                            </div>
-                        </div>
-                        <div className='grid grid-cols-1 gap-3'>
-                            <div>
-                                <InputComponent
-                                    title='Email'
-                                    type='email'
-                                    id='email'
-                                    value={currentUser?.email}
-                                    disabled={loading}
-                                    register={register}
-                                />
-                                {errors.email && <p className='text-red-500'>{errors.email.message}</p>}
-                            </div>
-                            <div>
-                                <InputComponent
-                                    title='Téléphone'
-                                    type='tel'
-                                    id='phone'
-                                    value={currentUser?.phone}
-                                    disabled={loading}
-                                    register={register}
-                                />
-                                {errors.phone && <p className='text-red-500'>{errors.phone.message}</p>}
-                            </div>
-                            <div>
-                                <InputComponent
-                                    title='Adresse'
-                                    type='text'
-                                    id='adress'
-                                    value={"29 rue du moulin"}
-                                    disabled={loading}
-                                    register={register}
-                                />
-                                {errors.adress && <p className='text-red-500'>{errors.adress.message}</p>}
-                            </div>
-                        </div>
-                        <div className='grid grid-cols-2 gap-3'>
-                            <div>
-                                <InputComponent
-                                    title='Ville'
-                                    type='text'
-                                    id='city'
-                                    value={"Alaincourt la cote"}
-                                    disabled={loading}
-                                    register={register}
-                                />
-                                {errors.city && <p className='text-red-500'>{errors.city.message}</p>}
-                            </div>
-                            <div>
-                                <InputComponent
-                                    title='Code postal'
-                                    type='text'
-                                    id='zipCode'
-                                    value={"57590"}
-                                    disabled={loading}
-                                    register={register}
-                                />
-                                {errors.zipCode && <p className='text-red-500'>{errors.zipCode.message}</p>}
-                            </div>
-                        </div>
-                        <div className='grid grid-cols-1 gap-3'>
-                            <div>
-                                <InputComponent
-                                    title='Pays'
-                                    type='text'
-                                    id='country'
-                                    value={"France"}
-                                    disabled={loading}
-                                    register={register}
-                                />
-                                {errors.country && <p className='text-red-500'>{errors.country.message}</p>}
-                            </div>
-                        </div>
-                        <div className='grid grid-cols-1 gap-3 pb-3'>
-                            <div>
-                                <p>
-                                    Mot de passe
-                                </p>
-                                <Button className=' bg-[#774BBE] hover:bg-[#3d2365]' type='button' disabled={loading} onClick={onClickResetPassword}>
-                                    Réinitialiser le mot de passe
-                                </Button>
-                            </div>
-                        </div>
-                        <div className='justify-end items-end flex w-full border-t border-gray-300'>
-                            <Button className='mt-6 bg-[#774BBE] hover:bg-[#3d2365]' type='submit' disabled={loading}>
-                                Enregistrer
-                            </Button>
-                        </div>
+            <div className='w-full flex justify-center items-center border-t border-gray-300 pt-3'>
+                <div className='w-5/6 lg:w-1/2 h-fit flex flex-col justify-center items-center space-y-6'>
+                    {/* firstname lastname */}
+                    <div className='grid grid-cols-2 items-center gap-6 w-full'>
+                        <InputComponent
+                            id='firstName'
+                            label='Prénom'
+                            value={userState.firstName}
+                            loading={loading}
+                            onChange={(value) => onChangeUserState('firstName', value)}
+                            style='grid items-center gap-2'
+                        />
+                        <InputComponent
+                            id='lastName'
+                            label='Nom'
+                            value={userState.lastName}
+                            loading={loading}
+                            onChange={(value) => onChangeUserState('lastName', value)}
+                            style='grid items-center gap-2'
+                        />
+                    </div>
+
+                    {/* email */}
+                    <div className='grid grid-cols-1 items-center gap-6 w-full'>
+                        <InputComponent
+                            id='email'
+                            label='Email'
+                            value={userState.email}
+                            loading={loading}
+                            onChange={(value) => onChangeUserState('email', value)}
+                            style='grid items-center gap-2'
+                        />
+                    </div>
+
+                    {/* phone */}
+                    <div className='grid grid-cols-1 items-center gap-6 w-full'>
+                        <InputComponent
+                            id='phone'
+                            label='Téléphone'
+                            value={userState.phone}
+                            loading={loading}
+                            onChange={(value) => onChangeUserState('phone', value)}
+                            style='grid items-center gap-2'
+                        />
+                    </div>
+
+                    {/* adresse */}
+                    <div className='grid grid-cols-1 items-center gap-6 w-full'>
+                        <InputComponent
+                            id='adress'
+                            label='Adresse'
+                            value={userState.adress}
+                            loading={loading}
+                            onChange={(value) => onChangeUserState('adress', value)}
+                            style='grid items-center gap-2'
+                        />
+                    </div>
+
+                    {/* City zipcode */}
+                    <div className='grid grid-cols-2 items-center gap-6 w-full'>
+                        <InputComponent
+                            id='city'
+                            label='Ville'
+                            value={userState.city}
+                            loading={loading}
+                            onChange={(value) => onChangeUserState('city', value)}
+                            style='grid items-center gap-2'
+                        />
+                        <InputComponent
+                            id='zipCode'
+                            label='Code postal'
+                            value={userState.zipCode}
+                            loading={loading}
+                            onChange={(value) => onChangeUserState('zipCode', value)}
+                            style='grid items-center gap-2'
+                        />
+                    </div>
+
+                    {/* Country */}
+                    <div className='grid grid-cols-1 items-center gap-6 w-full'>
+                        <InputComponent
+                            id='country'
+                            label='Pays'
+                            value={userState.country}
+                            loading={loading}
+                            onChange={(value) => onChangeUserState('country', value)}
+                            style='grid items-center gap-2'
+                        />
                     </div>
                 </div>
-            </form>
-            <div>
-                <PhoneLogoutButton />
             </div>
-        </div>
+
+            <div className='justify-between lg:justify-end items-end flex w-full border-t border-gray-300'>
+                <PhoneLogoutButton style='' />
+                <Button className='mt-6 bg-[#774BBE] hover:bg-[#3d2365]' disabled={loading} onClick={onClickSubmit}>
+                    Enregistrer
+                </Button>
+            </div>
+        </div >
     );
 }
 
