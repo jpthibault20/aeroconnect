@@ -3,16 +3,10 @@
 ## todo VERSION 1.0
 - page calendar: affichage popup session calendrier
 - page calendar: logique reservation
-- page flights: modifier une session
-- page planes: modifier un avion
-- page planes: supprimer un avion
-- page planes: switch état avion
-- page students: logique utilisateur restreint
-- page students: modifier un user
-- page students: supprimer un user
-- page profile: enregistrement des modifications
-- page profile: modification du mot de passe
 - mail
+- Controle Formulaire Modification user
+- delet userb => delet user in auth table
+- check création d'un nouvezu compte
 
 ## todo VERSION 2.0
     - sessions: stockage dans un usememo
