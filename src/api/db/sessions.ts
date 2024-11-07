@@ -225,6 +225,7 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
                 studentFirstName: null,
                 studentLastName: null,
                 student_type: null,
+                studentPlaneID: null,
             }
         });
         console.log('Session deleted successfully');

@@ -16,13 +16,14 @@
 import React, { useState, useEffect } from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { Checkbox } from '../ui/checkbox';
-import { flight_sessions } from '@prisma/client';
+import { flight_sessions, planes } from '@prisma/client';
 import { IoMdClose } from 'react-icons/io';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/sessions';
 import { toast } from '@/hooks/use-toast';
 import AddStudent from './AddStudent';
 import { Button } from '../ui/button';
+import { getPlaneByID } from '@/api/db/planes';
 
 
 interface props {
@@ -36,9 +37,31 @@ interface props {
 const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, setReload }: props) => {
     const [isChecked, setIsChecked] = useState(false); // State for individual checkbox
     const [loading, setLoading] = useState(false);
+    const [plane, setPlane] = useState<planes>();
 
     const finalDate = new Date(session.sessionDateStart);
     finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min); // Calculate end time of the session
+
+    // Sync individual checkbox state with "select all"
+    useEffect(() => {
+        const getPlane = async () => {
+            if (!session.studentPlaneID) return;
+            try {
+                const result = await getPlaneByID(session.studentPlaneID);
+                if (!result || 'error' in result) return; // Handle the case where the result is null or contains an error
+                setPlane(result); // Assuming 'result' is of the correct type
+            } catch (error) {
+                console.error('Error getting plane:', error);
+            }
+        };
+        getPlane();
+        setIsChecked(false);
+    }, [session]);
+
+    // Sync individual checkbox state with "select all"
+    useEffect(() => {
+        setIsChecked(isAllChecked);
+    }, [isAllChecked]);
 
     // Handles individual checkbox change.
     const onChecked = (sessionId: string, checked: boolean) => {
@@ -51,16 +74,6 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
             }
         });
     };
-
-    // Sync individual checkbox state with "select all"
-    useEffect(() => {
-        setIsChecked(false);
-    }, [session]);
-
-    // Sync individual checkbox state with "select all"
-    useEffect(() => {
-        setIsChecked(isAllChecked);
-    }, [isAllChecked]);
 
     // Remove flights from session
     const removeFlight = (sessions: string[]) => {
@@ -111,6 +124,7 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
         removeSessions();
     };
 
+
     return (
         <TableRow className='font-istok'>
             <TableCell className='text-center'>
@@ -152,9 +166,9 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                     <AddStudent sessionID={session.id} reload={reload} setReload={setReload} />
                 )}
             </TableCell>
-            {/* <TableCell className='text-center'>
-                {session.flightType}
-            </TableCell> */}
+            <TableCell className='text-center'>
+                {plane?.name}
+            </TableCell>
             <TableCell className='h-full w-full justify-center items-center flex'>
                 <AlertConfirmDeleted
                     title='Etes vous sur de vouloir supprimer ce vol ?'

@@ -121,3 +121,20 @@ export const updateOperationalByID = async (planeID: string, operational: boolea
         };
     }
 };
+
+export const getPlaneByID = async (planeID: string) => {
+    try {
+        const plane = await prisma.planes.findUnique({
+            where: {
+                id: planeID,
+            },
+        });
+
+        return plane;
+    } catch (error) {
+        console.error('Error getting plane:', error);
+        return {
+            error: 'Plane get failed',
+        };
+    }
+};
