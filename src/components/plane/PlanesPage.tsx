@@ -18,7 +18,7 @@ import { planes } from '@prisma/client';
 import NewPlane from './NewPlane';
 
 const PlanesPage = () => {
-    const { currentUser } = useCurrentUser()
+    const { currentUser } = useCurrentUser();
     const [reload, setReload] = useState(false);
     const [planes, setPlanes] = useState<planes[]>();
 
@@ -28,7 +28,9 @@ const PlanesPage = () => {
                 try {
                     const res = await getPlanes(currentUser.clubID);
                     if (Array.isArray(res)) {
-                        setPlanes(res);
+                        // Trier les avions par ordre alphabétique basé sur le nom
+                        const sortedPlanes = res.sort((a, b) => a.name.localeCompare(b.name));
+                        setPlanes(sortedPlanes);
                     }
                 } catch (error) {
                     console.error('Error fetching planes:', error);
@@ -37,9 +39,6 @@ const PlanesPage = () => {
         };
         fetchPlanes();
     }, [currentUser, reload]);
-
-    useEffect(() => {
-    }, [planes])
 
     return (
         <div className='p-6'>
@@ -50,7 +49,7 @@ const PlanesPage = () => {
             <div className='my-3 flex justify-end'>
                 <NewPlane reload={reload} setReload={setReload} />
             </div>
-            <TableComponent planes={planes} />
+            <TableComponent planes={planes} reload={reload} setReload={setReload} />
         </div>
     );
 };

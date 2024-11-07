@@ -256,13 +256,15 @@ export const getSessionPlanes = async (sessionID: string) => {
             where: {
                 id: {
                     in: session.planeID // Utilise `in` pour rechercher tous les avions correspondant aux IDs dans le tableau
-                }
+                },
+                operational: true // Ajoute la condition pour que seuls les avions opérationnels soient récupérés
             },
             select: {
                 id: true,
                 name: true
             }
         });
+        
         return planes; // Retourne le tableau d'avions avec `id` et `name`
     } catch (error) {
         console.error('Error getting session planes:', error);

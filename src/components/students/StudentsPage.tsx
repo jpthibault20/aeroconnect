@@ -27,6 +27,7 @@ const StudentsPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState<User[]>([]);
     const [roleFilter, setRoleFilter] = useState<userRole | 'all'>('all');
+    const [reload, setReload] = useState(false);
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -47,7 +48,7 @@ const StudentsPage = () => {
         };
 
         fetchUsers();
-    }, [currentUser]);
+    }, [currentUser, reload]);
 
     /**
      * @function sortUser
@@ -160,7 +161,7 @@ const StudentsPage = () => {
                     <Spinner />
                 </div>
             ) : (
-                <TableComponent users={sortedUsers} />
+                <TableComponent users={sortedUsers} setReload={setReload} reload={reload} />
             )}
         </div>
     );

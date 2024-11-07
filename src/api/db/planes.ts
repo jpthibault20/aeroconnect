@@ -68,3 +68,56 @@ export const getPlanes = async (clubID: string) => {
         return [];
     }
 };
+
+export const deletePlane = async (planeID: string) => {
+    if (!planeID) {
+        return { error: 'Missing planeID' };
+    }
+    try {
+        const plane = await prisma.planes.findFirst({
+            where: {
+                id: planeID
+            }
+        });
+
+        if (!plane) {
+            return { error: 'Plane not found' };
+        }
+
+        await prisma.planes.delete({
+            where: {
+                id: planeID
+            }
+        });
+
+        return { success: 'Plane deleted successfully' };
+    } catch (error) {
+        console.error('Error deleting plane:', error);
+        return {
+            error: 'Plane deletion failed',
+        };
+    }
+};
+
+export const updateOperationalByID = async (planeID: string, operational: boolean) => {
+    if (!planeID) {
+        return { error: 'Missing planeID' };
+    }
+    try {
+        await prisma.planes.update({
+            where: {
+                id: planeID
+            },
+            data: {
+                operational: operational
+            }
+        });
+
+        return { success: 'Plane updated successfully' };
+    } catch (error) {
+        console.error('Error updating plane:', error);
+        return {
+            error: 'Plane update failed',
+        };
+    }
+};

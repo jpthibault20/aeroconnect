@@ -5,9 +5,11 @@ import { planes } from '@prisma/client';
 
 interface props {
     planes: planes[] | undefined
+    reload: boolean;
+    setReload: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const TableComponent = ({ planes }: props) => {
+const TableComponent = ({ planes, reload, setReload }: props) => {
     return (
         <div className="max-h-[70vh] overflow-y-auto bg-white rounded-lg">
             <Table className='w-full'>
@@ -21,7 +23,7 @@ const TableComponent = ({ planes }: props) => {
                 </TableHeader>
                 <TableBody className="max-h-[60vh] overflow-y-auto">
                     {planes?.map((plane, index) => (
-                        <TableRowComponent plane={plane} key={index} />
+                        <TableRowComponent plane={plane} key={index} setReload={setReload} reload={reload} />
                     ))}
                 </TableBody>
             </Table>

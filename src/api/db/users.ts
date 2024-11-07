@@ -1,17 +1,18 @@
 "use server";
 import { createClient } from '@/utils/supabase/server';
 import { PrismaClient } from '@prisma/client'
+import { User } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-interface User {
+interface UserMin {
     firstName: string,
     lastName: string,
     email: string,
     phone: string,
 }
 
-export const createUser = async (dataUser: User) => {
+export const createUser = async (dataUser: UserMin) => {
     if (!dataUser.firstName || !dataUser.lastName || !dataUser.email || !dataUser.phone) {
         return { error: 'Missing required fields' }
     }
@@ -121,4 +122,53 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
         console.error('Error adding student:', error);
         return { error: "Erreur lors de l'ajout de l'élève au vol" };
     }
+}
+
+export const deleteUser = async (studentID: string) => {
+    if (!studentID) {
+        return { error: "Une erreur est survenue (E_001: studentID is undefined)" };
+    }
+    try {
+        await prisma.user.delete({
+            where: {
+                id: studentID
+            }
+        });
+        console.log('User deleted successfully');
+        return { success: "L'utilisateur a été supprimé avec succès !" };
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        return { error: "Erreur lors de la suppression de l'utilisateur" };
+    }
+}
+
+export const updateUser = async (user: User) => {
+    if (!user.id) {
+        return { error: "Une erreur est survenue (E_001: user.id is undefined)" };
+    }
+    try {
+        await prisma.user.update({
+            where: {
+                id: user.id
+            },
+            data: {
+                clubID: user.clubID,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                phone: user.phone,
+                adress: user.adress,
+                city: user.city,
+                zipCode: user.zipCode,
+                role: user.role,
+                restricted: user.restricted,
+                country: user.country,
+            }
+        });
+        console.log('User updated successfully');
+        return { success: "L'utilisateur a été mis à jour avec succès !" };
+    } catch (error) {
+        console.error('Error updating user:', error);
+        return { error: "Erreur lors de la mise à jour de l'utilisateur" };
+    }   
 }

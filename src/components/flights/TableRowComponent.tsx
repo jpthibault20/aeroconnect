@@ -17,12 +17,12 @@ import React, { useState, useEffect } from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { Checkbox } from '../ui/checkbox';
 import { flight_sessions } from '@prisma/client';
-import { FaPen } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/sessions';
 import { toast } from '@/hooks/use-toast';
 import AddStudent from './AddStudent';
+import { Button } from '../ui/button';
 
 
 interface props {
@@ -40,12 +40,7 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
     const finalDate = new Date(session.sessionDateStart);
     finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min); // Calculate end time of the session
 
-    /**
-     * Handles individual checkbox change.
-     *
-     * @param {string} sessionId - The ID of the flight session.
-     * @param {boolean} checked - The checked state of the checkbox.
-     */
+    // Handles individual checkbox change.
     const onChecked = (sessionId: string, checked: boolean) => {
         setIsChecked(checked);
         setSessionChecked((prev) => {
@@ -57,6 +52,7 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
         });
     };
 
+    // Sync individual checkbox state with "select all"
     useEffect(() => {
         setIsChecked(false);
     }, [session]);
@@ -66,11 +62,7 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
         setIsChecked(isAllChecked);
     }, [isAllChecked]);
 
-    const onClickUpdateFlights = (flightsId: string) => () => {
-        console.log('Update flights : ', flightsId);
-    };
-
-
+    // Remove flights from session
     const removeFlight = (sessions: string[]) => {
         const removeSessions = async () => {
             if (sessions.length > 0) {
@@ -89,6 +81,7 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
         removeSessions();
     }
 
+    // Remove student from session
     const removeStudent = (sessionID: string | null) => {
         const removeSessions = async () => {
             if (sessionID) {
@@ -162,21 +155,17 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
             {/* <TableCell className='text-center'>
                 {session.flightType}
             </TableCell> */}
-            <TableCell className='flex flex-col items-center space-y-3 justify-center xl:block xl:space-x-5'>
-                <button onClick={onClickUpdateFlights(session.id)}>
-                    <FaPen color='blue' size={15} />
-                </button>
+            <TableCell className='h-full w-full justify-center items-center flex'>
                 <AlertConfirmDeleted
                     title='Etes vous sur de vouloir supprimer ce vol ?'
                     description={'Ce vol sera supprimé définitivement'}
+                    style='flex h-full w-full justify-center items-center'
                     cancel='Annuler'
                     confirm='Supprimer'
                     confirmAction={() => removeFlight([session.id])}
                     loading={loading}
                 >
-                    <button>
-                        <IoMdClose color='red' size={20} />
-                    </button>
+                    <Button className='w-fit' variant={"destructive"} >Supprimer</Button>
                 </AlertConfirmDeleted>
             </TableCell>
         </TableRow>

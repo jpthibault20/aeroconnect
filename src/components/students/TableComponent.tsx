@@ -5,6 +5,8 @@ import TableRowComponent from './TableRowComponent';
 
 interface props {
     users: User[];  ///< Array of User objects representing the users to be displayed in the table.
+    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    reload: boolean;
 }
 
 /**
@@ -12,7 +14,7 @@ interface props {
  * @param {props} props - The props for the component.
  * @returns {JSX.Element} The rendered table component with user data.
  */
-const TableComponent = ({ users }: props): JSX.Element => {
+const TableComponent = ({ users, setReload, reload }: props): JSX.Element => {
     return (
         <div className="max-h-[70vh] overflow-y-auto bg-white rounded-lg">
             <Table className='w-full'>
@@ -26,7 +28,7 @@ const TableComponent = ({ users }: props): JSX.Element => {
                 </TableHeader>
                 <TableBody className="max-h-[60vh] overflow-y-auto w-full">
                     {users.map((user, index) => (
-                        <TableRowComponent user={user} key={index} />  ///< Renders a row for each user.
+                        <TableRowComponent user={user} key={index} setReload={setReload} reload={reload} />  ///< Renders a row for each user.
                     ))
                     }
                 </TableBody>

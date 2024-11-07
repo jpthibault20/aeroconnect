@@ -10,13 +10,14 @@ interface Props {
     confirm: string
     confirmAction: () => void
     loading?: boolean
+    style?: string
 }
 
-const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, confirmAction, loading }: Props) => {
+const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, confirmAction, loading, style }: Props) => {
 
     return (
         <AlertDialog>
-            <AlertDialogTrigger asChild>
+            <AlertDialogTrigger asChild className={style}>
                 {children}
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -34,7 +35,7 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
                         </div>
 
                     ) : (
-                        <AlertDialogAction className='bg-red-700 hover:bg-red-800 text-white' onClick={confirmAction}>
+                        <AlertDialogAction className='bg-red-700 hover:bg-red-800 text-white' onClick={() => confirmAction()}>
                             {confirm}
                         </AlertDialogAction>
                     )}
