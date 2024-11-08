@@ -3,7 +3,6 @@
 import { PrismaClient, User } from '@prisma/client';
 
 const prisma = new PrismaClient();
-
 export interface interfaceSessions {
     date: Date | undefined;
     startHour: string;
@@ -155,7 +154,7 @@ export const getAllSessions = async (clubID: string) => {
     finally {
         await prisma.$disconnect();
     }
-}
+};
 
 export const getAllFutureSessions = async (clubID: string) => {
     try {
@@ -175,7 +174,7 @@ export const getAllFutureSessions = async (clubID: string) => {
     finally {
         await prisma.$disconnect();
     }
-}
+};
 
 export const getPlanes = async (clubID: string) => {
     const prisma = new PrismaClient()
@@ -193,7 +192,7 @@ export const getPlanes = async (clubID: string) => {
     finally {
         await prisma.$disconnect();
     }
-}
+};
 
 export const removeSessionsByID = async (sessionID: string[]) => {
     try {
@@ -212,7 +211,7 @@ export const removeSessionsByID = async (sessionID: string[]) => {
     } finally {
         await prisma.$disconnect();
     }
-}
+};
 
 export const removeStudentFromSessionID = async (sessionID: string) => {
     try {
@@ -236,7 +235,7 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
     } finally {
         await prisma.$disconnect();
     }
-}
+};
 
 export const getSessionPlanes = async (sessionID: string) => {
     try {
@@ -270,5 +269,77 @@ export const getSessionPlanes = async (sessionID: string) => {
     } catch (error) {
         console.error('Error getting session planes:', error);
         return [];
+    }
+};
+
+export const studentRegistration = async (sessionID: string, studentID: string, planeID: string) => {
+    if (!sessionID) {
+        return { error: "Une erreur est survenue (E_001: sessionID is undefined)" };
+    }
+
+    if (!studentID) {
+        return { error: "Une erreur est survenue (E_001: studentID is undefined)" };
+    }
+
+    if (!planeID) {
+        return { error: "Une erreur est survenue (E_001: planeID is undefined)" };
+    }
+
+    try {
+        const student = await prisma.user.findUnique({
+            where: { id: studentID },
+        });
+        if (!student) {
+            return { error: "Élève introuvable." };
+        }
+        
+        const session = await prisma.flight_sessions.findUnique({
+            where: {    id: sessionID, 
+                        clubID: student.clubID,
+            }
+        });
+        if (!session) {
+            return { error: "Session introuvable." };
+        }
+
+        // Vérification 1 : Pas d’inscription existante pour l’élève avec la même date de début
+        const conflictingStudentSession = await prisma.flight_sessions.findFirst({
+            where: {
+                clubID: student.clubID,
+                sessionDateStart: session.sessionDateStart,
+                studentID: studentID
+            }
+        });
+        if (conflictingStudentSession) {
+            return { error: "L'élève est déjà inscrit à une session avec la même date de début." };
+        }
+
+        // Vérification 2 : Avion disponible pour la date de début (pas de réservation avec étudiant inscrit)
+        const conflictingPlaneSession = await prisma.flight_sessions.findFirst({
+            where: {
+                clubID: student.clubID,
+                sessionDateStart: session.sessionDateStart,
+                studentPlaneID: planeID
+            }
+        });
+        if (conflictingPlaneSession) {
+            return { error: "L'avion est déjà réservé pour une autre session avec un étudiant inscrit." };
+        }
+
+        // Si toutes les vérifications passent, inscrire l’étudiant à la session
+        await prisma.flight_sessions.update({
+            where: { id: sessionID },
+            data: {
+                studentID: studentID,
+                studentPlaneID: planeID,
+                studentFirstName: student.firstName,
+                studentLastName: student.lastName,
+            }
+        });
+
+        return { success: "Étudiant inscrit avec succès à la session." };
+    } catch (error) {
+        console.error("Erreur lors de l'inscription de l'étudiant :", error);
+        return { error: "Une erreur est survenue lors de l'inscription de l'étudiant." };
     }
 };

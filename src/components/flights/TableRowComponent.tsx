@@ -146,6 +146,9 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                 {session.finalReccurence !== null ? (session.finalReccurence.toLocaleDateString('fr-FR', { day: 'numeric', month: '2-digit', year: 'numeric' })) : 'NON'}
             </TableCell>
             <TableCell className='text-center'>
+                {session.pilotLastName.slice(0, 1).toUpperCase()}.{session.pilotFirstName}
+            </TableCell>
+            <TableCell className='text-center'>
                 {session.studentFirstName ? (
                     <div className='flex items-center justify-center space-x-1.5'>
                         <p>{session.studentFirstName}</p>

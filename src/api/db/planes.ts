@@ -138,3 +138,19 @@ export const getPlaneByID = async (planeID: string) => {
         };
     }
 };
+
+export const getPlanesByID = async (planeID: string[]) => {
+    try {
+        const planes = await prisma.planes.findMany({
+            where: {
+                id: {
+                    in: planeID.filter((id): id is string => id !== null) // Filtrer les valeurs nulles
+                }
+            }
+        });
+        return planes;
+    } catch (error) {
+        console.error('Error getting planes:', error);
+        return { error: "Erreur lors de la récupération des avions" };
+    }
+};

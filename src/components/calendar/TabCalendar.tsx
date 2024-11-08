@@ -9,9 +9,11 @@ interface Props {
     className?: string;
     date: Date;
     sessions: flight_sessions[];
+    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    reload: boolean;
 }
 
-const TabCalendar = ({ date, sessions }: Props) => {
+const TabCalendar = ({ date, sessions, setReload, reload }: Props) => {
     // Récupère les jours de la semaine
     const daysOfWeek = getDaysOfWeek(date);
 
@@ -56,6 +58,8 @@ const TabCalendar = ({ date, sessions }: Props) => {
                                         tabHours={workingHour}
                                         events={sessions}
                                         date={date}
+                                        setReload={setReload}
+                                        reload={reload}
                                     />
                                 </div>
                             ))}

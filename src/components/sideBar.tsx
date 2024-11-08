@@ -13,7 +13,7 @@ const SideBar = () => {
     const { currentUser } = useCurrentUser();
 
     return (
-        <aside className="hidden xl:flex w-64 h-screen bg-[#212121] text-white flex-col">
+        <aside className="hidden lg:flex w-64 h-screen bg-[#212121] text-white flex-col">
             <Link href="/" className="p-4 flex items-center">
                 <Image
                     src="/images/Logo_title.svg"

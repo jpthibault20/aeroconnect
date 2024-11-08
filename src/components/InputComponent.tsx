@@ -1,17 +1,18 @@
 import React from 'react'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
 
 interface props {
     label: string
     id: string
     value: string | null
     loading: boolean
-    onChange: (value: string) => void;
+    onChange?: (value: string) => void;
     style?: string
+    styleInput?: string
 }
 
-const InputComponent = ({ label, id, value, loading, onChange, style }: props) => {
+const InputComponent = ({ label, id, value, loading, onChange, style, styleInput }: props) => {
     return (
         <div className={style}>
             <Label htmlFor={id}>{label}</Label>
@@ -19,10 +20,11 @@ const InputComponent = ({ label, id, value, loading, onChange, style }: props) =
                 id={id}
                 value={value || ''}
                 disabled={loading}
-                onChange={(e) => onChange(e.target.value)}
-                className='bg-white'
+                onChange={(e) => onChange?.(e.target.value)}
+                className={`bg-white ${styleInput}`}
             />
-        </div>)
+        </div>
+    )
 }
 
 export default InputComponent

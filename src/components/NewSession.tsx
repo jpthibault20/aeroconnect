@@ -41,10 +41,7 @@ interface Props {
 }
 // début de composant
 const NewSession = ({ display, reload, setReload }: Props) => {
-    // récupération de l'utilisateur courant
     const { currentUser } = useCurrentUser();
-
-    // initialisation des variables
     const { toast } = useToast()
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -106,7 +103,7 @@ const NewSession = ({ display, reload, setReload }: Props) => {
     }, [sessionData])
 
     // si l'utilisateur n'as pas le bon role il ne pourras pas voir cette page de création de session
-    if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT))) {
+    if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR))) {
         return null;
     }
 

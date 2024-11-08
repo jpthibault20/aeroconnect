@@ -5,8 +5,8 @@
         UI/UX popup affichage session
         litle update for instructor create this session or admin or owner (REMOVE, remove student, ...)
         logisue book session: 
-            user have minimal autorisation for tyis action
-            student student available for this time session 
+            user have minimal autorisation for this action
+            student available for this time session 
             plane student selected isn't book per another student 
         autorisation : 
             full acces : ADMIN / OWNER / INSTRUCTOR
@@ -28,7 +28,7 @@
     - check up:
         control for foms 
         delete user => delete auth user
-        login (tim for register, confrim page,
+        login time for register, confrim page,
 
 
 - mail

@@ -172,3 +172,22 @@ export const updateUser = async (user: User) => {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }   
 }
+
+export const getUserByID = async (id: string[]) => {
+    try {
+        const user = await prisma.user.findMany({
+            where: {
+                id: {
+                    in: id
+                }
+            }
+        })
+        return user;
+    } catch (error) {
+        console.error('Error getting user:', error);
+        return { error: "Erreur lors de la récupération des utilisateurs" };
+    }
+    finally {
+        await prisma.$disconnect();
+    }
+}

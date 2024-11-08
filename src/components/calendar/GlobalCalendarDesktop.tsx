@@ -79,7 +79,7 @@ const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading }: Props) 
 
     return (
         // Only rendered on large screens (hidden on smaller screens), includes a loading state.
-        <div className='hidden xl:block h-full'>
+        <div className='hidden lg:block h-full'>
             <div className="flex flex-col h-full overflow-y-auto">
                 <div className="w-full flex items-center my-6">
                     {/* Displays the current month and year at the top of the calendar. */}
@@ -118,6 +118,8 @@ const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading }: Props) 
                         <TabCalendar
                             date={date}
                             sessions={sessionsFlitered}
+                            setReload={setReload}
+                            reload={reload}
                         />
                     )}
                 </div>

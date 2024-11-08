@@ -8,7 +8,7 @@ interface Props {
 const PhoneLogoutButton = ({ style }: Props) => {
     return (
         <Button
-            className={`xl:hidden ${style}`}
+            className={`lg:hidden ${style}`}
             variant={'default'}
             onClick={() => signOut()}>
             Déconnexion

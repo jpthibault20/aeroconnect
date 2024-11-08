@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import InputComponent from './InputComponent';
+import InputComponent from '../InputComponent';
 import { Button } from '../ui/button';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import PhoneLogoutButton from './PhoneLogoutButton';

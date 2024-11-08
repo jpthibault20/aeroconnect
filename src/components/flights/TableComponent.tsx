@@ -48,6 +48,7 @@ const TableComponent = ({ sessions, setSessionChecked, reload, setReload }: prop
                         <TableHead className='text-black text-center'>Heure de début</TableHead>
                         <TableHead className='text-black text-center'>Heure de fin</TableHead>
                         <TableHead className='text-black text-center'>Récurrence</TableHead>
+                        <TableHead className='text-black text-center'>Instructeur</TableHead>
                         <TableHead className='text-black text-center'>Élève inscrit</TableHead>
                         <TableHead className='text-black text-center'>Avion</TableHead>
                         <TableHead className='text-black text-center'>Action</TableHead>
