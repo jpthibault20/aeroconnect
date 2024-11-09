@@ -77,7 +77,7 @@ const SessionDisplay = ({ session }: Props) => {
                     )}
                 </div>
             </DialogTrigger>
-            <SessionPopup sessions={[session]} />
+            {/* <SessionPopup sessions={[session]} /> */}
 
         </Dialog >
     );
