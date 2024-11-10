@@ -1,13 +1,11 @@
 # AeroConnect
 
 ## todo VERSION 1.0
-    - page calendar: 
-        UI/UX popup affichage session
+    - page calendar:
         litle update for instructor create this session or admin or owner (REMOVE, remove student, ...)
         logisue book session: 
             user have minimal autorisation for this action
             student available for this time session 
-            plane student selected isn't book per another student 
         autorisation : 
             full acces : ADMIN / OWNER / INSTRUCTOR
             student acces: STUDENT (see and book session)
