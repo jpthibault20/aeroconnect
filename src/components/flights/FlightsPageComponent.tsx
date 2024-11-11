@@ -13,7 +13,7 @@ import TableComponent from "@/components/flights/TableComponent";
 import Filter from '@/components/flights/Filter';
 import { getAllFutureSessions, removeSessionsByID } from '@/api/db/sessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { flight_sessions } from '@prisma/client';
+import { flight_sessions, userRole } from '@prisma/client';
 import NewSession from '../NewSession';
 import { Spinner } from '../ui/SpinnerVariants';
 import { Button } from '../ui/button';
@@ -26,15 +26,16 @@ import AlertConfirmDeleted from '../AlertConfirmDeleted';
  * @returns  The rendered component.
  */
 const FlightsPageComponent = () => {
+    const { currentUser } = useCurrentUser();
     const [sessionChecked, setSessionChecked] = useState<string[]>([]);
     const [filterAvailable, setFilterAvailable] = useState(false);
     const [filterReccurence, setFilterReccurence] = useState(false);
     const [filterDate, setFilterDate] = useState<Date | null>(null);
+    const [myFlights, setMyFlights] = useState(false)
     const [sessions, setSessions] = useState<flight_sessions[]>([]);
     const [filteredSessions, setFilteredSessions] = useState(sessions); // State for filtered sessions
     const [reload, setReload] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { currentUser } = useCurrentUser();
 
     useEffect(() => {
         const fetchSessions = async () => {
@@ -66,6 +67,10 @@ const FlightsPageComponent = () => {
         const filtered = sessions.filter(session => {
             let isValid = true;
 
+            if (myFlights) {
+                isValid = isValid && session.pilotID === currentUser?.id;
+            }
+
             // Filter by availability (for example, based on a property like session.isAvailable)
             if (filterAvailable) {
                 isValid = isValid && session.studentID === null;
@@ -86,7 +91,8 @@ const FlightsPageComponent = () => {
         });
 
         setFilteredSessions(filtered); // Update the filtered sessions
-    }, [filterAvailable, filterReccurence, filterDate, sessions]); // Recalculate filters when any filter changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filterAvailable, filterReccurence, filterDate, sessions, myFlights]); // Recalculate filters when any filter changes
 
     const removeFlight = (sessions: string[]) => {
         const removeSessions = async () => {
@@ -106,12 +112,6 @@ const FlightsPageComponent = () => {
         removeSessions();
     }
 
-    /**
-     * Function to check if a given value is a valid date.
-     * 
-     * @param date - The value to check.
-     * @returns {boolean} True if valid date, otherwise false.
-     */
     const isValidDate = (date: unknown): boolean => {
         return date instanceof Date && !isNaN(date.getTime());
     };
@@ -120,7 +120,7 @@ const FlightsPageComponent = () => {
         <div className='h-full'>
             <div className='flex space-x-3'>
                 <p className='font-medium text-3xl'>Les vols</p>
-                <p className='text-[#797979] text-3xl'>{filteredSessions.length}</p>
+                <p className='text-[#797979] text-3xl'>{currentUser?.role !== userRole.USER && filteredSessions.length}</p>
             </div>
             <div className='my-3 flex justify-between'>
                 <div className='flex space-x-3'>
@@ -147,9 +147,11 @@ const FlightsPageComponent = () => {
                     filterAvailable={filterAvailable}
                     filterReccurence={filterReccurence}
                     filterDate={filterDate}
+                    myFlights={myFlights}
                     setFilterAvailable={setFilterAvailable}
                     setFilterReccurence={setFilterReccurence}
                     setFilterDate={setFilterDate}
+                    setMyFlights={setMyFlights}
                 />
             </div>
             {/* Use filtered sessions in the table */}
@@ -159,6 +161,10 @@ const FlightsPageComponent = () => {
                     <p className='text-center'>
                         Chargement ...
                     </p>
+                </div>
+            ) : currentUser?.role === userRole.USER ? (
+                <div className='w-full flex justify-center items-center '>
+                    <p>Vous n&apos;avez pas les droits pour voir les vols</p>
                 </div>
             ) : (
                 <TableComponent

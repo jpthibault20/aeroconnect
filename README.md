@@ -1,13 +1,6 @@
 # AeroConnect
 
 ## todo VERSION 1.0
-    - page session flight:
-        add pilote col for all access
-        ADMIN: can see all session, can choice club 
-        OWNER: can see all session of your club and modify it
-        INSTRUCTOR: can see all session of your club and modify it if is your session
-        STUDENT: can see all session of your club
-
     - mail for: 
         user book session 
         user free session

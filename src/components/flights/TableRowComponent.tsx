@@ -170,7 +170,7 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                 )}
             </TableCell>
             <TableCell className='text-center'>
-                {plane?.name}
+                {plane?.name || '...'}
             </TableCell>
             <TableCell className='h-full w-full justify-center items-center flex'>
                 <AlertConfirmDeleted

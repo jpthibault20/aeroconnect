@@ -10,6 +10,8 @@ interface NavLink {
     roles: Role[];
 }
 
+export const indexLinkPlane = 2;
+
 export const navigationLinks: NavLink[] = [
     {
         name: "Calendrier",
