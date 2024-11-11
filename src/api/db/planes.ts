@@ -154,3 +154,21 @@ export const getPlanesByID = async (planeID: string[]) => {
         return { error: "Erreur lors de la récupération des avions" };
     }
 };
+
+export const getAllPlanesOperational = async (clubID: string) => {
+    try {
+        const planes = await prisma.planes.findMany({
+            where: {
+                clubID: clubID,
+                operational: true
+            }
+        })
+        return planes;
+    } catch (error) {
+        console.error('Error getting planes:', error);
+        return { error: "Erreur lors de la récupération des avions" };
+    }
+    finally {
+        await prisma.$disconnect();
+    }
+}

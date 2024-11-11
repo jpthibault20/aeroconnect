@@ -1,6 +1,6 @@
 "use server";
 import { createClient } from '@/utils/supabase/server';
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, userRole } from '@prisma/client'
 import { User } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -186,6 +186,27 @@ export const getUserByID = async (id: string[]) => {
     } catch (error) {
         console.error('Error getting user:', error);
         return { error: "Erreur lors de la récupération des utilisateurs" };
+    }
+    finally {
+        await prisma.$disconnect();
+    }
+}
+
+export const getInsctructors = async (clubID: string | undefined) => {
+    if (!clubID) {
+        return { error: "Une erreur est survenue (E_001: clubID is undefined)" };
+    }
+    try {
+        const instructors = await prisma.user.findMany({
+            where: {
+                clubID,
+                role: { in: [userRole.INSTRUCTOR, userRole.ADMIN, userRole.OWNER] }
+            }
+        })
+        return instructors;
+    } catch (error) {
+        console.error('Error getting instructors:', error);
+        return { error: "Erreur lors de la récupération des instructeurs" };
     }
     finally {
         await prisma.$disconnect();
