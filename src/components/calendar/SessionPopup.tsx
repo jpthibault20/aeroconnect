@@ -45,28 +45,51 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
     const [availablePlanes, setAvailablePlanes] = useState<planes[]>([]);
     const [allInstructors, setAllInstructors] = useState<User[]>([]);
     const [allPlanes, setAllPlanes] = useState<planes[]>([]);
+    const [endDate, setEndDate] = useState<Date>(new Date());
+    const [submitDisabled, setSubmitDisabled] = useState(false);
 
-    // Charger tous les instructeurs et avions au chargement initial
+    // Charger tous les instructeurs et avions au chargement initial, avec condition sur studentID et operational pour les avions
     useEffect(() => {
-        const uniqueInstructors = Array.from(new Set(sessions.map(session => session.pilotID)));
+        setEndDate(new Date(sessions[0].sessionDateStart.getUTCFullYear(), sessions[0].sessionDateStart.getUTCMonth(), sessions[0].sessionDateStart.getUTCDate(), sessions[0].sessionDateStart.getUTCHours(), sessions[0].sessionDateStart.getUTCMinutes() + sessions[0].sessionDateDuration_min, 0));
+        // Obtenir les instructeurs uniques pour les sessions sans studentID
+        const uniqueInstructors = Array.from(
+            new Set(
+                sessions
+                    .filter(session => !session.studentID) // Filtrer les sessions sans studentID
+                    .map(session => session.pilotID)
+            )
+        );
+
         const allStudentPlaneIDs = sessions.flatMap(session => session.studentPlaneID).filter(Boolean); // Aplatir et filtrer les null
         const uniquePlanes = Array.from(
             new Set(
                 sessions
                     .flatMap(session => session.planeID) // Aplatir tous les planeID des sessions
-                    .filter(planeID => planeID !== null && !allStudentPlaneIDs.includes(planeID)) // Exclure les planeID déjà dans studentPlaneID
+                    .filter(
+                        planeID =>
+                            planeID !== null &&
+                            !allStudentPlaneIDs.includes(planeID) // Exclure les planeID dans studentPlaneID
+                    )
             )
         );
 
+        if (uniqueInstructors.length === 0 || uniquePlanes.length === 0) setSubmitDisabled(true);
+        else setSubmitDisabled(false);
+
+        if (sessions[0].sessionDateStart < new Date()) setSubmitDisabled(true);
+        else setSubmitDisabled(false);
+
+        // Charger les instructeurs et les avions disponibles, filtrés par `operational` pour les avions
         Promise.all([getUserByID(uniqueInstructors), getPlanesByID(uniquePlanes)])
             .then(([instructorsRes, planesRes]) => {
                 if (Array.isArray(instructorsRes)) {
                     setAllInstructors(instructorsRes);
-                    setAvailableInstructors(instructorsRes);
+                    setAvailableInstructors(instructorsRes); // Met à jour uniquement les instructeurs sans studentID
                 }
                 if (Array.isArray(planesRes)) {
-                    setAllPlanes(planesRes);
-                    setAvailablePlanes(planesRes);
+                    const operationalPlanes = planesRes.filter(plane => plane.operational); // Filtrer les avions opérationnels
+                    setAllPlanes(operationalPlanes);
+                    setAvailablePlanes(operationalPlanes);
                 }
             })
             .catch(error => console.error("Error fetching data:", error));
@@ -149,8 +172,6 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
         setLoading(false);
     };
 
-    // Fonction de soumission qui affiche l'ID de la session
-
     if (sessions.length === 0) return null;
 
     return (
@@ -162,7 +183,7 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
                 <DialogHeader>
                     <DialogTitle>Détails de la session</DialogTitle>
                     <DialogDescription className='flex flex-col'>
-                        Session du {formatDate(sessions[0].sessionDateStart)}
+                        Session du {formatDate(new Date(sessions[0].sessionDateStart.getUTCFullYear(), sessions[0].sessionDateStart.getUTCMonth(), sessions[0].sessionDateStart.getUTCDate(), sessions[0].sessionDateStart.getUTCHours(), sessions[0].sessionDateStart.getUTCMinutes(), 0))}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -171,7 +192,7 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
                         <InputComponent
                             label='Début de la session'
                             id='start'
-                            value={"11/11/2024 10:00:00"}
+                            value={formatDate(new Date(sessions[0].sessionDateStart.getUTCFullYear(), sessions[0].sessionDateStart.getUTCMonth(), sessions[0].sessionDateStart.getUTCDate(), sessions[0].sessionDateStart.getUTCHours(), sessions[0].sessionDateStart.getUTCMinutes(), 0))}
                             loading={true}
                             styleInput='border border-gray-400'
                         />
@@ -185,7 +206,7 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
                         <InputComponent
                             label='Fin de la session'
                             id='start'
-                            value={"11/11/2024 11:00:00"}
+                            value={formatDate(endDate)}
                             loading={true}
                             styleInput='border border-gray-400'
                         />
@@ -226,23 +247,35 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
                     </Select>
                 </div>
 
-                {error && (
-                    <div className='text-red-500 w-full p-2  bg-[#FFF4F4] rounded-lg flex items-center space-x-2'>
+                {error ? (
+                    <div className='text-red-500 w-full p-2  bg-[#FFF4F4] rounded-lg flex items-center space-x-2 '>
                         <IoIosWarning size={20} />
                         <div>
                             {error}
                         </div>
                     </div>
-                )}
+                ) :
+                    null
+                }
 
-                <div className='flex w-full justify-end space-x-6'>
-                    <button onClick={() => setIsOpen(false)}>
-                        cancel
-                    </button>
-                    {loading ? <Spinner /> : <Button className='bg-[#774BBE] hover:bg-[#3d2365]' onClick={onSubmit}>
-                        S&apos;inscrire
-                    </Button>}
-                </div>
+
+                {!submitDisabled ? (
+                    <div className='flex w-full justify-end space-x-6'>
+                        <button onClick={() => setIsOpen(false)}>
+                            cancel
+                        </button>
+                        {loading ? <Spinner /> : <Button className='bg-[#774BBE] hover:bg-[#3d2365]' onClick={onSubmit}>
+                            S&apos;inscrire
+                        </Button>}
+                    </div>
+                ) : (
+                    <div className='text-orange-500 w-full p-2  bg-[#fffff4] rounded-lg flex items-center space-x-2 border border-orange-500'>
+                        <IoIosWarning size={20} />
+                        <div>
+                            Ce cours n&apos;est pas disponible
+                        </div>
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     );

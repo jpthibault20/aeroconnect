@@ -274,15 +274,15 @@ export const getSessionPlanes = async (sessionID: string) => {
 
 export const studentRegistration = async (sessionID: string, studentID: string, planeID: string) => {
     if (!sessionID) {
-        return { error: "Une erreur est survenue (E_001: sessionID is undefined)" };
+        return { error: "Une erreur est survenue (E_00x: sessionID is undefined)" };
     }
 
     if (!studentID) {
-        return { error: "Une erreur est survenue (E_001: studentID is undefined)" };
+        return { error: "Une erreur est survenue (E_00x: studentID is undefined)" };
     }
 
     if (!planeID) {
-        return { error: "Une erreur est survenue (E_001: planeID is undefined)" };
+        return { error: "Une erreur est survenue (E_00x: planeID is undefined)" };
     }
 
     try {
@@ -302,7 +302,22 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
             return { error: "Session introuvable." };
         }
 
-        // Vérification 1 : Pas d’inscription existante pour l’élève avec la même date de début
+        // Vérification 0 : la date de la session doit être dans le futur
+        if (session.sessionDateStart < new Date()) {
+            return { error: "La date de la session es passée." };
+        }
+
+        // Verification 1 : l'utilisateur  n'es pas restreint pour s'inscrire a une session
+        if (student.restricted) {
+            return { error: "Contacter l'administrateur pour plus d'informations. (E_002: restricted)" };
+        }
+
+        // Verification 2 : l'utilisateur a les acces minimum pour s'inscrire a une session
+        if (student.role !== 'STUDENT' && student.role !== 'PILOT' && student.role !== 'OWNER' && student.role !== 'ADMIN' && student.role !== 'INSTRUCTOR') {
+            return { error: "Vous n'avez pas les droits pour s'inscrire a une session. (E_003: student)" };
+        }
+
+        // Vérification 3 : Pas d’inscription existante pour l’élève avec la même date de début
         const conflictingStudentSession = await prisma.flight_sessions.findFirst({
             where: {
                 clubID: student.clubID,
@@ -314,7 +329,7 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
             return { error: "L'élève est déjà inscrit à une session avec la même date de début." };
         }
 
-        // Vérification 2 : Avion disponible pour la date de début (pas de réservation avec étudiant inscrit)
+        // Vérification 4 : Avion disponible pour la date de début (pas de réservation avec étudiant inscrit)
         const conflictingPlaneSession = await prisma.flight_sessions.findFirst({
             where: {
                 clubID: student.clubID,

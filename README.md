@@ -3,13 +3,8 @@
 ## todo VERSION 1.0
     - page calendar:
         litle update for instructor create this session or admin or owner (REMOVE, remove student, ...)
-        logisue book session: 
-            user have minimal autorisation for this action
-            student available for this time session 
         autorisation : 
             full acces : ADMIN / OWNER / INSTRUCTOR
-            student acces: STUDENT (see and book session)
-            another role: can just see session 
 
     - page session flight:
         add pilote col for all access
