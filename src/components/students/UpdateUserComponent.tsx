@@ -204,7 +204,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, reload, setRel
                 {/* Restricted*/}
                 <div className="grid items-center gap-2">
                     <Label htmlFor="restricted">Restreindre l&apos;utilisateur</Label>
-                    <div className='flex items-center gap-2'>
+                    <div className='flex items-center gap-2 border border-gray-300 rounded-xl p-2'>
                         <p className='text-gray-500'>Un utilisateur restreint ne peut que visualiser les sessions </p>
                         <div className='flex items-center gap-2'>
                             <ImCross color='red' />
