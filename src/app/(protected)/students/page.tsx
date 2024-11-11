@@ -1,16 +1,23 @@
-import InitialLoading from '@/components/InitialLoading'
-import React from 'react'
+/**
+ * @file Page.tsx
+ * @brief A React component that serves as a container for the StudentsPage.
+ * 
+ * This component wraps the StudentsPage component with an InitialLoading 
+ * component, which handles the loading state while the student data is being fetched.
+ * 
+ * @returns The rendered page component containing the StudentsPage.
+ */
+
+import InitialLoading from '@/components/InitialLoading';
+import StudentsPage from '@/components/students/StudentsPage';
+import React from 'react';
 
 const Page = () => {
     return (
-        <InitialLoading>
-            <div className='justify-center items-center h-full flex'>
-                <p className='text-2xl font-istok'>
-                    Student page
-                </p>
-            </div>
+        <InitialLoading className='w-full h-full bg-gray-100'>
+            <StudentsPage />
         </InitialLoading>
-    )
+    );
 }
 
-export default Page
+export default Page;
