@@ -54,7 +54,7 @@ const Filter = ({ filterAvailable, filterReccurence, filterDate, myFlights, setF
                 <LuSettings2 size={20} color='white' />
             </PopoverTrigger>
             <PopoverContent className="w-80">
-                {currentUser?.role === userRole.INSTRUCTOR ? (
+                {currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER ? (
                     <div className="flex space-x-2 justify-start items-center border-b border-gray-300 py-2">
                         <Checkbox checked={myFlights} onCheckedChange={(checked) => setMyFlights(!!checked)} />
                         <button onClick={() => setMyFlights(!myFlights)} className='flex items-center justify-center'>

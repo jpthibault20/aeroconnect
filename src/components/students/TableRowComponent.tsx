@@ -38,7 +38,7 @@ const TableRowComponent = ({ user, setReload, reload }: props) => {
             console.log('Vous ne pouvez pas supprimer votre propre compte');
             toast({
                 title: "Vous ne pouvez pas supprimer votre propre compte",
-                description: "Vous ne pouvez pas supprimer votre propre compte",
+                description: "contactez un administrateur pour supprimer votre compte",
                 style: {
                     background: 'rgba(239, 68, 68, 0.9)',
                     color: 'white',

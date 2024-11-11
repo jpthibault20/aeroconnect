@@ -1,15 +1,20 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Switch } from '../ui/switch'
 import { User } from '@prisma/client';
+import { blockUser } from '@/api/db/users';
 
 interface props {
     user: User;
 }
+
 const Restricted = ({ user }: props) => {
     const [blocked, setBlocked] = useState(user.restricted)
 
+    useEffect(() => {
+        blockUser(user.id, blocked)
+    }, [blocked, user])
+
     const onChangeRestricted = () => {
-        console.log('onChangeRestricted')
         setBlocked(!blocked)
     }
 

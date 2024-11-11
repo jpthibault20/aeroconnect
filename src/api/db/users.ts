@@ -212,3 +212,25 @@ export const getInsctructors = async (clubID: string | undefined) => {
         await prisma.$disconnect();
     }
 }
+
+export const blockUser = async (userID: string, restricted: boolean) => {
+    if (!userID) {
+        console.log('userID is undefined');
+        return { error: "Une erreur est survenue (E_001: userID is undefined)" };
+    }
+    try {
+        await prisma.user.update({
+            where: {
+                id: userID
+            },
+            data: {
+                restricted: restricted
+            }
+        });
+        console.log('User blocked successfully');
+        return { success: "L'utilisateur a été bloqué avec succès !" };
+    } catch (error) {
+        console.error('Error blocking user:', error);
+        return { error: "Erreur lors de la mise à jour de l'utilisateur" };
+    }
+}
