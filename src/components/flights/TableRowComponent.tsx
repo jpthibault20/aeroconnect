@@ -161,9 +161,9 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                 {session.pilotLastName.slice(0, 1).toUpperCase()}.{session.pilotFirstName}
             </TableCell>
             <TableCell className='text-center'>
-                {session.studentFirstName ? (
+                {session.studentFirstName && session.studentLastName ? (
                     <div className='flex items-center justify-center space-x-1.5'>
-                        <p>{session.studentFirstName}</p>
+                        <p>{session.studentLastName.slice(0, 1).toUpperCase()}.{session.studentFirstName}</p>
                         {autorisedDeleteStudent &&
                             <AlertConfirmDeleted
                                 title="Etes vous sur de vouloir Désinscrire l'élève ?"
