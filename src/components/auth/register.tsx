@@ -32,22 +32,25 @@ const Register = () => {
 
     const onSubmit = async (data: RegisterSchema) => {
         setLoading(true);
-        console.log(data);
+        try {
+            const formData = new FormData();
+            formData.append('lastName', data.lastName);
+            formData.append('firstName', data.firstName);
+            formData.append('email', data.email);
+            formData.append('password', data.password);
+            formData.append('phone', data.phone);
 
-        // Convert the data object to FormData
-        const formData = new FormData();
-        formData.append('lastName', data.lastName);
-        formData.append('firstName', data.firstName);
-        formData.append('email', data.email);
-        formData.append('password', data.password);
-        formData.append('phone', data.phone);
+            // Logique de soumission du formulaire, comme un appel API
+            await emailSignup(formData);
 
-        // Logique de soumission du formulaire, comme un appel API
-        await emailSignup(formData);
-
-        reset();
-        setLoading(false);
+        } catch (error) {
+            console.log(error);
+        } finally {
+            reset();
+            setLoading(false);
+        }
     };
+
     return (
         <CardWrapper title='Créer un compte'>
             <form action="#" onSubmit={handleSubmit(onSubmit)}>

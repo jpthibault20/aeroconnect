@@ -1,7 +1,6 @@
 # AeroConnect
 
 ## todo VERSION 1.0
-    - Spinner for submit button to login / register / ... pages
     - Not button for register session if User 
     - Time for loading
     - switch "Utilisateur" to "Visiteur"

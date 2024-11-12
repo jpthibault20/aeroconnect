@@ -35,16 +35,21 @@ const NewPassword = () => {
     const onSubmit = (data: UpdatePasswordSchema) => {
         setLoading(true);
 
-        // Logique de soumission du formulaire, comme un appel API
-        const formData = new FormData();
-        formData.append('password', data.password);
-        formData.append('confirmPassword', data.confirmPassword);
-        formData.append('code', code);
+        try {
+            const formData = new FormData();
+            formData.append('password', data.password);
+            formData.append('confirmPassword', data.confirmPassword);
+            formData.append('code', code);
 
-        updatePassword(formData);
+            updatePassword(formData);
 
-        reset();
-        setLoading(false);
+
+        } catch (error) {
+            console.log(error);
+        } finally {
+            reset();
+            setLoading(false);
+        }
     };
 
     return (
