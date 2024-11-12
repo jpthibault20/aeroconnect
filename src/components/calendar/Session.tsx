@@ -17,6 +17,7 @@ interface Props {
 }
 
 const Session = ({ indexX, indexY, tabHours = [], events = [], date, reload, setReload }: Props) => {
+    // console.log("Session | Rendering...");
 
     // Récupère les jours de la semaine
     const daysOfWeek = getDaysOfWeek(date);

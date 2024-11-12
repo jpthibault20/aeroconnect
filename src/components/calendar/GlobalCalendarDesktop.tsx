@@ -34,7 +34,7 @@ const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading }: Props) 
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
 
-
+    // console.log("GlobalCalendarDesktop | Rendering...");
 
     /**
      * @function onClickNextweek

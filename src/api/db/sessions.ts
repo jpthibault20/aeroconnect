@@ -145,7 +145,12 @@ export const getAllSessions = async (clubID: string) => {
         const sessions = await prisma.flight_sessions.findMany({
             where: {
                 clubID: clubID,
-            }
+                sessionDateStart: {
+                    gte: new Date('2024-11-11'), // Date minimale : 11 novembre 2024
+                    lte: new Date('2024-11-17'), // Date maximale : 17 novembre 2024
+                },
+            },
+            
         });
         return sessions;
     } catch (error) {

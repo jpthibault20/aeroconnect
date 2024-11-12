@@ -31,7 +31,10 @@ const Page = () => {
     const [reload, setReload] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    // console.log("Page | Rendering...");
+
     useEffect(() => {
+        // console.log("Page | UseEffect | Fetching sessions...");
         const fetchSessions = async () => {
             if (currentUser) {
                 try {

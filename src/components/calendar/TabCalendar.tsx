@@ -14,6 +14,7 @@ interface Props {
 }
 
 const TabCalendar = ({ date, sessions, setReload, reload }: Props) => {
+    console.log("TabCalendar | Rendering...");
     // Récupère les jours de la semaine
     const daysOfWeek = getDaysOfWeek(date);
 
