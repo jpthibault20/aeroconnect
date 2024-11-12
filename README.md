@@ -1,15 +1,14 @@
 # AeroConnect
 
 ## todo VERSION 1.0
-    - mail for: 
-        user book session 
-        user free session
-        session deleted
-        
-    - check up:
-        control for foms 
-        delete user => delete auth user
-        login time for register, confrim page,
+    - Spinner for submit button to login / register / ... pages
+    - Not button for register session if User 
+    - Time for loading
+    - switch "Utilisateur" to "Visiteur"
+    - can change user role if user is Admin / Owner / Instructor
+    - Student can't free session if this in 1 hour
+    - mail : student book session / session deleted with student / student free session
+    - Toast blocked User
 
 
 - mail
