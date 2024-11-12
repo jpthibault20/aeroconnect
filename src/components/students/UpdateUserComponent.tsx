@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast'
 import { Switch } from '../ui/switch'
 import { FaCheck } from "react-icons/fa";
 import { ImCross } from "react-icons/im";
+import { useCurrentUser } from '@/app/context/useCurrentUser'
 
 
 
@@ -23,7 +24,9 @@ interface Props {
 }
 
 const UpdateUserComponent = ({ children, showPopup, setShowPopup, reload, setReload, user }: Props) => {
+    const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
+    const [autorisedModifyRole, setAutorisedModifyRole] = useState(false);
     const [userState, setUserState] = useState<User>({
         id: user.id || '',
         firstName: user.firstName || '',
@@ -38,6 +41,14 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, reload, setRel
         restricted: user.restricted || false,
         country: user.country || null,
     })
+
+    useEffect(() => {
+        if (currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR") {
+            setAutorisedModifyRole(true);
+        } else {
+            setAutorisedModifyRole(false);
+        }
+    }, [currentUser]);
 
     const onChangeUserState = (key: keyof typeof userState, value: string | boolean) => {
         setUserState((prev) => ({
@@ -174,7 +185,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, reload, setRel
                             disabled={loading}
                             onValueChange={(val: userRole) => onChangeUserState('role', val)}
                         >
-                            <SelectTrigger className="w-[150px]">
+                            <SelectTrigger className="w-[150px]" disabled={!autorisedModifyRole}>
                                 <SelectValue placeholder="Rôle" />
                             </SelectTrigger>
                             <SelectContent>
