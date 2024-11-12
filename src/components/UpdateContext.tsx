@@ -2,19 +2,22 @@
 "use client";
 import { useEffect } from "react";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
-import useUserData from "@/hooks/useUserData";
+import { User } from "@prisma/client";
 
-const UpdateContext = () => {
+interface Props {
+    userProp: User | null;
+}
+
+const UpdateContext = ({ userProp }: Props) => {
     const { setCurrentUser } = useCurrentUser();
-    const { user, loading } = useUserData();
 
     useEffect(() => {
-        if (user) {
-            setCurrentUser(user);
+        if (userProp) {
+            setCurrentUser(userProp);
         }
-    }, [user, setCurrentUser]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userProp]);
 
-    if (loading) return <p>Chargement des données...</p>;
 
     return null;
 };
