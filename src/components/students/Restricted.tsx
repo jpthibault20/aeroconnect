@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Switch } from '../ui/switch'
 import { User } from '@prisma/client';
 import { blockUser } from '@/api/db/users';
+import { toast } from '@/hooks/use-toast';
 
 interface props {
     user: User;
@@ -15,7 +16,21 @@ const Restricted = ({ user }: props) => {
     }, [blocked, user])
 
     const onChangeRestricted = () => {
-        setBlocked(!blocked)
+        const blockUserAction = async () => {
+            try {
+                setBlocked(!blocked)
+            } catch (error) {
+                console.log(error)
+                toast({
+                    title: "Oups, une erreur est survenue",
+                });
+            } finally {
+                toast({
+                    title: "Utilisateur modifié avec succès",
+                });
+            }
+        }
+        blockUserAction()
     }
 
     return (
