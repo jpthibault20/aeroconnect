@@ -314,7 +314,7 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
 
         // Verification 2 : l'utilisateur a les acces minimum pour s'inscrire a une session
         if (student.role !== 'STUDENT' && student.role !== 'PILOT' && student.role !== 'OWNER' && student.role !== 'ADMIN' && student.role !== 'INSTRUCTOR') {
-            return { error: "Vous n'avez pas les droits pour s'inscrire a une session. (E_003: student)" };
+            return { error: "Vous n'avez pas les droits pour s'inscrire a une session. (E_003: User)" };
         }
 
         // Vérification 3 : Pas d’inscription existante pour l’élève avec la même date de début

@@ -1,8 +1,7 @@
 # AeroConnect
 
 ## todo VERSION 1.0
-    - Not button for register session if User 
-    - Time for loading
+    - Time for loading multi render
     - switch "Utilisateur" to "Visiteur"
     - can change user role if user is Admin / Owner / Instructor
     - Student can't free session if this in 1 hour
