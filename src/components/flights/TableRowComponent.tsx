@@ -16,7 +16,7 @@
 import React, { useState, useEffect } from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { Checkbox } from '../ui/checkbox';
-import { flight_sessions, planes } from '@prisma/client';
+import { flight_sessions, planes, userRole } from '@prisma/client';
 import { IoMdClose } from 'react-icons/io';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/sessions';
@@ -24,6 +24,7 @@ import { toast } from '@/hooks/use-toast';
 import AddStudent from './AddStudent';
 import { Button } from '../ui/button';
 import { getPlaneByID } from '@/api/db/planes';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 
 interface props {
@@ -38,9 +39,20 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
     const [isChecked, setIsChecked] = useState(false); // State for individual checkbox
     const [loading, setLoading] = useState(false);
     const [plane, setPlane] = useState<planes>();
+    const [autorisedDeleteStudent, setAutorisedDeleteStudent] = useState(false);
+    const { currentUser } = useCurrentUser();
 
     const finalDate = new Date(session.sessionDateStart);
     finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min); // Calculate end time of the session
+
+    useEffect(() => {
+        console.log(currentUser?.id, session.studentID);
+        if (currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR" || session.studentID === currentUser?.id) {
+            setAutorisedDeleteStudent(true);
+        } else {
+            setAutorisedDeleteStudent(false);
+        }
+    }, [currentUser, session.studentID]);
 
     // Sync individual checkbox state with "select all"
     useEffect(() => {
@@ -152,18 +164,20 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                 {session.studentFirstName ? (
                     <div className='flex items-center justify-center space-x-1.5'>
                         <p>{session.studentFirstName}</p>
-                        <AlertConfirmDeleted
-                            title="Etes vous sur de vouloir Désinscrire l'élève ?"
-                            description={`vous allez désinscrire ${session.studentFirstName} ${session.studentLastName} de ce vol.`}
-                            cancel='Annuler'
-                            confirm='Supprimer'
-                            confirmAction={() => removeStudent(session.id)}
-                            loading={loading}
-                        >
-                            <button>
-                                <IoMdClose color='red' size={20} />
-                            </button>
-                        </AlertConfirmDeleted>
+                        {autorisedDeleteStudent &&
+                            <AlertConfirmDeleted
+                                title="Etes vous sur de vouloir Désinscrire l'élève ?"
+                                description={`vous allez désinscrire ${session.studentFirstName} ${session.studentLastName} de ce vol.`}
+                                cancel='Annuler'
+                                confirm='Supprimer'
+                                confirmAction={() => removeStudent(session.id)}
+                                loading={loading}
+                            >
+                                <button>
+                                    <IoMdClose color='red' size={20} />
+                                </button>
+                            </AlertConfirmDeleted>
+                        }
                     </div>
                 ) : (
                     <AddStudent sessionID={session.id} reload={reload} setReload={setReload} />
@@ -173,17 +187,19 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                 {plane?.name || '...'}
             </TableCell>
             <TableCell className='h-full w-full justify-center items-center flex'>
-                <AlertConfirmDeleted
-                    title='Etes vous sur de vouloir supprimer ce vol ?'
-                    description={'Ce vol sera supprimé définitivement'}
-                    style='flex h-full w-full justify-center items-center'
-                    cancel='Annuler'
-                    confirm='Supprimer'
-                    confirmAction={() => removeFlight([session.id])}
-                    loading={loading}
-                >
-                    <Button className='w-fit' variant={"destructive"} >Supprimer</Button>
-                </AlertConfirmDeleted>
+                {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.OWNER &&
+                    <AlertConfirmDeleted
+                        title='Etes vous sur de vouloir supprimer ce vol ?'
+                        description={'Ce vol sera supprimé définitivement'}
+                        style='flex h-full w-full justify-center items-center'
+                        cancel='Annuler'
+                        confirm='Supprimer'
+                        confirmAction={() => removeFlight([session.id])}
+                        loading={loading}
+                    >
+                        <Button className='w-fit' variant={"destructive"} >Supprimer</Button>
+                    </AlertConfirmDeleted>
+                }
             </TableCell>
         </TableRow>
     );

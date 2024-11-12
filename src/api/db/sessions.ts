@@ -1,6 +1,7 @@
 "use server";
 
 import { PrismaClient, User } from '@prisma/client';
+import { differenceInHours, isBefore } from 'date-fns';
 
 const prisma = new PrismaClient();
 export interface interfaceSessions {
@@ -215,6 +216,27 @@ export const removeSessionsByID = async (sessionID: string[]) => {
 
 export const removeStudentFromSessionID = async (sessionID: string) => {
     try {
+        // Récupérer les informations de la session
+        const session = await prisma.flight_sessions.findUnique({
+            where: { id: sessionID },
+            select: { sessionDateStart: true } // Assurez-vous que "date" est bien le nom de la colonne
+        });
+
+        if (!session || !session.sessionDateStart) {
+            return { error: "Session introuvable ou sans date définie." };
+        }
+
+        const sessionDateUTC = new Date(session.sessionDateStart); // Assurez-vous que cette date est UTC
+
+        // Vérifier si la date de la session est dans le futur et à plus de 3 heures de l'heure actuelle
+        const nowUTC = new Date(); // Date actuelle en UTC
+        const hoursUntilSession = differenceInHours(sessionDateUTC, nowUTC);
+
+        if (isBefore(sessionDateUTC, nowUTC) || hoursUntilSession < 3) {
+            return { error: "La session ne peut être modifiée que si elle est dans plus de 3 heures." };
+        }
+
+        // Mettre à jour la session en supprimant les informations de l'élève
         await prisma.flight_sessions.update({
             where: {
                 id: sessionID
@@ -227,7 +249,8 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
                 studentPlaneID: null,
             }
         });
-        console.log('Session deleted successfully');
+        
+        console.log('Student removed from session successfully');
         return { success: "L'élève a été désinscrit de la session !" };
     } catch (error) {
         console.error('Error deleting flight session:', error);

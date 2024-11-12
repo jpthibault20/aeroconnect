@@ -2,7 +2,6 @@
 
 ## todo VERSION 1.0
     - Time for loading multi render
-    - Student can't free session if this in 1 hour
     - mail : student book session / session deleted with student / student free session
 
 
