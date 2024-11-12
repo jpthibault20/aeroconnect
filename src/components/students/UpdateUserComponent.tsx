@@ -180,7 +180,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, reload, setRel
                             <SelectContent>
                                 {Object.entries(userRole).map(([key, value]) => (
                                     <SelectItem key={key} value={value}>
-                                        {key === "USER" && "Utilisateur"}
+                                        {key === "USER" && "Visiteur"}
                                         {key === "STUDENT" && "Elève"}
                                         {key === "INSTRUCTOR" && "Instructeur"}
                                         {key === "PILOT" && "Pilote"}

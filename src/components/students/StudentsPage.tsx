@@ -105,7 +105,7 @@ const StudentsPage = () => {
                             {roleFilter === 'ADMIN' && 'Admin'}
                             {roleFilter === 'PILOT' && 'Pilote'}
                             {roleFilter === 'STUDENT' && 'Élève'}
-                            {roleFilter === 'USER' && 'Utilisateur'}
+                            {roleFilter === 'USER' && 'Visiteur'}
                             <IoChevronDown className='ml-2 text-gray-500' />
                         </Button>
                     </DropdownMenuTrigger>
@@ -144,7 +144,7 @@ const StudentsPage = () => {
                             checked={roleFilter === 'USER'}
                             onCheckedChange={() => handleRoleFilterChange('USER')}
                         >
-                            Utilisateur
+                            Visiteur
                         </DropdownMenuCheckboxItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

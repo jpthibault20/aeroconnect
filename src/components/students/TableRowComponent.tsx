@@ -101,7 +101,7 @@ const TableRowComponent = ({ user, setReload, reload }: props) => {
                 </div>
             </TableCell>
             <TableCell className='text-center'>
-                {user.role === "USER" && "Utilisateur"}
+                {user.role === "USER" && "Visiteur"}
                 {user.role === "STUDENT" && "Elève"}
                 {user.role === "INSTRUCTOR" && "Instructeur"}
                 {user.role === "PILOT" && "Pilote"}
