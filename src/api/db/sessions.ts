@@ -135,8 +135,6 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
     } catch (error) {
         console.error('Error creating flight sessions:', error);
         return { error: "Erreur lors de la création des sessions de vol" };
-    } finally {
-        await prisma.$disconnect();
     }
 };
 
@@ -157,9 +155,7 @@ export const getAllSessions = async (clubID: string) => {
         console.error('Error getting flight sessions:', error);
         return { error: "Erreur lors de la récupération des sessions de vol" };
     }
-    finally {
-        await prisma.$disconnect();
-    }
+
 };
 
 export const getAllFutureSessions = async (clubID: string) => {
@@ -177,9 +173,7 @@ export const getAllFutureSessions = async (clubID: string) => {
         console.error('Error getting flight sessions:', error);
         return { error: "Erreur lors de la récupération des sessions de vol" };
     }
-    finally {
-        await prisma.$disconnect();
-    }
+
 };
 
 export const getPlanes = async (clubID: string) => {
@@ -195,9 +189,7 @@ export const getPlanes = async (clubID: string) => {
         console.error('Error getting planes:', error);
         return { error: "Erreur lors de la récupération des avions" };
     }
-    finally {
-        await prisma.$disconnect();
-    }
+
 };
 
 export const removeSessionsByID = async (sessionID: string[]) => {
@@ -214,8 +206,6 @@ export const removeSessionsByID = async (sessionID: string[]) => {
     } catch (error) {
         console.error('Error deleting flight sessions:', error);
         return { error: "Erreur lors de la suppression des sessions de vol" };
-    } finally {
-        await prisma.$disconnect();
     }
 };
 
@@ -260,8 +250,6 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
     } catch (error) {
         console.error('Error deleting flight session:', error);
         return { error: "Erreur lors de la suppression de la session de vol" };
-    } finally {
-        await prisma.$disconnect();
     }
 };
 
