@@ -1,14 +1,6 @@
-/**
- * @file Page.js
- * @brief This file renders the main calendar view for both desktop and mobile devices.
- *
- * It imports two key components, `GlobalCalendarDesktop` and `GlobalCalendarPhone`,
- * to handle the display of a calendar on desktop and mobile screens, respectively.
- * The page ensures responsiveness by rendering the appropriate component based on the device.
- */
+"use client";
 
-"use client"
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import GlobalCalendarDesktop from '@/components/calendar/GlobalCalendarDesktop';
 import GlobalCalendarPhone from '@/components/calendar/phone/GlobalCalendarPhone';
 import InitialLoading from '@/components/InitialLoading';
@@ -17,13 +9,35 @@ import { getAllSessions } from '@/api/db/sessions';
 import { flight_sessions } from '@prisma/client';
 
 /**
+ * Hook personnalisé pour détecter si l'écran est de taille mobile ou desktop.
+ */
+const useScreenSize = () => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(max-width: 768px)'); // 768px est souvent le seuil pour mobile.
+        const handleResize = () => setIsMobile(mediaQuery.matches);
+
+        // Détecter initialement la taille de l'écran
+        handleResize();
+
+        // Ajouter un listener pour détecter les changements de taille
+        mediaQuery.addEventListener('change', handleResize);
+
+        return () => {
+            mediaQuery.removeEventListener('change', handleResize);
+        };
+    }, []);
+
+    return isMobile;
+};
+
+/**
  * @function Page
- * @brief Main component rendering the responsive calendar view.
+ * @brief Composant principal qui rend une vue calendrier responsive.
  *
- * This component contains a wrapper `<div>` that spans the full width and height of the page (`h-full w-full`).
- * Inside the `<div>`, it renders two components: one for the desktop view (`GlobalCalendarDesktop`) 
- * and one for the mobile view (`GlobalCalendarPhone`).
- * 
+ * Affiche `GlobalCalendarDesktop` pour les écrans larges et
+ * `GlobalCalendarPhone` pour les écrans mobiles.
  */
 const Page = () => {
     const { currentUser } = useCurrentUser();
@@ -31,10 +45,9 @@ const Page = () => {
     const [reload, setReload] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // console.log("Page | Rendering...");
+    const isMobile = useScreenSize(); // Utilisation du hook pour détecter le type d'écran.
 
     useEffect(() => {
-        // console.log("Page | UseEffect | Fetching sessions...");
         const fetchSessions = async () => {
             if (currentUser) {
                 try {
@@ -43,28 +56,39 @@ const Page = () => {
                     if (Array.isArray(res)) {
                         setSessions(res);
                     } else {
-                        console.log('Unexpected response format:', res);
+                        console.error('Unexpected response format:', res);
                     }
                 } catch (error) {
-                    console.log(error);
+                    console.error(error);
                 } finally {
                     setLoading(false);
                 }
             }
-        }
+        };
 
         fetchSessions();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser, reload]);
 
+    // Rendu conditionnel en fonction de la taille de l'écran
     return (
-        // Full height and width container to ensure the calendar takes up the entire page space.
-        <InitialLoading className='h-full w-full'>
-            <GlobalCalendarDesktop sessions={sessions} reload={reload} setReload={setReload} loading={loading} />
-            <GlobalCalendarPhone sessions={sessions} reload={reload} setReload={setReload} loading={loading} />
+        <InitialLoading className="h-full w-full">
+            {isMobile ? (
+                <GlobalCalendarPhone
+                    sessions={sessions}
+                    reload={reload}
+                    setReload={setReload}
+                    loading={loading}
+                />
+            ) : (
+                <GlobalCalendarDesktop
+                    sessions={sessions}
+                    reload={reload}
+                    setReload={setReload}
+                    loading={loading}
+                />
+            )}
         </InitialLoading>
-    )
-}
+    );
+};
 
-export default Page
-
+export default Page;
