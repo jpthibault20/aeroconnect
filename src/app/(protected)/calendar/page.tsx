@@ -15,7 +15,7 @@ const useScreenSize = () => {
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
-        const mediaQuery = window.matchMedia('(max-width: 768px)'); // 768px est souvent le seuil pour mobile.
+        const mediaQuery = window.matchMedia('(max-width: 1023px)'); // 768px est souvent le seuil pour mobile.
         const handleResize = () => setIsMobile(mediaQuery.matches);
 
         // Détecter initialement la taille de l'écran
@@ -72,15 +72,15 @@ const Page = () => {
     // Rendu conditionnel en fonction de la taille de l'écran
     return (
         <InitialLoading className="h-full w-full">
-            {isMobile ? (
-                <GlobalCalendarPhone
+            {!isMobile ? (
+                <GlobalCalendarDesktop
                     sessions={sessions}
                     reload={reload}
                     setReload={setReload}
                     loading={loading}
                 />
             ) : (
-                <GlobalCalendarDesktop
+                <GlobalCalendarPhone
                     sessions={sessions}
                     reload={reload}
                     setReload={setReload}
