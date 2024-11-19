@@ -50,7 +50,6 @@ const Page = () => {
     const isMobile = useScreenSize();
 
     useEffect(() => {
-        console.log(monthSelected.getMonth());
     }, [monthSelected]);
 
     useEffect(() => {
