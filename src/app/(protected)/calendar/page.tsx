@@ -44,19 +44,34 @@ const Page = () => {
     const [sessions, setSessions] = useState<flight_sessions[]>([]);
     const [reload, setReload] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [monthSelected, setMonthSelected] = useState(new Date());
 
     const isMobile = useScreenSize(); // Utilisation du hook pour détecter le type d'écran.
+
+    useEffect(() => {
+        console.log(monthSelected.getMonth());
+    }, [monthSelected]);
 
     useEffect(() => {
         const fetchSessions = async () => {
             if (currentUser) {
                 try {
-                    setLoading(true);
-                    const res = await getAllSessions(currentUser.clubID);
-                    if (Array.isArray(res)) {
-                        setSessions(res);
-                    } else {
-                        console.error('Unexpected response format:', res);
+                    const monthKey = monthSelected.toISOString().slice(0, 7); // Format "YYYY-MM"
+
+                    // Vérifier si les sessions pour le mois demandé existent déjà dans le state
+                    const isMonthLoaded = sessions.some(session =>
+                        new Date(session.sessionDateStart).toISOString().slice(0, 7) === monthKey
+                    );
+
+                    if (!isMonthLoaded) {
+                        setLoading(true);
+                        const res = await getAllSessions(currentUser.clubID, monthSelected);
+                        if (Array.isArray(res)) {
+                            // Fusionner les sessions existantes avec les nouvelles
+                            setSessions(prevSessions => [...prevSessions, ...res]);
+                        } else {
+                            console.error('Unexpected response format:', res);
+                        }
                     }
                 } catch (error) {
                     console.error(error);
@@ -67,7 +82,8 @@ const Page = () => {
         };
 
         fetchSessions();
-    }, [currentUser, reload]);
+    }, [currentUser, monthSelected, reload, sessions]);
+
 
     // Rendu conditionnel en fonction de la taille de l'écran
     return (
@@ -78,6 +94,7 @@ const Page = () => {
                     reload={reload}
                     setReload={setReload}
                     loading={loading}
+                    setMonthSelected={setMonthSelected}
                 />
             ) : (
                 <GlobalCalendarPhone

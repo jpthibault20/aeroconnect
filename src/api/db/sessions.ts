@@ -138,14 +138,15 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
     }
 };
 
-export const getAllSessions = async (clubID: string) => {
+export const getAllSessions = async (clubID: string, monthSelected: Date) => {
+
     try {
         const sessions = await prisma.flight_sessions.findMany({
             where: {
                 clubID: clubID,
                 sessionDateStart: {
-                    gte: new Date('2024-11-11'), // Date minimale : 11 novembre 2024
-                    lte: new Date('2024-11-17'), // Date maximale : 17 novembre 2024
+                    gte:new Date(monthSelected.getFullYear(), monthSelected.getMonth(), 1, 0, 0, 0, 0),
+                    lte:new Date(monthSelected.getFullYear(), monthSelected.getMonth() + 1, 0, 23, 59, 59, 999)
                 },
             },
             
