@@ -72,10 +72,7 @@ const TableRowComponent = ({ user, setReload, reload }: props) => {
         deleteUserAction();
     }
 
-    // Handler for updating a user; logs the user ID to the console.
-    const onClickUpdateUser = () => () => {
-        console.log('Update user: ', user.id);
-    }
+
 
     return (
         <TableRow>
@@ -101,7 +98,7 @@ const TableRowComponent = ({ user, setReload, reload }: props) => {
                 </div>
             </TableCell>
             <TableCell className='text-center'>
-                {user.role === "USER" && "Utilisateur"}
+                {user.role === "USER" && "Visiteur"}
                 {user.role === "STUDENT" && "Elève"}
                 {user.role === "INSTRUCTOR" && "Instructeur"}
                 {user.role === "PILOT" && "Pilote"}
@@ -114,7 +111,7 @@ const TableRowComponent = ({ user, setReload, reload }: props) => {
             <TableCell className='text-center'>{user.phone}</TableCell>
             <TableCell className='flex flex-col items-center space-y-3 justify-center '>
                 <UpdateUserComponent showPopup={showPopup} setShowPopup={setShowPopup} reload={reload} setReload={setReload} user={user}>
-                    <Button onClick={onClickUpdateUser} className='w-fit bg-blue-600 hover:bg-blue-700'>
+                    <Button className='w-fit bg-blue-600 hover:bg-blue-700'>
                         Modifier
                     </Button>
                 </UpdateUserComponent>

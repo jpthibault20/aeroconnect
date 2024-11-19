@@ -124,16 +124,18 @@ const FlightsPageComponent = () => {
             </div>
             <div className='my-3 flex justify-between'>
                 <div className='flex space-x-3'>
-                    <AlertConfirmDeleted
-                        title="Etes vous sur de vouloir supprimer ces vols ?"
-                        description={sessionChecked.length > 1 ? `${sessionChecked.length} vols seront supprimés.` : `1 vol sera supprimé.`}
-                        cancel='Annuler'
-                        confirm='Supprimer'
-                        confirmAction={() => removeFlight(sessionChecked)}
-                        loading={loading}
-                    >
-                        <Button className='bg-red-700 hover:bg-red-800 text-white'>Supprimer</Button>
-                    </AlertConfirmDeleted>
+                    {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.OWNER &&
+                        <AlertConfirmDeleted
+                            title="Etes vous sur de vouloir supprimer ces vols ?"
+                            description={sessionChecked.length > 1 ? `${sessionChecked.length} vols seront supprimés.` : `1 vol sera supprimé.`}
+                            cancel='Annuler'
+                            confirm='Supprimer'
+                            confirmAction={() => removeFlight(sessionChecked)}
+                            loading={loading}
+                        >
+                            <Button className='bg-red-700 hover:bg-red-800 text-white'>Supprimer</Button>
+                        </AlertConfirmDeleted>
+                    }
 
                     <div className='hidden lg:block h-full'>
                         <NewSession display={'desktop'} reload={reload} setReload={setReload} />

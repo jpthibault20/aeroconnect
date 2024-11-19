@@ -47,6 +47,7 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
     const [allPlanes, setAllPlanes] = useState<planes[]>([]);
     const [endDate, setEndDate] = useState<Date>(new Date());
     const [submitDisabled, setSubmitDisabled] = useState(false);
+    const [disabledMessage, setDisabledMessage] = useState("");
 
     // Charger tous les instructeurs et avions au chargement initial, avec condition sur studentID et operational pour les avions
     useEffect(() => {
@@ -73,11 +74,22 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
             )
         );
 
-        if (uniqueInstructors.length === 0 || uniquePlanes.length === 0) setSubmitDisabled(true);
-        else setSubmitDisabled(false);
-
-        if (sessions[0].sessionDateStart < new Date()) setSubmitDisabled(true);
-        else setSubmitDisabled(false);
+        if (uniqueInstructors.length === 0 || uniquePlanes.length === 0) {
+            setDisabledMessage("Il n'y a actuellement aucun vol disponible pour cette session");
+            setSubmitDisabled(true);
+        }
+        else if (sessions[0].sessionDateStart < new Date()) {
+            setDisabledMessage("La date de la session est passée");
+            setSubmitDisabled(true);
+        }
+        else if (currentUser?.role === "USER") {
+            setDisabledMessage("Vous n'avez pas les droits pour s'inscrire a une session, contacter l'administrateur du club");
+            setSubmitDisabled(true);
+        }
+        else {
+            setDisabledMessage("");
+            setSubmitDisabled(false);
+        }
 
         // Charger les instructeurs et les avions disponibles, filtrés par `operational` pour les avions
         Promise.all([getUserByID(uniqueInstructors), getPlanesByID(uniquePlanes)])
@@ -93,6 +105,7 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
                 }
             })
             .catch(error => console.error("Error fetching data:", error));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sessions]);
 
 
@@ -272,7 +285,7 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
                     <div className='text-orange-500 w-full p-2  bg-[#fffff4] rounded-lg flex items-center space-x-2 border border-orange-500'>
                         <IoIosWarning size={20} />
                         <div>
-                            Ce cours n&apos;est pas disponible
+                            {disabledMessage}
                         </div>
                     </div>
                 )}

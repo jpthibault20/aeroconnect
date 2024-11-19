@@ -227,7 +227,6 @@ export const blockUser = async (userID: string, restricted: boolean) => {
                 restricted: restricted
             }
         });
-        console.log('User blocked successfully');
         return { success: "L'utilisateur a été bloqué avec succès !" };
     } catch (error) {
         console.error('Error blocking user:', error);

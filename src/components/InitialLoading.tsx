@@ -26,6 +26,8 @@ interface props {
 const InitialLoading = ({ children, className }: props) => {
     const { currentUser } = useCurrentUser();
 
+    // console.log("InitialLoading | Rendering...");
+
     if (!currentUser) {
         return (
             <div className={`${className} flex justify-center items-center`}>

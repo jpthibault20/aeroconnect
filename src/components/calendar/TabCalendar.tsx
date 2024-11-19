@@ -1,9 +1,9 @@
-import React from 'react';
-import { workingHour } from '@/config/configClub'; // Assure-toi que `workingHour` est bien importé depuis ta config
+import React, { useMemo } from 'react';
+import { workingHour } from '@/config/configClub';
 import { dayFr } from '@/config/date';
-import { formatTime, getDaysOfWeek } from '@/api/date';
-import Session from './Session';
+import { formatTime, getDaysOfWeek, getSessionsFromDate } from '@/api/date';
 import { flight_sessions } from '@prisma/client';
+import Session from './Session';
 
 interface Props {
     className?: string;
@@ -15,7 +15,24 @@ interface Props {
 
 const TabCalendar = ({ date, sessions, setReload, reload }: Props) => {
     // Récupère les jours de la semaine
-    const daysOfWeek = getDaysOfWeek(date);
+    const daysOfWeek = useMemo(() => getDaysOfWeek(date), [date]);
+
+    // Fonction pour obtenir les sessions pour un créneau donné
+    const getSessions = (indexX: number, indexY: number) => {
+        const hour = workingHour[indexX] !== undefined ? Math.floor(workingHour[indexX]) : 0;
+        const minutes = workingHour[indexX] !== undefined ? Math.round((workingHour[indexX] % 1) * 60) : 0;
+
+        const sessionDate = new Date(
+            date.getFullYear(),
+            daysOfWeek[indexY]?.month ?? 0,
+            daysOfWeek[indexY]?.dayNumber ?? 1,
+            hour,
+            minutes,
+            0
+        );
+
+        return getSessionsFromDate(sessionDate, sessions); // Filtre les sessions pertinentes
+    };
 
     return (
         <div className="w-full h-full">
@@ -46,23 +63,24 @@ const TabCalendar = ({ date, sessions, setReload, reload }: Props) => {
                             <div className={`table-cell pl-3 text-center font-istok font-semibold text-[#646464] align-middle ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''} w-20`}>
                                 {formatTime(hour)}
                             </div>
-                            {dayFr.map((item, indexday) => (
-                                <div
-                                    className={`table-cell p-1 border-b border-[#C1C1C1] ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''}`}
-                                    key={indexday}
-                                >
-                                    <Session
-                                        indexX={index}
-                                        indexY={indexday}
-                                        tabDays={dayFr}
-                                        tabHours={workingHour}
-                                        events={sessions}
-                                        date={date}
-                                        setReload={setReload}
-                                        reload={reload}
-                                    />
-                                </div>
-                            ))}
+                            {dayFr.map((item, indexday) => {
+                                const slotSessions = getSessions(index, indexday);
+
+                                return (
+                                    <div
+                                        className={`table-cell p-1 border-b border-[#C1C1C1] ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''}`}
+                                        key={indexday}
+                                    >
+                                        {slotSessions.length > 0 && (
+                                            <Session
+                                                sessions={slotSessions}
+                                                setReload={setReload}
+                                                reload={reload}
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     ))}
                 </div>

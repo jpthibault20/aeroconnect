@@ -1,28 +1,25 @@
-"use client"
+// UpdateContext.tsx
+"use client";
 import { useEffect } from "react";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
-import { getUser } from "@/api/db/users";
 import { User } from "@prisma/client";
 
-const UpdateContext = () => {
+interface Props {
+    userProp: User | null;
+}
+
+const UpdateContext = ({ userProp }: Props) => {
     const { setCurrentUser } = useCurrentUser();
 
     useEffect(() => {
-        const fetchSession = async () => {
-            try {
-                const res = await getUser();
-                setCurrentUser(res.user as User);
-            } catch (error) {
-                console.log(error);
-            }
+        if (userProp) {
+            setCurrentUser(userProp);
         }
-
-        fetchSession();
-
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [userProp]);
 
-    return null
-}
 
-export default UpdateContext
+    return null;
+};
+
+export default UpdateContext;

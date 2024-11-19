@@ -1,6 +1,7 @@
 "use server";
 
 import { PrismaClient, User } from '@prisma/client';
+import { differenceInHours, isBefore } from 'date-fns';
 
 const prisma = new PrismaClient();
 export interface interfaceSessions {
@@ -134,26 +135,28 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
     } catch (error) {
         console.error('Error creating flight sessions:', error);
         return { error: "Erreur lors de la création des sessions de vol" };
-    } finally {
-        await prisma.$disconnect();
     }
 };
 
-export const getAllSessions = async (clubID: string) => {
+export const getAllSessions = async (clubID: string, monthSelected: Date) => {
+
     try {
         const sessions = await prisma.flight_sessions.findMany({
             where: {
                 clubID: clubID,
-            }
+                sessionDateStart: {
+                    gte:new Date(monthSelected.getFullYear(), monthSelected.getMonth(), 1, 0, 0, 0, 0),
+                    lte:new Date(monthSelected.getFullYear(), monthSelected.getMonth() + 1, 0, 23, 59, 59, 999)
+                },
+            },
+            
         });
         return sessions;
     } catch (error) {
         console.error('Error getting flight sessions:', error);
         return { error: "Erreur lors de la récupération des sessions de vol" };
     }
-    finally {
-        await prisma.$disconnect();
-    }
+
 };
 
 export const getAllFutureSessions = async (clubID: string) => {
@@ -171,9 +174,7 @@ export const getAllFutureSessions = async (clubID: string) => {
         console.error('Error getting flight sessions:', error);
         return { error: "Erreur lors de la récupération des sessions de vol" };
     }
-    finally {
-        await prisma.$disconnect();
-    }
+
 };
 
 export const getPlanes = async (clubID: string) => {
@@ -189,9 +190,7 @@ export const getPlanes = async (clubID: string) => {
         console.error('Error getting planes:', error);
         return { error: "Erreur lors de la récupération des avions" };
     }
-    finally {
-        await prisma.$disconnect();
-    }
+
 };
 
 export const removeSessionsByID = async (sessionID: string[]) => {
@@ -208,13 +207,32 @@ export const removeSessionsByID = async (sessionID: string[]) => {
     } catch (error) {
         console.error('Error deleting flight sessions:', error);
         return { error: "Erreur lors de la suppression des sessions de vol" };
-    } finally {
-        await prisma.$disconnect();
     }
 };
 
 export const removeStudentFromSessionID = async (sessionID: string) => {
     try {
+        // Récupérer les informations de la session
+        const session = await prisma.flight_sessions.findUnique({
+            where: { id: sessionID },
+            select: { sessionDateStart: true } // Assurez-vous que "date" est bien le nom de la colonne
+        });
+
+        if (!session || !session.sessionDateStart) {
+            return { error: "Session introuvable ou sans date définie." };
+        }
+
+        const sessionDateUTC = new Date(session.sessionDateStart); // Assurez-vous que cette date est UTC
+
+        // Vérifier si la date de la session est dans le futur et à plus de 3 heures de l'heure actuelle
+        const nowUTC = new Date(); // Date actuelle en UTC
+        const hoursUntilSession = differenceInHours(sessionDateUTC, nowUTC);
+
+        if (isBefore(sessionDateUTC, nowUTC) || hoursUntilSession < 3) {
+            return { error: "La session ne peut être modifiée que si elle est dans plus de 3 heures." };
+        }
+
+        // Mettre à jour la session en supprimant les informations de l'élève
         await prisma.flight_sessions.update({
             where: {
                 id: sessionID
@@ -227,13 +245,12 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
                 studentPlaneID: null,
             }
         });
-        console.log('Session deleted successfully');
+        
+        console.log('Student removed from session successfully');
         return { success: "L'élève a été désinscrit de la session !" };
     } catch (error) {
         console.error('Error deleting flight session:', error);
         return { error: "Erreur lors de la suppression de la session de vol" };
-    } finally {
-        await prisma.$disconnect();
     }
 };
 
@@ -314,7 +331,7 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
 
         // Verification 2 : l'utilisateur a les acces minimum pour s'inscrire a une session
         if (student.role !== 'STUDENT' && student.role !== 'PILOT' && student.role !== 'OWNER' && student.role !== 'ADMIN' && student.role !== 'INSTRUCTOR') {
-            return { error: "Vous n'avez pas les droits pour s'inscrire a une session. (E_003: student)" };
+            return { error: "Vous n'avez pas les droits pour s'inscrire a une session. (E_003: User)" };
         }
 
         // Vérification 3 : Pas d’inscription existante pour l’élève avec la même date de début

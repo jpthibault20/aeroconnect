@@ -35,15 +35,20 @@ const ForgotPassword = () => {
 
     const onSubmit = (data: NewPasswordSchema) => {
         setLoading(true);
-        console.log(data);
 
-        // Logique de soumission du formulaire, comme un appel API
-        const formData = new FormData();
-        formData.append('email', data.email);
-        forgotPassword(formData);
+        try {
+            // Logique de soumission du formulaire, comme un appel API
+            const formData = new FormData();
+            formData.append('email', data.email);
+            forgotPassword(formData);
 
-        reset();
-        setLoading(false);
+
+        } catch (error) {
+            console.log(error);
+        } finally {
+            reset();
+            setLoading(false);
+        }
     };
 
     return (

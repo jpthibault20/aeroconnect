@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { flight_sessions } from '@prisma/client';
+import { flight_sessions, userRole } from '@prisma/client';
 import TableRowComponent from './TableRowComponent';
 import { Checkbox } from '../ui/checkbox';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface props {
     sessions: flight_sessions[];  ///< Array of flight session objects
@@ -13,6 +14,7 @@ interface props {
 
 const TableComponent = ({ sessions, setSessionChecked, reload, setReload }: props) => {
     const [isAllChecked, setIsAllChecked] = useState(false);  ///< State to manage the "select all" checkbox
+    const { currentUser } = useCurrentUser();
 
     useEffect(() => {
         setIsAllChecked(false);
@@ -51,7 +53,9 @@ const TableComponent = ({ sessions, setSessionChecked, reload, setReload }: prop
                         <TableHead className='text-black text-center'>Instructeur</TableHead>
                         <TableHead className='text-black text-center'>Élève inscrit</TableHead>
                         <TableHead className='text-black text-center'>Avion</TableHead>
-                        <TableHead className='text-black text-center'>Action</TableHead>
+                        {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.OWNER &&
+                            < TableHead className='text-black text-center'>Action</TableHead>
+                        }
                     </TableRow>
                 </TableHeader>
 
@@ -68,7 +72,7 @@ const TableComponent = ({ sessions, setSessionChecked, reload, setReload }: prop
                     ))}
                 </TableBody>
             </Table>
-        </div>
+        </div >
     );
 };
 

@@ -36,19 +36,20 @@ export const Login = () => {
     });
 
     const onSubmit = async (data: LoginSchema) => {
-        setLoading(true);
-        console.log(data);
+        setLoading(true); // Activation de l'état de chargement
+        try {
+            const formData = new FormData();
+            formData.append('email', data.email);
+            formData.append('password', data.password);
 
-        // Convert the data object to FormData
-        const formData = new FormData();
-        formData.append('email', data.email);
-        formData.append('password', data.password);
-
-        // Logique de soumission du formulaire, comme un appel API
-        await emailLogin(formData);
-
-        reset();
-        setLoading(false);
+            // Appel API de connexion
+            await emailLogin(formData);
+            reset();
+        } catch (error) {
+            console.error("Erreur de connexion :", error);
+        } finally {
+            setLoading(false); // Désactivation de l'état de chargement
+        }
     };
 
 

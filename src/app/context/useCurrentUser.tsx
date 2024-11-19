@@ -1,8 +1,5 @@
-
-"use client"
-
 import { User } from '@prisma/client';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useMemo } from 'react';
 
 // Création d'un type pour le contexte qui inclut l'utilisateur et la fonction setCurrentUser
 type CurrentUserContextType = {
@@ -16,8 +13,11 @@ const CurrentUserContext = createContext<CurrentUserContextType | undefined>(und
 export function CurrentUserWrapper({ children }: { children: React.ReactNode }) {
     const [currentUser, setCurrentUser] = useState<User | undefined>(undefined);
 
+    // Utilisation de useMemo pour éviter de recréer l'objet context inutilement
+    const value = useMemo(() => ({ currentUser, setCurrentUser }), [currentUser, setCurrentUser]);
+
     return (
-        <CurrentUserContext.Provider value={{ currentUser, setCurrentUser }}>
+        <CurrentUserContext.Provider value={value}>
             {children}
         </CurrentUserContext.Provider>
     );
