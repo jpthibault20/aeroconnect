@@ -42,11 +42,12 @@ const useScreenSize = () => {
 const Page = () => {
     const { currentUser } = useCurrentUser();
     const [sessions, setSessions] = useState<flight_sessions[]>([]);
+    const [loadedMonths, setLoadedMonths] = useState<string[]>([]); // Pour suivre les mois chargés
     const [reload, setReload] = useState(false);
     const [loading, setLoading] = useState(false);
     const [monthSelected, setMonthSelected] = useState(new Date());
 
-    const isMobile = useScreenSize(); // Utilisation du hook pour détecter le type d'écran.
+    const isMobile = useScreenSize();
 
     useEffect(() => {
         console.log(monthSelected.getMonth());
@@ -58,20 +59,23 @@ const Page = () => {
                 try {
                     const monthKey = monthSelected.toISOString().slice(0, 7); // Format "YYYY-MM"
 
-                    // Vérifier si les sessions pour le mois demandé existent déjà dans le state
-                    const isMonthLoaded = sessions.some(session =>
-                        new Date(session.sessionDateStart).toISOString().slice(0, 7) === monthKey
-                    );
-
-                    if (!isMonthLoaded) {
+                    // Vérifier si le mois est déjà chargé
+                    if (!loadedMonths.includes(monthKey)) {
                         setLoading(true);
                         const res = await getAllSessions(currentUser.clubID, monthSelected);
+
+                        // Vérification de la structure de la réponse
                         if (Array.isArray(res)) {
-                            // Fusionner les sessions existantes avec les nouvelles
+                            // Ajouter les nouvelles sessions au state
                             setSessions(prevSessions => [...prevSessions, ...res]);
+                        } else if (res && typeof res === 'object' && 'error' in res) {
+                            console.error(`Error fetching sessions for ${monthKey}:`, res.error);
                         } else {
-                            console.error('Unexpected response format:', res);
+                            console.warn(`No sessions or unexpected response for ${monthKey}`);
                         }
+
+                        // Ajouter le mois à la liste des mois chargés
+                        setLoadedMonths(prevLoadedMonths => [...prevLoadedMonths, monthKey]);
                     }
                 } catch (error) {
                     console.error(error);
@@ -82,7 +86,7 @@ const Page = () => {
         };
 
         fetchSessions();
-    }, [currentUser, monthSelected, reload, sessions]);
+    }, [currentUser, monthSelected, reload, loadedMonths]);
 
 
     // Rendu conditionnel en fonction de la taille de l'écran
@@ -102,6 +106,7 @@ const Page = () => {
                     reload={reload}
                     setReload={setReload}
                     loading={loading}
+                    setMonthSelected={setMonthSelected}
                 />
             )}
         </InitialLoading>

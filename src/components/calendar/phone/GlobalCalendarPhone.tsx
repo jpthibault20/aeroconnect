@@ -26,6 +26,7 @@ interface Props {
     reload: boolean;
     setReload: React.Dispatch<React.SetStateAction<boolean>>;
     loading: boolean;
+    setMonthSelected: React.Dispatch<React.SetStateAction<Date>>;
 }
 
 /**
@@ -33,7 +34,7 @@ interface Props {
  * @description Main component for displaying a calendar on mobile devices.
  * Handles date selection, session filtering, and session display.
  */
-const GlobalCalendarPhone = ({ sessions, reload, setReload, loading }: Props) => {
+const GlobalCalendarPhone = ({ sessions, reload, setReload, loading, setMonthSelected }: Props) => {
     // State variables for managing date, instructor, plane, and filtered sessions
     const [date, setDate] = useState(new Date());
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>();
@@ -49,6 +50,8 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload, loading }: Props) =>
         } catch (error) {
             console.log(error);
         }
+        setMonthSelected(date);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [date]);
 
     // Handler to navigate to the next month
