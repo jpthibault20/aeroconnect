@@ -50,24 +50,29 @@ const Page = () => {
 
     const isMobile = useScreenSize();
 
-    // Effet pour charger les sessions lorsque `monthSelected` change
     useEffect(() => {
+        if (!currentUser) return;
+
         const fetchSessions = async () => {
-            if (currentUser) {
+            const monthKey = monthSelected.toISOString().slice(0, 7);
+
+            // Vérifiez si le mois est déjà chargé
+            if (!loadedMonths.includes(monthKey)) {
                 try {
-                    const monthKey = monthSelected.toISOString().slice(0, 7); // Format "YYYY-MM"
+                    setLoading(true);
 
-                    if (!loadedMonths.includes(monthKey)) {
-                        setLoading(true);
-                        const res = await getAllSessions(currentUser.clubID, monthSelected);
+                    const res = await getAllSessions(currentUser.clubID, monthSelected);
 
-                        if (Array.isArray(res)) {
-                            setSessions((prevSessions) => [...prevSessions, ...res]);
-                        } else if (res && typeof res === "object" && "error" in res) {
-                            console.error(`Error fetching sessions for ${monthKey}:`, res.error);
-                        }
-
+                    if (Array.isArray(res)) {
+                        setSessions((prevSessions) => {
+                            const newSessions = res.filter(
+                                (session) => !prevSessions.some((prev) => prev.id === session.id)
+                            );
+                            return [...prevSessions, ...newSessions];
+                        });
                         setLoadedMonths((prevLoadedMonths) => [...prevLoadedMonths, monthKey]);
+                    } else if (res && typeof res === "object" && "error" in res) {
+                        console.error(`Error fetching sessions for ${monthKey}:`, res.error);
                     }
                 } catch (error) {
                     console.error(error);
@@ -78,7 +83,8 @@ const Page = () => {
         };
 
         fetchSessions();
-    }, [currentUser, monthSelected, loadedMonths]);
+    }, [currentUser, monthSelected]); // Simplifie les dépendances
+
 
     // Effet pour recharger les sessions au changement de `reload`
     useEffect(() => {

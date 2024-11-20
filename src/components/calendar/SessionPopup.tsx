@@ -101,11 +101,6 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
         }
     }, [plane, allInstructors, sessions]);
 
-    // const getSessionId = () => {
-    //     const matchedSession = sessions.find(session => session.pilotID === instructor && session.planeID.includes(plane));
-    //     return matchedSession ? matchedSession.id : null;
-    // };
-
     const onSubmit = async () => {
 
         const getSessionId = () => {
