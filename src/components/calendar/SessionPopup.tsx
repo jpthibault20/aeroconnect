@@ -1,31 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import {
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger
-} from '../ui/dialog';
+import React, { useState, useEffect } from 'react';
+import { DialogContent, DialogTrigger } from '../ui/dialog';
 import { flight_sessions, planes, User } from '@prisma/client';
 import { Dialog } from '@radix-ui/react-dialog';
-import InputComponent from '../InputComponent';
-import { FaArrowRight } from "react-icons/fa";
-import { Label } from '../ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '../ui/select';
 import { getUserByID } from '@/api/db/users';
 import { getPlanesByID } from '@/api/db/planes';
-import { Button } from '../ui/button';
 import { studentRegistration } from '@/api/db/sessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { IoIosWarning } from 'react-icons/io';
+import SessionHeader from './SessionHeader';
+import SessionDate from './SessionDate';
+import InstructorSelect from './InstructorSelect';
+import PlaneSelect from './PlaneSelect';
+import SubmitButton from './SubmitButton';
 import { toast } from '@/hooks/use-toast';
-import { Spinner } from '../ui/SpinnerVariants';
 
 interface prop {
     children: React.ReactNode;
@@ -35,7 +21,6 @@ interface prop {
 }
 
 const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
-    console.log("SessionPopup | Rendering...");
     const { currentUser } = useCurrentUser();
     const [isOpen, setIsOpen] = useState(false);
     const [error, setError] = useState("");
@@ -116,16 +101,22 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
         }
     }, [plane, allInstructors, sessions]);
 
-    const formatDate = (date: Date) => {
-        return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(date);
-    };
-
-    const getSessionId = () => {
-        const matchedSession = sessions.find(session => session.pilotID === instructor && session.planeID.includes(plane));
-        return matchedSession ? matchedSession.id : null;
-    };
+    // const getSessionId = () => {
+    //     const matchedSession = sessions.find(session => session.pilotID === instructor && session.planeID.includes(plane));
+    //     return matchedSession ? matchedSession.id : null;
+    // };
 
     const onSubmit = async () => {
+
+        const getSessionId = () => {
+            const matchedSession = sessions.find(
+                session =>
+                    session.pilotID === instructor &&
+                    session.planeID.includes(plane)
+            );
+            return matchedSession ? matchedSession.id : null;
+        };
+
         const sessionId = getSessionId();
         if (!sessionId) {
             setError("Une erreur est survenue (E_002: informations are undefined)");
@@ -156,68 +147,11 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Détails de la session</DialogTitle>
-                    <DialogDescription className="flex flex-col">
-                        Session du {formatDate(new Date(sessions[0].sessionDateStart))}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="grid grid-cols-5">
-                    <div className="col-span-2">
-                        <InputComponent label="Début de la session" id="start" value={formatDate(new Date(sessions[0].sessionDateStart))} loading={true} styleInput="border border-gray-400" />
-                    </div>
-                    <div className="h-full w-full flex items-center justify-center col-span-1">
-                        <FaArrowRight />
-                    </div>
-                    <div className="col-span-2">
-                        <InputComponent label="Fin de la session" id="end" value={formatDate(endDate)} loading={true} styleInput="border border-gray-400" />
-                    </div>
-                </div>
-
-                <div>
-                    <Label>Instructeur</Label>
-                    <Select value={instructor} onValueChange={setInstructor}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Instructeurs" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="nothing">Instructeurs</SelectItem>
-                            {availableInstructors.map((item) => (
-                                <SelectItem key={item.id} value={item.id}>{`${item.lastName.charAt(0)}.${item.firstName}`}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div>
-                    <Label>Avion</Label>
-                    <Select value={plane} onValueChange={setPlane}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Avions" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="nothing">Avions</SelectItem>
-                            {availablePlanes.map((item) => (
-                                <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="mt-4">
-                    {submitDisabled && (
-                        <div className="flex justify-start gap-2 items-center text-red-500">
-                            <IoIosWarning size={16} />
-                            <span>{disabledMessage}</span>
-                        </div>
-                    )}
-                    <Button className="w-full mt-3" disabled={submitDisabled} onClick={onSubmit}>
-                        {loading ? <Spinner /> : "S'inscrire"}
-                    </Button>
-                </div>
-
-                {error && <div className="text-red-500 mt-2">{error}</div>}
+                <SessionHeader sessionStartDate={new Date(sessions[0].sessionDateStart)} />
+                <SessionDate startDate={new Date(sessions[0].sessionDateStart)} endDate={endDate} />
+                <InstructorSelect instructors={availableInstructors} selectedInstructor={instructor} onInstructorChange={setInstructor} />
+                <PlaneSelect planes={availablePlanes} selectedPlane={plane} onPlaneChange={setPlane} />
+                <SubmitButton submitDisabled={submitDisabled} onSubmit={onSubmit} loading={loading} error={error} disabledMessage={disabledMessage} />
             </DialogContent>
         </Dialog>
     );

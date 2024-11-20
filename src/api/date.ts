@@ -139,3 +139,7 @@ export const formatTime = (numberValue: number) => {
     const formattedMinutes = minutes ? minutes.padEnd(2, '0') : '00';
     return `${formattedHours}:${formattedMinutes}`;
 };
+
+export const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(date);
+};
