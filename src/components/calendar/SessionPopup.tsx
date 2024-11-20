@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react';
 import {
     DialogContent,
@@ -35,6 +36,7 @@ interface prop {
 }
 
 const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
+    console.log("SessionPopup | Rendering...", sessions);
     const { currentUser } = useCurrentUser();
     const [isOpen, setIsOpen] = useState(false);
     const [error, setError] = useState("");
@@ -50,87 +52,87 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
     const [disabledMessage, setDisabledMessage] = useState("");
 
     // Charger tous les instructeurs et avions au chargement initial, avec condition sur studentID et operational pour les avions
-    useEffect(() => {
-        setEndDate(new Date(sessions[0].sessionDateStart.getUTCFullYear(), sessions[0].sessionDateStart.getUTCMonth(), sessions[0].sessionDateStart.getUTCDate(), sessions[0].sessionDateStart.getUTCHours(), sessions[0].sessionDateStart.getUTCMinutes() + sessions[0].sessionDateDuration_min, 0));
-        // Obtenir les instructeurs uniques pour les sessions sans studentID
-        const uniqueInstructors = Array.from(
-            new Set(
-                sessions
-                    .filter(session => !session.studentID) // Filtrer les sessions sans studentID
-                    .map(session => session.pilotID)
-            )
-        );
+    // useEffect(() => {
+    //     setEndDate(new Date(sessions[0].sessionDateStart.getUTCFullYear(), sessions[0].sessionDateStart.getUTCMonth(), sessions[0].sessionDateStart.getUTCDate(), sessions[0].sessionDateStart.getUTCHours(), sessions[0].sessionDateStart.getUTCMinutes() + sessions[0].sessionDateDuration_min, 0));
+    //     // Obtenir les instructeurs uniques pour les sessions sans studentID
+    //     const uniqueInstructors = Array.from(
+    //         new Set(
+    //             sessions
+    //                 .filter(session => !session.studentID) // Filtrer les sessions sans studentID
+    //                 .map(session => session.pilotID)
+    //         )
+    //     );
 
-        const allStudentPlaneIDs = sessions.flatMap(session => session.studentPlaneID).filter(Boolean); // Aplatir et filtrer les null
-        const uniquePlanes = Array.from(
-            new Set(
-                sessions
-                    .flatMap(session => session.planeID) // Aplatir tous les planeID des sessions
-                    .filter(
-                        planeID =>
-                            planeID !== null &&
-                            !allStudentPlaneIDs.includes(planeID) // Exclure les planeID dans studentPlaneID
-                    )
-            )
-        );
+    //     const allStudentPlaneIDs = sessions.flatMap(session => session.studentPlaneID).filter(Boolean); // Aplatir et filtrer les null
+    //     const uniquePlanes = Array.from(
+    //         new Set(
+    //             sessions
+    //                 .flatMap(session => session.planeID) // Aplatir tous les planeID des sessions
+    //                 .filter(
+    //                     planeID =>
+    //                         planeID !== null &&
+    //                         !allStudentPlaneIDs.includes(planeID) // Exclure les planeID dans studentPlaneID
+    //                 )
+    //         )
+    //     );
 
-        if (uniqueInstructors.length === 0 || uniquePlanes.length === 0) {
-            setDisabledMessage("Il n'y a actuellement aucun vol disponible pour cette session");
-            setSubmitDisabled(true);
-        }
-        else if (sessions[0].sessionDateStart < new Date()) {
-            setDisabledMessage("La date de la session est passée");
-            setSubmitDisabled(true);
-        }
-        else if (currentUser?.role === "USER") {
-            setDisabledMessage("Vous n'avez pas les droits pour s'inscrire a une session, contacter l'administrateur du club");
-            setSubmitDisabled(true);
-        }
-        else {
-            setDisabledMessage("");
-            setSubmitDisabled(false);
-        }
+    //     if (uniqueInstructors.length === 0 || uniquePlanes.length === 0) {
+    //         setDisabledMessage("Il n'y a actuellement aucun vol disponible pour cette session");
+    //         setSubmitDisabled(true);
+    //     }
+    //     else if (sessions[0].sessionDateStart < new Date()) {
+    //         setDisabledMessage("La date de la session est passée");
+    //         setSubmitDisabled(true);
+    //     }
+    //     else if (currentUser?.role === "USER") {
+    //         setDisabledMessage("Vous n'avez pas les droits pour s'inscrire a une session, contacter l'administrateur du club");
+    //         setSubmitDisabled(true);
+    //     }
+    //     else {
+    //         setDisabledMessage("");
+    //         setSubmitDisabled(false);
+    //     }
 
-        // Charger les instructeurs et les avions disponibles, filtrés par `operational` pour les avions
-        Promise.all([getUserByID(uniqueInstructors), getPlanesByID(uniquePlanes)])
-            .then(([instructorsRes, planesRes]) => {
-                if (Array.isArray(instructorsRes)) {
-                    setAllInstructors(instructorsRes);
-                    setAvailableInstructors(instructorsRes); // Met à jour uniquement les instructeurs sans studentID
-                }
-                if (Array.isArray(planesRes)) {
-                    const operationalPlanes = planesRes.filter(plane => plane.operational); // Filtrer les avions opérationnels
-                    setAllPlanes(operationalPlanes);
-                    setAvailablePlanes(operationalPlanes);
-                }
-            })
-            .catch(error => console.error("Error fetching data:", error));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sessions]);
+    //     // Charger les instructeurs et les avions disponibles, filtrés par `operational` pour les avions
+    //     Promise.all([getUserByID(uniqueInstructors), getPlanesByID(uniquePlanes)])
+    //         .then(([instructorsRes, planesRes]) => {
+    //             if (Array.isArray(instructorsRes)) {
+    //                 setAllInstructors(instructorsRes);
+    //                 setAvailableInstructors(instructorsRes); // Met à jour uniquement les instructeurs sans studentID
+    //             }
+    //             if (Array.isArray(planesRes)) {
+    //                 const operationalPlanes = planesRes.filter(plane => plane.operational); // Filtrer les avions opérationnels
+    //                 setAllPlanes(operationalPlanes);
+    //                 setAvailablePlanes(operationalPlanes);
+    //             }
+    //         })
+    //         .catch(error => console.error("Error fetching data:", error));
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [sessions]);
 
 
-    // Mettre à jour les listes disponibles en fonction des sélections
-    useEffect(() => {
-        if (instructor !== "nothing") {
-            const planesForInstructor = sessions
-                .filter(session => session.pilotID === instructor)
-                .flatMap(session => session.planeID);
-            setAvailablePlanes(allPlanes.filter(plane => planesForInstructor.includes(plane.id)));
-        } else {
-            setAvailablePlanes(allPlanes);
-        }
-    }, [instructor, allPlanes, sessions]);
+    // // Mettre à jour les listes disponibles en fonction des sélections
+    // useEffect(() => {
+    //     if (instructor !== "nothing") {
+    //         const planesForInstructor = sessions
+    //             .filter(session => session.pilotID === instructor)
+    //             .flatMap(session => session.planeID);
+    //         setAvailablePlanes(allPlanes.filter(plane => planesForInstructor.includes(plane.id)));
+    //     } else {
+    //         setAvailablePlanes(allPlanes);
+    //     }
+    // }, [instructor, allPlanes, sessions]);
 
-    useEffect(() => {
-        if (plane !== "nothing") {
-            const instructorsForPlane = sessions
-                .filter(session => session.planeID.includes(plane))
-                .map(session => session.pilotID);
-            setAvailableInstructors(allInstructors.filter(instructor => instructorsForPlane.includes(instructor.id)));
-        } else {
-            setAvailableInstructors(allInstructors);
-        }
-    }, [plane, allInstructors, sessions]);
+    // useEffect(() => {
+    //     if (plane !== "nothing") {
+    //         const instructorsForPlane = sessions
+    //             .filter(session => session.planeID.includes(plane))
+    //             .map(session => session.pilotID);
+    //         setAvailableInstructors(allInstructors.filter(instructor => instructorsForPlane.includes(instructor.id)));
+    //     } else {
+    //         setAvailableInstructors(allInstructors);
+    //     }
+    // }, [plane, allInstructors, sessions]);
 
     // Fonction pour formater la date
     const formatDate = (date: Date) => {
@@ -153,36 +155,35 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
     // Fonction de soumission qui affiche l'ID de la session
     const onSubmit = () => {
         const verifyAndRegister = async () => {
-            setLoading(true);
+
             const sessionId = getSessionId();
             if (!sessionId) {
                 setError("Une erreur est survenue (E_002: informations are undefined)");
                 return;
             }
             try {
+                setLoading(true);
                 const res = await studentRegistration(sessionId, currentUser!.id, plane);
                 if (res.error) {
                     setError(res.error);
-                    setLoading(false);
                 }
                 if (res.success) {
                     setError("");
                     toast({
                         title: res.success,
                     });
-                    setLoading(false);
                     setReload(!reload);
                     setIsOpen(false);
                 }
             } catch (error) {
                 console.error(error);
-                setLoading(false);
                 setError("Une erreur est survenue lors de l'inscription de l'étudiant.");
+            } finally {
+                setLoading(false);
             }
         };
 
         verifyAndRegister();
-        setLoading(false);
     };
 
     if (sessions.length === 0) return null;
@@ -274,7 +275,7 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
 
                 {!submitDisabled ? (
                     <div className='flex w-full justify-end space-x-6'>
-                        <button onClick={() => setIsOpen(false)}>
+                        <button onClick={() => setIsOpen(false)} disabled={loading}>
                             cancel
                         </button>
                         {loading ? <Spinner /> : <Button className='bg-[#774BBE] hover:bg-[#3d2365]' onClick={onSubmit}>

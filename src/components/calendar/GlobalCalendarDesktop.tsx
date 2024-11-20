@@ -32,6 +32,7 @@ interface Props {
  * 
  */
 const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading, setMonthSelected }: Props) => {
+    console.log("GlobalCalendarDesktop | Rendering...");
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
     const [switchPressed, setSwitchPressed] = useState("");

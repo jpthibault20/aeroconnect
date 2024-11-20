@@ -40,6 +40,7 @@ const useScreenSize = () => {
  * `GlobalCalendarPhone` pour les écrans mobiles.
  */
 const Page = () => {
+    console.log("Page | Rendering...");
     const { currentUser } = useCurrentUser();
     const [sessions, setSessions] = useState<flight_sessions[]>([]);
     const [loadedMonths, setLoadedMonths] = useState<string[]>([]); // Pour suivre les mois chargés
@@ -49,32 +50,24 @@ const Page = () => {
 
     const isMobile = useScreenSize();
 
-    useEffect(() => {
-    }, [monthSelected]);
-
+    // Effet pour charger les sessions lorsque `monthSelected` change
     useEffect(() => {
         const fetchSessions = async () => {
             if (currentUser) {
                 try {
                     const monthKey = monthSelected.toISOString().slice(0, 7); // Format "YYYY-MM"
 
-                    // Vérifier si le mois est déjà chargé
                     if (!loadedMonths.includes(monthKey)) {
                         setLoading(true);
                         const res = await getAllSessions(currentUser.clubID, monthSelected);
 
-                        // Vérification de la structure de la réponse
                         if (Array.isArray(res)) {
-                            // Ajouter les nouvelles sessions au state
-                            setSessions(prevSessions => [...prevSessions, ...res]);
-                        } else if (res && typeof res === 'object' && 'error' in res) {
+                            setSessions((prevSessions) => [...prevSessions, ...res]);
+                        } else if (res && typeof res === "object" && "error" in res) {
                             console.error(`Error fetching sessions for ${monthKey}:`, res.error);
-                        } else {
-                            console.warn(`No sessions or unexpected response for ${monthKey}`);
                         }
 
-                        // Ajouter le mois à la liste des mois chargés
-                        setLoadedMonths(prevLoadedMonths => [...prevLoadedMonths, monthKey]);
+                        setLoadedMonths((prevLoadedMonths) => [...prevLoadedMonths, monthKey]);
                     }
                 } catch (error) {
                     console.error(error);
@@ -85,7 +78,32 @@ const Page = () => {
         };
 
         fetchSessions();
-    }, [currentUser, monthSelected, reload, loadedMonths]);
+    }, [currentUser, monthSelected, loadedMonths]);
+
+    // Effet pour recharger les sessions au changement de `reload`
+    useEffect(() => {
+        const reloadSessions = async () => {
+            if (currentUser) {
+                try {
+                    setLoading(true);
+                    const res = await getAllSessions(currentUser.clubID, monthSelected);
+
+                    if (Array.isArray(res)) {
+                        setSessions(res); // Écrase les sessions existantes
+                    } else if (res && typeof res === "object" && "error" in res) {
+                        console.error(`Error reloading sessions:`, res.error);
+                    }
+                } catch (error) {
+                    console.error(error);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
+        reloadSessions();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reload]); // S'exécute uniquement lorsque `reload` change
 
 
     // Rendu conditionnel en fonction de la taille de l'écran
