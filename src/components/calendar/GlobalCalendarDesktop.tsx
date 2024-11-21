@@ -37,8 +37,6 @@ const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading, setMonthS
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
     const [switchPressed, setSwitchPressed] = useState("");
 
-    // console.log("GlobalCalendarDesktop | Rendering...");
-
     /**
      * @function onClickNextweek
      * @brief Advances the calendar by one week.
