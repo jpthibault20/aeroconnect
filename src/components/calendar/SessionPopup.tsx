@@ -12,6 +12,7 @@ import InstructorSelect from './InstructorSelect';
 import PlaneSelect from './PlaneSelect';
 import SubmitButton from './SubmitButton';
 import { toast } from '@/hooks/use-toast';
+import { filterPilotePlane } from '@/api/popupCalendar';
 
 interface prop {
     children: React.ReactNode;
@@ -34,6 +35,10 @@ const SessionPopup = ({ sessions, children, setReload, reload }: prop) => {
     const [endDate, setEndDate] = useState<Date>(new Date());
     const [submitDisabled, setSubmitDisabled] = useState(false);
     const [disabledMessage, setDisabledMessage] = useState("");
+
+    filterPilotePlane(sessions).then((res) => {
+        console.log(res)
+    })
 
     useEffect(() => {
         const formatEndDate = (sessionStart: Date, duration: number) => {

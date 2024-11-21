@@ -18,7 +18,6 @@ const TabCalendar = ({ date, sessions, setReload, reload }: Props) => {
     // Récupère les jours de la semaine
     const daysOfWeek = useMemo(() => getDaysOfWeek(date), [date]);
 
-    // Fonction pour obtenir les sessions pour un créneau donné
     const getSessions = (indexX: number, indexY: number) => {
         const hour = workingHour[indexX] !== undefined ? Math.floor(workingHour[indexX]) : 0;
         const minutes = workingHour[indexX] !== undefined ? Math.round((workingHour[indexX] % 1) * 60) : 0;

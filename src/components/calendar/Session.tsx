@@ -33,7 +33,7 @@ const Session = ({ sessions, reload, setReload }: Props) => {
         0
     );
 
-    console.log(sessions.length);
+    if ([...bookedSessions, ...availableSessions].length === 0) return null;
 
     return (
         <SessionPopup sessions={[...bookedSessions, ...availableSessions]} setReload={setReload} reload={reload}>

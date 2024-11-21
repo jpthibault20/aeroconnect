@@ -42,7 +42,6 @@ const PageComponent = ({ sessions }: props) => {
 
     const [reload, setReload] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [monthSelected, setMonthSelected] = useState(new Date());
 
 
     // Rendu conditionnel en fonction de la taille de l'écran
@@ -54,7 +53,6 @@ const PageComponent = ({ sessions }: props) => {
                     reload={reload}
                     setReload={setReload}
                     loading={loading}
-                    setMonthSelected={setMonthSelected}
                 />
             ) : (
                 <GlobalCalendarPhone
@@ -62,7 +60,6 @@ const PageComponent = ({ sessions }: props) => {
                     reload={reload}
                     setReload={setReload}
                     loading={loading}
-                    setMonthSelected={setMonthSelected}
                 />
             )}
         </InitialLoading>
