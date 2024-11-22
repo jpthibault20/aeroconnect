@@ -1,3 +1,4 @@
+"use client"
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { navigationLinks } from '@/config/links';
 import { userRole } from '@prisma/client';
