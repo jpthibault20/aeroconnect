@@ -119,6 +119,16 @@ const SessionPopup = ({ sessions, children, setReload, reload }: Prop) => {
                 toast({ title: res.success });
                 setReload(!reload);
                 setIsOpen(false);
+
+                sessions.find((item) => {
+                    if (item.id === sessionId) {
+                        item.studentID = currentUser!.id
+                        item.studentFirstName = currentUser!.firstName
+                        item.studentLastName = currentUser!.lastName
+                        item.studentPlaneID = plane
+                    }
+                    return
+                })
             }
         } catch (error) {
             console.error(error);
