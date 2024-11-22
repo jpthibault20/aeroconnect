@@ -15,7 +15,7 @@ export interface interfaceSessions {
     planeId: string[];
 }
 
-export const newSession = async (sessionData: interfaceSessions, user: User, id: string) => {
+export const newSession = async (sessionData: interfaceSessions, user: User) => {
     if (!sessionData) {
         return { error: "Une erreur est survenue (E_001: sessionData is undefined)" };
     }
@@ -104,7 +104,6 @@ export const newSession = async (sessionData: interfaceSessions, user: User, id:
             sessionsToCreate.map(sessionDateStart =>
                 prisma.flight_sessions.create({
                     data: {
-                        id,
                         clubID: user.clubID,
                         sessionDateStart,
                         sessionDateDuration_min: sessionData.duration,

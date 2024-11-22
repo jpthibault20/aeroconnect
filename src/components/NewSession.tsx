@@ -30,7 +30,6 @@ import { interfaceSessions, newSession } from '@/api/db/sessions';
 import { useToast } from "@/hooks/use-toast"
 import { Spinner } from './ui/SpinnerVariants';
 import { getPlanes } from '@/api/db/planes';
-import { cuuid } from '@/api/global function/cuuid';
 
 
 
@@ -135,11 +134,8 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
     const onConfirm = async () => {
         setLoading(true); // Activer l'état de chargement
         try {
-            // Générer un identifiant unique pour la session
-            const id = cuuid();
-
             // Envoyer les données de session au backend
-            const res = await newSession(sessionData, currentUser, id);
+            const res = await newSession(sessionData, currentUser);
 
             if (res?.error) {
                 setError(res.error);
