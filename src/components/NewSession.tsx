@@ -147,6 +147,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                 setError("");
                 toast({
                     title: res.success,
+                    duration: 5000,
                 });
 
                 // Fermer le popover après le succès
