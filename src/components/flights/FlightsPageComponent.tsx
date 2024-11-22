@@ -138,10 +138,10 @@ const FlightsPageComponent = () => {
                     }
 
                     <div className='hidden lg:block h-full'>
-                        <NewSession display={'desktop'} reload={reload} setReload={setReload} />
+                        <NewSession display={'desktop'} reload={reload} setReload={setReload} sessions={sessions} setSessions={setSessions} />
                     </div>
                     <div className='lg:hidden block'>
-                        <NewSession display={'phone'} reload={reload} setReload={setReload} />
+                        <NewSession display={'phone'} reload={reload} setReload={setReload} sessions={sessions} setSessions={setSessions} />
                     </div>
 
                 </div>
