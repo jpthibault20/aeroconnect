@@ -24,14 +24,15 @@ const SessionPopup = ({ sessions, children, setReload, reload }: Prop) => {
     const [isOpen, setIsOpen] = useState(false);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const [instructor, setInstructor] = useState("nothing");
-    const [plane, setPlane] = useState("nothing");
-    const [availableInstructors, setAvailableInstructors] = useState<User[]>([]);
-    const [availablePlanes, setAvailablePlanes] = useState<planes[]>([]);
-    const [allInstructors, setAllInstructors] = useState<User[]>([]);
-    const [allPlanes, setAllPlanes] = useState<planes[]>([]);
     const [submitDisabled, setSubmitDisabled] = useState(false);
     const [disabledMessage, setDisabledMessage] = useState("");
+    const [instructor, setInstructor] = useState("nothing");
+    const [allInstructors, setAllInstructors] = useState<User[]>([]);
+    const [availableInstructors, setAvailableInstructors] = useState<User[]>([]);
+    const [plane, setPlane] = useState("nothing");
+    const [allPlanes, setAllPlanes] = useState<planes[]>([]);
+    const [availablePlanes, setAvailablePlanes] = useState<planes[]>([]);
+
 
     // Charger les pilotes et avions disponibles
     useEffect(() => {
@@ -48,19 +49,26 @@ const SessionPopup = ({ sessions, children, setReload, reload }: Prop) => {
                 }
             })();
 
-            for (let i = 0; i < sessions.length; i++) {
-                if (sessions[i].studentID !== null) {
-                    setSubmitDisabled(true);
-                    setDisabledMessage("cette session est déjà réservée");
-                    break;
-                }
-                else {
-                    setSubmitDisabled(false);
-                    setDisabledMessage("");
-                }
+            // Vérifier si tous les `studentID` sont remplis
+            const allSessionsTaken = sessions.every(session => session.studentID !== null);
+
+            if (allSessionsTaken) {
+                setSubmitDisabled(true);
+                setDisabledMessage("Aucune session disponible sur ce créneau ...");
+            } else {
+                setSubmitDisabled(false);
+                setDisabledMessage("");
+            }
+
+            const sessionDate = new Date(sessions[0].sessionDateStart.getFullYear(), sessions[0].sessionDateStart.getMonth(), sessions[0].sessionDateStart.getDate(), sessions[0].sessionDateStart.getUTCHours(), sessions[0].sessionDateStart.getUTCMinutes(), sessions[0].sessionDateStart.getUTCSeconds());
+            const now = new Date();
+            if (sessionDate.getTime() < now.getTime()) {
+                setSubmitDisabled(true);
+                setDisabledMessage("La date de la session est passée ...");
             }
         }
     }, [sessions]);
+
 
     // Mettre à jour les avions en fonction de l'instructeur sélectionné
     useEffect(() => {
