@@ -8,7 +8,6 @@ interface BookedSessionProps {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const BookedSession = memo(function BookedSession({ sessions }: BookedSessionProps) {
-    console.log("BookedSession | Rendering...");
     return (
         <div className="text-s font-istok font-semibold">
             <p>Complet</p>

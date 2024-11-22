@@ -16,6 +16,7 @@ import { Spinner } from '../ui/SpinnerVariants';
 
 interface Props {
     sessions: flight_sessions[];
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     reload: boolean;
     setReload: React.Dispatch<React.SetStateAction<boolean>>;
     loading: boolean;
@@ -30,8 +31,7 @@ interface Props {
  * within a desktop-only layout, hidden on mobile devices.
  * 
  */
-const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading }: Props) => {
-    console.log("GlobalCalendarDesktop | Rendering...");
+const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading, setSessions }: Props) => {
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
 
@@ -97,7 +97,7 @@ const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading }: Props) 
                             <div className='flex space-x-2 px-3 '>
                                 {/* Button to create a new session (desktop view only). */}
                                 <div>
-                                    <NewSession display='desktop' reload={reload} setReload={setReload} />
+                                    <NewSession display='desktop' reload={reload} setReload={setReload} sessions={sessions} setSessions={setSessions} />
                                 </div>
                                 <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='desktop' />
 

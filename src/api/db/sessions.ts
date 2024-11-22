@@ -15,7 +15,7 @@ export interface interfaceSessions {
     planeId: string[];
 }
 
-export const newSession = async (sessionData: interfaceSessions, user: User) => {
+export const newSession = async (sessionData: interfaceSessions, user: User, id: string) => {
     if (!sessionData) {
         return { error: "Une erreur est survenue (E_001: sessionData is undefined)" };
     }
@@ -29,16 +29,6 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
     if (new Date(sessionData.date.getFullYear(), sessionData.date.getMonth(), sessionData.date.getDate(), Number(sessionData.startHour), Number(sessionData.startMinute), 0).getTime() <= new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getUTCHours(), now.getUTCMinutes(), 0).getTime()) {
         return { error: "La date de session doit être dans le futur" };
     }
-
-    // if (sessionData.date.toUTCString().slice(0, 16) === now.toUTCString().slice(0, 16)) {
-    //     const startHour = Number(sessionData.startHour);
-    //     const startMinute = Number(sessionData.startMinute);
-    //     const startTimeMinute = startHour * 60 + startMinute + now.getTimezoneOffset();
-    //     console.log(startHour, startMinute, now.getUTCHours(), now.getUTCMinutes());
-    //     if (startTimeMinute <= (now.getUTCHours() * 60 + now.getUTCMinutes())) {
-    //         return { error: "La session est aujourd'hui mais l'heure doit être dans le futur" };
-    //     }
-    // }
 
     const débutTotalMinutes = parseInt(sessionData.startHour) * 60 + parseInt(sessionData.startMinute);
     const finTotalMinutes = parseInt(sessionData.endHour) * 60 + parseInt(sessionData.endMinute);
@@ -110,10 +100,11 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
 
     // Envoi des sessions à la base de données avec Prisma en une seule transaction
     try {
-        await prisma.$transaction(
+        const createdSessions = await prisma.$transaction(
             sessionsToCreate.map(sessionDateStart =>
                 prisma.flight_sessions.create({
                     data: {
+                        id,
                         clubID: user.clubID,
                         sessionDateStart,
                         sessionDateDuration_min: sessionData.duration,
@@ -130,13 +121,15 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
                 })
             )
         );
+
         console.log('Sessions created successfully');
-        return { success: "Les sessions ont été créées !" };
+        return { success: "Les sessions ont été créées !", sessions: createdSessions };
     } catch (error) {
         console.error('Error creating flight sessions:', error);
         return { error: "Erreur lors de la création des sessions de vol" };
     }
 };
+
 
 export const getAllSessions = async (clubID: string, monthSelected: Date) => {
 

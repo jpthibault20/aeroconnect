@@ -8,7 +8,7 @@ interface AvailableSessionProps {
 }
 
 const AvailableSession = memo(function AvailableSession({ availablePilots, availablePlanes }: AvailableSessionProps) {
-    console.log("AvailableSession | Rendering...");
+
     return (
         <div className="text-xs space-y-1">
             <p>

@@ -11,7 +11,6 @@ interface Props {
 }
 
 const Session = ({ sessions, reload, setReload }: Props) => {
-    console.log("Session | Rendering...");
     // Sépare les sessions réservées et disponibles
     const availableSessions = sessions.filter(session => session.studentID === null);
     const bookedSessions = sessions.filter(session => session.studentID !== null);
@@ -34,6 +33,7 @@ const Session = ({ sessions, reload, setReload }: Props) => {
     );
 
     if ([...bookedSessions, ...availableSessions].length === 0) return null;
+
 
     return (
         <SessionPopup sessions={[...bookedSessions, ...availableSessions]} setReload={setReload} reload={reload}>

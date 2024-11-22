@@ -15,7 +15,7 @@ const Page = async () => {
     });
 
     return (
-        <PageComponent sessions={sessions} />
+        <PageComponent sessionsprops={sessions} />
     );
 };
 

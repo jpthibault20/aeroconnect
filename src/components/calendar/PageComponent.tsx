@@ -31,17 +31,19 @@ const useScreenSize = () => {
     return isMobile;
 };
 
-interface props {
-    sessions: flight_sessions[];
-}
+interface props { sessionsprops: flight_sessions[] }
 
-const PageComponent = ({ sessions }: props) => {
-    console.log("Page | Rendering...");
+const PageComponent = ({ sessionsprops }: props) => {
 
     const isMobile = useScreenSize();
 
     const [reload, setReload] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [sessions, setSessions] = useState<flight_sessions[]>([]);
+
+    useEffect(() => {
+        setSessions(sessionsprops);
+    }, [sessionsprops]);
 
 
     // Rendu conditionnel en fonction de la taille de l'écran
@@ -50,6 +52,7 @@ const PageComponent = ({ sessions }: props) => {
             {!isMobile ? (
                 <GlobalCalendarDesktop
                     sessions={sessions}
+                    setSessions={setSessions}
                     reload={reload}
                     setReload={setReload}
                     loading={loading}
@@ -57,6 +60,7 @@ const PageComponent = ({ sessions }: props) => {
             ) : (
                 <GlobalCalendarPhone
                     sessions={sessions}
+                    // setSessions={setSessions}
                     reload={reload}
                     setReload={setReload}
                     loading={loading}

@@ -14,7 +14,6 @@ interface Props {
 }
 
 const TabCalendar = ({ date, sessions, setReload, reload }: Props) => {
-    console.log("TabCalendar | Rendering...");
     // Récupère les jours de la semaine
     const daysOfWeek = useMemo(() => getDaysOfWeek(date), [date]);
 
@@ -30,7 +29,6 @@ const TabCalendar = ({ date, sessions, setReload, reload }: Props) => {
             minutes,
             0
         );
-
         return getSessionsFromDate(sessionDate, sessions); // Filtre les sessions pertinentes
     };
 
@@ -71,7 +69,7 @@ const TabCalendar = ({ date, sessions, setReload, reload }: Props) => {
                                         className={`table-cell p-1 border-b border-[#C1C1C1] ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''}`}
                                         key={indexday}
                                     >
-                                        {slotSessions.length > 0 && (
+                                        {slotSessions?.length > 0 && (
                                             <Session
                                                 sessions={slotSessions}
                                                 setReload={setReload}

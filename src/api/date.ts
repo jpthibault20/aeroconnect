@@ -37,7 +37,7 @@ export const getDaysOfWeek = (inputDate: Date): DayInfo[] => {
 };
 
 export const getSessionsFromDate = (date: Date, sessions: flight_sessions[]): flight_sessions[] => {
-    return sessions.filter((session) => {
+    return sessions?.filter((session) => {
         const sessionDate = session.sessionDateStart;
 
         // Comparer les dates (année, mois, jour)
