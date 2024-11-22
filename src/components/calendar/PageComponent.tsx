@@ -49,7 +49,7 @@ const PageComponent = ({ sessionsprops }: props) => {
     // Rendu conditionnel en fonction de la taille de l'écran
     return (
         <InitialLoading className="h-full w-full">
-            {!isMobile && (
+            {!isMobile ? (
                 <GlobalCalendarDesktop
                     sessions={sessions}
                     setSessions={setSessions}
@@ -57,17 +57,15 @@ const PageComponent = ({ sessionsprops }: props) => {
                     setReload={setReload}
                     loading={loading}
                 />
-            )
-                // : (
-                //     <GlobalCalendarPhone
-                //         sessions={sessions}
-                //         // setSessions={setSessions}
-                //         reload={reload}
-                //         setReload={setReload}
-                //         loading={loading}
-                //     />
-                // )
-            }
+            ) : (
+                <GlobalCalendarPhone
+                    sessions={sessions}
+                    setSessions={setSessions}
+                    reload={reload}
+                    setReload={setReload}
+                    loading={loading}
+                />
+            )}
         </InitialLoading>
     );
 };
