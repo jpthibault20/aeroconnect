@@ -26,7 +26,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
 
     const now = new Date();
 
-    if (new Date(sessionData.date.getFullYear(), sessionData.date.getMonth(), sessionData.date.getDate()) <= new Date(now.getFullYear(), now.getMonth(), now.getDate())) {
+    if (new Date(sessionData.date.getFullYear(), sessionData.date.getMonth(), sessionData.date.getDate(), Number(sessionData.startHour), Number(sessionData.startMinute), 0).getTime() <= new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getUTCHours(), now.getUTCMinutes(), 0).getTime()) {
         return { error: "La date de session doit être dans le futur" };
     }
 

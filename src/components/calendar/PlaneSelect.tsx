@@ -9,21 +9,23 @@ interface PlaneSelectProps {
     onPlaneChange: (plane: string) => void;
 }
 
-const PlaneSelect = ({ planes, selectedPlane, onPlaneChange }: PlaneSelectProps) => (
-    <div>
-        <Label>Avion</Label>
-        <Select value={selectedPlane} onValueChange={onPlaneChange}>
-            <SelectTrigger>
-                <SelectValue placeholder="Avions" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="nothing">Avions</SelectItem>
-                {planes.map(item => (
-                    <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
-                ))}
-            </SelectContent>
-        </Select>
-    </div>
-);
+const PlaneSelect = ({ planes, selectedPlane, onPlaneChange }: PlaneSelectProps) => {
+
+    return (
+        <div>
+            <Label>Avion</Label>
+            <Select value={selectedPlane} onValueChange={onPlaneChange}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Avions" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="nothing">Avions</SelectItem>
+                    {planes.map(item => (
+                        <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>)
+};
 
 export default PlaneSelect;

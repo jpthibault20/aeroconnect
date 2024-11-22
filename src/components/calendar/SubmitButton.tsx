@@ -20,7 +20,7 @@ const SubmitButton = ({ submitDisabled, onSubmit, loading, error, disabledMessag
             </div>
         )}
         <Button className="w-full mt-3" disabled={submitDisabled} onClick={onSubmit}>
-            {loading ? <Spinner /> : "S'inscrire"}
+            {loading ? <Spinner className='text-white' /> : 'Valider la réservation'}
         </Button>
         {error && <div className="text-red-500 mt-2">{error}</div>}
     </div>
