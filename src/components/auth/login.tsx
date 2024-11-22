@@ -44,11 +44,10 @@ export const Login = () => {
 
             // Appel API de connexion
             await emailLogin(formData);
-            reset();
+
         } catch (error) {
             console.error("Erreur de connexion :", error);
         } finally {
-            setLoading(false); // Désactivation de l'état de chargement
         }
     };
 
