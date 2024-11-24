@@ -23,10 +23,10 @@ import { Spinner } from '@/components/ui/SpinnerVariants';
 
 interface Props {
     sessions: flight_sessions[];
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     reload: boolean;
     setReload: React.Dispatch<React.SetStateAction<boolean>>;
     loading: boolean;
-    setMonthSelected: React.Dispatch<React.SetStateAction<Date>>;
 }
 
 /**
@@ -34,7 +34,7 @@ interface Props {
  * @description Main component for displaying a calendar on mobile devices.
  * Handles date selection, session filtering, and session display.
  */
-const GlobalCalendarPhone = ({ sessions, reload, setReload, loading, setMonthSelected }: Props) => {
+const GlobalCalendarPhone = ({ sessions, reload, setReload, loading, setSessions }: Props) => {
     // State variables for managing date, instructor, plane, and filtered sessions
     const [date, setDate] = useState(new Date());
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>();
@@ -50,7 +50,6 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload, loading, setMonthSel
         } catch (error) {
             console.log(error);
         }
-        setMonthSelected(date);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [date]);
 
@@ -91,7 +90,7 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload, loading, setMonthSel
                         {date.toLocaleDateString('fr-FR', { month: 'long' })}, {date.toLocaleDateString('fr-FR', { year: 'numeric' })}
                     </p>
                     <div className='flex items-center space-x-3'>
-                        <NewSession display='phone' reload={reload} setReload={setReload} />
+                        <NewSession display='phone' reload={reload} setReload={setReload} sessions={sessions} setSessions={setSessions} />
                         <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='phone' />
                     </div>
                 </div>

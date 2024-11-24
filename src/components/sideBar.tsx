@@ -1,4 +1,5 @@
-import React from 'react'
+"use client"
+import React, { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { LogOut } from 'lucide-react'
@@ -11,6 +12,12 @@ import { userRole } from '@prisma/client'
 const SideBar = () => {
     const pathname = usePathname();
     const { currentUser } = useCurrentUser();
+    const [disabled, setDisabled] = useState(false);
+
+    const logout = () => {
+        setDisabled(true);
+        signOut()
+    }
 
     return (
         <aside className="hidden lg:flex w-64 h-screen bg-[#212121] text-white flex-col">
@@ -55,7 +62,7 @@ const SideBar = () => {
 
             <div className='border-1 border-b border-[#797979] mx-3 mb-6' />
 
-            <button className="flex items-center px-4 py-2 hover:bg-slate-800 mt-auto mb-4" onClick={() => signOut()}>
+            <button className={`flex items-center px-4 py-2 hover:bg-slate-800 mt-auto mb-4  ${disabled ? 'text-slate-500' : 'text-white'}`} onClick={logout}>
                 <LogOut className="mr-3" size={20} />
                 Déconnexion
             </button>

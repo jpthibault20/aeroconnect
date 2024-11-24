@@ -37,7 +37,7 @@ export const getDaysOfWeek = (inputDate: Date): DayInfo[] => {
 };
 
 export const getSessionsFromDate = (date: Date, sessions: flight_sessions[]): flight_sessions[] => {
-    return sessions.filter((session) => {
+    return sessions?.filter((session) => {
         const sessionDate = session.sessionDateStart;
 
         // Comparer les dates (année, mois, jour)
@@ -138,4 +138,8 @@ export const formatTime = (numberValue: number) => {
     const formattedHours = hours.padStart(2, '0');
     const formattedMinutes = minutes ? minutes.padEnd(2, '0') : '00';
     return `${formattedHours}:${formattedMinutes}`;
+};
+
+export const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(date);
 };

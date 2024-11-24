@@ -10,21 +10,14 @@ interface Props {
 const ButtonForm = ({ title, loading }: Props) => {
     return (
         <div className='w-full'>
-            {loading ? (
-                <div className='w-full bg-[#392060] text-primary-foreground shadow'>
-                    <Spinner className='text-white' />
-                </div>
-
-            ) : (
-                <Button
-                    variant="perso"
-                    className='w-full'
-                    type='submit'
-                    disabled={loading}
-                >
-                    {title}
-                </Button>
-            )}
+            <Button
+                variant="perso"
+                className='w-full'
+                type='submit'
+                disabled={loading}
+            >
+                {loading ? <Spinner className='text-white' /> : title}
+            </Button>
         </div>
     )
 }

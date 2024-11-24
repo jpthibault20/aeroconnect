@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IoMdAddCircle } from "react-icons/io";
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { planes, userRole } from '@prisma/client';
+import { flight_sessions, planes, userRole } from '@prisma/client';
 import {
     Dialog,
     DialogClose,
@@ -38,9 +38,12 @@ interface Props {
     style?: string;
     reload: boolean;
     setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    sessions: flight_sessions[]
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
 }
 // début de composant
-const NewSession = ({ display, reload, setReload }: Props) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props) => {
     const { currentUser } = useCurrentUser();
     const { toast } = useToast()
     const [loading, setLoading] = useState(false);
@@ -129,29 +132,42 @@ const NewSession = ({ display, reload, setReload }: Props) => {
     };
 
     const onConfirm = async () => {
-        setLoading(true); // Démarrer le chargement
+        setLoading(true); // Activer l'état de chargement
         try {
-            const res = await newSession(sessionData, currentUser); // Attendre la réponse
-            if (res.error) {
+            // Envoyer les données de session au backend
+            const res = await newSession(sessionData, currentUser);
+
+            if (res?.error) {
                 setError(res.error);
-            } else if (res.success) {
-                setError("")
+            } else if (res?.success) {
+                if (res?.sessions && Array.isArray(res.sessions)) {
+                    // Si "sessions" est un tableau, mettez à jour l'état
+                    setSessions((prev) => [...prev, ...res.sessions]);
+                }
+                setError("");
                 toast({
                     title: res.success,
+                    duration: 5000,
                 });
+
+                // Fermer le popover après le succès
                 setIsPopoverOpen(false);
             } else {
-                setError("Une erreur est survenue (E_002: res.error is undefined)");
+                // Gérer les cas imprévus où aucune clé `success` ou `error` n'est présente
+                setError("Une erreur est survenue (E_002: réponse inattendue du serveur)");
             }
-            console.log(res);
         } catch (error) {
-            console.error(error);
+            // Gérer les erreurs imprévues
+            console.error("Erreur lors de l'envoi des données :", error);
             setError("Une erreur est survenue lors de l'envoi des données.");
         } finally {
+            // Rafraîchir l'état et désactiver le chargement
             setReload(!reload);
-            setLoading(false); // Toujours arrêter le chargement
+            setLoading(false);
         }
     };
+
+
 
 
     // affichage du composant(bouton de nouvelle session et card de configuration)
@@ -183,7 +199,6 @@ const NewSession = ({ display, reload, setReload }: Props) => {
                             selected={sessionData.date}
                             onSelect={(date) => {
                                 if (date) { // Vérifiez que la date n'est pas undefined
-                                    console.log(date)
                                     const localDate = new Date(date);
 
                                     // Créer une date UTC à partir de l'heure locale

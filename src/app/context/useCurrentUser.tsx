@@ -1,3 +1,4 @@
+"use client"
 import { User } from '@prisma/client';
 import { createContext, useContext, useState, useMemo } from 'react';
 

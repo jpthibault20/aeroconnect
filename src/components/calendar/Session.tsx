@@ -11,7 +11,6 @@ interface Props {
 }
 
 const Session = ({ sessions, reload, setReload }: Props) => {
-    console.log("sessions render");
     // Sépare les sessions réservées et disponibles
     const availableSessions = sessions.filter(session => session.studentID === null);
     const bookedSessions = sessions.filter(session => session.studentID !== null);
@@ -33,6 +32,9 @@ const Session = ({ sessions, reload, setReload }: Props) => {
         0
     );
 
+    if ([...bookedSessions, ...availableSessions].length === 0) return null;
+
+
     return (
         <SessionPopup sessions={[...bookedSessions, ...availableSessions]} setReload={setReload} reload={reload}>
             <div
@@ -40,10 +42,10 @@ const Session = ({ sessions, reload, setReload }: Props) => {
             >
                 <div className='w-full items-end'>
                     <p className="text-xs text-[#646464] text-end">
-                        {sessions[0].sessionDateStart.getHours().toString().padStart(2, '0')}:
-                        {sessions[0].sessionDateStart.getMinutes().toString().padStart(2, '0')} -
-                        {endSessionDate.getHours().toString().padStart(2, '0')}:
-                        {endSessionDate.getMinutes().toString().padStart(2, '0')}
+                        {sessions[0].sessionDateStart.getUTCHours().toString().padStart(2, '0')}:
+                        {sessions[0].sessionDateStart.getUTCMinutes().toString().padStart(2, '0')} -
+                        {endSessionDate.getUTCHours().toString().padStart(2, '0')}:
+                        {endSessionDate.getUTCMinutes().toString().padStart(2, '0')}
                     </p>
                 </div>
                 <div className='w-full h-full flex items-center'>

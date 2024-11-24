@@ -1,11 +1,14 @@
 // AvailableSession.tsx
 
+import { memo } from "react";
+
 interface AvailableSessionProps {
     availablePlanes: string[];
     availablePilots: string[];
 }
 
-const AvailableSession = ({ availablePlanes, availablePilots }: AvailableSessionProps) => {
+const AvailableSession = memo(function AvailableSession({ availablePilots, availablePlanes }: AvailableSessionProps) {
+
     return (
         <div className="text-xs space-y-1">
             <p>
@@ -16,6 +19,6 @@ const AvailableSession = ({ availablePlanes, availablePilots }: AvailableSession
             </p>
         </div>
     );
-};
+});
 
 export default AvailableSession;

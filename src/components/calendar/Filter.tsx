@@ -46,7 +46,7 @@ const Filter = ({ sessions, setSessionsFiltered, display }: Props) => {
 
     // Effet pour filtrer les sessions lorsque l'avion ou l'instructeur change
     useEffect(() => {
-        const filteredSessions = sessions.filter(session => {
+        const filteredSessions = sessions?.filter(session => {
             // Si "Tous" est sélectionné pour l'instructeur, toutes les sessions sont valides pour ce critère
             const instructorMatch = instructor === "all" || session.pilotID === instructor;
 
@@ -60,7 +60,8 @@ const Filter = ({ sessions, setSessionsFiltered, display }: Props) => {
         // Mettre à jour les sessions filtrées
         setSessionsFiltered(filteredSessions);
 
-    }, [plane, instructor, sessions, setSessionsFiltered]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [plane, instructor, sessions]);
 
     if (display === "desktop") {
         return (

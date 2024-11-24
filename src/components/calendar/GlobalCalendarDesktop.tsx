@@ -16,10 +16,10 @@ import { Spinner } from '../ui/SpinnerVariants';
 
 interface Props {
     sessions: flight_sessions[];
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     reload: boolean;
     setReload: React.Dispatch<React.SetStateAction<boolean>>;
     loading: boolean;
-    setMonthSelected: React.Dispatch<React.SetStateAction<Date>>;
 }
 
 /**
@@ -31,22 +31,11 @@ interface Props {
  * within a desktop-only layout, hidden on mobile devices.
  * 
  */
-const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading, setMonthSelected }: Props) => {
+const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading, setSessions }: Props) => {
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
-    const [switchPressed, setSwitchPressed] = useState("");
 
-    // console.log("GlobalCalendarDesktop | Rendering...");
-
-    /**
-     * @function onClickNextweek
-     * @brief Advances the calendar by one week.
-     *
-     * This function modifies the `date` state by adding 7 days, effectively moving to the next week.
-     */
     const onClickNextweek = () => {
-        console.log('Next day')
-        setSwitchPressed("next");
         setDate(prevDate => {
             const newDate = new Date(prevDate);
             newDate.setDate(newDate.getDate() + 7);
@@ -54,15 +43,7 @@ const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading, setMonthS
         });
     }
 
-    /**
-     * @function onClickPreviousWeek
-     * @brief Moves the calendar back by one week.
-     *
-     * This function modifies the `date` state by subtracting 7 days, moving back to the previous week.
-     */
     const onClickPreviousWeek = () => {
-        console.log('Previous day')
-        setSwitchPressed("previous");
         setDate(prevDate => {
             const newDate = new Date(prevDate);
             newDate.setDate(newDate.getDate() - 7);
@@ -70,18 +51,11 @@ const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading, setMonthS
         });
     }
 
-    /**
-     * @function onClickToday
-     * @brief Resets the calendar to the current week.
-     *
-     * This function sets the `date` state to today's date, bringing the calendar back to the current week.
-     */
     const onClickToday = () => {
-        console.log('Today')
         setDate(new Date())
-        setMonthSelected(new Date())
     }
 
+    // Effect pour récupérer les jours de la semaine
     useEffect(() => {
         const newDate = new Date(date); // Crée une copie de la date donnée
 
@@ -99,14 +73,6 @@ const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading, setMonthS
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-        if (startOfWeek.getMonth() != endOfWeek.getMonth()) {
-            setMonthSelected((prev) => {
-                const newDate = new Date(prev);
-                if (switchPressed === "next") newDate.setMonth(newDate.getMonth() + 1);
-                else if (switchPressed === "previous") newDate.setMonth(newDate.getMonth() - 1);
-                return newDate;
-            });
-        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [date]);
 
@@ -131,7 +97,7 @@ const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading, setMonthS
                             <div className='flex space-x-2 px-3 '>
                                 {/* Button to create a new session (desktop view only). */}
                                 <div>
-                                    <NewSession display='desktop' reload={reload} setReload={setReload} />
+                                    <NewSession display='desktop' reload={reload} setReload={setReload} sessions={sessions} setSessions={setSessions} />
                                 </div>
                                 <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='desktop' />
 

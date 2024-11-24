@@ -17,7 +17,6 @@ const TabCalendar = ({ date, sessions, setReload, reload }: Props) => {
     // Récupère les jours de la semaine
     const daysOfWeek = useMemo(() => getDaysOfWeek(date), [date]);
 
-    // Fonction pour obtenir les sessions pour un créneau donné
     const getSessions = (indexX: number, indexY: number) => {
         const hour = workingHour[indexX] !== undefined ? Math.floor(workingHour[indexX]) : 0;
         const minutes = workingHour[indexX] !== undefined ? Math.round((workingHour[indexX] % 1) * 60) : 0;
@@ -30,7 +29,6 @@ const TabCalendar = ({ date, sessions, setReload, reload }: Props) => {
             minutes,
             0
         );
-
         return getSessionsFromDate(sessionDate, sessions); // Filtre les sessions pertinentes
     };
 
@@ -71,7 +69,7 @@ const TabCalendar = ({ date, sessions, setReload, reload }: Props) => {
                                         className={`table-cell p-1 border-b border-[#C1C1C1] ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''}`}
                                         key={indexday}
                                     >
-                                        {slotSessions.length > 0 && (
+                                        {slotSessions?.length > 0 && (
                                             <Session
                                                 sessions={slotSessions}
                                                 setReload={setReload}

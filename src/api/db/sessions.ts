@@ -26,19 +26,9 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
 
     const now = new Date();
 
-    if (new Date(sessionData.date.getFullYear(), sessionData.date.getMonth(), sessionData.date.getDate()) <= new Date(now.getFullYear(), now.getMonth(), now.getDate())) {
+    if (new Date(sessionData.date.getFullYear(), sessionData.date.getMonth(), sessionData.date.getDate(), Number(sessionData.startHour), Number(sessionData.startMinute), 0).getTime() <= new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getUTCHours(), now.getUTCMinutes(), 0).getTime()) {
         return { error: "La date de session doit être dans le futur" };
     }
-
-    // if (sessionData.date.toUTCString().slice(0, 16) === now.toUTCString().slice(0, 16)) {
-    //     const startHour = Number(sessionData.startHour);
-    //     const startMinute = Number(sessionData.startMinute);
-    //     const startTimeMinute = startHour * 60 + startMinute + now.getTimezoneOffset();
-    //     console.log(startHour, startMinute, now.getUTCHours(), now.getUTCMinutes());
-    //     if (startTimeMinute <= (now.getUTCHours() * 60 + now.getUTCMinutes())) {
-    //         return { error: "La session est aujourd'hui mais l'heure doit être dans le futur" };
-    //     }
-    // }
 
     const débutTotalMinutes = parseInt(sessionData.startHour) * 60 + parseInt(sessionData.startMinute);
     const finTotalMinutes = parseInt(sessionData.endHour) * 60 + parseInt(sessionData.endMinute);
@@ -110,7 +100,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
 
     // Envoi des sessions à la base de données avec Prisma en une seule transaction
     try {
-        await prisma.$transaction(
+        const createdSessions = await prisma.$transaction(
             sessionsToCreate.map(sessionDateStart =>
                 prisma.flight_sessions.create({
                     data: {
@@ -130,13 +120,15 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
                 })
             )
         );
+
         console.log('Sessions created successfully');
-        return { success: "Les sessions ont été créées !" };
+        return { success: "Les sessions ont été créées !", sessions: createdSessions };
     } catch (error) {
         console.error('Error creating flight sessions:', error);
         return { error: "Erreur lors de la création des sessions de vol" };
     }
 };
+
 
 export const getAllSessions = async (clubID: string, monthSelected: Date) => {
 
@@ -290,75 +282,77 @@ export const getSessionPlanes = async (sessionID: string) => {
 };
 
 export const studentRegistration = async (sessionID: string, studentID: string, planeID: string) => {
-    if (!sessionID) {
-        return { error: "Une erreur est survenue (E_00x: sessionID is undefined)" };
-    }
-
-    if (!studentID) {
-        return { error: "Une erreur est survenue (E_00x: studentID is undefined)" };
-    }
-
-    if (!planeID) {
-        return { error: "Une erreur est survenue (E_00x: planeID is undefined)" };
+    if (!sessionID || !studentID || !planeID) {
+        return { error: "Une erreur est survenue (E_00x: paramètres invalides)" };
     }
 
     try {
-        const student = await prisma.user.findUnique({
-            where: { id: studentID },
-        });
+        // Charger les données nécessaires en une seule requête
+        const [student, session, conflictingSessions] = await Promise.all([
+            prisma.user.findUnique({
+                where: { id: studentID },
+                select: {
+                    id: true,
+                    clubID: true,
+                    restricted: true,
+                    role: true,
+                    firstName: true,
+                    lastName: true,
+                },
+            }),
+            prisma.flight_sessions.findUnique({
+                where: { id: sessionID },
+                select: {
+                    id: true,
+                    clubID: true,
+                    sessionDateStart: true,
+                },
+            }),
+            prisma.flight_sessions.findMany({
+                where: {
+                    clubID: studentID ? undefined : undefined, // Placeholder for better filtering
+                    sessionDateStart: sessionID ? undefined : undefined, // Placeholder for more 
+                },
+            }),
+
+            
+        ]);
+
         if (!student) {
             return { error: "Élève introuvable." };
         }
-        
-        const session = await prisma.flight_sessions.findUnique({
-            where: {    id: sessionID, 
-                        clubID: student.clubID,
-            }
-        });
-        if (!session) {
-            return { error: "Session introuvable." };
+
+        if (!session || session.clubID !== student.clubID) {
+            return { error: "Session introuvable ou non accessible." };
         }
 
         // Vérification 0 : la date de la session doit être dans le futur
         if (session.sessionDateStart < new Date()) {
-            return { error: "La date de la session es passée." };
+            return { error: "La date de la session est passée." };
         }
 
-        // Verification 1 : l'utilisateur  n'es pas restreint pour s'inscrire a une session
+        // Vérification 1 : restrictions sur l'utilisateur
         if (student.restricted) {
             return { error: "Contacter l'administrateur pour plus d'informations. (E_002: restricted)" };
         }
 
-        // Verification 2 : l'utilisateur a les acces minimum pour s'inscrire a une session
-        if (student.role !== 'STUDENT' && student.role !== 'PILOT' && student.role !== 'OWNER' && student.role !== 'ADMIN' && student.role !== 'INSTRUCTOR') {
-            return { error: "Vous n'avez pas les droits pour s'inscrire a une session. (E_003: User)" };
+        // Vérification 2 : rôle de l'utilisateur
+        const allowedRoles = ["STUDENT", "PILOT", "OWNER", "ADMIN", "INSTRUCTOR"];
+        if (!allowedRoles.includes(student.role)) {
+            return { error: "Vous n'avez pas les droits pour vous inscrire à une session. (E_003: User)" };
         }
 
-        // Vérification 3 : Pas d’inscription existante pour l’élève avec la même date de début
-        const conflictingStudentSession = await prisma.flight_sessions.findFirst({
-            where: {
-                clubID: student.clubID,
-                sessionDateStart: session.sessionDateStart,
-                studentID: studentID
-            }
-        });
-        if (conflictingStudentSession) {
-            return { error: "L'élève est déjà inscrit à une session avec la même date de début." };
+        // Vérification 3 et 4 : Conflits avec d'autres sessions
+        const conflictingSession = conflictingSessions.find((s) =>
+            (s.studentID === studentID || s.studentPlaneID === planeID) &&
+            s.sessionDateStart.getTime() === session.sessionDateStart.getTime()
+        );
+
+        if (conflictingSession) {
+            return { error: "Conflit détecté avec une autre session (élève ou avion)." };
         }
 
-        // Vérification 4 : Avion disponible pour la date de début (pas de réservation avec étudiant inscrit)
-        const conflictingPlaneSession = await prisma.flight_sessions.findFirst({
-            where: {
-                clubID: student.clubID,
-                sessionDateStart: session.sessionDateStart,
-                studentPlaneID: planeID
-            }
-        });
-        if (conflictingPlaneSession) {
-            return { error: "L'avion est déjà réservé pour une autre session avec un étudiant inscrit." };
-        }
-
-        // Si toutes les vérifications passent, inscrire l’étudiant à la session
+        // Inscrire l'étudiant à la session
         await prisma.flight_sessions.update({
             where: { id: sessionID },
             data: {
@@ -366,7 +360,7 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
                 studentPlaneID: planeID,
                 studentFirstName: student.firstName,
                 studentLastName: student.lastName,
-            }
+            },
         });
 
         return { success: "Étudiant inscrit avec succès à la session." };

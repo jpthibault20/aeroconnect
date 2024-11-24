@@ -1,7 +1,7 @@
 
 "use client";
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { use } from 'react'
+import React from 'react'
 import InputString from './InputString';
 import ButtonForm from './buttonForm'
 import CardWrapper from './cardWrapper';
@@ -44,11 +44,10 @@ export const Login = () => {
 
             // Appel API de connexion
             await emailLogin(formData);
-            reset();
+
         } catch (error) {
             console.error("Erreur de connexion :", error);
         } finally {
-            setLoading(false); // Désactivation de l'état de chargement
         }
     };
 
