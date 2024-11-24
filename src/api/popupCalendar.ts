@@ -38,9 +38,11 @@ export const filterPilotePlane = async (sessions: flight_sessions[]): Promise<Ob
         };
     }
 
+    const availableSessions = sessions.filter(session => session.studentID === null);
+
     // Cas avec plusieurs sessions : récupérer les pilotes et les avions en détail
-    const uniquePilotIDs = Array.from(new Set(sessions.map(session => session.pilotID)));
-    const uniquePlaneIDs = Array.from(new Set(sessions.flatMap(session => session.planeID)));
+    const uniquePilotIDs = Array.from(new Set(availableSessions.map(session => session.pilotID)));
+    const uniquePlaneIDs = Array.from(new Set(availableSessions.flatMap(session => session.planeID)));
 
     // Récupérer les pilotes uniques
     const pilotes = (await Promise.all(

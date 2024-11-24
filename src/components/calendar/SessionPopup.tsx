@@ -68,7 +68,7 @@ const SessionPopup = ({ sessions, children, setReload, reload }: Prop) => {
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // de base 'sessions' mais génère une erreur quand l'inscription es fini es qu'il n'y a plus de sessions dispo, affichage d'un message d'erreur
+    }, [sessions]); // de base 'sessions' mais génère une erreur quand l'inscription es fini es qu'il n'y a plus de sessions dispo, affichage d'un message d'erreur
 
 
     // Mettre à jour les avions en fonction de l'instructeur sélectionné
@@ -119,7 +119,7 @@ const SessionPopup = ({ sessions, children, setReload, reload }: Prop) => {
                 setError("");
                 toast({ title: res.success, duration: 3000 });
                 setReload(!reload);
-                // setIsOpen(false);
+                setIsOpen(false);
 
                 sessions.find((item) => {
                     if (item.id === sessionId) {
