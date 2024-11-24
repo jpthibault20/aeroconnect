@@ -1,7 +1,7 @@
 
 "use client";
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { use } from 'react'
+import React from 'react'
 import InputString from './InputString';
 import ButtonForm from './buttonForm'
 import CardWrapper from './cardWrapper';
