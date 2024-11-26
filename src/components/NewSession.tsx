@@ -372,7 +372,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                                         {sessionData.endReccurence ? format(sessionData.endReccurence, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="p-0 z-[1050]">
+                                <PopoverContent className="p-0 z-[1050]" style={{ border: '2px solid red', backgroundColor: 'rgba(255, 0, 0, 0.1)' }}>
                                     <Calendar
                                         key={sessionData?.endReccurence?.toISOString()}
                                         mode="single"
