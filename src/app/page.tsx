@@ -5,7 +5,7 @@ export default async function Home() {
 
   const user = await getUser()
 
-  if (user) {
+  if (user.user?.clubID) {
     return redirect(`/calendar?clubID=${user.user?.clubID}`);
   }
   else {
