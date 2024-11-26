@@ -9,9 +9,8 @@
 
 import React from 'react';
 import RoundDate from './RoundDate';
-import { DaysOfMonthType } from '@/api/date';
 import { flight_sessions } from '@prisma/client';
-import { getFlightSessionsForDay } from "@/api/date";
+import { getFlightSessionsForDay, DaysOfMonthType } from "@/api/date";
 
 interface props {
     daysOfMonth: DaysOfMonthType | undefined;  ///< List of weeks and days in the month.
