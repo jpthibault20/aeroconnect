@@ -184,28 +184,47 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                     <DialogDescription>Configuration de la nouvelle session</DialogDescription>
                 </DialogHeader>
 
-                {/* Date de la session */}
-                <Label>Date de la session</Label>
                 <Popover open={isOpenCal1} onOpenChange={setIsOpenCal1}>
                     <PopoverTrigger asChild>
-                        <Button variant={"outline"} className={cn("justify-start text-left font-normal w-full", !sessionData.date && "text-muted-foreground")} disabled={loading}>
-                            <CalendarIcon />
-                            {sessionData.date ? format(sessionData.date, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
-                        </Button>
+                        <div
+                            onClick={() => setIsOpenCal1(!isOpenCal1)} // Support tactile
+                            className="w-full cursor-pointer"
+                        >
+                            <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "justify-start text-left font-normal w-full",
+                                    !sessionData.date && "text-muted-foreground"
+                                )}
+                                disabled={loading}
+                            >
+                                <CalendarIcon />
+                                {sessionData.date ? (
+                                    format(sessionData.date, "PPP", { locale: fr })
+                                ) : (
+                                    <span>Sélectionnez une date</span>
+                                )}
+                            </Button>
+                        </div>
                     </PopoverTrigger>
                     <PopoverContent className="p-0">
                         <Calendar
                             mode="single"
                             selected={sessionData.date}
                             onSelect={(date) => {
-                                if (date) { // Vérifiez que la date n'est pas undefined
+                                if (date) {
                                     const localDate = new Date(date);
-
-                                    // Créer une date UTC à partir de l'heure locale
-                                    const utcDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), localDate.getHours(), localDate.getMinutes(), localDate.getSeconds()));
-
-                                    // Mise à jour de la date de session avec la date UTC
-                                    setSessionData(prev => ({ ...prev, date: utcDate }));
+                                    const utcDate = new Date(
+                                        Date.UTC(
+                                            localDate.getFullYear(),
+                                            localDate.getMonth(),
+                                            localDate.getDate(),
+                                            localDate.getHours(),
+                                            localDate.getMinutes(),
+                                            localDate.getSeconds()
+                                        )
+                                    );
+                                    setSessionData((prev) => ({ ...prev, date: utcDate }));
                                 }
                                 setIsOpenCal1(false);
                             }}
@@ -214,6 +233,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                         />
                     </PopoverContent>
                 </Popover>
+
 
                 {/* Sélection des heures et minutes */}
                 <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4 mt-4">
