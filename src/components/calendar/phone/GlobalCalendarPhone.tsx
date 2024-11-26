@@ -79,7 +79,7 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload, loading, setSessions
     };
 
     return (
-        <div className='lg:hidden flex flex-col flex-grow h-full'> {/* Use h-screen to ensure the full height */}
+        <div className='flex flex-col flex-grow h-full'> {/* Use h-screen to ensure the full height */}
             <p className='text-2xl font-istok font-semibold my-3 w-full text-center'>Calendrier</p>
             <div className='w-full px-6'>
                 <div className='border-b border-[#646464] w-full' />

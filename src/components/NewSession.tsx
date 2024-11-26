@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { IoMdAddCircle } from "react-icons/io";
 import { useCurrentUser } from '@/app/context/useCurrentUser';
@@ -365,24 +366,14 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                     {switchReccurence && (
                         <div className='flex flex-col space-y-3 mt-4'>
                             <Label>Date de la dernière session</Label>
-                            <Popover open={isOpenCal2} onOpenChange={setIsOpenCal2}>
-                                <PopoverTrigger asChild disabled={loading}>
-                                    <Button variant={"outline"} className={cn("justify-start text-left font-normal w-full", !sessionData.date && "text-muted-foreground")} disabled={loading}>
-                                        <CalendarIcon />
-                                        {sessionData.endReccurence ? format(sessionData.endReccurence, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
-                                    </Button>
+                            <Popover>
+                                <PopoverTrigger>
+                                    <Button>Open Calendar</Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="p-0">
                                     <Calendar
-                                        key={sessionData?.endReccurence?.toISOString()}
                                         mode="single"
-                                        selected={sessionData?.endReccurence}
-                                        defaultMonth={sessionData?.endReccurence || undefined}
-                                        onSelect={(date) => {
-                                            setSessionData(prev => ({ ...prev, endReccurence: date }))
-                                            setIsOpenCal2(false)
-                                        }}
-                                        initialFocus
+                                        onSelect={(date) => console.log(date)}
                                         locale={fr}
                                     />
                                 </PopoverContent>
