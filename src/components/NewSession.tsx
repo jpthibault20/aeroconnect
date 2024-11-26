@@ -51,7 +51,8 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
     const [warning, setWarning] = useState("");
     const [isOpenPopover, setIsPopoverOpen] = useState(false);
     const [isOpenCal1, setIsOpenCal1] = useState(false);
-    const [isOpenCal2, setIsOpenCal2] = useState(false);
+    const [PopoverCalendar, setPopoverCalendar] = useState(false);
+    // const [isOpenCal2, setIsOpenCal2] = useState(false);
     const [switchReccurence, setSwitchReccurence] = useState(false);
     const [planes, setPlanes] = useState<planes[]>()
     const [sessionData, setSessionData] = useState<interfaceSessions>({
@@ -365,28 +366,30 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                     {switchReccurence && (
                         <div className='flex flex-col space-y-3 mt-4'>
                             <Label>Date de la dernière session</Label>
-                            <Popover open={isOpenCal2} onOpenChange={setIsOpenCal2}>
-                                <PopoverTrigger asChild disabled={loading}>
-                                    <Button variant={"outline"} className={cn("justify-start text-left font-normal w-full", !sessionData.date && "text-muted-foreground")} disabled={loading}>
-                                        <CalendarIcon />
-                                        {sessionData.endReccurence ? format(sessionData.endReccurence, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="p-0 z-[1050]" style={{ border: '2px solid red', backgroundColor: 'rgba(255, 0, 0, 0.1)' }}>
-                                    <Calendar
-                                        key={sessionData?.endReccurence?.toISOString()}
-                                        mode="single"
-                                        selected={sessionData?.endReccurence}
-                                        defaultMonth={sessionData?.endReccurence || undefined}
-                                        onSelect={(date) => {
-                                            setSessionData(prev => ({ ...prev, endReccurence: date }))
-                                            setIsOpenCal2(false)
-                                        }}
-                                        initialFocus
-                                        locale={fr}
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <div className="mt-2 grid grid-col-2 grid-flow-col">
+                                <Popover open={PopoverCalendar} onOpenChange={setPopoverCalendar}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {format(new Date(), "dd/MM/yyyy")}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            weekStartsOn={1}
+                                            locale={fr}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
                         </div>
                     )}
                     {error && (
