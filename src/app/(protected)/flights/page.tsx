@@ -1,27 +1,39 @@
-/**
- * @file Page.tsx
- * @brief Main page component for the Plane page.
- * 
- * @details
- * This component serves as the main entry point for the Plane page, 
- * rendering the InitialLoading component and the PlanePageComponent.
- */
+'use server';
 
 import React from 'react';
-import InitialLoading from '@/components/InitialLoading';
+import { PrismaClient } from '@prisma/client';
 import FlightsPageComponent from '@/components/flights/FlightsPageComponent';
+import InitialLoading from '@/components/InitialLoading';
 
-/**
- * @component Page
- * @description Main component for the Plane page.
- * 
- */
-const Page = () => {
+const prisma = new PrismaClient();
+
+interface PageProps {
+    searchParams: { clubID: string | undefined };
+}
+
+const Page = async ({ searchParams }: PageProps) => {
+    const clubID = searchParams.clubID;
+
+    if (!clubID) {
+        throw new Error('clubID is required in the URL');
+    }
+
+    const sessions = await prisma.flight_sessions.findMany({
+        where: {
+            clubID: clubID,
+            sessionDateStart: {
+                gte: new Date()
+            }
+        }
+    });
+
     return (
-        <InitialLoading className='h-full p-6 bg-gray-100'>
-            <FlightsPageComponent />
+        <InitialLoading className="h-full w-full">
+            <FlightsPageComponent sessionsProp={sessions} />
         </InitialLoading>
     );
 };
+
+
 
 export default Page;

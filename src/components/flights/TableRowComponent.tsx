@@ -46,7 +46,6 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
     finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min); // Calculate end time of the session
 
     useEffect(() => {
-        console.log(currentUser?.id, session.studentID);
         if (currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR" || session.studentID === currentUser?.id) {
             setAutorisedDeleteStudent(true);
         } else {
@@ -187,18 +186,20 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                 {plane?.name || '...'}
             </TableCell>
             <TableCell className='h-full w-full justify-center items-center flex'>
-                {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.OWNER &&
-                    <AlertConfirmDeleted
-                        title='Etes vous sur de vouloir supprimer ce vol ?'
-                        description={'Ce vol sera supprimé définitivement'}
-                        style='flex h-full w-full justify-center items-center'
-                        cancel='Annuler'
-                        confirm='Supprimer'
-                        confirmAction={() => removeFlight([session.id])}
-                        loading={loading}
-                    >
-                        <Button className='w-fit' variant={"destructive"} >Supprimer</Button>
-                    </AlertConfirmDeleted>
+                {currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
+                    (
+                        <AlertConfirmDeleted
+                            title='Etes vous sur de vouloir supprimer ce vol ?'
+                            description={'Ce vol sera supprimé définitivement'}
+                            style='flex h-full w-full justify-center items-center'
+                            cancel='Annuler'
+                            confirm='Supprimer'
+                            confirmAction={() => removeFlight([session.id])}
+                            loading={loading}
+                        >
+                            <Button className='w-fit' variant={"destructive"} >Supprimer</Button>
+                        </AlertConfirmDeleted>
+                    ) : null
                 }
             </TableCell>
         </TableRow>

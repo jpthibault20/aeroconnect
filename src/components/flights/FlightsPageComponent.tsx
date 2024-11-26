@@ -11,7 +11,7 @@
 import React, { useEffect, useState } from 'react';
 import TableComponent from "@/components/flights/TableComponent";
 import Filter from '@/components/flights/Filter';
-import { getAllFutureSessions, removeSessionsByID } from '@/api/db/sessions';
+import { removeSessionsByID } from '@/api/db/sessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { flight_sessions, userRole } from '@prisma/client';
 import NewSession from '../NewSession';
@@ -19,48 +19,27 @@ import { Spinner } from '../ui/SpinnerVariants';
 import { Button } from '../ui/button';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 
+interface Props {
+    sessionsProp: flight_sessions[];
+}
+
 /**
  * @component PlanePageComponent
  * @description Component for managing and displaying flight sessions.
  * 
  * @returns  The rendered component.
  */
-const FlightsPageComponent = () => {
+const FlightsPageComponent = ({ sessionsProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const [sessionChecked, setSessionChecked] = useState<string[]>([]);
     const [filterAvailable, setFilterAvailable] = useState(false);
     const [filterReccurence, setFilterReccurence] = useState(false);
     const [filterDate, setFilterDate] = useState<Date | null>(null);
     const [myFlights, setMyFlights] = useState(false)
-    const [sessions, setSessions] = useState<flight_sessions[]>([]);
+    const [sessions, setSessions] = useState<flight_sessions[]>(sessionsProp);
     const [filteredSessions, setFilteredSessions] = useState(sessions); // State for filtered sessions
     const [reload, setReload] = useState(false);
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        const fetchSessions = async () => {
-            if (currentUser) {
-                setLoading(true);
-                try {
-                    const res = await getAllFutureSessions(currentUser.clubID);
-                    if (Array.isArray(res)) {
-                        // Trier les sessions par ordre chronologique
-                        const sortedSessions = res.sort((a, b) =>
-                            new Date(a.sessionDateStart).getTime() - new Date(b.sessionDateStart).getTime()
-                        );
-                        setSessions(sortedSessions);
-                        setLoading(false);
-                    } else {
-                        console.log('Unexpected response format:', res);
-                    }
-                } catch (error) {
-                    console.log(error);
-                }
-            }
-        };
-
-        fetchSessions();
-    }, [currentUser, reload]);
 
     // Logic for filtering sessions based on selected filters
     useEffect(() => {
@@ -124,17 +103,20 @@ const FlightsPageComponent = () => {
             </div>
             <div className='my-3 flex justify-between'>
                 <div className='flex space-x-3'>
-                    {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.OWNER &&
-                        <AlertConfirmDeleted
-                            title="Etes vous sur de vouloir supprimer ces vols ?"
-                            description={sessionChecked.length > 1 ? `${sessionChecked.length} vols seront supprimés.` : `1 vol sera supprimé.`}
-                            cancel='Annuler'
-                            confirm='Supprimer'
-                            confirmAction={() => removeFlight(sessionChecked)}
-                            loading={loading}
-                        >
-                            <Button className='bg-red-700 hover:bg-red-800 text-white'>Supprimer</Button>
-                        </AlertConfirmDeleted>
+
+                    {currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
+                        (
+                            <AlertConfirmDeleted
+                                title="Etes vous sur de vouloir supprimer ces vols ?"
+                                description={sessionChecked.length > 1 ? `${sessionChecked.length} vols seront supprimés.` : `1 vol sera supprimé.`}
+                                cancel='Annuler'
+                                confirm='Supprimer'
+                                confirmAction={() => removeFlight(sessionChecked)}
+                                loading={loading}
+                            >
+                                <Button className='bg-red-700 hover:bg-red-800 text-white'>Supprimer</Button>
+                            </AlertConfirmDeleted>
+                        ) : null
                     }
 
                     <div className='hidden lg:block h-full'>

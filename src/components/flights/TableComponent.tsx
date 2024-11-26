@@ -53,8 +53,10 @@ const TableComponent = ({ sessions, setSessionChecked, reload, setReload }: prop
                         <TableHead className='text-black text-center'>Instructeur</TableHead>
                         <TableHead className='text-black text-center'>Élève inscrit</TableHead>
                         <TableHead className='text-black text-center'>Avion</TableHead>
-                        {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.OWNER &&
-                            < TableHead className='text-black text-center'>Action</TableHead>
+                        {currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
+                            (
+                                < TableHead className='text-black text-center'>Action</TableHead>
+                            ) : null
                         }
                     </TableRow>
                 </TableHeader>
