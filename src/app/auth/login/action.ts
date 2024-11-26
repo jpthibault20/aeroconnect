@@ -8,7 +8,7 @@ import { Provider } from '@supabase/supabase-js'
 import { createUser } from '@/api/db/users'
 
 
-export async function emailLogin(formData: FormData, setLoading: (loading: boolean) => void) {
+export async function emailLogin(formData: FormData) {
     const supabase = createClient()
 
     // type-casting here for convenience
@@ -21,7 +21,6 @@ export async function emailLogin(formData: FormData, setLoading: (loading: boole
     const { error } = await supabase.auth.signInWithPassword(data)
 
     if (error) {
-        setLoading(false)
         redirect('/auth/login?message=Could not authenticate user')
     }
 
