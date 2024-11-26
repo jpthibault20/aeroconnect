@@ -43,7 +43,7 @@ export const Login = () => {
             formData.append('password', data.password);
 
             // Appel API de connexion
-            await emailLogin(formData);
+            await emailLogin(formData, setLoading);
 
         } catch (error) {
             console.error("Erreur de connexion :", error);

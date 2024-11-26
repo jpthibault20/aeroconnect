@@ -65,6 +65,8 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
         planeId: [],
     });
 
+    const [debugMessage, setDebugMessage] = useState("");
+
     useEffect(() => {
         const fetchPlanes = async () => {
             const res = await getPlanes(currentUser!.clubID);
@@ -187,7 +189,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                 <Popover open={isOpenCal1} onOpenChange={setIsOpenCal1}>
                     <PopoverTrigger asChild>
                         <div
-                            onClick={() => setIsOpenCal1(!isOpenCal1)} // Support tactile
+                            onClick={() => { setIsOpenCal1(!isOpenCal1); setDebugMessage("onClick") }} // Support tactile
                             className="w-full cursor-pointer"
                         >
                             <Button
@@ -234,6 +236,14 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                     </PopoverContent>
                 </Popover>
 
+                {debugMessage && (
+                    <div className='text-red-500 w-full p-2  bg-[#FFF4F4] rounded-lg flex items-center space-x-2'>
+                        <IoIosWarning size={16} />
+                        <div>
+                            {debugMessage}
+                        </div>
+                    </div>
+                )}
 
                 {/* Sélection des heures et minutes */}
                 <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4 mt-4">
