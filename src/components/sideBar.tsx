@@ -27,8 +27,8 @@ const SideBar = () => {
                     alt="Aero Connect"
                     width={150}
                     height={40}
-                    priority
-                    className="w-auto h-auto"
+                    className="w-150 h-auto"
+                    priority={true}
                 />
             </Link>
 
