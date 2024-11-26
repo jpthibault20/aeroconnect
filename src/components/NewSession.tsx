@@ -219,33 +219,35 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent
-                            className="p-0"
-                        // style={{ position: "absolute", top: "50px", left: "0", zIndex: 1000 }}
+                            className="p-0 fixed inset-0 z-50 flex items-center justify-center bg-black/50"
                         >
-                            <Calendar
-                                mode="single"
-                                selected={sessionData.date}
-                                onSelect={(date) => {
-                                    if (date) {
-                                        const localDate = new Date(date);
-                                        const utcDate = new Date(
-                                            Date.UTC(
-                                                localDate.getFullYear(),
-                                                localDate.getMonth(),
-                                                localDate.getDate(),
-                                                localDate.getHours(),
-                                                localDate.getMinutes(),
-                                                localDate.getSeconds()
-                                            )
-                                        );
-                                        setSessionData((prev) => ({ ...prev, date: utcDate }));
-                                    }
-                                    setIsOpenCal1(false);
-                                }}
-                                initialFocus
-                                locale={fr}
-                            />
+                            <div className="bg-white rounded-md shadow-lg p-4">
+                                <Calendar
+                                    mode="single"
+                                    selected={sessionData.date}
+                                    onSelect={(date) => {
+                                        if (date) {
+                                            const localDate = new Date(date);
+                                            const utcDate = new Date(
+                                                Date.UTC(
+                                                    localDate.getFullYear(),
+                                                    localDate.getMonth(),
+                                                    localDate.getDate(),
+                                                    localDate.getHours(),
+                                                    localDate.getMinutes(),
+                                                    localDate.getSeconds()
+                                                )
+                                            );
+                                            setSessionData((prev) => ({ ...prev, date: utcDate }));
+                                        }
+                                        setIsOpenCal1(false);
+                                    }}
+                                    initialFocus
+                                    locale={fr}
+                                />
+                            </div>
                         </PopoverContent>
+
                     </Popover>
 
 
