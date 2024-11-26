@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '@/utils/supabase/server'
 import { Provider } from '@supabase/supabase-js'
-import { createUser } from '@/api/db/users'
+import { createUser, getUser } from '@/api/db/users'
 
 
 export async function emailLogin(formData: FormData) {
@@ -19,13 +19,14 @@ export async function emailLogin(formData: FormData) {
     }
 
     const { error } = await supabase.auth.signInWithPassword(data)
+    const user = await getUser()
 
     if (error) {
         redirect('/auth/login?message=Could not authenticate user')
     }
 
     revalidatePath('/', 'layout')
-    redirect('/calendar')
+    redirect(`/calendar?clubID=${user.user?.clubID}`)
 }
 
 export async function emailSignup(formData: FormData) {
