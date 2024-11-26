@@ -202,7 +202,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                             )}
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="p-0">
+                    <PopoverContent className="p-0" style={{ position: 'fixed', top: '50px', left: '0', zIndex: 1000 }}>
                         <Calendar
                             mode="single"
                             selected={sessionData.date}
