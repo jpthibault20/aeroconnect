@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { IoMdAddCircle } from "react-icons/io";
 import { useCurrentUser } from '@/app/context/useCurrentUser';
@@ -199,56 +200,33 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                 </DialogHeader>
 
                 {/* Contenu défilable */}
-                <div className="flex-1 overflow-y-auto p-4">
-                    <Popover open={isOpenCal1} onOpenChange={setIsOpenCal1}>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "justify-start text-left font-normal w-full",
-                                    !sessionData.date && "text-muted-foreground"
-                                )}
-                                disabled={loading}
-                            >
-                                <CalendarIcon />
-                                {sessionData.date ? (
-                                    format(sessionData.date, "PPP", { locale: fr })
-                                ) : (
-                                    <span>Sélectionnez une date</span>
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                            className="p-0 fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-                        >
-                            <div className="bg-white rounded-md shadow-lg p-4">
-                                <Calendar
-                                    mode="single"
-                                    selected={sessionData.date}
-                                    onSelect={(date) => {
-                                        if (date) {
-                                            const localDate = new Date(date);
-                                            const utcDate = new Date(
-                                                Date.UTC(
-                                                    localDate.getFullYear(),
-                                                    localDate.getMonth(),
-                                                    localDate.getDate(),
-                                                    localDate.getHours(),
-                                                    localDate.getMinutes(),
-                                                    localDate.getSeconds()
-                                                )
-                                            );
-                                            setSessionData((prev) => ({ ...prev, date: utcDate }));
-                                        }
-                                        setIsOpenCal1(false);
-                                    }}
-                                    initialFocus
-                                    locale={fr}
-                                />
-                            </div>
-                        </PopoverContent>
+                <div className="flex-1 overflow-y-auto p-4 w-full">
+                    <div className='flex w-full items-center justify-center'>
+                        <Calendar
+                            mode="single"
+                            selected={sessionData.date}
+                            onSelect={(date) => {
+                                if (date) {
+                                    const localDate = new Date(date);
+                                    const utcDate = new Date(
+                                        Date.UTC(
+                                            localDate.getFullYear(),
+                                            localDate.getMonth(),
+                                            localDate.getDate(),
+                                            localDate.getHours(),
+                                            localDate.getMinutes(),
+                                            localDate.getSeconds()
+                                        )
+                                    );
+                                    setSessionData((prev) => ({ ...prev, date: utcDate }));
+                                }
+                                setIsOpenCal1(false);
+                            }}
+                            initialFocus
+                            locale={fr}
+                        />
+                    </div>
 
-                    </Popover>
 
 
                     {/* Sélection des heures et minutes */}
