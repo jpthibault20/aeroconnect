@@ -200,9 +200,13 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                 </DialogHeader>
 
                 {/* Contenu défilable */}
+                <Label>Date de la session</Label>
                 <div className="flex-1 overflow-y-auto w-full">
+
+                    {/* Calendrier */}
                     <div className='flex w-full items-center justify-center'>
                         <Calendar
+                            className=' border border-gray-200 rounded-md shadow-sm'
                             mode="single"
                             selected={sessionData.date}
                             onSelect={(date) => {
@@ -293,61 +297,67 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                     </div>
 
                     {/* Avion(s) */}
-                    <Label>Avion(s)</Label>
-                    <div className='w-full h-fit min-h-10 border border-gray-200 rounded-md shadow-sm flex flex-wrap p-2 gap-2 bg-gray-100'>
-                        {sessionData.planeId.map((plane, index) => (
-                            <div key={index} className='flex items-center justify-between bg-gray-200 rounded-md px-4 py-1'>
-                                <p>{planes?.find(p => p.id === plane)?.name}</p>
-                            </div>
-                        ))}
-                    </div>
+                    <div className='mt-6'>
+                        <Label>Avion(s)</Label>
+                        <div className='w-full h-fit min-h-10 border border-gray-200 rounded-md shadow-sm flex flex-wrap p-2 gap-2 bg-gray-100'>
+                            {sessionData.planeId.map((plane, index) => (
+                                <div key={index} className='flex items-center justify-between bg-gray-200 rounded-md px-4 py-1'>
+                                    <p>{planes?.find(p => p.id === plane)?.name}</p>
+                                </div>
+                            ))}
+                        </div>
 
-                    {/* Grille responsive pour les avions */}
-                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4'>
-                        <Button
-                            className={`w-full justify-center text-left font-normal ${allPlanesSelected ? "bg-red-500" : "bg-gray-200 "} rounded-md text-black hover:bg-gray-300`}
-                            onClick={toggleSelectAllPlanes}
-                            disabled={loading}
-                        >
-                            {allPlanesSelected ? "Effacer" : "Tous"}
-                        </Button>
-                        {planes?.map((plane, index) => (
+                        {/* Grille responsive pour les avions */}
+                        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4'>
                             <Button
-                                key={index}
-                                className={`w-full justify-center text-left border border-gray-200 font-normal bg-gray-200 hover:bg-red-500 md:hover:bg-gray-300 rounded-md text-black ${sessionData.planeId.includes(plane.id) && "bg-red-500"}`}
-                                onClick={() => onClickPlane(plane.id)}
+                                className={`w-full justify-center text-left font-normal ${allPlanesSelected ? "bg-red-500" : "bg-gray-200 "} rounded-md text-black hover:bg-gray-300`}
+                                onClick={toggleSelectAllPlanes}
                                 disabled={loading}
                             >
-                                {plane.name}
+                                {allPlanesSelected ? "Effacer" : "Tous"}
                             </Button>
-                        ))}
-                    </div>
-                    {warning && (
-                        <div className='text-orange-500 w-full p-2  bg-[#FFF9F4] rounded-lg flex items-center space-x-2'>
-                            <IoIosWarning size={20} />
-                            <div>
-                                {warning}
-                            </div>
+                            {planes?.map((plane, index) => (
+                                <Button
+                                    key={index}
+                                    className={`w-full justify-center text-left border border-gray-200 font-normal bg-gray-200 hover:bg-red-500 md:hover:bg-gray-300 rounded-md text-black ${sessionData.planeId.includes(plane.id) && "bg-red-500"}`}
+                                    onClick={() => onClickPlane(plane.id)}
+                                    disabled={loading}
+                                >
+                                    {plane.name}
+                                </Button>
+                            ))}
                         </div>
-                    )}
+                        {warning && (
+                            <div className='text-orange-500 w-full p-2 mt-3 bg-[#FFF9F4] rounded-lg flex items-center space-x-2'>
+                                <IoIosWarning size={20} />
+                                <div>
+                                    {warning}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
 
                     {/* Récurrence */}
-                    <Label>Récurrence</Label>
-                    <div className='flex items-center justify-between mt-4'>
-                        <p>Répéter cette session chaque semaine</p>
-                        <div className='flex items-center space-x-2'>
-                            <RxCross2 color='red' />
-                            <Switch onCheckedChange={() => setSwitchReccurence(!switchReccurence)} checked={switchReccurence} disabled={loading} />
-                            <FaCheck color='green' />
+                    <div className='mt-6'>
+                        <Label>Récurrence</Label>
+                        <div className='flex items-center justify-between'>
+                            <p>Répéter cette session chaque semaine</p>
+                            <div className='flex items-center space-x-2'>
+                                <RxCross2 color='red' />
+                                <Switch onCheckedChange={() => setSwitchReccurence(!switchReccurence)} checked={switchReccurence} disabled={loading} />
+                                <FaCheck color='green' />
+                            </div>
                         </div>
                     </div>
 
                     {/* Récurrence avec Popover pour la date */}
                     {switchReccurence && (
-                        <div className='flex flex-col space-y-3 mt-4'>
+                        <div className='flex flex-col space-y-3 mt-6'>
                             <Label>Date de la dernière session</Label>
                             <div className="flex w-full items-center justify-center">
                                 <Calendar
+                                    className=' border border-gray-200 rounded-md shadow-sm'
                                     key={sessionData?.endReccurence?.toISOString()}
                                     mode="single"
                                     selected={sessionData?.endReccurence}
@@ -371,19 +381,25 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                         </div>
                     )}
                 </div>
-                {/* Footer fixe */}
                 <DialogFooter
-                    className="flex items-center justify-between bg-white sticky bottom-0 z-50 p-4 border-t flex-shrink-0"
+                    className="flex items-center justify-between bg-white sticky bottom-0 z-50 p-4 border-t flex-shrink-0 space-x-4"
                 >
-                    <DialogClose className="bg-gray-200 text-black px-4 py-2 rounded-md">Annuler</DialogClose>
+                    <DialogClose className="bg-gray-200 text-black px-4 py-2 rounded-md w-full sm:w-auto text-center">
+                        Annuler
+                    </DialogClose>
                     {loading ? (
                         <Spinner />
                     ) : (
-                        <Button onClick={onConfirm} disabled={loading} className="bg-[#774BBE] text-white">
+                        <Button
+                            onClick={onConfirm}
+                            disabled={loading}
+                            className="bg-[#774BBE] text-white px-4 py-2 rounded-md w-full sm:w-auto text-center"
+                        >
                             Enregistrer
                         </Button>
                     )}
                 </DialogFooter>
+
             </DialogContent>
         </Dialog>
 
