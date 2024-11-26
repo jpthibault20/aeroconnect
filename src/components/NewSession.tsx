@@ -200,10 +200,10 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                 </DialogHeader>
 
                 {/* Contenu défilable */}
-                <Label>Date de la session</Label>
+
                 <div className="flex-1 overflow-y-auto w-full">
 
-                    {/* Calendrier */}
+                    {/* Calendrier */}<Label>Date de la session</Label>
                     <div className='flex w-full items-center justify-center'>
                         <Calendar
                             className=' border border-gray-200 rounded-md shadow-sm'
@@ -382,7 +382,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                     )}
                 </div>
                 <DialogFooter
-                    className="flex items-center justify-between bg-white sticky bottom-0 z-50 p-4 border-t flex-shrink-0 space-x-4"
+                    className="sticky bottom-0 z-50 p-4 border-t flex-shrink-0"
                 >
                     <DialogClose className="bg-gray-200 text-black px-4 py-2 rounded-md w-full sm:w-auto text-center">
                         Annuler
