@@ -16,9 +16,12 @@ const CardWrapper = ({ children, title }: Props) => {
                 <div className='flex flex-col items-center'>
                     <Image
                         src="/images/logo.svg"
-                        alt="Logo"
+                        alt="Aero Connect"
                         width={100}
                         height={100}
+                        className="w-100 h-auto"
+                        priority={true}
+
                     />
                     <h1 className='font-istok text-[#323232] text-2xl text-center mt-4'>AeroConnect</h1>
                     <h3 className='text-[#64748B] mt-4'>{title}</h3>
