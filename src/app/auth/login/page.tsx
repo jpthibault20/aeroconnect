@@ -6,7 +6,7 @@ import React, { Suspense } from 'react'
 const LoginPage = async () => {
     const user = await getUser();
 
-    if (user.error) {
+    if (!user.user?.clubID) {
         return (
             <Suspense fallback={<div>Loading...</div>}>
                 <div className="">

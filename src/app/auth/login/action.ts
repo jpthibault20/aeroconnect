@@ -24,6 +24,9 @@ export async function emailLogin(formData: FormData) {
     if (error) {
         redirect('/auth/login?message=Could not authenticate user')
     }
+    if (!user.user?.clubID){
+        throw new Error("clubID is undefined");
+    }
 
     revalidatePath('/', 'layout')
     redirect(`/calendar?clubID=${user.user?.clubID}`)
