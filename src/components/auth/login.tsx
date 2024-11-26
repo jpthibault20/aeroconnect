@@ -22,6 +22,7 @@ export const Login = () => {
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
         setMessageG(searchParams.get('messageG') ?? '');
+        setLoading(false) // Réinitialiser le loading à false après avoir récupéré les paramètres de recherche
     }, [searchParams]);
 
 
