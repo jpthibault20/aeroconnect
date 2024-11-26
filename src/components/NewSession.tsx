@@ -16,7 +16,7 @@ import { IoIosWarning } from "react-icons/io";
 import { Button } from '../components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { CalendarIcon, Clock } from 'lucide-react';
-import { Calendar } from '../components/ui/calendar';
+import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fr } from "date-fns/locale";
