@@ -1,4 +1,5 @@
 // ProtectLayout.tsx
+"use server"
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getUser } from "@/api/db/users";

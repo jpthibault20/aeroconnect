@@ -52,7 +52,7 @@ const SideBar = () => {
                     .map((link) => {
                         const IconComponent = link.icon
                         return (
-                            <Link key={link.name} href={link.path} className={`flex items-center px-4 py-4 mx-3 ${pathname === link.path ? 'rounded-full bg-[#3E3E3E] text-white' : 'text-[#C2C2C2] hover:text-white'}`}>
+                            <Link key={link.name} href={`${link.path}?clubID=${currentUser?.clubID}`} className={`flex items-center px-4 py-4 mx-3 ${pathname === link.path ? 'rounded-full bg-[#3E3E3E] text-white' : 'text-[#C2C2C2] hover:text-white'}`}>
                                 <IconComponent className="mr-3" size={25} />
                                 {link.name}
                             </Link>

@@ -1,15 +1,12 @@
-import { createClient } from "@/utils/supabase/server";
+import { getUser } from "@/api/db/users";
 import { redirect } from "next/navigation";
 
 export default async function Home() {
-  const supabase = createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser()
 
   if (user) {
-    return redirect("/calendar");
+    return redirect(`/calendar?clubID=${user.user?.clubID}`);
   }
   else {
     return redirect("/auth/login");

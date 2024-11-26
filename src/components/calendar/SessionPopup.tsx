@@ -67,7 +67,7 @@ const SessionPopup = ({ sessions, children, setReload, reload }: Prop) => {
                 setDisabledMessage("La date de la session est passée ...");
             }
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sessions]); // de base 'sessions' mais génère une erreur quand l'inscription es fini es qu'il n'y a plus de sessions dispo, affichage d'un message d'erreur
 
 

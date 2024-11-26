@@ -18,7 +18,7 @@ const NavBar = () => {
                     .map((link) => {
                         const IconComponent = link.icon
                         return (
-                            <Link key={link.name} href={link.path} className={`flex items-center justify-center p-3 rounded-full ${pathname === link.path ? 'bg-purple-500' : ''}`}>
+                            <Link key={link.name} href={`${link.path}?clubID=${currentUser?.clubID}`} className={`flex items-center justify-center p-3 rounded-full ${pathname === link.path ? 'bg-purple-500' : ''}`}>
                                 <div className={`text-gray-300 ${pathname === link.path ? 'text-white' : 'text-gray-400'}`}>
                                     <IconComponent className="mx-1" size={25} />
                                 </div>
