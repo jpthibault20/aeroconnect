@@ -314,7 +314,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                         {planes?.map((plane, index) => (
                             <Button
                                 key={index}
-                                className={`w-full justify-center text-left border border-gray-200 font-normal bg-gray-200 md:hover:bg-gray-300 rounded-md text-black ${sessionData.planeId.includes(plane.id) && "bg-red-500"}`}
+                                className={`w-full justify-center text-left border border-gray-200 font-normal bg-gray-200 hover:bg-red-500 md:hover:bg-gray-300 rounded-md text-black ${sessionData.planeId.includes(plane.id) && "bg-red-500"}`}
                                 onClick={() => onClickPlane(plane.id)}
                                 disabled={loading}
                             >
