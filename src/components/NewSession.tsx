@@ -65,8 +65,6 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
         planeId: [],
     });
 
-    const [debugMessage, setDebugMessage] = useState("");
-
     useEffect(() => {
         const fetchPlanes = async () => {
             const res = await getPlanes(currentUser!.clubID);
@@ -188,26 +186,21 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
 
                 <Popover open={isOpenCal1} onOpenChange={setIsOpenCal1}>
                     <PopoverTrigger asChild>
-                        <div
-                            onClick={() => { setIsOpenCal1(!isOpenCal1); setDebugMessage("onClick") }} // Support tactile
-                            className="w-full cursor-pointer"
+                        <Button
+                            variant={"outline"}
+                            className={cn(
+                                "justify-start text-left font-normal w-full",
+                                !sessionData.date && "text-muted-foreground"
+                            )}
+                            disabled={loading}
                         >
-                            <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "justify-start text-left font-normal w-full",
-                                    !sessionData.date && "text-muted-foreground"
-                                )}
-                                disabled={loading}
-                            >
-                                <CalendarIcon />
-                                {sessionData.date ? (
-                                    format(sessionData.date, "PPP", { locale: fr })
-                                ) : (
-                                    <span>Sélectionnez une date</span>
-                                )}
-                            </Button>
-                        </div>
+                            <CalendarIcon />
+                            {sessionData.date ? (
+                                format(sessionData.date, "PPP", { locale: fr })
+                            ) : (
+                                <span>Sélectionnez une date</span>
+                            )}
+                        </Button>
                     </PopoverTrigger>
                     <PopoverContent className="p-0">
                         <Calendar
@@ -235,15 +228,6 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                         />
                     </PopoverContent>
                 </Popover>
-
-                {debugMessage && (
-                    <div className='text-red-500 w-full p-2  bg-[#FFF4F4] rounded-lg flex items-center space-x-2'>
-                        <IoIosWarning size={16} />
-                        <div>
-                            {debugMessage}
-                        </div>
-                    </div>
-                )}
 
                 {/* Sélection des heures et minutes */}
                 <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4 mt-4">
