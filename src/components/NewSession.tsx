@@ -53,7 +53,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
     const [isOpenPopover, setIsPopoverOpen] = useState(false);
     const [isOpenCal1, setIsOpenCal1] = useState(false);
     const [PopoverCalendar, setPopoverCalendar] = useState(false);
-    // const [isOpenCal2, setIsOpenCal2] = useState(false);
+    const [isOpenCal2, setIsOpenCal2] = useState(false);
     const [switchReccurence, setSwitchReccurence] = useState(false);
     const [planes, setPlanes] = useState<planes[]>()
     const [sessionData, setSessionData] = useState<interfaceSessions>({
@@ -200,7 +200,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                 </DialogHeader>
 
                 {/* Contenu défilable */}
-                <div className="flex-1 overflow-y-auto p-4 w-full">
+                <div className="flex-1 overflow-y-auto w-full">
                     <div className='flex w-full items-center justify-center'>
                         <Calendar
                             mode="single"
@@ -314,7 +314,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                         {planes?.map((plane, index) => (
                             <Button
                                 key={index}
-                                className={`w-full justify-center text-left border border-gray-200 font-normal bg-gray-200 hover:bg-gray-300 rounded-md text-black ${sessionData.planeId.includes(plane.id) && "bg-red-500"}`}
+                                className={`w-full justify-center text-left border border-gray-200 font-normal bg-gray-200 md:hover:bg-gray-300 rounded-md text-black ${sessionData.planeId.includes(plane.id) && "bg-red-500"}`}
                                 onClick={() => onClickPlane(plane.id)}
                                 disabled={loading}
                             >
@@ -346,29 +346,19 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                     {switchReccurence && (
                         <div className='flex flex-col space-y-3 mt-4'>
                             <Label>Date de la dernière session</Label>
-                            <div className="mt-2 grid grid-col-2 grid-flow-col">
-                                <Popover open={PopoverCalendar} onOpenChange={setPopoverCalendar}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                "text-muted-foreground"
-                                            )}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {format(new Date(), "dd/MM/yyyy")}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                        <Calendar
-                                            mode="single"
-                                            weekStartsOn={1}
-                                            locale={fr}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
+                            <div className="flex w-full items-center justify-center">
+                                <Calendar
+                                    key={sessionData?.endReccurence?.toISOString()}
+                                    mode="single"
+                                    selected={sessionData?.endReccurence}
+                                    defaultMonth={sessionData?.endReccurence || undefined}
+                                    onSelect={(date) => {
+                                        setSessionData(prev => ({ ...prev, endReccurence: date }))
+                                        setIsOpenCal2(false)
+                                    }}
+                                    initialFocus
+                                    locale={fr}
+                                />
                             </div>
                         </div>
                     )}
