@@ -4,7 +4,7 @@ import { FaPlus } from "react-icons/fa6";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { addStudentToSession, getAllUser } from '@/api/db/users';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { User } from '@prisma/client';
+import { User, userRole } from '@prisma/client';
 import { Button } from '../ui/button';
 import { getSessionPlanes } from '@/api/db/sessions';
 import { toast } from '@/hooks/use-toast';
@@ -55,6 +55,8 @@ const AddStudent = ({ sessionID, reload, setReload }: Props) => {
         };
         fetchUsers();
     }, [currentUser]);
+
+    if (currentUser?.role === userRole.USER) return null;
 
     const onClickAction = async () => {
         setLoading(true);

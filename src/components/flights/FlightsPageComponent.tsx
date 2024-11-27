@@ -146,10 +146,6 @@ const FlightsPageComponent = ({ sessionsProp }: Props) => {
                         Chargement ...
                     </p>
                 </div>
-            ) : currentUser?.role === userRole.USER ? (
-                <div className='w-full flex justify-center items-center '>
-                    <p>Vous n&apos;avez pas les droits pour voir les vols</p>
-                </div>
             ) : (
                 <TableComponent
                     sessions={filteredSessions} // Pass filtered sessions here
