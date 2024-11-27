@@ -87,7 +87,24 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
             if (sessions.length > 0) {
                 setLoading(true);
                 try {
-                    await removeSessionsByID(sessions);
+                    const res = await removeSessionsByID(sessions);
+                    if (res.error) {
+                        toast({
+                            title: "Oups, une erreur est survenue",
+                            description: res.error,
+                        });
+                    }
+                    if (res.success) {
+                        toast({
+                            title: res.success,
+                        });
+
+                        //supprimer les sessions de la base de données local
+                        setSessions(prevSessions => {
+                            const updatedSessions = prevSessions.filter(session => !sessions.includes(session.id));
+                            return updatedSessions;
+                        });
+                    }
                 } catch (error) {
                     console.log(error);
                 } finally {
@@ -127,6 +144,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                             return updatedSessions;
                         });
                         setPlane(undefined)
+                        // setLoading(false);
                     }
 
                     if (res.error) {
@@ -134,16 +152,16 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                             title: "Oups, une erreur est survenue",
                             description: res.error,
                         });
+
                     }
                 } catch (error) {
                     console.log(error);
-                } finally {
-                    setLoading(false);
                 }
             }
         };
 
         removeSessions();
+        // setLoading(false);
     };
 
 
