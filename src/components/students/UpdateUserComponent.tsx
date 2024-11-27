@@ -68,7 +68,6 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, reload, setRel
                     setReload(!reload);
                     toast({
                         title: "Utilisateur mis à jour avec succès",
-                        duration: 3000,
                     });
 
                 }
@@ -78,7 +77,6 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, reload, setRel
                     setReload(!reload);
                     toast({
                         title: " Oups, une erreur est survenue",
-                        duration: 3000,
                     });
                 }
             } catch (error) {

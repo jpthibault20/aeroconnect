@@ -56,7 +56,7 @@ const NewPlane = ({ reload, setReload }: Props) => {
             } else if (res.succes) {
                 setReload(!reload);
                 setError("");
-                toast({ title: res.succes, duration: 5000 });
+                toast({ title: res.succes });
                 setIsOpen(false); // Ferme le dialogue si enregistrement réussi
             } else {
                 setError("Une erreur est survenue (E_002: res.error is undefined)");
