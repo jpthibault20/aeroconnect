@@ -36,9 +36,6 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
     const handleConfirm = () => {
         confirmAction(); // Exécute l'action de confirmation
         // Garde le dialogue ouvert tant que loading est true
-        if (!loading) {
-            setIsOpen(false);
-        }
     };
 
     return (
