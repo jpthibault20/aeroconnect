@@ -6,9 +6,10 @@ import { flight_sessions } from '@prisma/client';
 
 interface Props {
     sessions: flight_sessions[];
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
 }
 
-const Session = ({ sessions }: Props) => {
+const Session = ({ sessions, setSessions }: Props) => {
     // Sépare les sessions réservées et disponibles
     const availableSessions = sessions.filter(session => session.studentID === null);
     const bookedSessions = sessions.filter(session => session.studentID !== null);
@@ -34,7 +35,7 @@ const Session = ({ sessions }: Props) => {
 
 
     return (
-        <SessionPopup sessions={[...bookedSessions, ...availableSessions]}>
+        <SessionPopup sessions={[...bookedSessions, ...availableSessions]} setSessions={setSessions}>
             <div
                 className={`p-1 rounded-md flex flex-col h-full w-full ${availableSessions.length === 0 ? 'bg-[#CB8A8A] opacity-50' : 'bg-[#B9DFC1]'}`}
             >

@@ -15,9 +15,10 @@ import { studentRegistration } from '@/api/db/sessions';
 interface Prop {
     children: React.ReactNode;
     sessions: flight_sessions[];
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
 }
 
-const SessionPopup = ({ sessions, children }: Prop) => {
+const SessionPopup = ({ sessions, children, setSessions }: Prop) => {
     const { currentUser } = useCurrentUser();
     const [isOpen, setIsOpen] = useState(false);
     const [error, setError] = useState("");
@@ -118,15 +119,21 @@ const SessionPopup = ({ sessions, children }: Prop) => {
                 toast({ title: res.success, duration: 3000 });
                 setIsOpen(false);
 
-                sessions.find((item) => {
-                    if (item.id === sessionId) {
-                        item.studentID = currentUser!.id
-                        item.studentFirstName = currentUser!.firstName
-                        item.studentLastName = currentUser!.lastName
-                        item.studentPlaneID = plane
-                    }
-                    return
-                })
+                setSessions(prevSessions => {
+                    const updatedSessions = prevSessions.map(s =>
+                        s.id === sessionId
+                            ? {
+                                ...s,
+                                studentID: currentUser!.id,
+                                studentFirstName: currentUser!.firstName,
+                                studentLastName: currentUser!.lastName,
+                                studentPlaneID: plane,
+                            }
+                            : s
+                    );
+                    return updatedSessions;
+                });
+
             }
         } catch (error) {
             console.error(error);

@@ -9,9 +9,10 @@ interface Props {
     className?: string;
     date: Date;
     sessions: flight_sessions[];
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
 }
 
-const TabCalendar = ({ date, sessions }: Props) => {
+const TabCalendar = ({ date, sessions, setSessions }: Props) => {
     // Récupère les jours de la semaine
     const daysOfWeek = useMemo(() => getDaysOfWeek(date), [date]);
 
@@ -70,6 +71,7 @@ const TabCalendar = ({ date, sessions }: Props) => {
                                         {slotSessions?.length > 0 && (
                                             <Session
                                                 sessions={slotSessions}
+                                                setSessions={setSessions}
                                             />
                                         )}
                                     </div>

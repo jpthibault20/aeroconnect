@@ -116,6 +116,7 @@ const GlobalCalendarDesktop = ({ sessions, loading, setSessions, planesProp }: P
                         <TabCalendar
                             date={date}
                             sessions={sessionsFlitered}
+                            setSessions={setSessions}
                         />
                     )}
                 </div>
