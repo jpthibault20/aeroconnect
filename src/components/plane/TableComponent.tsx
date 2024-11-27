@@ -1,15 +1,17 @@
 import React from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '../ui/table';
 import TableRowComponent from './TableRowComponent';
-import { planes } from '@prisma/client';
+import { planes, userRole } from '@prisma/client';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface props {
     planes: planes[] | undefined
-    reload: boolean;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    setPlanes: React.Dispatch<React.SetStateAction<planes[]>>
 }
 
-const TableComponent = ({ planes, reload, setReload }: props) => {
+const TableComponent = ({ planes, setPlanes }: props) => {
+    const { currentUser } = useCurrentUser()
+
     return (
         <div className="max-h-[70vh] overflow-y-auto bg-white rounded-lg">
             <Table className='w-full'>
@@ -17,13 +19,24 @@ const TableComponent = ({ planes, reload, setReload }: props) => {
                     <TableRow className='font-semibold text-lg'>
                         <TableHead className='text-black text-center'>Nom</TableHead>
                         <TableHead className='text-black text-center'>Immatriculation</TableHead>
-                        <TableHead className='text-black text-center'>État</TableHead>
-                        <TableHead className='text-black text-center'>Actions</TableHead>
+                        {currentUser?.role == userRole.OWNER || currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR ?
+                            (<>
+                                <TableHead className='text-black text-center'>État</TableHead>
+                                <TableHead className='text-black text-center'>Actions</TableHead>
+                            </>
+                            ) : currentUser?.role == userRole.STUDENT ?
+                                (
+                                    <>
+                                        <TableHead className='text-black text-center'>État</TableHead>
+                                    </>
+                                ) : null
+                        }
+
                     </TableRow>
                 </TableHeader>
                 <TableBody className="max-h-[60vh] overflow-y-auto">
                     {planes?.map((plane, index) => (
-                        <TableRowComponent plane={plane} key={index} setReload={setReload} reload={reload} />
+                        <TableRowComponent plane={plane} key={index} planes={planes} setPlanes={setPlanes} />
                     ))}
                 </TableBody>
             </Table>

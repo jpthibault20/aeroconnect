@@ -16,6 +16,7 @@ import { Spinner } from '../ui/SpinnerVariants';
 import { createPlane } from '@/api/db/planes';
 import { toast } from '@/hooks/use-toast';
 import { IoIosWarning } from 'react-icons/io';
+import { planes } from '@prisma/client';
 
 interface NewPlaneProps {
     name: string;
@@ -23,11 +24,10 @@ interface NewPlaneProps {
     clubID: string;
 }
 interface Props {
-    reload: boolean;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
 }
 
-const NewPlane = ({ reload, setReload }: Props) => {
+const NewPlane = ({ setPlanes }: Props) => {
     const { currentUser } = useCurrentUser();
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -53,11 +53,11 @@ const NewPlane = ({ reload, setReload }: Props) => {
 
             if (res.error) {
                 setError(res.error);
-            } else if (res.succes) {
-                setReload(!reload);
+            } else if (res.success) {
                 setError("");
-                toast({ title: res.succes });
+                toast({ title: res.success });
                 setIsOpen(false); // Ferme le dialogue si enregistrement réussi
+                setPlanes(res.planes.map(plane => ({ ...plane, operational: true })));
             } else {
                 setError("Une erreur est survenue (E_002: res.error is undefined)");
             }
