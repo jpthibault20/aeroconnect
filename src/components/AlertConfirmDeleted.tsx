@@ -39,7 +39,7 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
     };
 
     return (
-        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+        <AlertDialog open={isOpen} onOpenChange={() => setIsOpen(true)}>
             <AlertDialogTrigger asChild className={style}>
                 {children}
             </AlertDialogTrigger>
