@@ -83,6 +83,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp }: Props) => {
                     if (res.success) {
                         toast({
                             title: res.success,
+                            duration: 5000,
                         });
 
                         setSessions(sessions.filter(session => !sessionsParams.includes(session.id)));
@@ -91,6 +92,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp }: Props) => {
                         toast({
                             title: "Oups, une erreur est survenue",
                             description: res.error,
+                            duration: 5000,
                         });
                     }
                 } catch (error) {

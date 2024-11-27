@@ -43,6 +43,7 @@ const TableRowComponent = ({ user, setReload, reload }: props) => {
                     background: 'rgba(239, 68, 68, 0.9)',
                     color: 'white',
                 },
+                duration: 5000,
             });
             return;
         }
@@ -55,6 +56,7 @@ const TableRowComponent = ({ user, setReload, reload }: props) => {
                     console.log(res.success);
                     toast({
                         title: "Utilisateur supprimé avec succès",
+                        duration: 3000,
                     });
                     setReload(!reload);
                 } else {
@@ -62,6 +64,7 @@ const TableRowComponent = ({ user, setReload, reload }: props) => {
                     setLoading(false);
                     toast({
                         title: " Oups, une erreur est survenue",
+                        duration: 3000,
                     });
                     setReload(!reload);
                 }

@@ -44,6 +44,7 @@ const ProfilePage = () => {
                     setLoading(false);
                     toast({
                         title: "Utilisateur mis à jour avec succès",
+                        duration: 3000,
                     });
 
                 }
@@ -52,6 +53,7 @@ const ProfilePage = () => {
                     setLoading(false);
                     toast({
                         title: " Oups, une erreur est survenue",
+                        duration: 3000,
                     });
                 }
             } catch (error) {

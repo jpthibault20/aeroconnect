@@ -92,11 +92,13 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                         toast({
                             title: "Oups, une erreur est survenue",
                             description: res.error,
+                            duration: 5000,
                         });
                     }
                     if (res.success) {
                         toast({
                             title: res.success,
+                            duration: 5000,
                         });
 
                         //supprimer les sessions de la base de données local
@@ -126,6 +128,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                     if (res.success) {
                         toast({
                             title: res.success,
+                            duration: 5000,
                         });
 
                         // Mise à jour de la session pour nettoyer les valeurs
@@ -151,6 +154,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                         toast({
                             title: "Oups, une erreur est survenue",
                             description: res.error,
+                            duration: 5000,
                         });
 
                     }

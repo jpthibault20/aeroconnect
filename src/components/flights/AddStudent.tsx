@@ -84,12 +84,14 @@ const AddStudent = ({ session, setSessions, planesProp }: Props) => {
                         toast({
                             title: "Oups, une erreur est survenue",
                             description: res.error,
+                            duration: 5000,
                         });
                     }
 
                     if (res.success) {
                         toast({
                             title: res.success,
+                            duration: 5000,
                         });
 
                         // Réinitialiser les champs

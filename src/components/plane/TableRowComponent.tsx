@@ -42,6 +42,7 @@ const TableRowComponent = ({ plane, setReload, reload }: Props) => {
                     setLoading(false);
                     toast({
                         title: "Avion supprimée avec succès",
+                        duration: 3000,
                     });
                 }
                 if (res.error) {
@@ -49,6 +50,7 @@ const TableRowComponent = ({ plane, setReload, reload }: Props) => {
                     setLoading(false);
                     toast({
                         title: " Oups, une erreur est survenue",
+                        duration: 3000,
                     });
                 }
             } catch (error) {
