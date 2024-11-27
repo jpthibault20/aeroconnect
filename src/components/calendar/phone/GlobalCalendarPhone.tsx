@@ -18,15 +18,14 @@ import Calendar from './../phone/calendar';
 import SessionOfDay from "@/components/calendar/phone/SessionsOfDay";
 import NewSession from "@/components/NewSession";
 import Filter from '../Filter';
-import { flight_sessions } from '@prisma/client';
+import { flight_sessions, planes } from '@prisma/client';
 import { Spinner } from '@/components/ui/SpinnerVariants';
 
 interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
-    reload: boolean;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
     loading: boolean;
+    planesProp: planes[];
 }
 
 /**
@@ -34,7 +33,7 @@ interface Props {
  * @description Main component for displaying a calendar on mobile devices.
  * Handles date selection, session filtering, and session display.
  */
-const GlobalCalendarPhone = ({ sessions, reload, setReload, loading, setSessions }: Props) => {
+const GlobalCalendarPhone = ({ sessions, loading, setSessions, planesProp }: Props) => {
     // State variables for managing date, instructor, plane, and filtered sessions
     const [date, setDate] = useState(new Date());
     const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>();
@@ -90,7 +89,7 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload, loading, setSessions
                         {date.toLocaleDateString('fr-FR', { month: 'long' })}, {date.toLocaleDateString('fr-FR', { year: 'numeric' })}
                     </p>
                     <div className='flex items-center space-x-3'>
-                        <NewSession display='phone' reload={reload} setReload={setReload} sessions={sessions} setSessions={setSessions} />
+                        <NewSession display='phone' setSessions={setSessions} planesProp={planesProp} />
                         <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='phone' />
                     </div>
                 </div>
@@ -122,7 +121,7 @@ const GlobalCalendarPhone = ({ sessions, reload, setReload, loading, setSessions
             </div>
 
             <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 h-full'> {/* Make the sessions part scrollable */}
-                <SessionOfDay selectDate={selectDate} flightsSessions={sessionsFlitered} reload={reload} setReload={setReload} />
+                <SessionOfDay selectDate={selectDate} flightsSessions={sessionsFlitered} />
             </div>
         </div>
     );

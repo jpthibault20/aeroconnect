@@ -21,7 +21,13 @@ const Page = async ({ searchParams }: PageProps) => {
         where: { clubID: clubID }
     });
 
-    return <PageComponent sessionsprops={sessions} />;
+    const planes = await prisma.planes.findMany({
+        where: {
+            clubID: clubID
+        }
+    });
+
+    return <PageComponent sessionsprops={sessions} planesProp={planes} />;
 };
 
 

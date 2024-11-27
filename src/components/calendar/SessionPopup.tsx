@@ -15,11 +15,9 @@ import { studentRegistration } from '@/api/db/sessions';
 interface Prop {
     children: React.ReactNode;
     sessions: flight_sessions[];
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
-    reload: boolean;
 }
 
-const SessionPopup = ({ sessions, children, setReload, reload }: Prop) => {
+const SessionPopup = ({ sessions, children }: Prop) => {
     const { currentUser } = useCurrentUser();
     const [isOpen, setIsOpen] = useState(false);
     const [error, setError] = useState("");
@@ -118,7 +116,6 @@ const SessionPopup = ({ sessions, children, setReload, reload }: Prop) => {
             if (res.success) {
                 setError("");
                 toast({ title: res.success, duration: 3000 });
-                setReload(!reload);
                 setIsOpen(false);
 
                 sessions.find((item) => {
