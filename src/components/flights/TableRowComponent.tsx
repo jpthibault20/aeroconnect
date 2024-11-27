@@ -99,18 +99,36 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
         removeSessions();
     }
 
-    // Remove student from session
     const removeStudent = (sessionID: string | null) => {
         const removeSessions = async () => {
             if (sessionID) {
                 setLoading(true);
                 try {
+                    // Suppression de l'étudiant de la session
                     const res = await removeStudentFromSessionID(sessionID);
                     if (res.success) {
                         toast({
                             title: res.success,
                         });
+
+                        // Mise à jour de la session pour nettoyer les valeurs
+                        setSessions(prevSessions => {
+                            const updatedSessions = prevSessions.map(s =>
+                                s.id === sessionID
+                                    ? {
+                                        ...s,
+                                        studentId: null,             // Réinitialisation de l'ID étudiant
+                                        studentFirstName: "",        // Réinitialisation du prénom
+                                        studentLastName: "",         // Réinitialisation du nom
+                                        studentPlaneID: null,        // Réinitialisation de l'ID de l'avion
+                                    }
+                                    : s
+                            );
+                            return updatedSessions;
+                        });
+                        setPlane(undefined)
                     }
+
                     if (res.error) {
                         toast({
                             title: "Oups, une erreur est survenue",
