@@ -27,9 +27,15 @@ const Page = async ({ searchParams }: PageProps) => {
         }
     });
 
+    const planes = await prisma.planes.findMany({
+        where: {
+            clubID: clubID
+        }
+    });
+
     return (
         <InitialLoading className="h-full w-full">
-            <FlightsPageComponent sessionsProp={sessions} />
+            <FlightsPageComponent sessionsProp={sessions} planesProp={planes} />
         </InitialLoading>
     );
 };

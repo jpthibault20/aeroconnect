@@ -23,24 +23,24 @@ import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/session
 import { toast } from '@/hooks/use-toast';
 import AddStudent from './AddStudent';
 import { Button } from '../ui/button';
-import { getPlaneByID } from '@/api/db/planes';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 
 interface props {
     session: flight_sessions;  ///< The flight session object
+    sessions: flight_sessions[];
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     setSessionChecked: React.Dispatch<React.SetStateAction<string[]>>; ///< Function to update selected session IDs
     isAllChecked: boolean; ///< Indicates if "select all" is checked
-    reload: boolean;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    planesProp: planes[];
 }
 
-const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, setReload }: props) => {
+const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp }: props) => {
+    const { currentUser } = useCurrentUser();
     const [isChecked, setIsChecked] = useState(false); // State for individual checkbox
     const [loading, setLoading] = useState(false);
-    const [plane, setPlane] = useState<planes>();
     const [autorisedDeleteStudent, setAutorisedDeleteStudent] = useState(false);
-    const { currentUser } = useCurrentUser();
+    const [plane, setPlane] = useState<planes | undefined>();
 
     const finalDate = new Date(session.sessionDateStart);
     finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min); // Calculate end time of the session
@@ -55,18 +55,13 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
 
     // Sync individual checkbox state with "select all"
     useEffect(() => {
-        const getPlane = async () => {
-            if (!session.studentPlaneID) return;
-            try {
-                const result = await getPlaneByID(session.studentPlaneID);
-                if (!result || 'error' in result) return; // Handle the case where the result is null or contains an error
-                setPlane(result); // Assuming 'result' is of the correct type
-            } catch (error) {
-                console.error('Error getting plane:', error);
-            }
-        };
-        getPlane();
+        if (session.studentPlaneID) {
+            const foundPlane = planesProp.find((p) => p.id === session.studentPlaneID);
+            setPlane(foundPlane); // Met à jour l'état
+        }
+
         setIsChecked(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [session]);
 
     // Sync individual checkbox state with "select all"
@@ -97,7 +92,6 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                     console.log(error);
                 } finally {
                     setLoading(false);
-                    setReload(!reload);
                 }
             }
         };
@@ -127,7 +121,6 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                     console.log(error);
                 } finally {
                     setLoading(false);
-                    setReload(!reload);
                 }
             }
         };
@@ -179,7 +172,7 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                         }
                     </div>
                 ) : (
-                    <AddStudent sessionID={session.id} reload={reload} setReload={setReload} />
+                    <AddStudent session={session} setSessions={setSessions} sessions={sessions} planesProp={planesProp} />
                 )}
             </TableCell>
             <TableCell className='text-center'>

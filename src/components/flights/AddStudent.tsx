@@ -4,19 +4,19 @@ import { FaPlus } from "react-icons/fa6";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { addStudentToSession, getAllUser } from '@/api/db/users';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { User, userRole } from '@prisma/client';
+import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import { Button } from '../ui/button';
-import { getSessionPlanes } from '@/api/db/sessions';
 import { toast } from '@/hooks/use-toast';
 import { Spinner } from '../ui/SpinnerVariants';
 
 interface Props {
-    sessionID: string;
-    reload: boolean;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    session: flight_sessions;
+    sessions: flight_sessions[];
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
+    planesProp: planes[];
 }
 
-const AddStudent = ({ sessionID, reload, setReload }: Props) => {
+const AddStudent = ({ session, setSessions, planesProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const [users, setUsers] = useState<User[]>([]);
     const [student, setStudent] = useState<string>(currentUser?.role !== "ADMIN" && currentUser?.role !== "OWNER" && currentUser?.role !== "INSTRUCTOR" ? currentUser?.id || "" : " ");
@@ -25,20 +25,17 @@ const AddStudent = ({ sessionID, reload, setReload }: Props) => {
     const [planes, setPlanes] = useState<{ id: string; name: string }[]>([]);
 
     useEffect(() => {
-        const fetchPlanes = async () => {
-            if (sessionID) {
-                try {
-                    const res = await getSessionPlanes(sessionID);
-                    if (Array.isArray(res)) {
-                        setPlanes(res);
-                    }
-                } catch (error) {
-                    console.error('Error fetching planes:', error);
-                }
-            }
-        };
-        fetchPlanes();
-    }, [sessionID]);
+        if (session?.planeID) {
+            // Filtrer les avions correspondant aux IDs contenus dans session.planeID
+            const updatedPlanes = planesProp.filter(plane =>
+                Array.isArray(session.planeID)
+                    ? session.planeID.includes(plane.id) // Si planeID est un tableau d'IDs
+                    : session.planeID === plane.id     // Si planeID est un ID unique
+            );
+            setPlanes(updatedPlanes); // Met à jour l'état planes
+        }
+    }, [session, planesProp]);
+
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -61,10 +58,13 @@ const AddStudent = ({ sessionID, reload, setReload }: Props) => {
     const onClickAction = async () => {
         setLoading(true);
 
-        // Set `student` to `currentUser.id` if not an admin, owner, or instructor
-        const studentId = currentUser?.role !== "ADMIN" && currentUser?.role !== "OWNER" && currentUser?.role !== "INSTRUCTOR"
-            ? currentUser?.id
-            : student;
+        // Détermine l'ID de l'étudiant à ajouter
+        const studentId =
+            currentUser?.role !== "ADMIN" &&
+                currentUser?.role !== "OWNER" &&
+                currentUser?.role !== "INSTRUCTOR"
+                ? currentUser?.id
+                : student;
 
         if (studentId) {
             const selectedUser = users.find(user => user.id === studentId);
@@ -73,35 +73,60 @@ const AddStudent = ({ sessionID, reload, setReload }: Props) => {
                 const { firstName, lastName } = selectedUser;
 
                 try {
-                    const res = await addStudentToSession(sessionID, { id: studentId, firstName, lastName, planeId: selectedPlane });
+                    const res = await addStudentToSession(session.id, {
+                        id: studentId,
+                        firstName,
+                        lastName,
+                        planeId: selectedPlane,
+                    });
+
                     if (res.error) {
                         toast({
                             title: "Oups, une erreur est survenue",
                             description: res.error,
                         });
                     }
+
                     if (res.success) {
                         toast({
                             title: res.success,
                         });
-                        setReload(!reload);
+
+                        // Réinitialiser les champs
                         setStudent(" ");
                         setSelectedPlane(" ");
+
+                        // Mettre à jour la session avec les informations de l'étudiant et l'avion
+                        setSessions(prevSessions => {
+                            const updatedSessions = prevSessions.map(s =>
+                                s.id === session.id
+                                    ? {
+                                        ...s,
+                                        studentId: studentId,  // ID de l'étudiant
+                                        studentFirstName: firstName,  // Prénom de l'étudiant
+                                        studentLastName: lastName,  // Nom de l'étudiant
+                                        studentPlaneID: selectedPlane,  // ID de l'avion
+                                    }
+                                    : s
+                            );
+                            return updatedSessions;
+                        });
                     }
                 } catch (error) {
-                    console.error('Error adding student:', error);
+                    console.error("Error adding student:", error);
                 } finally {
                     setLoading(false);
                 }
             } else {
-                console.error('Student not found');
+                console.error("Student not found");
                 setLoading(false);
             }
         } else {
-            console.error('Invalid student ID');
+            console.error("Invalid student ID");
             setLoading(false);
         }
     };
+
 
     return (
         <Dialog>
