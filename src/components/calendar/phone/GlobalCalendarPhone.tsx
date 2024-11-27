@@ -121,7 +121,7 @@ const GlobalCalendarPhone = ({ sessions, loading, setSessions, planesProp }: Pro
             </div>
 
             <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 h-full'> {/* Make the sessions part scrollable */}
-                <SessionOfDay selectDate={selectDate} flightsSessions={sessionsFlitered} />
+                <SessionOfDay selectDate={selectDate} flightsSessions={sessionsFlitered} setSessions={setSessions} />
             </div>
         </div>
     );
