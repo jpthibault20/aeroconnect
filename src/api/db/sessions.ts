@@ -2,6 +2,7 @@
 
 import { PrismaClient, User } from '@prisma/client';
 import { differenceInHours, isBefore } from 'date-fns';
+import { sendStudentNotificationBooking, sendNotificationBooking, sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from "@/lib/mail";
 
 const prisma = new PrismaClient();
 export interface interfaceSessions {
@@ -121,7 +122,6 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
             )
         );
 
-        console.log('Sessions created successfully');
         return { success: "Les sessions ont été créées !", sessions: createdSessions };
     } catch (error) {
         console.error('Error creating flight sessions:', error);
@@ -185,16 +185,50 @@ export const getPlanes = async (clubID: string) => {
 
 };
 
-export const removeSessionsByID = async (sessionID: string[]) => {
+export const removeSessionsByID = async (sessionIDs: string[]) => {
     try {
+        // Récupérer les sessions avec les studentID associés
+        const sessions = await prisma.flight_sessions.findMany({
+            where: {
+                id: { in: sessionIDs },
+            },
+        });
+
+                // Récupérer les étudiants associés via leur ID
+                const studentIDs = sessions
+                        .map((session) => session.studentID)
+                        .filter((id): id is string => id !== null);
+                const students = await prisma.user.findMany({
+                        where: {
+                                id: { in: studentIDs },
+                        },
+                });
+
+                // Créer une map pour accéder facilement aux étudiants par leur ID
+                const studentMap = new Map(students.map((student) => [student.id, student.email]));
+
+        // Envoyer une notification pour chaque session
+        for (const session of sessions) {
+            const studentEmail = studentMap.get(session.studentID || '');
+            const endDate = new Date(session.sessionDateStart);
+            endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+        
+            if (studentEmail) {
+                sendNotificationRemoveAppointment(
+                    studentEmail,
+                    session.sessionDateStart,
+                    endDate
+                );
+            }
+        }
+
+        // Supprimer les sessions après notification
         await prisma.flight_sessions.deleteMany({
             where: {
-                id: {
-                    in: sessionID
-                }
-            }
+                id: { in: sessionIDs },
+            },
         });
-        console.log('Sessions deleted successfully');
+
         return { success: "Les sessions ont été supprimées !" };
     } catch (error) {
         console.error('Error deleting flight sessions:', error);
@@ -207,12 +241,21 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
         // Récupérer les informations de la session
         const session = await prisma.flight_sessions.findUnique({
             where: { id: sessionID },
-            select: { sessionDateStart: true } // Assurez-vous que "date" est bien le nom de la colonne
         });
+        
 
-        if (!session || !session.sessionDateStart) {
-            return { error: "Session introuvable ou sans date définie." };
+        if (!session || !session.sessionDateStart || !session.studentID || !session.pilotID) {
+            return { error: "Session introuvable ou incomplète." };
         }
+
+        const student = await prisma.user.findUnique({
+            where:{id: session.studentID}
+        })
+
+        const pilote = await prisma.user.findUnique({
+            where:{id: session.pilotID}
+        })
+
 
         const sessionDateUTC = new Date(session.sessionDateStart); // Assurez-vous que cette date est UTC
 
@@ -237,8 +280,12 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
                 studentPlaneID: null,
             }
         });
+
+        const endDate = new Date(session.sessionDateStart);
+        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
         
-        console.log('Student removed from session successfully');
+        sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date);
+        sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date);
         return { success: "L'élève a été désinscrit de la session !" };
     } catch (error) {
         console.error('Error deleting flight session:', error);
@@ -291,22 +338,9 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
         const [student, session, conflictingSessions] = await Promise.all([
             prisma.user.findUnique({
                 where: { id: studentID },
-                select: {
-                    id: true,
-                    clubID: true,
-                    restricted: true,
-                    role: true,
-                    firstName: true,
-                    lastName: true,
-                },
             }),
             prisma.flight_sessions.findUnique({
                 where: { id: sessionID },
-                select: {
-                    id: true,
-                    clubID: true,
-                    sessionDateStart: true,
-                },
             }),
             prisma.flight_sessions.findMany({
                 where: {
@@ -314,9 +348,11 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
                     sessionDateStart: sessionID ? undefined : undefined, // Placeholder for more 
                 },
             }),
-
-            
         ]);
+
+        const instructor = await prisma.user.findUnique({
+            where: { id: session?.pilotID}
+        })
 
         if (!student) {
             return { error: "Élève introuvable." };
@@ -363,6 +399,12 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
             },
         });
 
+        const endDate = new Date(session.sessionDateStart)
+        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min)
+
+        await sendNotificationBooking(instructor?.email as string, instructor?.firstName as string, instructor?.lastName as string, session.sessionDateStart as Date, endDate as Date);
+        await sendStudentNotificationBooking(student.email as string, session.sessionDateStart as Date, endDate as Date);
+    
         return { success: "Étudiant inscrit avec succès à la session." };
     } catch (error) {
         console.error("Erreur lors de l'inscription de l'étudiant :", error);
