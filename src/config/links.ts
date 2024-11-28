@@ -35,7 +35,7 @@ export const navigationLinks: NavLink[] = [
         name: "Elèves",
         path: "/students",
         icon: GraduationCap, // Icône JSX
-        roles: ["PILOT", "OWNER", "ADMIN", "INSTRUCTOR"],
+        roles: ["OWNER", "ADMIN", "INSTRUCTOR"],
     },
     {
         name: "Profil",
