@@ -1,4 +1,5 @@
 "use server";
+import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
 import { createClient } from '@/utils/supabase/server';
 import { PrismaClient, userRole } from '@prisma/client'
 import { User } from '@prisma/client'
@@ -116,7 +117,38 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
                 // student_type: student.type,
             }
         });
-        console.log('Student added successfully');
+        const session = await prisma.flight_sessions.findUnique({
+            where: { id: sessionID },
+            select: {
+                sessionDateStart: true,
+                sessionDateDuration_min: true,
+                pilotID: true,
+            }
+        });
+        const studentcomp = await prisma.user.findUnique({
+            where: { id: student.id },
+            select: {
+                email: true,
+            }
+        });
+
+        if (!session?.pilotID) return { error: "Student not found" }
+        const instructor = await prisma.user.findUnique({
+            where: { id: session.pilotID},
+            select: {
+                email: true,
+                firstName: true,
+                lastName: true,
+            }
+        })
+
+        const endDate = new Date(session.sessionDateStart)
+        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min)
+        
+        await sendNotificationBooking(instructor?.email as string, instructor?.firstName as string, instructor?.lastName as string, session.sessionDateStart as Date, endDate as Date);
+        await sendStudentNotificationBooking(studentcomp?.email as string, session.sessionDateStart as Date, endDate as Date);
+
+        
         return { success: "L'élève a été ajouté au vol !" };
     } catch (error) {
         console.error('Error adding student:', error);

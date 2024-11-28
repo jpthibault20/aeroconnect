@@ -28,7 +28,7 @@ export const NotificationSudentRemoveForPilot = ({ startDate, endDate }: Notific
         <EmailTemplate preview={"Oups un élèvé ses désinscrit"}>
             <Section className="my-6">
                 <Text className="text-lg leading-6">
-                    Mauvaise nouvelle, un élève s&apos;est désinscrit du vol :
+                    Mauvaise nouvelle, un élève n&apos;est plus inscrit au vol :
                 </Text>
                 <Text className="text-lg leading-6">
                     {startDate} ➡️ {endDate}
