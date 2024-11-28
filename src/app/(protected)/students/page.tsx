@@ -1,3 +1,4 @@
+"use server"
 /**
  * @file Page.tsx
  * @brief A React component that serves as a container for the StudentsPage.
@@ -11,11 +12,29 @@
 import InitialLoading from '@/components/InitialLoading';
 import StudentsPage from '@/components/students/StudentsPage';
 import React from 'react';
+import { PrismaClient } from '@prisma/client';
 
-const Page = () => {
+const prisma = new PrismaClient();
+
+interface PageProps {
+    searchParams: { clubID: string | undefined };
+}
+
+const Page = async ({ searchParams }: PageProps) => {
+
+    const clubID = searchParams.clubID;
+
+    if (!clubID) {
+        throw new Error('clubID is required in the URL');
+    }
+
+    const users = await prisma.user.findMany({
+        where: { clubID: clubID }
+    });
+
     return (
         <InitialLoading className='w-full h-full bg-gray-100'>
-            <StudentsPage />
+            <StudentsPage userProps={users} />
         </InitialLoading>
     );
 }

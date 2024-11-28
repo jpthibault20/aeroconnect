@@ -11,53 +11,25 @@
 
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Input } from '../ui/input';
 import { User, userRole } from '@prisma/client';
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Button } from '../ui/button';
-import { IoChevronDown } from "react-icons/io5";
 import TableComponent from './TableComponent';
-import { getAllUser } from '@/api/db/users';
-import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { Spinner } from '../ui/SpinnerVariants';
+import Header from './Header';
+import Filter from './Filter';
+import Search from './Search';
 
-const StudentsPage = () => {
-    const { currentUser } = useCurrentUser();
-    const [loading, setLoading] = useState(false);
+interface props {
+    userProps: User[]
+}
+const StudentsPage = ({ userProps }: props) => {
     const [searchQuery, setSearchQuery] = useState('');
-    const [users, setUsers] = useState<User[]>([]);
+    const [users, setUsers] = useState<User[]>(userProps);
+    const [sortedUsers, setSortedUsers] = useState<User[]>(userProps);
     const [roleFilter, setRoleFilter] = useState<userRole | 'all'>('all');
-    const [reload, setReload] = useState(false);
 
     useEffect(() => {
-        const fetchUsers = async () => {
-            setLoading(true);
-            if (currentUser) {
-                try {
-                    const res = await getAllUser(currentUser.clubID);
-                    if (Array.isArray(res)) {
-                        setUsers(res);
-                        setLoading(false);
-                    } else {
-                        console.log('Unexpected response format:', res);
-                    }
-                } catch (error) {
-                    console.log(error);
-                }
-            }
-        };
+        setSortedUsers(sortUser(users, roleFilter, searchQuery));
+    }, [users, roleFilter, searchQuery]);
 
-        fetchUsers();
-    }, [currentUser, reload]);
-
-    /**
-     * @function sortUser
-     * @description Filters and sorts the user list based on role and search query.
-     * @param {User[]} users - The array of users to be filtered and sorted.
-     * @param {userRole | 'all'} roleFilter - The selected role to filter users by.
-     * @param {string} searchQuery - The search query to filter users by their names.
-     * @returns {User[]} The filtered and sorted array of users.
-     */
     const sortUser = (
         users: User[],
         roleFilter: 'all' | userRole,
@@ -83,8 +55,6 @@ const StudentsPage = () => {
         return filteredUsers;
     };
 
-    const sortedUsers = sortUser(users, roleFilter, searchQuery);
-
     const handleRoleFilterChange = (value: 'all' | userRole) => {
         setRoleFilter(value);
     };
@@ -92,77 +62,14 @@ const StudentsPage = () => {
 
     return (
         <div className='p-6 '>
-            <div className='flex space-x-3'>
-                <p className='font-medium text-3xl'>Les élèves</p>
-                <p className='text-[#797979] text-3xl'>{users?.length}</p>
-            </div>
+            <Header users={sortedUsers} />
+
             <div className='my-3 flex justify-end space-x-3'>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button className="px-4 py-2 rounded-md transition-colors text-gray-500" variant="outline">
-                            {roleFilter === 'all' && 'Filtre'}
-                            {roleFilter === 'OWNER' && 'Gérant'}
-                            {roleFilter === 'ADMIN' && 'Admin'}
-                            {roleFilter === 'PILOT' && 'Pilote'}
-                            {roleFilter === 'STUDENT' && 'Élève'}
-                            {roleFilter === 'USER' && 'Visiteur'}
-                            <IoChevronDown className='ml-2 text-gray-500' />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuCheckboxItem
-                            checked={roleFilter === 'all'}
-                            onCheckedChange={() => handleRoleFilterChange('all')}
-                        >
-                            Tous
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={roleFilter === 'OWNER'}
-                            onCheckedChange={() => handleRoleFilterChange('OWNER')}
-                        >
-                            Gérant
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={roleFilter === 'ADMIN'}
-                            onCheckedChange={() => handleRoleFilterChange('ADMIN')}
-                        >
-                            Admin
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={roleFilter === 'PILOT'}
-                            onCheckedChange={() => handleRoleFilterChange('PILOT')}
-                        >
-                            Pilote
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={roleFilter === 'STUDENT'}
-                            onCheckedChange={() => handleRoleFilterChange('STUDENT')}
-                        >
-                            Élève
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={roleFilter === 'USER'}
-                            onCheckedChange={() => handleRoleFilterChange('USER')}
-                        >
-                            Visiteur
-                        </DropdownMenuCheckboxItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                <Input
-                    type="text"
-                    placeholder="Recherche..."
-                    className="p-2 rounded-lg w-full md:w-1/3 mr-10 bg-white"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
+                <Filter roleFilter={roleFilter} handle={handleRoleFilterChange} />
+                <Search searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
             </div>
-            {loading ? (
-                <div className='flex justify-center items-center h-full'>
-                    <Spinner />
-                </div>
-            ) : (
-                <TableComponent users={sortedUsers} setReload={setReload} reload={reload} />
-            )}
+
+            <TableComponent users={sortedUsers} setUsers={setUsers} />
         </div>
     );
 }

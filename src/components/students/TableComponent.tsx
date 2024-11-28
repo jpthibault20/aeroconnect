@@ -2,11 +2,11 @@ import React from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '../ui/table';
 import { User } from '@prisma/client';
 import TableRowComponent from './TableRowComponent';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface props {
     users: User[];  ///< Array of User objects representing the users to be displayed in the table.
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
-    reload: boolean;
+    setUsers: React.Dispatch<React.SetStateAction<User[]>>;
 }
 
 /**
@@ -14,7 +14,9 @@ interface props {
  * @param {props} props - The props for the component.
  * @returns {JSX.Element} The rendered table component with user data.
  */
-const TableComponent = ({ users, setReload, reload }: props): JSX.Element => {
+const TableComponent = ({ users, setUsers }: props): JSX.Element => {
+    const { currentUser } = useCurrentUser();
+
     return (
         <div className="max-h-[70vh] overflow-y-auto bg-white rounded-lg">
             <Table className='w-full'>
@@ -27,10 +29,15 @@ const TableComponent = ({ users, setReload, reload }: props): JSX.Element => {
                     </TableRow>
                 </TableHeader>
                 <TableBody className="max-h-[60vh] overflow-y-auto w-full">
-                    {users.map((user, index) => (
-                        <TableRowComponent user={user} key={index} setReload={setReload} reload={reload} />  ///< Renders a row for each user.
-                    ))
-                    }
+                    {users.map((user) =>
+                        user.id !== currentUser?.id && (
+                            <TableRowComponent
+                                user={user}
+                                key={user.id}
+                                setUsers={setUsers}
+                            />
+                        )
+                    )}
                 </TableBody>
             </Table>
         </div>
