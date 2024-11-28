@@ -1,5 +1,4 @@
 import {
-    Link,
     Section,
     Tailwind,
     Text,
@@ -12,7 +11,7 @@ interface NotificationBookingStudentProps {
     endDate: string
 }
 
-export const NotificationBookingStudent = ({startDate, endDate}: NotificationBookingStudentProps) => (
+export const NotificationBookingStudent = ({ startDate, endDate }: NotificationBookingStudentProps) => (
     <Tailwind
         config={{
             theme: {
@@ -29,7 +28,7 @@ export const NotificationBookingStudent = ({startDate, endDate}: NotificationBoo
         <EmailTemplate preview={"Inscription à une heure de vol"}>
             <Section className="my-6">
                 <Text className="text-lg leading-6">
-                Vous êtes inscrit à une nouvelle heure de vol : 
+                    Vous êtes inscrit à une nouvelle heure de vol :
                 </Text>
                 <Text className="text-lg leading-6">
                     {startDate} ➡️ {endDate}

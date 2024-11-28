@@ -1,5 +1,4 @@
 import {
-    Link,
     Section,
     Tailwind,
     Text,
@@ -12,7 +11,7 @@ interface NotificationSudentRemoveForPilotProps {
     endDate: string
 }
 
-export const NotificationSudentRemoveForPilot = ({ startDate, endDate}: NotificationSudentRemoveForPilotProps) => (
+export const NotificationSudentRemoveForPilot = ({ startDate, endDate }: NotificationSudentRemoveForPilotProps) => (
     <Tailwind
         config={{
             theme: {
@@ -29,7 +28,7 @@ export const NotificationSudentRemoveForPilot = ({ startDate, endDate}: Notifica
         <EmailTemplate preview={"Oups un élèvé ses désinscrit"}>
             <Section className="my-6">
                 <Text className="text-lg leading-6">
-                    Mauvaise nouvelle, un élève s&apos;est désinscrit du vol : 
+                    Mauvaise nouvelle, un élève s&apos;est désinscrit du vol :
                 </Text>
                 <Text className="text-lg leading-6">
                     {startDate} ➡️ {endDate}

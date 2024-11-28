@@ -1,5 +1,4 @@
 import {
-    Link,
     Section,
     Tailwind,
     Text,
