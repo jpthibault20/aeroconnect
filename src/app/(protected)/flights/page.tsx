@@ -34,7 +34,7 @@ const Page = async ({ searchParams }: PageProps) => {
     });
 
     return (
-        <InitialLoading className="h-full w-full">
+        <InitialLoading className="h-full w-full bg-gray-100">
             <FlightsPageComponent sessionsProp={sessions} planesProp={planes} />
         </InitialLoading>
     );
