@@ -96,7 +96,7 @@ const ProfilePage = () => {
                             id='email'
                             label='Email'
                             value={userState.email}
-                            loading={loading}
+                            loading={true}
                             onChange={(value) => onChangeUserState('email', value)}
                             style='grid items-center gap-2'
                         />

@@ -22,10 +22,10 @@ export async function emailLogin(formData: FormData) {
     const user = await getUser()
 
     if (error) {
-        redirect('/auth/login?message=Could not authenticate user')
+        redirect("/auth/login?message=Impossible d'authentifier l'utilisateur")
     }
     if (!user.user?.clubID){
-        throw new Error("clubID is undefined");
+        redirect("/auth/login?message=Impossible d'authentifier l'utilisateur")
     }
 
     revalidatePath('/', 'layout')
