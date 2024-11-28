@@ -32,7 +32,7 @@ export const navigationLinks: NavLink[] = [
         roles: ["PILOT", "OWNER", "ADMIN", "INSTRUCTOR"],
     },
     {
-        name: "Elèves",
+        name: "Utilisateurs",
         path: "/students",
         icon: GraduationCap, // Icône JSX
         roles: ["OWNER", "ADMIN", "INSTRUCTOR"],
