@@ -15,20 +15,22 @@
 
 import React, { useState } from 'react';
 import { TableCell, TableRow } from '../ui/table';
-import { planes } from '@prisma/client';
+import { planes, userRole } from '@prisma/client';
 import { Button } from '../ui/button';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { deletePlane, updateOperationalByID } from '@/api/db/planes';
 import { toast } from '@/hooks/use-toast';
 import { Switch } from '../ui/switch';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface Props {
     plane: planes; // Utiliser le type Plane ici
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
-    reload: boolean;
+    planes: planes[];
+    setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
 }
 
-const TableRowComponent = ({ plane, setReload, reload }: Props) => {
+const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
+    const { currentUser } = useCurrentUser()
     const [loading, setLoading] = useState(false);
     const [operational, setOperational] = useState(plane.operational);
 
@@ -38,83 +40,100 @@ const TableRowComponent = ({ plane, setReload, reload }: Props) => {
             try {
                 const res = await deletePlane(plane.id);
                 if (res.success) {
-                    setReload(!reload);
-                    setLoading(false);
+                    // Mise à jour des données locales après suppression
+                    setPlanes(planes.filter((p) => p.id !== plane.id));
                     toast({
-                        title: "Avion supprimée avec succès",
+                        title: "Avion supprimé avec succès",
                     });
-                }
-                if (res.error) {
-                    console.log(res.error);
-                    setLoading(false);
+                } else if (res.error) {
+                    console.error(res.error);
                     toast({
-                        title: " Oups, une erreur est survenue",
+                        title: "Oups, une erreur est survenue",
                     });
                 }
             } catch (error) {
-                console.log(error);
+                console.error(error);
+            } finally {
+                setLoading(false);
             }
         };
         removePlane();
-    }
+    };
 
     const onChangeRestricted = () => {
-        console.log('onChangeRestricted')
-        setOperational(!operational)
         const updatePlane = async () => {
             setLoading(true);
             try {
                 const res = await updateOperationalByID(plane.id, !operational);
                 if (res.success) {
-                    setReload(!reload);
-                    setLoading(false);
+                    // Mise à jour des données locales après modification
+                    setPlanes(
+                        planes.map((p) =>
+                            p.id === plane.id ? { ...p, operational: !operational } : p
+                        )
+                    );
+                    setOperational(!operational);
                     toast({
-                        title: "Avion mise à jour avec succès",
+                        title: "Avion mis à jour avec succès",
                         duration: 3000,
                     });
-                }
-                if (res.error) {
-                    console.log(res.error);
-                    setLoading(false);
+                } else if (res.error) {
+                    console.error(res.error);
                     toast({
-                        title: " Oups, une erreur est survenue",
+                        title: "Oups, une erreur est survenue",
                         duration: 3000,
                     });
                 }
             } catch (error) {
-                console.log(error);
+                console.error(error);
+            } finally {
+                setLoading(false);
             }
         };
         updatePlane();
-    }
+    };
 
     return (
-        <TableRow className='text-center'>
+        <TableRow className="text-center">
             <TableCell>{plane.name}</TableCell>
             <TableCell>{plane.immatriculation}</TableCell>
-            <TableCell>
-                <div>
-                    <Switch checked={operational} onCheckedChange={onChangeRestricted} />
-                    <p>
-                        {operational ? 'Opérationnel' : 'En maintenance'}
-                    </p>
-                </div>
-            </TableCell>
-            <TableCell className='flex flex-col items-center space-y-3 justify-center xl:block xl:space-x-5'>
-                <AlertConfirmDeleted
-                    title='Etes vous sur de vouloir supprimer cette avion ?'
-                    description={'Cette avion sera supprimée définitivement'}
-                    // style='flex h-full w-full justify-center items-center'
-                    cancel='Annuler'
-                    confirm='Supprimer'
-                    confirmAction={onClickDeletePlane}
-                    loading={loading}
-                >
-                    <Button className='w-fit' variant={"destructive"}>Supprimer</Button>
-                </AlertConfirmDeleted>
-            </TableCell>
+            {currentUser?.role == userRole.STUDENT ?
+                (<>
+                    <TableCell>
+                        <div>
+                            <Switch checked={operational} onCheckedChange={onChangeRestricted} disabled />
+                            <p>{operational ? "Opérationnel" : "En maintenance"}</p>
+                        </div>
+                    </TableCell>
+                </>
+                ) : currentUser?.role == userRole.OWNER || currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR ?
+                    (
+                        <>
+                            <TableCell>
+                                <div>
+                                    <Switch checked={operational} onCheckedChange={onChangeRestricted} />
+                                    <p>{operational ? "Opérationnel" : "En maintenance"}</p>
+                                </div>
+                            </TableCell>
+                            <TableCell className="flex flex-col items-center space-y-3 justify-center xl:block xl:space-x-5">
+                                <AlertConfirmDeleted
+                                    title="Êtes-vous sûr de vouloir supprimer cet avion ?"
+                                    description={"Cet avion sera supprimé définitivement."}
+                                    cancel="Annuler"
+                                    confirm="Supprimer"
+                                    confirmAction={onClickDeletePlane}
+                                    loading={loading}
+                                >
+                                    <Button className="w-fit" variant={"destructive"}>
+                                        Supprimer
+                                    </Button>
+                                </AlertConfirmDeleted>
+                            </TableCell>
+                        </>
+                    ) : null}
+
         </TableRow>
     );
-}
+};
 
 export default TableRowComponent;

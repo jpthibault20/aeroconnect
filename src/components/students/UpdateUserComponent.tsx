@@ -18,12 +18,11 @@ interface Props {
     children: React.ReactNode
     showPopup: boolean
     setShowPopup: React.Dispatch<React.SetStateAction<boolean>>
-    reload: boolean;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    setUsers: React.Dispatch<React.SetStateAction<User[]>>;
     user: User
 }
 
-const UpdateUserComponent = ({ children, showPopup, setShowPopup, reload, setReload, user }: Props) => {
+const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user }: Props) => {
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
     const [autorisedModifyRole, setAutorisedModifyRole] = useState(false);
@@ -63,28 +62,34 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, reload, setRel
             try {
                 const res = await updateUser(userState);
                 if (res.success) {
+                    // Met à jour l'utilisateur dans la liste des utilisateurs
+                    setUsers((prevUsers) =>
+                        prevUsers.map((u) =>
+                            u.id === userState.id ? { ...u, ...userState } : u
+                        )
+                    );
+
                     setShowPopup(false);
                     setLoading(false);
-                    setReload(!reload);
                     toast({
                         title: "Utilisateur mis à jour avec succès",
                     });
-
                 }
                 if (res.error) {
                     console.log(res.error);
                     setLoading(false);
-                    setReload(!reload);
                     toast({
-                        title: " Oups, une erreur est survenue",
+                        title: "Oups, une erreur est survenue",
                     });
                 }
             } catch (error) {
                 console.log(error);
+                setLoading(false);
             }
-        }
+        };
         updateUserAction();
-    }
+    };
+
 
     return (
         <Dialog open={showPopup} onOpenChange={setShowPopup}>

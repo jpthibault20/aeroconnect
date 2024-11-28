@@ -22,23 +22,22 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface props {
     user: User;  ///< User object representing the user data to be displayed in this row.
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
-    reload: boolean;
+    setUsers: React.Dispatch<React.SetStateAction<User[]>>;
 }
 
 
-const TableRowComponent = ({ user, setReload, reload }: props) => {
+const TableRowComponent = ({ user, setUsers }: props) => {
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
     const { currentUser } = useCurrentUser();
 
-    // Handler for deleting a user; logs the user ID to the console.
-    const onClickDeleteUser = () => () => {
-        if (user.id == currentUser?.id) {
+    // Handler for deleting a user; removes the user from the state upon successful deletion.
+    const onClickDeleteUser = () => async () => {
+        if (user.id === currentUser?.id) {
             console.log('Vous ne pouvez pas supprimer votre propre compte');
             toast({
                 title: "Vous ne pouvez pas supprimer votre propre compte",
-                description: "contactez un administrateur pour supprimer votre compte",
+                description: "Contactez un administrateur pour supprimer votre compte",
                 style: {
                     background: 'rgba(239, 68, 68, 0.9)',
                     color: 'white',
@@ -46,58 +45,54 @@ const TableRowComponent = ({ user, setReload, reload }: props) => {
             });
             return;
         }
-        const deleteUserAction = async () => {
-            setLoading(true);
-            try {
-                const res = await deleteUser(user.id);
-                if (res.success) {
-                    setLoading(false);
-                    console.log(res.success);
-                    toast({
-                        title: "Utilisateur supprimé avec succès",
-                    });
-                    setReload(!reload);
-                } else {
-                    console.log(res.error);
-                    setLoading(false);
-                    toast({
-                        title: " Oups, une erreur est survenue",
-                    });
-                    setReload(!reload);
-                }
-            } catch (error) {
-                console.log(error);
+
+        setLoading(true);
+        try {
+            const res = await deleteUser(user.id);
+            if (res.success) {
+                // Supprime l'utilisateur localement après une suppression réussie
+                setUsers((prevUsers) => prevUsers.filter((u) => u.id !== user.id));
+                toast({
+                    title: "Utilisateur supprimé avec succès",
+                });
+            } else {
+                console.log(res.error);
+                toast({
+                    title: "Oups, une erreur est survenue",
+                });
             }
-        };
-        deleteUserAction();
-    }
-
-
+        } catch (error) {
+            console.error(error);
+            toast({
+                title: "Une erreur s'est produite",
+                description: "Impossible de supprimer l'utilisateur pour le moment",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <TableRow>
-            <TableCell className=''>
-                <div className='flex'>
+            <TableCell>
+                <div className="flex">
                     <Image
                         src={userPicture}
-                        alt='User Image'
+                        alt="User Image"
                         height={50}
                         width={50}
-                        className='rounded-full hidden md:flex justify-center'
+                        className="rounded-full hidden md:flex justify-center"
                         priority
                     />
-                    <div className='ml-4 h-full w-full flex flex-col justify-center items-start'>
-                        <div className='font-medium text-left'>
-                            {user.lastName.toUpperCase()}{' '}
-                            {user.firstName}
+                    <div className="ml-4 h-full w-full flex flex-col justify-center items-start">
+                        <div className="font-medium text-left">
+                            {user.lastName.toUpperCase()} {user.firstName}
                         </div>
-                        <div className='text-left text-gray-500'>
-                            {user.email}
-                        </div>
+                        <div className="text-left text-gray-500">{user.email}</div>
                     </div>
                 </div>
             </TableCell>
-            <TableCell className='text-center'>
+            <TableCell className="text-center">
                 {user.role === "USER" && "Visiteur"}
                 {user.role === "STUDENT" && "Elève"}
                 {user.role === "INSTRUCTOR" && "Instructeur"}
@@ -105,30 +100,35 @@ const TableRowComponent = ({ user, setReload, reload }: props) => {
                 {user.role === "OWNER" && "Gérant"}
                 {user.role === "ADMIN" && "Administrateur"}
             </TableCell>
-            <TableCell className='text-center'>
+            <TableCell className="text-center">
                 <Restricted user={user} />
             </TableCell>
-            <TableCell className='text-center'>{user.phone}</TableCell>
-            <TableCell className='flex flex-col items-center space-y-3 justify-center '>
-                <UpdateUserComponent showPopup={showPopup} setShowPopup={setShowPopup} reload={reload} setReload={setReload} user={user}>
-                    <Button className='w-fit bg-blue-600 hover:bg-blue-700'>
-                        Modifier
-                    </Button>
+            <TableCell className="text-center">{user.phone}</TableCell>
+            <TableCell className="flex flex-col items-center space-y-3 justify-center">
+                <UpdateUserComponent
+                    showPopup={showPopup}
+                    setShowPopup={setShowPopup}
+                    user={user}
+                    setUsers={setUsers}
+                >
+                    <Button className="w-fit bg-blue-600 hover:bg-blue-700">Modifier</Button>
                 </UpdateUserComponent>
 
                 <AlertConfirmDeleted
-                    title='Etes vous sur de vouloir supprimer cet élève ?'
-                    description={`vous allez supprimer ${user.firstName} ${user.lastName} définitivement`}
-                    cancel='Annuler'
-                    confirm='Supprimer'
+                    title="Êtes-vous sûr de vouloir supprimer cet élève ?"
+                    description={`Vous allez supprimer ${user.firstName} ${user.lastName} définitivement.`}
+                    cancel="Annuler"
+                    confirm="Supprimer"
                     confirmAction={onClickDeleteUser()}
                     loading={loading}
                 >
-                    <Button variant={"destructive"} className='w-fit'>Supprimer</Button>
+                    <Button variant="destructive" className="w-fit">
+                        Supprimer
+                    </Button>
                 </AlertConfirmDeleted>
             </TableCell>
         </TableRow>
     );
-}
+};
 
 export default TableRowComponent;

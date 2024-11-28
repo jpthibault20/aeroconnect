@@ -37,14 +37,12 @@ import { getPlanes } from '@/api/db/planes';
 interface Props {
     display: string;
     style?: string;
-    reload: boolean;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
-    sessions: flight_sessions[]
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
+    planesProp: planes[];
 }
 // début de composant
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props) => {
+const NewSession = ({ display, setSessions, planesProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const { toast } = useToast()
     const [loading, setLoading] = useState(false);
@@ -52,10 +50,8 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
     const [warning, setWarning] = useState("");
     const [isOpenPopover, setIsPopoverOpen] = useState(false);
     const [isOpenCal1, setIsOpenCal1] = useState(false);
-    const [PopoverCalendar, setPopoverCalendar] = useState(false);
     const [isOpenCal2, setIsOpenCal2] = useState(false);
     const [switchReccurence, setSwitchReccurence] = useState(false);
-    const [planes, setPlanes] = useState<planes[]>()
     const [sessionData, setSessionData] = useState<interfaceSessions>({
         date: undefined,
         startHour: "9",
@@ -66,17 +62,6 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
         endReccurence: undefined,
         planeId: [],
     });
-
-    useEffect(() => {
-        const fetchPlanes = async () => {
-            const res = await getPlanes(currentUser!.clubID);
-            if (Array.isArray(res)) {
-                setPlanes(res);
-            }
-        };
-        fetchPlanes();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     // Calul de la date de fin de reccurence en fonction de la date de début avec 1 semaine de plus (delais minimum)
     useEffect(() => {
@@ -113,7 +98,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
     }
 
     // permet de verifier si tous les avions sont séléctioné ou pas boolean variable
-    const allPlanesSelected = planes?.length === sessionData.planeId.length;
+    const allPlanesSelected = planesProp?.length === sessionData.planeId.length;
 
     // fonction permettant de sélectionner un avion pour l'affichage dans la liste des avions
     const onClickPlane = (plane: string) => {
@@ -129,7 +114,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
     const toggleSelectAllPlanes = () => {
         setSessionData(prev => ({
             ...prev,
-            planeId: allPlanesSelected ? [] : planes!.map(p => p.id)
+            planeId: allPlanesSelected ? [] : planesProp!.map(p => p.id)
         }));
     };
 
@@ -164,7 +149,6 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
             setError("Une erreur est survenue lors de l'envoi des données.");
         } finally {
             // Rafraîchir l'état et désactiver le chargement
-            setReload(!reload);
             setLoading(false);
         }
     };
@@ -302,7 +286,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                         <div className='w-full h-fit min-h-10 border border-gray-200 rounded-md shadow-sm flex flex-wrap p-2 gap-2 bg-gray-100'>
                             {sessionData.planeId.map((plane, index) => (
                                 <div key={index} className='flex items-center justify-between bg-gray-200 rounded-md px-4 py-1'>
-                                    <p>{planes?.find(p => p.id === plane)?.name}</p>
+                                    <p>{planesProp?.find(p => p.id === plane)?.name}</p>
                                 </div>
                             ))}
                         </div>
@@ -316,7 +300,7 @@ const NewSession = ({ display, reload, setReload, sessions, setSessions }: Props
                             >
                                 {allPlanesSelected ? "Effacer" : "Tous"}
                             </Button>
-                            {planes?.map((plane, index) => (
+                            {planesProp?.map((plane, index) => (
                                 <Button
                                     key={index}
                                     className={`w-full justify-center text-left border border-gray-200 font-normal bg-gray-200 hover:bg-red-500 md:hover:bg-gray-300 rounded-md text-black ${sessionData.planeId.includes(plane.id) && "bg-red-500"}`}

@@ -10,46 +10,31 @@
  * @returns The rendered planes page component.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import TableComponent from './TableComponent';
-import { getPlanes } from '@/api/db/sessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { planes } from '@prisma/client';
+import { planes, userRole } from '@prisma/client';
 import NewPlane from './NewPlane';
+import Header from './Header';
 
-const PlanesPage = () => {
+interface Props {
+    PlanesProps: planes[];
+}
+
+const PlanesPage = ({ PlanesProps }: Props) => {
     const { currentUser } = useCurrentUser();
-    const [reload, setReload] = useState(false);
-    const [planes, setPlanes] = useState<planes[]>();
-
-    useEffect(() => {
-        const fetchPlanes = async () => {
-            if (currentUser) {
-                try {
-                    const res = await getPlanes(currentUser.clubID);
-                    if (Array.isArray(res)) {
-                        // Trier les avions par ordre alphabétique basé sur le nom
-                        const sortedPlanes = res.sort((a, b) => a.name.localeCompare(b.name));
-                        setPlanes(sortedPlanes);
-                    }
-                } catch (error) {
-                    console.error('Error fetching planes:', error);
-                }
-            }
-        };
-        fetchPlanes();
-    }, [currentUser, reload]);
+    const [planes, setPlanes] = useState<planes[]>(PlanesProps);
 
     return (
         <div className='p-6'>
-            <div className='flex space-x-3'>
-                <p className='font-medium text-3xl'>Les avions</p>
-                <p className='text-[#797979] text-3xl'>{planes?.length}</p>
-            </div>
+            <Header planesLenght={planes.length} />
+
             <div className='my-3 flex justify-end'>
-                <NewPlane reload={reload} setReload={setReload} />
+                {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER || currentUser?.role === userRole.INSTRUCTOR ?
+                    <NewPlane setPlanes={setPlanes} /> : null
+                }
             </div>
-            <TableComponent planes={planes} reload={reload} setReload={setReload} />
+            <TableComponent planes={planes} setPlanes={setPlanes} />
         </div>
     );
 };

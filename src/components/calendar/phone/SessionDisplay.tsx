@@ -20,8 +20,7 @@ import SessionPopup from '../SessionPopup';
  */
 interface Props {
     session: flight_sessions;
-    reload: boolean;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
 }
 
 /**
@@ -31,7 +30,7 @@ interface Props {
  * @param {Props} props - The component props.
  * @returns {JSX.Element} The rendered component.
  */
-const SessionDisplay = ({ session, reload, setReload }: Props) => {
+const SessionDisplay = ({ session, setSessions }: Props) => {
 
     // Set the background color based on whether the session is booked
     const backgroundStyle = {
@@ -43,7 +42,7 @@ const SessionDisplay = ({ session, reload, setReload }: Props) => {
     finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min);
 
     return (
-        <SessionPopup sessions={[session]} reload={reload} setReload={setReload}>
+        <SessionPopup sessions={[session]} setSessions={setSessions} >
             <div
                 style={backgroundStyle}
                 className={`w-3/4 h-[50px] flex rounded-xl px-3 ${session.studentID ? 'opacity-60' : ''}`}

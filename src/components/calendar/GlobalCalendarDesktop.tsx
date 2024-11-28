@@ -11,15 +11,14 @@ import DaySelector from './DaySelector';
 import TabCalendar from './TabCalendar';
 import NewSession from "@/components/NewSession"
 import Filter from './Filter';
-import { flight_sessions } from '@prisma/client';
+import { flight_sessions, planes } from '@prisma/client';
 import { Spinner } from '../ui/SpinnerVariants';
 
 interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
-    reload: boolean;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
     loading: boolean;
+    planesProp: planes[];
 }
 
 /**
@@ -31,7 +30,7 @@ interface Props {
  * within a desktop-only layout, hidden on mobile devices.
  * 
  */
-const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading, setSessions }: Props) => {
+const GlobalCalendarDesktop = ({ sessions, loading, setSessions, planesProp }: Props) => {
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
 
@@ -97,7 +96,7 @@ const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading, setSessio
                             <div className='flex space-x-2 px-3 '>
                                 {/* Button to create a new session (desktop view only). */}
                                 <div>
-                                    <NewSession display='desktop' reload={reload} setReload={setReload} sessions={sessions} setSessions={setSessions} />
+                                    <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} />
                                 </div>
                                 <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='desktop' />
 
@@ -117,8 +116,7 @@ const GlobalCalendarDesktop = ({ sessions, reload, setReload, loading, setSessio
                         <TabCalendar
                             date={date}
                             sessions={sessionsFlitered}
-                            setReload={setReload}
-                            reload={reload}
+                            setSessions={setSessions}
                         />
                     )}
                 </div>

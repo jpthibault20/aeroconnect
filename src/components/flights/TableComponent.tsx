@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { flight_sessions, userRole } from '@prisma/client';
+import { flight_sessions, planes, userRole } from '@prisma/client';
 import TableRowComponent from './TableRowComponent';
 import { Checkbox } from '../ui/checkbox';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
@@ -8,17 +8,27 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 interface props {
     sessions: flight_sessions[];  ///< Array of flight session objects
     setSessionChecked: React.Dispatch<React.SetStateAction<string[]>>; ///< Function to update selected session IDs
-    reload: boolean;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    planesProp: planes[];
 }
 
-const TableComponent = ({ sessions, setSessionChecked, reload, setReload }: props) => {
-    const [isAllChecked, setIsAllChecked] = useState(false);  ///< State to manage the "select all" checkbox
+const TableComponent = ({ sessions, setSessionChecked, planesProp }: props) => {
     const { currentUser } = useCurrentUser();
+    const [isAllChecked, setIsAllChecked] = useState(false);  ///< State to manage the "select all" checkbox
+    const [sessionsSorted, setSessions] = useState<flight_sessions[]>([]); ///< State to store the sorted sessions
+
 
     useEffect(() => {
-        setIsAllChecked(false);
+        // Tri des sessions par ordre chronologique (date de début croissante)
+        const sortedSessions = [...sessions].sort((a, b) => {
+            const dateA = new Date(a.sessionDateStart).getTime();
+            const dateB = new Date(b.sessionDateStart).getTime();
+            return dateA - dateB; // Tri ascendant (chronologique)
+        });
+
+        setSessions(sortedSessions); // Met à jour les sessions triées
+        setIsAllChecked(false); // Réinitialise le check
     }, [sessions]);
+
 
     /**
      * Handles the selection of all sessions based on the checkbox state.
@@ -53,21 +63,24 @@ const TableComponent = ({ sessions, setSessionChecked, reload, setReload }: prop
                         <TableHead className='text-black text-center'>Instructeur</TableHead>
                         <TableHead className='text-black text-center'>Élève inscrit</TableHead>
                         <TableHead className='text-black text-center'>Avion</TableHead>
-                        {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.OWNER &&
-                            < TableHead className='text-black text-center'>Action</TableHead>
+                        {currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
+                            (
+                                < TableHead className='text-black text-center'>Action</TableHead>
+                            ) : null
                         }
                     </TableRow>
                 </TableHeader>
 
                 <TableBody>
-                    {sessions.map((session, index) => (
+                    {sessionsSorted.map((session, index) => (
                         <TableRowComponent
                             key={index}
                             session={session}
                             setSessionChecked={setSessionChecked}
                             isAllChecked={isAllChecked} // Pass the "select all" state
-                            reload={reload}
-                            setReload={setReload}
+                            planesProp={planesProp}
+                            sessions={sessions}
+                            setSessions={setSessions}
                         />
                     ))}
                 </TableBody>

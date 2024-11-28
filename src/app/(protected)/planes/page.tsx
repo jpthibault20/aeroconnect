@@ -1,4 +1,4 @@
-"use client";
+"use server";
 /**
  * @file Page.tsx
  * @brief A React component that serves as the main page for displaying planes.
@@ -9,43 +9,33 @@
  * @returns The rendered page component containing the planes page.
  */
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import InitialLoading from '@/components/InitialLoading';
 import PlanesPage from '@/components/plane/PlanesPage';
-import { navigationLinks, indexLinkPlane } from '@/config/links';
-import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { useRouter } from 'next/navigation';
-import { Spinner } from '@/components/ui/SpinnerVariants';
+import { PrismaClient } from '@prisma/client';
 
-const Page = () => {
-    const [loading, setLoading] = useState(true);
-    const { currentUser } = useCurrentUser();
-    const router = useRouter();
+const prisma = new PrismaClient();
 
-    useEffect(() => {
-        // Si currentUser est undefined, rester en état de chargement
-        if (currentUser === undefined) return;
+interface PageProps {
+    searchParams: { clubID: string | undefined };
+}
 
-        // Vérifier si l'utilisateur a le bon rôle
-        if (!navigationLinks[indexLinkPlane].roles.includes(currentUser.role)) {
-            router.replace("/calendar");
-        } else {
-            // Une fois que le rôle est validé, désactiver l'état de chargement
-            setLoading(false);
+const Page = async ({ searchParams }: PageProps) => {
+    const clubID = searchParams.clubID;
+
+    if (!clubID) {
+        throw new Error('clubID is required in the URL');
+    }
+
+    const planes = await prisma.planes.findMany({
+        where: {
+            clubID: clubID
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentUser]);
+    });
 
     return (
         <InitialLoading className='bg-gray-100 h-full'>
-            {loading ? (
-                <div className='flex h-full w-full justify-center items-center'>
-                    <Spinner />
-                    <p>Chargement...</p>
-                </div>
-            ) : (
-                <PlanesPage />
-            )}
+            <PlanesPage PlanesProps={planes} />
         </InitialLoading>
     );
 }

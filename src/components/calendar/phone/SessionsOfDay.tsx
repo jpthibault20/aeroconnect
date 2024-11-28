@@ -20,8 +20,7 @@ import SessionDisplay from './SessionDisplay';
 interface Props {
     flightsSessions: flight_sessions[];
     selectDate: Date;
-    reload: boolean;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
 }
 
 /**
@@ -31,7 +30,7 @@ interface Props {
  * @param {Props} props - The component props.
  * @returns {JSX.Element} The rendered component.
  */
-const SessionsOfDay = ({ flightsSessions, selectDate, reload, setReload }: Props) => {
+const SessionsOfDay = ({ flightsSessions, selectDate, setSessions }: Props) => {
     const [sessionOfTheDay, setSessionOfTheDay] = useState<flight_sessions[]>();
 
     useEffect(() => {
@@ -79,7 +78,7 @@ const SessionsOfDay = ({ flightsSessions, selectDate, reload, setReload }: Props
                 </p>
                 <div className='w-full space-y-6 flex flex-col items-center pb-24'>
                     {sessionOfTheDay?.map((session, index) => (
-                        <SessionDisplay key={index} session={session} reload={reload} setReload={setReload} />
+                        <SessionDisplay key={index} session={session} setSessions={setSessions} />
                     ))}
                 </div>
             </div>

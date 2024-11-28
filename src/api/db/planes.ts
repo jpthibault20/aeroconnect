@@ -21,14 +21,14 @@ export const createPlane = async (dataPlane: AddPlane) => {
             where: {
                 OR: [
                     { name: dataPlane.name, clubID: dataPlane.clubID },
-                    { immatriculation: dataPlane.immatriculation, clubID: dataPlane.clubID }
-                ]
-            }
+                    { immatriculation: dataPlane.immatriculation, clubID: dataPlane.clubID },
+                ],
+            },
         });
 
         if (existingPlane) {
             return {
-                error: 'un avion existe déjà avec au moins un des champs entées'
+                error: 'Un avion existe déjà avec au moins un des champs entrés',
             };
         }
 
@@ -41,7 +41,20 @@ export const createPlane = async (dataPlane: AddPlane) => {
             },
         });
 
-        return { succes: "Plane created successfully" };
+        // Récupération et retour de tous les avions pour ce club
+        const planes = await prisma.planes.findMany({
+            where: {
+                clubID: dataPlane.clubID,
+            },
+            select: {
+                id: true,
+                name: true,
+                immatriculation: true,
+                clubID: true,
+            },
+        });
+
+        return { success: 'Plane created successfully', planes };
 
     } catch (error) {
         console.error(error);
@@ -50,6 +63,7 @@ export const createPlane = async (dataPlane: AddPlane) => {
         };
     }
 };
+
 
 export const getPlanes = async (clubID: string) => {
     if (!clubID) {

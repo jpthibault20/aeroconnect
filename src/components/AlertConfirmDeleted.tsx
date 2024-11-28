@@ -29,21 +29,29 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
     // Ferme le dialogue automatiquement lorsque loading devient false
     useEffect(() => {
         if (!loading) {
-            setIsOpen(false);
+            setIsOpen(false); // Ferme le dialogue lorsque loading est false
         }
-    }, [loading]);
+    }, [loading]); // Déclenchement quand loading change
 
     const handleConfirm = () => {
         confirmAction(); // Exécute l'action de confirmation
-        // Garde le dialogue ouvert tant que loading est true
+    };
+
+    // Ouvre le dialogue lorsqu'on reçoit le trigger pour le faire
+    const handleTriggerClick = () => {
+        setIsOpen(true); // Ouvre le dialogue
+    };
+
+    // Empêche de fermer le dialogue lorsque loading est true
+    const handleDialogClose = (open: boolean) => {
         if (!loading) {
-            setIsOpen(false);
+            setIsOpen(open); // Si loading est false, on permet de fermer la boîte
         }
     };
 
     return (
-        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-            <AlertDialogTrigger asChild className={style}>
+        <AlertDialog open={isOpen} onOpenChange={handleDialogClose}>
+            <AlertDialogTrigger asChild className={style} onClick={handleTriggerClick}>
                 {children}
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -55,7 +63,7 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
                     <AlertDialogCancel onClick={() => setIsOpen(false)}>{cancel}</AlertDialogCancel>
                     {loading ? (
                         <div className="flex justify-center items-center">
-                            <Spinner />
+                            <Spinner /> {/* Affiche un spinner pendant le chargement */}
                         </div>
                     ) : (
                         <AlertDialogAction

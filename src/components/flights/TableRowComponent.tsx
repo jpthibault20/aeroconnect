@@ -23,30 +23,29 @@ import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/session
 import { toast } from '@/hooks/use-toast';
 import AddStudent from './AddStudent';
 import { Button } from '../ui/button';
-import { getPlaneByID } from '@/api/db/planes';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 
 interface props {
     session: flight_sessions;  ///< The flight session object
+    sessions: flight_sessions[];
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     setSessionChecked: React.Dispatch<React.SetStateAction<string[]>>; ///< Function to update selected session IDs
     isAllChecked: boolean; ///< Indicates if "select all" is checked
-    reload: boolean;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    planesProp: planes[];
 }
 
-const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, setReload }: props) => {
+const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp }: props) => {
+    const { currentUser } = useCurrentUser();
     const [isChecked, setIsChecked] = useState(false); // State for individual checkbox
     const [loading, setLoading] = useState(false);
-    const [plane, setPlane] = useState<planes>();
     const [autorisedDeleteStudent, setAutorisedDeleteStudent] = useState(false);
-    const { currentUser } = useCurrentUser();
+    const [plane, setPlane] = useState<planes | undefined>();
 
     const finalDate = new Date(session.sessionDateStart);
     finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min); // Calculate end time of the session
 
     useEffect(() => {
-        console.log(currentUser?.id, session.studentID);
         if (currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR" || session.studentID === currentUser?.id) {
             setAutorisedDeleteStudent(true);
         } else {
@@ -56,18 +55,13 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
 
     // Sync individual checkbox state with "select all"
     useEffect(() => {
-        const getPlane = async () => {
-            if (!session.studentPlaneID) return;
-            try {
-                const result = await getPlaneByID(session.studentPlaneID);
-                if (!result || 'error' in result) return; // Handle the case where the result is null or contains an error
-                setPlane(result); // Assuming 'result' is of the correct type
-            } catch (error) {
-                console.error('Error getting plane:', error);
-            }
-        };
-        getPlane();
+        if (session.studentPlaneID) {
+            const foundPlane = planesProp.find((p) => p.id === session.studentPlaneID);
+            setPlane(foundPlane); // Met à jour l'état
+        }
+
         setIsChecked(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [session]);
 
     // Sync individual checkbox state with "select all"
@@ -93,12 +87,28 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
             if (sessions.length > 0) {
                 setLoading(true);
                 try {
-                    await removeSessionsByID(sessions);
+                    const res = await removeSessionsByID(sessions);
+                    if (res.error) {
+                        toast({
+                            title: "Oups, une erreur est survenue",
+                            description: res.error,
+                        });
+                    }
+                    if (res.success) {
+                        toast({
+                            title: res.success,
+                        });
+
+                        //supprimer les sessions de la base de données local
+                        setSessions(prevSessions => {
+                            const updatedSessions = prevSessions.filter(session => !sessions.includes(session.id));
+                            return updatedSessions;
+                        });
+                    }
                 } catch (error) {
                     console.log(error);
                 } finally {
                     setLoading(false);
-                    setReload(!reload);
                 }
             }
         };
@@ -106,34 +116,52 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
         removeSessions();
     }
 
-    // Remove student from session
     const removeStudent = (sessionID: string | null) => {
         const removeSessions = async () => {
             if (sessionID) {
                 setLoading(true);
                 try {
+                    // Suppression de l'étudiant de la session
                     const res = await removeStudentFromSessionID(sessionID);
                     if (res.success) {
                         toast({
                             title: res.success,
                         });
+
+                        // Mise à jour de la session pour nettoyer les valeurs
+                        setSessions(prevSessions => {
+                            const updatedSessions = prevSessions.map(s =>
+                                s.id === sessionID
+                                    ? {
+                                        ...s,
+                                        studentId: null,             // Réinitialisation de l'ID étudiant
+                                        studentFirstName: "",        // Réinitialisation du prénom
+                                        studentLastName: "",         // Réinitialisation du nom
+                                        studentPlaneID: null,        // Réinitialisation de l'ID de l'avion
+                                    }
+                                    : s
+                            );
+                            return updatedSessions;
+                        });
+                        setPlane(undefined)
+                        // setLoading(false);
                     }
+
                     if (res.error) {
                         toast({
                             title: "Oups, une erreur est survenue",
                             description: res.error,
                         });
+
                     }
                 } catch (error) {
                     console.log(error);
-                } finally {
-                    setLoading(false);
-                    setReload(!reload);
                 }
             }
         };
 
         removeSessions();
+        // setLoading(false);
     };
 
 
@@ -180,25 +208,27 @@ const TableRowComponent = ({ session, setSessionChecked, isAllChecked, reload, s
                         }
                     </div>
                 ) : (
-                    <AddStudent sessionID={session.id} reload={reload} setReload={setReload} />
+                    <AddStudent session={session} setSessions={setSessions} sessions={sessions} planesProp={planesProp} />
                 )}
             </TableCell>
             <TableCell className='text-center'>
                 {plane?.name || '...'}
             </TableCell>
             <TableCell className='h-full w-full justify-center items-center flex'>
-                {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.OWNER &&
-                    <AlertConfirmDeleted
-                        title='Etes vous sur de vouloir supprimer ce vol ?'
-                        description={'Ce vol sera supprimé définitivement'}
-                        style='flex h-full w-full justify-center items-center'
-                        cancel='Annuler'
-                        confirm='Supprimer'
-                        confirmAction={() => removeFlight([session.id])}
-                        loading={loading}
-                    >
-                        <Button className='w-fit' variant={"destructive"} >Supprimer</Button>
-                    </AlertConfirmDeleted>
+                {currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
+                    (
+                        <AlertConfirmDeleted
+                            title='Etes vous sur de vouloir supprimer ce vol ?'
+                            description={'Ce vol sera supprimé définitivement'}
+                            style='flex h-full w-full justify-center items-center'
+                            cancel='Annuler'
+                            confirm='Supprimer'
+                            confirmAction={() => removeFlight([session.id])}
+                            loading={loading}
+                        >
+                            <Button className='w-fit' variant={"destructive"} >Supprimer</Button>
+                        </AlertConfirmDeleted>
+                    ) : null
                 }
             </TableCell>
         </TableRow>
