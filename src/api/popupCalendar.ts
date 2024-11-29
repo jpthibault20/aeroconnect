@@ -1,7 +1,6 @@
 "use server";
 
 import { flight_sessions, planes, PrismaClient, User } from "@prisma/client";
-import { Session } from "inspector/promises";
 import { getAllUser } from "./db/users";
 import { getPlanes } from "./db/planes";
 

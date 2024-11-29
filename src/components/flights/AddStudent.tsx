@@ -68,7 +68,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp }: Props) => {
         };
 
         fetchPlanesAndUsers();
-    }, [sessions]);
+    }, [sessions, session]);
 
     if (currentUser?.role === userRole.USER) return null;
 

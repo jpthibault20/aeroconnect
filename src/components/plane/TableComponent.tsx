@@ -24,7 +24,7 @@ const TableComponent = ({ planes, setPlanes }: props) => {
                                 <TableHead className='text-black text-center'>État</TableHead>
                                 <TableHead className='text-black text-center'>Actions</TableHead>
                             </>
-                            ) : currentUser?.role == userRole.STUDENT ?
+                            ) : currentUser?.role == userRole.STUDENT || currentUser?.role == userRole.PILOT ?
                                 (
                                     <>
                                         <TableHead className='text-black text-center'>État</TableHead>

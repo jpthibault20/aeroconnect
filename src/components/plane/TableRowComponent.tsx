@@ -97,7 +97,7 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
         <TableRow className="text-center">
             <TableCell>{plane.name}</TableCell>
             <TableCell>{plane.immatriculation}</TableCell>
-            {currentUser?.role == userRole.STUDENT ?
+            {currentUser?.role == userRole.STUDENT || currentUser?.role == userRole.PILOT ?
                 (<>
                     <TableCell>
                         <div>
