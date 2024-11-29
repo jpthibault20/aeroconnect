@@ -164,6 +164,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp }: Props) => {
             ) : (
                 <TableComponent
                     sessions={filteredSessions} // Pass filtered sessions here
+                    setSessions={setSessions}
                     setSessionChecked={setSessionChecked}
                     planesProp={planesProp}
                 />

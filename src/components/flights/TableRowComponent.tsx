@@ -134,7 +134,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                                 s.id === sessionID
                                     ? {
                                         ...s,
-                                        studentId: null,             // Réinitialisation de l'ID étudiant
+                                        studentID: null,             // Réinitialisation de l'ID étudiant
                                         studentFirstName: "",        // Réinitialisation du prénom
                                         studentLastName: "",         // Réinitialisation du nom
                                         studentPlaneID: null,        // Réinitialisation de l'ID de l'avion
