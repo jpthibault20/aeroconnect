@@ -144,7 +144,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                             return updatedSessions;
                         });
                         setPlane(undefined)
-                        // setLoading(false);
+                        setLoading(false);
                     }
 
                     if (res.error) {

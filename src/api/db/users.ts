@@ -29,6 +29,7 @@ export const createUser = async (dataUser: UserMin) => {
                 phone: dataUser.phone,
             },
         });
+        prisma.$disconnect();
         return { succes: "User created successfully" };
 
     } catch (error) {
@@ -47,14 +48,13 @@ export const getAllUser = async (clubID: string) => {
                 clubID: clubID
             }
         })
+        prisma.$disconnect();
         return users;
     } catch (error) {
         console.error('Error getting user:', error);
         return { error: "Erreur lors de la récupération des utilisateurs" };
     }
-    finally {
-        await prisma.$disconnect();
-    }
+
 }
 
 // récupération de la session de l'utilisateur
@@ -89,6 +89,7 @@ export const getUser = async () => {
         result = await prisma.user.findUnique({
             where: { email: data?.data.user?.email },
         })
+        prisma.$disconnect();
     } catch (error) {
         console.log(error)
         return { error: "Error getting user from database" };
@@ -117,6 +118,7 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
                 // student_type: student.type,
             }
         });
+        prisma.$disconnect();
         const session = await prisma.flight_sessions.findUnique({
             where: { id: sessionID },
             select: {
@@ -125,12 +127,11 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
                 pilotID: true,
             }
         });
+        prisma.$disconnect();
         const studentcomp = await prisma.user.findUnique({
             where: { id: student.id },
-            select: {
-                email: true,
-            }
         });
+        prisma.$disconnect();
 
         if (!session?.pilotID) return { error: "Student not found" }
         const instructor = await prisma.user.findUnique({
@@ -141,11 +142,12 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
                 lastName: true,
             }
         })
+        prisma.$disconnect();
 
         const endDate = new Date(session.sessionDateStart)
         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min)
         
-        await sendNotificationBooking(instructor?.email as string, instructor?.firstName as string, instructor?.lastName as string, session.sessionDateStart as Date, endDate as Date);
+        await sendNotificationBooking(instructor?.email as string, studentcomp?.firstName as string, studentcomp?.lastName as string, session.sessionDateStart as Date, endDate as Date);
         await sendStudentNotificationBooking(studentcomp?.email as string, session.sessionDateStart as Date, endDate as Date);
 
         
@@ -166,6 +168,7 @@ export const deleteUser = async (studentID: string) => {
                 id: studentID
             }
         });
+        prisma.$disconnect();
         console.log('User deleted successfully');
         return { success: "L'utilisateur a été supprimé avec succès !" };
     } catch (error) {
@@ -197,6 +200,7 @@ export const updateUser = async (user: User) => {
                 country: user.country,
             }
         });
+        prisma.$disconnect();
         console.log('User updated successfully');
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch (error) {
@@ -214,14 +218,13 @@ export const getUserByID = async (id: string[]) => {
                 }
             }
         })
+        prisma.$disconnect();
         return user;
     } catch (error) {
         console.error('Error getting user:', error);
         return { error: "Erreur lors de la récupération des utilisateurs" };
     }
-    finally {
-        await prisma.$disconnect();
-    }
+
 }
 
 export const getInsctructors = async (clubID: string | undefined) => {
@@ -235,14 +238,13 @@ export const getInsctructors = async (clubID: string | undefined) => {
                 role: { in: [userRole.INSTRUCTOR, userRole.ADMIN, userRole.OWNER] }
             }
         })
+        prisma.$disconnect();
         return instructors;
     } catch (error) {
         console.error('Error getting instructors:', error);
         return { error: "Erreur lors de la récupération des instructeurs" };
     }
-    finally {
-        await prisma.$disconnect();
-    }
+
 }
 
 export const blockUser = async (userID: string, restricted: boolean) => {
@@ -259,6 +261,7 @@ export const blockUser = async (userID: string, restricted: boolean) => {
                 restricted: restricted
             }
         });
+        prisma.$disconnect();
         return { success: "L'utilisateur a été bloqué avec succès !" };
     } catch (error) {
         console.error('Error blocking user:', error);

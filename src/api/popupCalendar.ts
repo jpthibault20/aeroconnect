@@ -2,7 +2,7 @@
 
 import { flight_sessions, planes, PrismaClient, User } from "@prisma/client";
 import { getAllUser } from "./db/users";
-import { getPlanes } from "./db/planes";
+import { getPlaneById } from "./db/planes";
 
 const prisma = new PrismaClient();
 
@@ -34,6 +34,7 @@ export const filterPilotePlane = async (sessions: flight_sessions[]): Promise<Ob
             return await prisma.user.findUnique({ where: { id } });
         })
     )).filter((pilot): pilot is User => pilot !== null); // Filtrer les pilotes non nuls
+    prisma.$disconnect();
 
     // Récupérer les avions uniques et filtrer ceux présents dans studentPlaneIDs
     const planes = (await Promise.all(
@@ -43,6 +44,7 @@ export const filterPilotePlane = async (sessions: flight_sessions[]): Promise<Ob
     )).filter(
         (plane): plane is planes => plane !== null && !studentPlaneIDs.includes(plane.id)
     );
+    prisma.$disconnect();
 
     return { 
         pilotes, // Les pilotes uniques sans valeur null
@@ -61,7 +63,7 @@ export const getFreePlanesUsers = async (actualSession: flight_sessions, session
     const users: User[] = usersResult;
 
     // Récupérer les avions et gérer les erreurs possibles
-    const planesResult = await getPlanes(actualSession.clubID);
+    const planesResult = await getPlaneById(actualSession.planeID);
     if (!Array.isArray(planesResult)) {
         console.error('Erreur lors de la récupération des avions :', planesResult.error || 'Erreur inconnue');
         return { students: [], planes: [] };

@@ -94,6 +94,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
             sessionDateStart: { in: sessionsToCreate },
         }
     });
+    prisma.$disconnect();
 
     if (existingSessions.length > 0) {
         return { error: "Une session existe déjà avec cette configuration pour l'une des dates." };
@@ -121,6 +122,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
                 })
             )
         );
+        prisma.$disconnect();
 
         return { success: "Les sessions ont été créées !", sessions: createdSessions };
     } catch (error) {
@@ -137,12 +139,12 @@ export const getAllSessions = async (clubID: string, monthSelected: Date) => {
             where: {
                 clubID: clubID,
                 sessionDateStart: {
-                    gte:new Date(monthSelected.getFullYear(), monthSelected.getMonth(), 1, 0, 0, 0, 0),
-                    lte:new Date(monthSelected.getFullYear(), monthSelected.getMonth() + 1, 0, 23, 59, 59, 999)
+                    gte: new Date(monthSelected.getFullYear(), monthSelected.getMonth(), 1, 0, 0, 0, 0),
+                    lte: new Date(monthSelected.getFullYear(), monthSelected.getMonth() + 1, 0, 23, 59, 59, 999)
                 },
             },
-            
         });
+        prisma.$disconnect();
         return sessions;
     } catch (error) {
         console.error('Error getting flight sessions:', error);
@@ -161,6 +163,7 @@ export const getAllFutureSessions = async (clubID: string) => {
                 }
             }
         })
+        prisma.$disconnect();
         return sessions;
     } catch (error) {
         console.error('Error getting flight sessions:', error);
@@ -177,6 +180,7 @@ export const getPlanes = async (clubID: string) => {
                 clubID: clubID
             }
         })
+        prisma.$disconnect();
         return planes;
     } catch (error) {
         console.error('Error getting planes:', error);
@@ -193,32 +197,43 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
                 id: { in: sessionIDs },
             },
         });
+        prisma.$disconnect();
 
-                // Récupérer les étudiants associés via leur ID
-                const studentIDs = sessions
-                        .map((session) => session.studentID)
-                        .filter((id): id is string => id !== null);
-                const students = await prisma.user.findMany({
-                        where: {
-                                id: { in: studentIDs },
-                        },
-                });
 
-                // Créer une map pour accéder facilement aux étudiants par leur ID
-                const studentMap = new Map(students.map((student) => [student.id, student.email]));
+        // Récupérer les étudiants associés via leur ID
+        const studentIDs = sessions
+            .map((session) => session.studentID)
+            .filter((id): id is string => id !== null);
+        const students = await prisma.user.findMany({
+            where: {
+                id: { in: studentIDs },
+            },
+        });
+        prisma.$disconnect();
+
+        const piloteIDs = sessions.map((session) => session.pilotID).filter((id): id is string => id !== null);
+        const pilotes = await prisma.user.findMany({
+            where: {
+                id: { in: piloteIDs },
+            },
+        });
+        prisma.$disconnect();
+
+        const piloteMap = new Map(pilotes.map((pilot) => [pilot.id, pilot.email]));
+
+        // Créer une map pour accéder facilement aux étudiants par leur ID
+        const studentMap = new Map(students.map((student) => [student.id, student.email]));
 
         // Envoyer une notification pour chaque session
         for (const session of sessions) {
             const studentEmail = studentMap.get(session.studentID || '');
+            const piloteEmail = piloteMap.get(session.pilotID || '');
             const endDate = new Date(session.sessionDateStart);
             endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
-        
+
             if (studentEmail) {
-                sendNotificationRemoveAppointment(
-                    studentEmail,
-                    session.sessionDateStart,
-                    endDate
-                );
+                sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate);
+                sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date);
             }
         }
 
@@ -228,6 +243,7 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
                 id: { in: sessionIDs },
             },
         });
+        prisma.$disconnect();
 
         return { success: "Les sessions ont été supprimées !" };
     } catch (error) {
@@ -242,19 +258,21 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
         const session = await prisma.flight_sessions.findUnique({
             where: { id: sessionID },
         });
-        
+        prisma.$disconnect();
 
         if (!session || !session.sessionDateStart || !session.studentID || !session.pilotID) {
             return { error: "Session introuvable ou incomplète." };
         }
 
         const student = await prisma.user.findUnique({
-            where:{id: session.studentID}
+            where: { id: session.studentID }
         })
+        prisma.$disconnect();
 
         const pilote = await prisma.user.findUnique({
-            where:{id: session.pilotID}
+            where: { id: session.pilotID }
         })
+        prisma.$disconnect();
 
 
         const sessionDateUTC = new Date(session.sessionDateStart); // Assurez-vous que cette date est UTC
@@ -280,10 +298,11 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
                 studentPlaneID: null,
             }
         });
+        prisma.$disconnect();
 
         const endDate = new Date(session.sessionDateStart);
         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
-        
+
         sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date);
         sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date);
         return { success: "L'élève a été désinscrit de la session !" };
@@ -301,6 +320,7 @@ export const getSessionPlanes = async (sessionID: string) => {
                 id: sessionID
             },
         });
+        prisma.$disconnect();
 
         // Si aucun planeID n'est trouvé, retourne un tableau vide
         if (!session?.planeID || session.planeID.length === 0) {
@@ -320,7 +340,8 @@ export const getSessionPlanes = async (sessionID: string) => {
                 name: true
             }
         });
-        
+        prisma.$disconnect();
+
         return planes; // Retourne le tableau d'avions avec `id` et `name`
     } catch (error) {
         console.error('Error getting session planes:', error);
@@ -348,11 +369,14 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
                     sessionDateStart: sessionID ? undefined : undefined, // Placeholder for more 
                 },
             }),
+            
         ]);
+        prisma.$disconnect();
 
         const instructor = await prisma.user.findUnique({
-            where: { id: session?.pilotID}
+            where: { id: session?.pilotID }
         })
+        prisma.$disconnect();
 
         if (!student) {
             return { error: "Élève introuvable." };
@@ -398,13 +422,14 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
                 studentLastName: student.lastName,
             },
         });
+        prisma.$disconnect();
 
         const endDate = new Date(session.sessionDateStart)
         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min)
 
         await sendNotificationBooking(instructor?.email as string, instructor?.firstName as string, instructor?.lastName as string, session.sessionDateStart as Date, endDate as Date);
         await sendStudentNotificationBooking(student.email as string, session.sessionDateStart as Date, endDate as Date);
-    
+
         return { success: "Étudiant inscrit avec succès à la session." };
     } catch (error) {
         console.error("Erreur lors de l'inscription de l'étudiant :", error);
