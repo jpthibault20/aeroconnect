@@ -68,11 +68,13 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
 
     const getSessionsGroupedByDate = () => {
         const grouped: Record<string, flight_sessions[]> = {};
-        sessionsFlitered.forEach((session) => {
-            const dateKey = formatDateAsKey(session.sessionDateStart);
-            if (!grouped[dateKey]) grouped[dateKey] = [];
-            grouped[dateKey].push(session);
-        });
+        sessionsFlitered
+            .sort((a, b) => new Date(a.sessionDateStart).getTime() - new Date(b.sessionDateStart).getTime()) // Tri par date de début
+            .forEach((session) => {
+                const dateKey = formatDateAsKey(session.sessionDateStart);
+                if (!grouped[dateKey]) grouped[dateKey] = [];
+                grouped[dateKey].push(session);
+            });
         return grouped;
     };
 
