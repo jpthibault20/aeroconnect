@@ -85,7 +85,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp }: Props) => {
                             title: res.success,
                             duration: 5000,
                         });
-
+                        setSessionChecked([]);
                         setSessions(sessions.filter(session => !sessionsParams.includes(session.id)));
                     }
                     if (res.error) {
