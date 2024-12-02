@@ -175,7 +175,7 @@ const NewSession = ({ display, setSessions, planesProp }: Props) => {
             >
                 {/* Header fixe */}
                 <DialogHeader
-                    className="flex flex-col items-center mb-3 flex-shrink-0 sticky top-0 z-50 p-4 border-b"
+                    className="flex flex-col items-center mb-3 p-4 border-b"
                 >
                     <DialogTitle className="text-lg font-bold">Nouvelle session</DialogTitle>
                     <DialogDescription className="text-sm text-gray-500">

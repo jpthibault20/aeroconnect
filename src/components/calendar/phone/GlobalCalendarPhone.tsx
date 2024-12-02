@@ -6,16 +6,14 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Session } from './Session';
 import Filter from '../Filter';
 import NewSession from '@/components/NewSession';
-import { Spinner } from '@/components/ui/SpinnerVariants';
 
 interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
-    loading: boolean;
     planesProp: planes[];
 }
 
-const GlobalCalendarPhone = ({ sessions, loading, setSessions, planesProp }: Props) => {
+const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -95,25 +93,31 @@ const GlobalCalendarPhone = ({ sessions, loading, setSessions, planesProp }: Pro
         return allComplete ? 'bg-red-500' : hasIncomplete ? 'bg-green-500' : null;
     };
 
-    if (loading) {
-        return (
-            <div className="flex h-full w-full items-center justify-center">
-                <Spinner>chargement ...</Spinner>
-            </div>
-        );
-    }
-
     return (
         <div className="relative w-full bg-background px-8 mt-6 pb-20">
-            <div>
-                <NewSession display={'desktop'} setSessions={setSessions} planesProp={planesProp} />
-            </div>
-
             {/* Header */}
-            <div className="flex items-center justify-between mt-2">
-                <h2 className="text-lg font-semibold">
-                    {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                </h2>
+            <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center space-x-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => changeMonth(-1)}
+                        className="h-8 w-8"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <h2 className="text-lg font-semibold">
+                        {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                    </h2>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => changeMonth(1)}
+                        className="h-8 w-8"
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
                 <div className="flex items-center space-x-2">
                     <Button
                         variant="outline"
@@ -137,27 +141,12 @@ const GlobalCalendarPhone = ({ sessions, loading, setSessions, planesProp }: Pro
                     >
                         Aujourd&apos;hui
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => changeMonth(-1)}
-                        className="h-8 w-8"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => changeMonth(1)}
-                        className="h-8 w-8"
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
                 </div>
             </div>
 
-            <div className="justify-between items-center my-4">
-                <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display="desktop" />
+            <div className="justify-between items-center my-4 flex">
+                <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display="phone" />
+                <NewSession display={'phone'} setSessions={setSessions} planesProp={planesProp} />
             </div>
 
             {/* Calendrier */}
@@ -198,7 +187,7 @@ const GlobalCalendarPhone = ({ sessions, loading, setSessions, planesProp }: Pro
             <div className="mt-4">
                 <h3 className="text-lg font-semibold mb-2"></h3>
                 {getSessionsForDate(selectedDate).map((session, index) => (
-                    <Session key={index} PlaneProps={session.planeID.length} session={session} />
+                    <Session key={index} PlaneProps={session.planeID.length} session={session} setSessions={setSessions} />
                 ))}
             </div>
         </div>

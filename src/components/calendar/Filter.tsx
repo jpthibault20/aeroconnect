@@ -9,7 +9,7 @@ import { getAllPlanesOperational } from '@/api/db/planes'
 
 interface Props {
     sessions: flight_sessions[],
-    display: string,
+    display: "desktop" | "phone"
     setSessionsFiltered: React.Dispatch<React.SetStateAction<flight_sessions[]>>
 }
 
@@ -111,7 +111,7 @@ const Filter = ({ sessions, setSessionsFiltered, display }: Props) => {
                     <PopoverTrigger >
                         <Settings2 />  {/* Icon trigger for opening the popover */}
                     </PopoverTrigger>
-                    <PopoverContent>
+                    <PopoverContent className='w-fit'>
                         <div className="space-y-3">
                             <div className="space-y-2">
                                 <h4 className="font-medium leading-none">Filtres</h4>
