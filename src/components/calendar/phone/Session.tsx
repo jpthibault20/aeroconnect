@@ -18,8 +18,6 @@ export function Session({ PlaneProps, session }: SessionProps) {
         0
     );
 
-    const complet = session.studentID !== null
-
     return (
         <div className={cn(
             "p-2 rounded-md mb-3 gap-3",
