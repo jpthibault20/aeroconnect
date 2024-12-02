@@ -1,127 +1,194 @@
-/**
- * @file GlobalCalendarPhone.tsx
- * @brief This component renders a calendar view for mobile devices.
- * It allows users to select a date, filter flight sessions by instructor and plane,
- * and view sessions for a specific day. It also includes functionalities for navigating
- * between weeks and creating new flight sessions.
- * 
- * @details
- * - Utilizes React hooks for state management and lifecycle methods.
- * - Integrates components for loading states, day selection, filtering, and session display.
- * - Fetches and filters flight session data based on user input.
- */
-
-import React, { useEffect, useState } from 'react';
-import DaySelector from './../DaySelector';
-import { DaysOfMonthType, getCompleteWeeks } from '@/api/date';
-import Calendar from './../phone/calendar';
-import SessionOfDay from "@/components/calendar/phone/SessionsOfDay";
-import NewSession from "@/components/NewSession";
-import Filter from '../Filter';
+import React, { useState, useEffect, useMemo } from 'react';
 import { flight_sessions, planes } from '@prisma/client';
-import { Spinner } from '@/components/ui/SpinnerVariants';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Session } from './Session';
+import Filter from '../Filter';
+import NewSession from '@/components/NewSession';
 
 interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
-    loading: boolean;
     planesProp: planes[];
 }
 
-/**
- * @component GlobalCalendarPhone
- * @description Main component for displaying a calendar on mobile devices.
- * Handles date selection, session filtering, and session display.
- */
-const GlobalCalendarPhone = ({ sessions, loading, setSessions, planesProp }: Props) => {
-    // State variables for managing date, instructor, plane, and filtered sessions
-    const [date, setDate] = useState(new Date());
-    const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>();
-    const [selectDate, setSelectDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
+const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [dates, setDates] = useState<Date[]>([]);
+    const scrollRef = React.useRef<HTMLDivElement>(null);
+    const todayRef = React.useRef<HTMLButtonElement>(null);
 
-
-    // Effect to get complete weeks for the selected date
     useEffect(() => {
-        try {
-            const res = getCompleteWeeks(date);
-            setDaysOfMonth(res);
-        } catch (error) {
-            console.log(error);
+        const today = new Date();
+        setCurrentDate(today);
+        setSelectedDate(today);
+        const datesArray = getDaysInMonth(today.getFullYear(), today.getMonth());
+        setDates(datesArray);
+    }, []);
+
+    useEffect(() => {
+        const datesArray = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth());
+        setDates(datesArray);
+    }, [currentDate]);
+
+    // Re-traitement lorsque `sessions` change
+    useEffect(() => {
+        setSessionsFiltered(sessions); // Réinitialiser les sessions filtrées
+    }, [sessions]);
+
+    const getDaysInMonth = (year: number, month: number) => {
+        const date = new Date(year, month, 1);
+        const days = [];
+        while (date.getMonth() === month) {
+            days.push(new Date(date));
+            date.setDate(date.getDate() + 1);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [date]);
-
-    // Handler to navigate to the next month
-    const onClickNextweek = () => {
-        setDate(prevDate => {
-            prevDate.setDate(1);
-            const newDate = new Date(prevDate);
-            newDate.setMonth(newDate.getMonth() + 1);
-            return newDate;
-        });
+        return days;
     };
 
-    // Handler to navigate to the previous month
-    const onClickPreviousWeek = () => {
-        setDate(prevDate => {
-            prevDate.setDate(1);
-            const newDate = new Date(prevDate);
-            newDate.setMonth(newDate.getMonth() - 1);
-            return newDate;
-        });
+    const changeMonth = (increment: number) => {
+        const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + increment, 1);
+        setCurrentDate(newDate);
+        setSelectedDate(new Date(newDate.getFullYear(), newDate.getMonth(), 1));
     };
 
-    // Handler to set the date to today
-    const onClickToday = () => {
-        setDate(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
+    const formatDate = (date: Date) => {
+        return date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    };
+
+    const formatDateAsKey = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Mois commence à 0
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`; // Exemple : "2024-12-02"
+    };
+
+    const getSessionsGroupedByDate = () => {
+        const grouped: Record<string, flight_sessions[]> = {};
+        sessionsFlitered.forEach((session) => {
+            const dateKey = formatDateAsKey(session.sessionDateStart);
+            if (!grouped[dateKey]) grouped[dateKey] = [];
+            grouped[dateKey].push(session);
+        });
+        return grouped;
+    };
+
+    // Mémoriser le regroupement des sessions pour éviter les recalculs inutiles
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const sessionsGroupedByDate = useMemo(() => getSessionsGroupedByDate(), [sessionsFlitered]);
+
+    const getSessionsForDate = (date: Date) => {
+        const dateString = formatDateAsKey(date);
+        return sessionsGroupedByDate[dateString] || [];
+    };
+
+    const getBarColor = (date: Date) => {
+        const sessions = getSessionsForDate(date);
+        if (sessions.length === 0) return null;
+        const hasIncomplete = sessions.some((session) => !session.studentID);
+        const allComplete = sessions.every((session) => session.studentID);
+        return allComplete ? 'bg-red-500' : hasIncomplete ? 'bg-green-500' : null;
     };
 
     return (
-        <div className='flex flex-col flex-grow h-full'> {/* Use h-screen to ensure the full height */}
-            <p className='text-2xl font-istok font-semibold my-3 w-full text-center'>Calendrier</p>
-            <div className='w-full px-6'>
-                <div className='border-b border-[#646464] w-full' />
-            </div>
-            <div className='w-full mt-6'> {/* flex-grow and overflow-y-auto for scrollable content */}
-                <div className='flex justify-between px-6'>
-                    <p className='text-4xl font-istok mb-3'>
-                        {date.toLocaleDateString('fr-FR', { month: 'long' })}, {date.toLocaleDateString('fr-FR', { year: 'numeric' })}
-                    </p>
-                    <div className='flex items-center space-x-3'>
-                        <NewSession display='phone' setSessions={setSessions} planesProp={planesProp} />
-                        <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='phone' />
-                    </div>
+        <div className="relative w-full bg-background px-8 mt-6 pb-20">
+            {/* Header */}
+            <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center space-x-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => changeMonth(-1)}
+                        className="h-8 w-8"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <h2 className="text-lg font-semibold">
+                        {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                    </h2>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => changeMonth(1)}
+                        className="h-8 w-8"
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
                 </div>
-                <div className='flex w-full px-6'>
-                    <DaySelector
-                        className='w-full flex'
-                        onClickNextWeek={onClickNextweek}
-                        onClickPreviousWeek={onClickPreviousWeek}
-                        onClickToday={onClickToday}
-                    />
-
+                <div className="flex items-center space-x-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            const today = new Date();
+                            setCurrentDate(today);
+                            setSelectedDate(today);
+                            const datesArray = getDaysInMonth(today.getFullYear(), today.getMonth());
+                            setDates(datesArray);
+                            setTimeout(() => {
+                                if (todayRef.current) {
+                                    todayRef.current.scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'nearest',
+                                        inline: 'center',
+                                    });
+                                }
+                            }, 0);
+                        }}
+                    >
+                        Aujourd&apos;hui
+                    </Button>
                 </div>
-                {loading ? (
-                    <div>
-                        <Spinner />
-                        <p className='text-center'>
-                            Chargement des sessions ...
-                        </p>
-                    </div>
-                ) : (
-                    <Calendar
-                        daysOfMonth={daysOfMonth}
-                        date={date}
-                        flightsSessions={sessionsFlitered}
-                        setSelectDate={setSelectDate}
-                        selectDate={selectDate}
-                    />
-                )}
             </div>
 
-            <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 h-full'> {/* Make the sessions part scrollable */}
-                <SessionOfDay selectDate={selectDate} flightsSessions={sessionsFlitered} setSessions={setSessions} />
+            <div className="justify-between items-center my-4 flex">
+                <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display="phone" />
+                <NewSession display={'phone'} setSessions={setSessions} planesProp={planesProp} />
+            </div>
+
+            {/* Calendrier */}
+            <div
+                ref={scrollRef}
+                className="flex overflow-x-auto scrollbar-hide px-4 pb-4 pt-2 border-b"
+                style={{ scrollSnapType: 'x mandatory' }}
+            >
+                {dates.map((date) => {
+                    const barColor = getBarColor(date);
+                    return (
+                        <button
+                            key={formatDateAsKey(date)}
+                            ref={date.toDateString() === new Date().toDateString() ? todayRef : null}
+                            onClick={() => setSelectedDate(date)}
+                            className={cn(
+                                'flex min-w-[60px] flex-col items-center rounded-lg px-2 py-3 text-center',
+                                selectedDate.toDateString() === date.toDateString()
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'hover:bg-muted'
+                            )}
+                            style={{ scrollSnapAlign: 'start' }}
+                        >
+                            <span className="text-sm font-medium">
+                                {date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3)}
+                            </span>
+                            <span className="text-xl font-bold">{date.getDate()}</span>
+                            {barColor && <div className={`h-1 w-5 ${barColor} rounded-full`}></div>}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Date */}
+            <div className="mt-4 text-center text-xl">{formatDate(selectedDate)}</div>
+
+            {/* Sessions */}
+            <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2"></h3>
+                {getSessionsForDate(selectedDate).map((session, index) => (
+                    <Session key={index} PlaneProps={session.planeID.length} session={session} setSessions={setSessions} />
+                ))}
             </div>
         </div>
     );
