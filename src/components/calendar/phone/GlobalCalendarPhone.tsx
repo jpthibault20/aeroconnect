@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @file GlobalCalendarPhone.tsx
  * @brief This component renders a calendar view for mobile devices.
@@ -11,15 +12,12 @@
  * - Fetches and filters flight session data based on user input.
  */
 
-import React, { useEffect, useState } from 'react';
-import DaySelector from './../DaySelector';
-import { DaysOfMonthType, getCompleteWeeks } from '@/api/date';
-import Calendar from './../phone/calendar';
-import SessionOfDay from "@/components/calendar/phone/SessionsOfDay";
-import NewSession from "@/components/NewSession";
-import Filter from '../Filter';
+import React, { useState } from 'react';
 import { flight_sessions, planes } from '@prisma/client';
-import { Spinner } from '@/components/ui/SpinnerVariants';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Session } from './Session';
 
 interface Props {
     sessions: flight_sessions[];
@@ -35,96 +33,179 @@ interface Props {
  */
 const GlobalCalendarPhone = ({ sessions, loading, setSessions, planesProp }: Props) => {
     // State variables for managing date, instructor, plane, and filtered sessions
-    const [date, setDate] = useState(new Date());
-    const [daysOfMonth, setDaysOfMonth] = useState<DaysOfMonthType>();
-    const [selectDate, setSelectDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
+    //  <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='phone' />
+    const [currentDate, setCurrentDate] = React.useState(new Date())
+    const [selectedDate, setSelectedDate] = React.useState(new Date())
+    const [dates, setDates] = React.useState<Date[]>([])
+    const scrollRef = React.useRef<HTMLDivElement>(null)
+    const todayRef = React.useRef<HTMLButtonElement>(null)
 
+    React.useEffect(() => {
+        const today = new Date()
+        setCurrentDate(today)
+        setSelectedDate(today)
+        const datesArray = getDaysInMonth(today.getFullYear(), today.getMonth())
+        setDates(datesArray)
+    }, [])
 
-    // Effect to get complete weeks for the selected date
-    useEffect(() => {
-        try {
-            const res = getCompleteWeeks(date);
-            setDaysOfMonth(res);
-        } catch (error) {
-            console.log(error);
+    React.useEffect(() => {
+        const datesArray = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth())
+        setDates(datesArray)
+    }, [currentDate])
+
+    const getDaysInMonth = (year: number, month: number) => {
+        const date = new Date(year, month, 1)
+        const days = []
+        while (date.getMonth() === month) {
+            days.push(new Date(date))
+            date.setDate(date.getDate() + 1)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [date]);
+        return days
+    }
 
-    // Handler to navigate to the next month
-    const onClickNextweek = () => {
-        setDate(prevDate => {
-            prevDate.setDate(1);
-            const newDate = new Date(prevDate);
-            newDate.setMonth(newDate.getMonth() + 1);
-            return newDate;
-        });
-    };
+    const changeMonth = (increment: number) => {
+        const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + increment, 1)
+        setCurrentDate(newDate)
+        setSelectedDate(new Date(newDate.getFullYear(), newDate.getMonth(), 1))
+    }
 
-    // Handler to navigate to the previous month
-    const onClickPreviousWeek = () => {
-        setDate(prevDate => {
-            prevDate.setDate(1);
-            const newDate = new Date(prevDate);
-            newDate.setMonth(newDate.getMonth() - 1);
-            return newDate;
-        });
-    };
+    const formatDate = (date: Date) => {
+        return date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    }
 
-    // Handler to set the date to today
-    const onClickToday = () => {
-        setDate(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
-    };
+    const formatDateAsKey = (date: Date) => {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0') // Mois commence à 0
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}` // Exemple : "2024-12-02"
+    }
+
+    // Nouvelle fonction pour regrouper les sessions par date
+    const getSessionsGroupedByDate = () => {
+        const grouped: Record<string, flight_sessions[]> = {}
+        sessions.forEach(session => {
+            const dateKey = formatDateAsKey(session.sessionDateStart)
+            if (!grouped[dateKey]) grouped[dateKey] = []
+            grouped[dateKey].push(session)
+        })
+        return grouped
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const sessionsGroupedByDate = React.useMemo(() => getSessionsGroupedByDate(), [])
+
+    const getSessionsForDate = (date: Date) => {
+        const dateString = formatDateAsKey(date)
+        return sessionsGroupedByDate[dateString] || []
+    }
+
+    const getBarColor = (date: Date) => {
+        const sessions = getSessionsForDate(date)
+        if (sessions.length === 0) return null
+        const hasIncomplete = sessions.some(session => !session.studentID)
+        const allComplete = sessions.every(session => session.studentID)
+        return allComplete ? 'bg-red-500' : hasIncomplete ? 'bg-green-500' : null
+    }
 
     return (
-        <div className='flex flex-col flex-grow h-full'> {/* Use h-screen to ensure the full height */}
-            <p className='text-2xl font-istok font-semibold my-3 w-full text-center'>Calendrier</p>
-            <div className='w-full px-6'>
-                <div className='border-b border-[#646464] w-full' />
-            </div>
-            <div className='w-full mt-6'> {/* flex-grow and overflow-y-auto for scrollable content */}
-                <div className='flex justify-between px-6'>
-                    <p className='text-4xl font-istok mb-3'>
-                        {date.toLocaleDateString('fr-FR', { month: 'long' })}, {date.toLocaleDateString('fr-FR', { year: 'numeric' })}
-                    </p>
-                    <div className='flex items-center space-x-3'>
-                        <NewSession display='phone' setSessions={setSessions} planesProp={planesProp} />
-                        <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='phone' />
-                    </div>
+        <div className="relative w-full bg-background px-4">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-2">
+                <h2 className="text-lg font-semibold">
+                    {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                </h2>
+                <div className="flex items-center space-x-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            const today = new Date()
+                            setCurrentDate(today)
+                            setSelectedDate(today)
+                            const datesArray = getDaysInMonth(today.getFullYear(), today.getMonth())
+                            setDates(datesArray)
+                            setTimeout(() => {
+                                if (todayRef.current) {
+                                    todayRef.current.scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'nearest',
+                                        inline: 'center'
+                                    })
+                                }
+                            }, 0)
+                        }}
+                    >
+                        Aujourd&apos;hui
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => changeMonth(-1)}
+                        className="h-8 w-8"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => changeMonth(1)}
+                        className="h-8 w-8"
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
                 </div>
-                <div className='flex w-full px-6'>
-                    <DaySelector
-                        className='w-full flex'
-                        onClickNextWeek={onClickNextweek}
-                        onClickPreviousWeek={onClickPreviousWeek}
-                        onClickToday={onClickToday}
-                    />
-
-                </div>
-                {loading ? (
-                    <div>
-                        <Spinner />
-                        <p className='text-center'>
-                            Chargement des sessions ...
-                        </p>
-                    </div>
-                ) : (
-                    <Calendar
-                        daysOfMonth={daysOfMonth}
-                        date={date}
-                        flightsSessions={sessionsFlitered}
-                        setSelectDate={setSelectDate}
-                        selectDate={selectDate}
-                    />
-                )}
             </div>
 
-            <div className='w-full bg-[#E4E7ED] border-t border-[#646464] mt-6 h-full'> {/* Make the sessions part scrollable */}
-                <SessionOfDay selectDate={selectDate} flightsSessions={sessionsFlitered} setSessions={setSessions} />
+            {/* Calendrier */}
+            <div
+                ref={scrollRef}
+                className="flex overflow-x-auto scrollbar-hide px-4 pb-4 pt-2 border-b"
+                style={{ scrollSnapType: 'x mandatory' }}
+            >
+                {dates.map((date) => {
+                    const barColor = getBarColor(date)
+                    return (
+                        <button
+                            key={formatDateAsKey(date)}
+                            ref={date.toDateString() === new Date().toDateString() ? todayRef : null}
+                            onClick={() => setSelectedDate(date)}
+                            className={cn(
+                                "flex min-w-[60px] flex-col items-center rounded-lg px-2 py-3 text-center",
+                                selectedDate.toDateString() === date.toDateString()
+                                    ? "bg-primary text-primary-foreground"
+                                    : "hover:bg-muted"
+                            )}
+                            style={{ scrollSnapAlign: 'start' }}
+                        >
+                            <span className="text-sm font-medium">
+                                {date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3)}
+                            </span>
+                            <span className="text-xl font-bold">{date.getDate()}</span>
+                            {barColor && <div className={`h-1 w-5 ${barColor} rounded-full`}></div>}
+                        </button>
+                    )
+                })}
+            </div>
+
+            {/* Date */}
+            <div className="mt-4 text-center text-xl">
+                {formatDate(selectedDate)}
+            </div>
+
+            {/* Sessions */}
+            <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2"></h3>
+                {getSessionsForDate(selectedDate).map((session, index) => (
+                    <Session
+                        key={index}
+                        PlaneProps={session.planeID.length}
+                        session={session}
+                    />
+                ))}
             </div>
         </div>
-    );
-};
+    )
+}
 
 export default GlobalCalendarPhone;

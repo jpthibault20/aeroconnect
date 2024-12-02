@@ -8,6 +8,7 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import React from 'react'
+import { Button } from '../ui/button';
 
 interface props {
     className?: string;   ///< Optional additional CSS classes for styling.
@@ -34,28 +35,35 @@ const DaySelector = ({ className, onClickNextWeek, onClickPreviousWeek, onClickT
     return (
         <div className={`${className} space-x-1 p-1`}>
             {/* Button to navigate to the previous week */}
-            <button
+            <Button
+                variant="ghost"
+                size="icon"
                 onClick={onClickPreviousWeek}
-                className='flex bg-[#F2F2F2] px-1 py-0.5 rounded-sm'
+                className="h-8 w-8"
             >
-                <ChevronLeft />
-            </button>
+                <ChevronLeft className="h-6 w-6" />
+            </Button>
+
 
             {/* Button to reset the calendar to today's date */}
-            <button
+            <Button
+                variant="outline"
+                size="sm"
                 onClick={onClickToday}
-                className='flex bg-[#F2F2F2] px-3 py-0.5 rounded-sm'
             >
                 Aujourd&apos;hui
-            </button>
+            </Button>
+
 
             {/* Button to navigate to the next week */}
-            <button
+            <Button
+                variant="ghost"
+                size="icon"
                 onClick={onClickNextWeek}
-                className='flex bg-[#F2F2F2] px-1 py-0.5 rounded-sm'
+                className="h-8 w-8"
             >
-                <ChevronRight />
-            </button>
+                <ChevronRight className="h-6 w-6" />
+            </Button>
         </div>
     )
 }
