@@ -30,7 +30,7 @@ export function Session({ PlaneProps, session }: SessionProps) {
                 </span>
                 <span className='flex justify-center items-center'>
                     <Clock className="w-4 h-4 mr-1" />
-                    <span>
+                    <span className='text-sm'>
                         {session.sessionDateStart.getUTCHours().toString().padStart(2, '0')}:
                         {session.sessionDateStart.getUTCMinutes().toString().padStart(2, '0')} -
                         {endSessionDate.getUTCHours().toString().padStart(2, '0')}:

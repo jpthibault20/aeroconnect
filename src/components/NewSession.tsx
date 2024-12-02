@@ -35,7 +35,7 @@ import { getPlanes } from '@/api/db/planes';
 
 
 interface Props {
-    display: string;
+    display: "desktop" | "phone";
     style?: string;
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
