@@ -39,8 +39,6 @@ interface props {
 const PageComponent = ({ sessionsprops, planesProp }: props) => {
 
     const isMobile = useScreenSize();
-
-    const [loading, setLoading] = useState(false);
     const [sessions, setSessions] = useState<flight_sessions[]>([]);
 
     useEffect(() => {
@@ -56,14 +54,12 @@ const PageComponent = ({ sessionsprops, planesProp }: props) => {
                     sessions={sessions}
                     setSessions={setSessions}
                     planesProp={planesProp}
-                    loading={loading}
                 />
             ) : (
                 <GlobalCalendarPhone
                     sessions={sessions}
                     setSessions={setSessions}
                     planesProp={planesProp}
-                    loading={loading}
                 />
             )}
         </InitialLoading>

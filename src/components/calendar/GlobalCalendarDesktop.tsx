@@ -12,12 +12,10 @@ import TabCalendar from './TabCalendar';
 import NewSession from "@/components/NewSession"
 import Filter from './Filter';
 import { flight_sessions, planes } from '@prisma/client';
-import { Spinner } from '../ui/SpinnerVariants';
 
 interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
-    loading: boolean;
     planesProp: planes[];
 }
 
@@ -30,7 +28,7 @@ interface Props {
  * within a desktop-only layout, hidden on mobile devices.
  * 
  */
-const GlobalCalendarDesktop = ({ sessions, loading, setSessions, planesProp }: Props) => {
+const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp }: Props) => {
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
 
@@ -105,20 +103,12 @@ const GlobalCalendarDesktop = ({ sessions, loading, setSessions, planesProp }: P
                     </div>
                 </div>
                 <div className='h-full'>
-                    {loading ? (
-                        <div>
-                            <Spinner />
-                            <p className='text-center'>
-                                Chargement des sessions ...
-                            </p>
-                        </div>
-                    ) : (
-                        <TabCalendar
-                            date={date}
-                            sessions={sessionsFlitered}
-                            setSessions={setSessions}
-                        />
-                    )}
+
+                    <TabCalendar
+                        date={date}
+                        sessions={sessionsFlitered}
+                        setSessions={setSessions}
+                    />
                 </div>
             </div>
         </div>
