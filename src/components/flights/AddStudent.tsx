@@ -8,6 +8,7 @@ import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import { Button } from '../ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Spinner } from '../ui/SpinnerVariants';
+import { getFreePlanesUsers } from '@/api/popupCalendar';
 
 interface Props {
     session: flight_sessions;
@@ -16,7 +17,7 @@ interface Props {
     planesProp: planes[];
 }
 
-const AddStudent = ({ session, setSessions, planesProp }: Props) => {
+const AddStudent = ({ session, sessions, setSessions, planesProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const [users, setUsers] = useState<User[]>([]);
     const [student, setStudent] = useState<string>(currentUser?.role !== "ADMIN" && currentUser?.role !== "OWNER" && currentUser?.role !== "INSTRUCTOR" ? currentUser?.id || "" : " ");
@@ -53,6 +54,22 @@ const AddStudent = ({ session, setSessions, planesProp }: Props) => {
         fetchUsers();
     }, [currentUser]);
 
+    useEffect(() => {
+        const fetchPlanesAndUsers = async () => {
+            try {
+                const { students: studentRes, planes: planesRes } = await getFreePlanesUsers(session, sessions);
+
+                // Mettre à jour les états ou utiliser les données
+                setUsers(studentRes || []); // Exemple : mettre à jour les instructeurs disponibles
+                setPlanes(planesRes);
+            } catch (error) {
+                console.error('Error fetching planes and users:', error);
+            }
+        };
+
+        fetchPlanesAndUsers();
+    }, [sessions, session]);
+
     if (currentUser?.role === userRole.USER) return null;
 
     const onClickAction = async () => {
@@ -84,17 +101,15 @@ const AddStudent = ({ session, setSessions, planesProp }: Props) => {
                         toast({
                             title: "Oups, une erreur est survenue",
                             description: res.error,
+                            duration: 5000,
                         });
                     }
 
                     if (res.success) {
                         toast({
                             title: res.success,
+                            duration: 5000,
                         });
-
-                        // Réinitialiser les champs
-                        setStudent(" ");
-                        setSelectedPlane(" ");
 
                         // Mettre à jour la session avec les informations de l'étudiant et l'avion
                         setSessions(prevSessions => {
@@ -102,7 +117,7 @@ const AddStudent = ({ session, setSessions, planesProp }: Props) => {
                                 s.id === session.id
                                     ? {
                                         ...s,
-                                        studentId: studentId,  // ID de l'étudiant
+                                        studentID: studentId,  // ID de l'étudiant
                                         studentFirstName: firstName,  // Prénom de l'étudiant
                                         studentLastName: lastName,  // Nom de l'étudiant
                                         studentPlaneID: selectedPlane,  // ID de l'avion
@@ -111,6 +126,9 @@ const AddStudent = ({ session, setSessions, planesProp }: Props) => {
                             );
                             return updatedSessions;
                         });
+                        // Réinitialiser les champs
+                        setStudent(" ");
+                        setSelectedPlane(" ");
                     }
                 } catch (error) {
                     console.error("Error adding student:", error);

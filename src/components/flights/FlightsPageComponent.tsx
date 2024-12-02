@@ -83,14 +83,16 @@ const FlightsPageComponent = ({ sessionsProp, planesProp }: Props) => {
                     if (res.success) {
                         toast({
                             title: res.success,
+                            duration: 5000,
                         });
-
+                        setSessionChecked([]);
                         setSessions(sessions.filter(session => !sessionsParams.includes(session.id)));
                     }
                     if (res.error) {
                         toast({
                             title: "Oups, une erreur est survenue",
                             description: res.error,
+                            duration: 5000,
                         });
                     }
                 } catch (error) {
@@ -162,6 +164,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp }: Props) => {
             ) : (
                 <TableComponent
                     sessions={filteredSessions} // Pass filtered sessions here
+                    setSessions={setSessions}
                     setSessionChecked={setSessionChecked}
                     planesProp={planesProp}
                 />

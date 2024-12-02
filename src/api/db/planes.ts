@@ -25,6 +25,7 @@ export const createPlane = async (dataPlane: AddPlane) => {
                 ],
             },
         });
+        prisma.$disconnect();
 
         if (existingPlane) {
             return {
@@ -40,6 +41,7 @@ export const createPlane = async (dataPlane: AddPlane) => {
                 immatriculation: dataPlane.immatriculation,
             },
         });
+        prisma.$disconnect();
 
         // Récupération et retour de tous les avions pour ce club
         const planes = await prisma.planes.findMany({
@@ -53,6 +55,7 @@ export const createPlane = async (dataPlane: AddPlane) => {
                 clubID: true,
             },
         });
+        prisma.$disconnect();
 
         return { success: 'Plane created successfully', planes };
 
@@ -75,12 +78,28 @@ export const getPlanes = async (clubID: string) => {
                 clubID: clubID
             }
         });
+        prisma.$disconnect();
 
         return planes;
     } catch (error) {
         console.error('Error getting planes:', error);
         return [];
     }
+};
+
+export const getPlaneById = async (Id: string[]) => {
+    if (!Id) {
+        return { error: 'Missing Id' };
+    }
+    const planes = await prisma.planes.findMany({
+        where: {
+            id: {
+                in: Id
+            }
+        }
+    });
+    prisma.$disconnect();
+    return planes;
 };
 
 export const deletePlane = async (planeID: string) => {
@@ -93,6 +112,7 @@ export const deletePlane = async (planeID: string) => {
                 id: planeID
             }
         });
+        prisma.$disconnect();
 
         if (!plane) {
             return { error: 'Plane not found' };
@@ -103,6 +123,7 @@ export const deletePlane = async (planeID: string) => {
                 id: planeID
             }
         });
+        prisma.$disconnect();
 
         return { success: 'Plane deleted successfully' };
     } catch (error) {
@@ -126,6 +147,7 @@ export const updateOperationalByID = async (planeID: string, operational: boolea
                 operational: operational
             }
         });
+        prisma.$disconnect();
 
         return { success: 'Plane updated successfully' };
     } catch (error) {
@@ -143,6 +165,7 @@ export const getPlaneByID = async (planeID: string) => {
                 id: planeID,
             },
         });
+        prisma.$disconnect();
 
         return plane;
     } catch (error) {
@@ -162,6 +185,7 @@ export const getPlanesByID = async (planeID: string[]) => {
                 }
             }
         });
+        prisma.$disconnect();
         return planes;
     } catch (error) {
         console.error('Error getting planes:', error);

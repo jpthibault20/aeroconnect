@@ -132,7 +132,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                     <Input
                         id="email"
                         value={userState.email}
-                        disabled={loading}
+                        disabled={true}
                         onChange={(e) => onChangeUserState('email', e.target.value)}
                     />
                 </div>

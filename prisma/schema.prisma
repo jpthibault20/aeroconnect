@@ -8,6 +8,21 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum userRole {
+  USER
+  STUDENT
+  INSTRUCTOR
+  PILOT
+  OWNER
+  ADMIN
+}
+
+enum flightType {
+  FIRST_FLIGHT
+  INITATION
+  TRAINING
+}
+
 model User {
   id         String   @id @unique @default(uuid())
   email      String   @unique
@@ -49,17 +64,16 @@ model planes {
   operational     Boolean @default(true)
 }
 
-enum userRole {
-  USER
-  STUDENT
-  INSTRUCTOR
-  PILOT
-  OWNER
-  ADMIN
-}
-
-enum flightType {
-  FIRST_FLIGHT
-  INITATION
-  TRAINING
+model Club {
+  id                 String   @id @unique
+  Name               String
+  Address            String
+  City               String
+  Country            String
+  ZipCode            String
+  OwnerId            String[]
+  DaysOn             String[]
+  HoursOn            String[]
+  SessionDurationMin Int
+  AvailableMinutes   String[]
 }

@@ -8,13 +8,14 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 interface props {
     sessions: flight_sessions[];  ///< Array of flight session objects
     setSessionChecked: React.Dispatch<React.SetStateAction<string[]>>; ///< Function to update selected session IDs
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
 }
 
-const TableComponent = ({ sessions, setSessionChecked, planesProp }: props) => {
+const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp }: props) => {
     const { currentUser } = useCurrentUser();
     const [isAllChecked, setIsAllChecked] = useState(false);  ///< State to manage the "select all" checkbox
-    const [sessionsSorted, setSessions] = useState<flight_sessions[]>([]); ///< State to store the sorted sessions
+    const [sessionsSorted, setSessionsSorted] = useState<flight_sessions[]>([]); ///< State to store the sorted sessions
 
 
     useEffect(() => {
@@ -25,7 +26,7 @@ const TableComponent = ({ sessions, setSessionChecked, planesProp }: props) => {
             return dateA - dateB; // Tri ascendant (chronologique)
         });
 
-        setSessions(sortedSessions); // Met à jour les sessions triées
+        setSessionsSorted(sortedSessions); // Met à jour les sessions triées
         setIsAllChecked(false); // Réinitialise le check
     }, [sessions]);
 
