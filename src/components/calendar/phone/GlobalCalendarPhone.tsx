@@ -152,7 +152,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
             {/* Calendrier */}
             <div
                 ref={scrollRef}
-                className="flex overflow-x-auto scrollbar-hide px-4 pb-4 pt-2 border-b"
+                className="flex overflow-x-auto scrollbar-hide px-4 pb-4 pt-2 border-b border-gray-400"
                 style={{ scrollSnapType: 'x mandatory' }}
             >
                 {dates.map((date) => {
