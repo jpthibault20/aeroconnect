@@ -95,6 +95,12 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
         return allComplete ? 'bg-red-500' : hasIncomplete ? 'bg-green-500' : null;
     };
 
+    const addDays = (date: Date, days: number) => {
+        const result = new Date(date);
+        result.setDate(result.getDate() + days);
+        return result;
+    };
+
     return (
         <div className="relative w-full bg-background mt-6 pb-20">
             {/* Header */}
@@ -183,12 +189,12 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
             </div>
 
             <div className='flex justify-between items-start mx-1'>
-                <span>
+                <button onClick={() => setSelectedDate(addDays(selectedDate, -1))}>
                     <MoveLeft />
-                </span>
-                <span>
+                </button>
+                <button onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
                     <MoveRight />
-                </span>
+                </button>
             </div>
 
             {/* Date */}
