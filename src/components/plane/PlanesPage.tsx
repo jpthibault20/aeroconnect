@@ -30,7 +30,7 @@ const PlanesPage = ({ PlanesProps }: Props) => {
             <Header planesLenght={planes.length} />
 
             <div className='my-3 flex justify-end'>
-                {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER || currentUser?.role === userRole.INSTRUCTOR ?
+                {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER ?
                     <NewPlane setPlanes={setPlanes} /> : null
                 }
             </div>
