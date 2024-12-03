@@ -2,6 +2,8 @@ import { Clock, Plane } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { flight_sessions } from '@prisma/client'
 import SessionPopup from '../SessionPopup'
+import { useEffect, useState } from 'react'
+import { getPlaneName } from '@/api/db/planes'
 
 interface SessionProps {
     PlaneProps: number
@@ -9,7 +11,18 @@ interface SessionProps {
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
 }
 
-export function Session({ PlaneProps, session, setSessions }: SessionProps) {
+export function Session({ session, setSessions, PlaneProps }: SessionProps) {
+    const [planeName, setPlaneName] = useState("");
+
+    useEffect(() => {
+        if (session.studentPlaneID) {
+            getPlaneName(session.studentPlaneID).then(res => {
+                if (res && 'name' in res) {
+                    setPlaneName(res.name);
+                }
+            })
+        }
+    }, [session.studentPlaneID])
 
     const endSessionDate = new Date(
         session.sessionDateStart.getFullYear(),
@@ -29,7 +42,7 @@ export function Session({ PlaneProps, session, setSessions }: SessionProps) {
                 <div className='flex flex-col items-start justify-center'>
                     <span className='flex justify-center items-center'>
                         <Plane className="w-4 h-4 mr-1" />
-                        {PlaneProps} Avions
+                        {planeName || PlaneProps + " Avion(s)"}
                     </span>
                     <span className='flex justify-center items-center'>
                         <Clock className="w-4 h-4 mr-1" />
