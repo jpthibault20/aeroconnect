@@ -60,12 +60,12 @@ const NewSession = ({ display, setSessions, planesProp }: Props) => {
         endMinute: "00",
         duration: sessionDurationMin,
         endReccurence: undefined,
-        planeId: [],
+        planeId: planesProp.map(plane => plane.id) // Remove array brackets
     });
 
     // Calul de la date de fin de reccurence en fonction de la date de début avec 1 semaine de plus (delais minimum)
     useEffect(() => {
-        if (!switchReccurence) sessionData.endReccurence = undefined
+        if (!switchReccurence) setSessionData(prev => ({ ...prev, endReccurence: undefined }))
         if (switchReccurence && sessionData.date) {
             const dateStart = new Date(sessionData.date!.getFullYear(), sessionData.date!.getMonth(), sessionData.date!.getDate())
             const dateEnd = new Date(dateStart)
