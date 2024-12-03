@@ -16,15 +16,19 @@ import TableComponent from './TableComponent';
 import Header from './Header';
 import Filter from './Filter';
 import Search from './Search';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { useRouter } from 'next/navigation';
 
 interface props {
     userProps: User[]
 }
 const StudentsPage = ({ userProps }: props) => {
+    const { currentUser } = useCurrentUser();
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState<User[]>(userProps);
     const [sortedUsers, setSortedUsers] = useState<User[]>(userProps);
     const [roleFilter, setRoleFilter] = useState<userRole | 'all'>('all');
+    const router = useRouter();
 
     useEffect(() => {
         setSortedUsers(sortUser(users, roleFilter, searchQuery));
@@ -59,6 +63,14 @@ const StudentsPage = ({ userProps }: props) => {
         setRoleFilter(value);
     };
 
+    if (currentUser?.role == userRole.USER || currentUser?.role === userRole.STUDENT || currentUser?.role === userRole.PILOT) {
+        router.push('/calendar?clubID=' + currentUser?.clubID);
+        return (
+            <div>
+                No access
+            </div>
+        )
+    }
 
     return (
         <div className='p-6 '>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { flight_sessions, planes } from '@prisma/client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoveLeft, MoveRight } from 'lucide-react';
 import { Session } from './Session';
 import Filter from '../Filter';
 import NewSession from '@/components/NewSession';
@@ -68,11 +68,13 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
 
     const getSessionsGroupedByDate = () => {
         const grouped: Record<string, flight_sessions[]> = {};
-        sessionsFlitered.forEach((session) => {
-            const dateKey = formatDateAsKey(session.sessionDateStart);
-            if (!grouped[dateKey]) grouped[dateKey] = [];
-            grouped[dateKey].push(session);
-        });
+        sessionsFlitered
+            .sort((a, b) => new Date(a.sessionDateStart).getTime() - new Date(b.sessionDateStart).getTime()) // Tri par date de début
+            .forEach((session) => {
+                const dateKey = formatDateAsKey(session.sessionDateStart);
+                if (!grouped[dateKey]) grouped[dateKey] = [];
+                grouped[dateKey].push(session);
+            });
         return grouped;
     };
 
@@ -93,10 +95,16 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
         return allComplete ? 'bg-red-500' : hasIncomplete ? 'bg-green-500' : null;
     };
 
+    const addDays = (date: Date, days: number) => {
+        const result = new Date(date);
+        result.setDate(result.getDate() + days);
+        return result;
+    };
+
     return (
-        <div className="relative w-full bg-background px-8 mt-6 pb-20">
+        <div className="relative w-full bg-background mt-6 pb-20">
             {/* Header */}
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center justify-between mt-4 px-8">
                 <div className="flex items-center space-x-2">
                     <Button
                         variant="ghost"
@@ -144,47 +152,59 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
                 </div>
             </div>
 
-            <div className="justify-between items-center my-4 flex">
+            <div className="justify-between items-center my-4 flex px-8">
                 <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display="phone" />
                 <NewSession display={'phone'} setSessions={setSessions} planesProp={planesProp} />
             </div>
 
             {/* Calendrier */}
-            <div
-                ref={scrollRef}
-                className="flex overflow-x-auto scrollbar-hide px-4 pb-4 pt-2 border-b border-gray-400"
-                style={{ scrollSnapType: 'x mandatory' }}
-            >
-                {dates.map((date) => {
-                    const barColor = getBarColor(date);
-                    return (
-                        <button
-                            key={formatDateAsKey(date)}
-                            ref={date.toDateString() === new Date().toDateString() ? todayRef : null}
-                            onClick={() => setSelectedDate(date)}
-                            className={cn(
-                                'flex min-w-[60px] flex-col items-center rounded-lg px-2 py-3 text-center',
-                                selectedDate.toDateString() === date.toDateString()
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'hover:bg-muted'
-                            )}
-                            style={{ scrollSnapAlign: 'start' }}
-                        >
-                            <span className="text-sm font-medium">
-                                {date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3)}
-                            </span>
-                            <span className="text-xl font-bold">{date.getDate()}</span>
-                            {barColor && <div className={`h-1 w-5 ${barColor} rounded-full`}></div>}
-                        </button>
-                    );
-                })}
+            <div className='flex space-x-2 px-1'>
+                <div className='flex items-center justify-center'>
+                    <button onClick={() => setSelectedDate(addDays(selectedDate, -1))}>
+                        <MoveLeft />
+                    </button>
+                </div>
+                <div
+                    ref={scrollRef}
+                    className="flex overflow-x-auto scrollbar-hide  pt-2"
+                    style={{ scrollSnapType: 'x mandatory' }}
+                >
+                    {dates.map((date) => {
+                        const barColor = getBarColor(date);
+                        return (
+                            <button
+                                key={formatDateAsKey(date)}
+                                ref={date.toDateString() === new Date().toDateString() ? todayRef : null}
+                                onClick={() => setSelectedDate(date)}
+                                className={cn(
+                                    'flex min-w-[60px] flex-col items-center rounded-lg px-2 py-3 text-center',
+                                    selectedDate.toDateString() === date.toDateString()
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'hover:bg-muted'
+                                )}
+                                style={{ scrollSnapAlign: 'start' }}
+                            >
+                                <span className="text-sm font-medium">
+                                    {date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3)}
+                                </span>
+                                <span className="text-xl font-bold">{date.getDate()}</span>
+                                {barColor && <div className={`h-1 w-5 ${barColor} rounded-full`}></div>}
+                            </button>
+                        );
+                    })}
+                </div>
+                <div className='flex items-center justify-center'>
+                    <button onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+                        <MoveRight />
+                    </button>
+                </div>
             </div>
 
             {/* Date */}
-            <div className="mt-4 text-center text-xl">{formatDate(selectedDate)}</div>
+            <div className="mt-4 text-center text-xl mx-8 border-t pt-6 border-gray-400 ">{formatDate(selectedDate)}</div>
 
             {/* Sessions */}
-            <div className="mt-4">
+            <div className="mt-4 px-8">
                 <h3 className="text-lg font-semibold mb-2"></h3>
                 {getSessionsForDate(selectedDate).map((session, index) => (
                     <Session key={index} PlaneProps={session.planeID.length} session={session} setSessions={setSessions} />

@@ -194,16 +194,17 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                                 <SelectValue placeholder="Rôle" />
                             </SelectTrigger>
                             <SelectContent>
-                                {Object.entries(userRole).map(([key, value]) => (
-                                    <SelectItem key={key} value={value}>
-                                        {key === "USER" && "Visiteur"}
-                                        {key === "STUDENT" && "Elève"}
-                                        {key === "INSTRUCTOR" && "Instructeur"}
-                                        {key === "PILOT" && "Pilote"}
-                                        {key === "OWNER" && "Gérant"}
-                                        {key === "ADMIN" && "Administrateur"}
-                                    </SelectItem>
-                                ))}
+                                {Object.entries(userRole)
+                                    .filter(([key]) => key !== "ADMIN") // Exclure "ADMIN"
+                                    .map(([key, value]) => (
+                                        <SelectItem key={key} value={value}>
+                                            {key === "USER" && "Visiteur"}
+                                            {key === "STUDENT" && "Elève"}
+                                            {key === "INSTRUCTOR" && "Instructeur"}
+                                            {key === "PILOT" && "Pilote"}
+                                            {key === "OWNER" && "Gérant"}
+                                        </SelectItem>
+                                    ))}
                             </SelectContent>
                         </Select>
                     </div>

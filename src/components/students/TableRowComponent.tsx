@@ -12,7 +12,7 @@ import Image from 'next/image';
 import { TableCell, TableRow } from '../ui/table';
 import Restricted from './Restricted';
 import userPicture from '../../../public/images/userProfil.png';
-import { User } from '@prisma/client';
+import { User, userRole } from '@prisma/client';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { Button } from '../ui/button';
 import { deleteUser } from '@/api/db/users';
@@ -104,29 +104,36 @@ const TableRowComponent = ({ user, setUsers }: props) => {
                 <Restricted user={user} />
             </TableCell>
             <TableCell className="text-center">{user.phone}</TableCell>
-            <TableCell className="flex flex-col items-center space-y-3 justify-center">
-                <UpdateUserComponent
-                    showPopup={showPopup}
-                    setShowPopup={setShowPopup}
-                    user={user}
-                    setUsers={setUsers}
-                >
-                    <Button className="w-fit bg-blue-600 hover:bg-blue-700">Modifier</Button>
-                </UpdateUserComponent>
+            {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER ? (
+                <TableCell className="flex flex-col items-center space-y-3 justify-center">
+                    <UpdateUserComponent
+                        showPopup={showPopup}
+                        setShowPopup={setShowPopup}
+                        user={user}
+                        setUsers={setUsers}
+                    >
+                        <Button className="w-fit bg-blue-600 hover:bg-blue-700">Modifier</Button>
+                    </UpdateUserComponent>
 
-                <AlertConfirmDeleted
-                    title="Êtes-vous sûr de vouloir supprimer cet élève ?"
-                    description={`Vous allez supprimer ${user.firstName} ${user.lastName} définitivement.`}
-                    cancel="Annuler"
-                    confirm="Supprimer"
-                    confirmAction={onClickDeleteUser()}
-                    loading={loading}
-                >
-                    <Button variant="destructive" className="w-fit">
-                        Supprimer
-                    </Button>
-                </AlertConfirmDeleted>
-            </TableCell>
+                    <AlertConfirmDeleted
+                        title="Êtes-vous sûr de vouloir supprimer cet élève ?"
+                        description={`Vous allez supprimer ${user.firstName} ${user.lastName} définitivement.`}
+                        cancel="Annuler"
+                        confirm="Supprimer"
+                        confirmAction={onClickDeleteUser()}
+                        loading={loading}
+                    >
+                        <Button variant="destructive" className="w-fit">
+                            Supprimer
+                        </Button>
+                    </AlertConfirmDeleted>
+
+
+                </TableCell>
+            ) : (
+                null
+            )
+            }
         </TableRow>
     );
 };

@@ -2,6 +2,12 @@ import { Clock, Plane } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { flight_sessions } from '@prisma/client'
 import SessionPopup from '../SessionPopup'
+import { useEffect, useState } from 'react'
+import { getPlaneName } from '@/api/db/planes'
+import { LiaChalkboardTeacherSolid } from "react-icons/lia";
+import { PiStudent } from "react-icons/pi";
+
+
 
 interface SessionProps {
     PlaneProps: number
@@ -9,7 +15,18 @@ interface SessionProps {
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
 }
 
-export function Session({ PlaneProps, session, setSessions }: SessionProps) {
+export function Session({ session, setSessions, PlaneProps }: SessionProps) {
+    const [planeName, setPlaneName] = useState("");
+
+    useEffect(() => {
+        if (session.studentPlaneID) {
+            getPlaneName(session.studentPlaneID).then(res => {
+                if (res && 'name' in res) {
+                    setPlaneName(res.name);
+                }
+            })
+        }
+    }, [session.studentPlaneID])
 
     const endSessionDate = new Date(
         session.sessionDateStart.getFullYear(),
@@ -29,7 +46,7 @@ export function Session({ PlaneProps, session, setSessions }: SessionProps) {
                 <div className='flex flex-col items-start justify-center'>
                     <span className='flex justify-center items-center'>
                         <Plane className="w-4 h-4 mr-1" />
-                        {PlaneProps} Avions
+                        {planeName || PlaneProps + " Avion(s)"}
                     </span>
                     <span className='flex justify-center items-center'>
                         <Clock className="w-4 h-4 mr-1" />
@@ -43,13 +60,20 @@ export function Session({ PlaneProps, session, setSessions }: SessionProps) {
                 </div>
 
                 {session.studentID && (
-                    <div className='flex items-center justify-end'>
-                        <span className="text-lg mt-1 font-medium">Complet</span>
+                    <div className='flex flex-col items-center justify-center'>
+                        <span className="text-lg font-medium">Complet</span>
+                        <div className='flex justify-center items-center space-x-1'>
+                            <PiStudent />
+                            <span>{session.studentLastName?.toUpperCase().slice(0, 1)}.{session.studentFirstName}</span>
+                        </div>
                     </div>
                 )}
 
                 <div className='flex items-start justify-end'>
-                    <span className="text-sm">{session.pilotLastName.toUpperCase().slice(0, 1)}.{session.pilotFirstName}</span>
+                    <div className='flex justify-center items-center space-x-1'>
+                        <LiaChalkboardTeacherSolid />
+                        <span className="text-sm">{session.pilotLastName.toUpperCase().slice(0, 1)}.{session.pilotFirstName}</span>
+                    </div>
                 </div>
             </div>
         </SessionPopup>

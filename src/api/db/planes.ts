@@ -210,3 +210,20 @@ export const getAllPlanesOperational = async (clubID: string) => {
         await prisma.$disconnect();
     }
 }
+
+export async function getPlaneName(planeID: string) {
+    try {
+        const planes = await prisma.planes.findUnique({
+            where: {
+                id: planeID
+            }
+        })
+        return planes;
+    } catch (error) {
+        console.error('Error getting planes:', error);
+        return { error: "Erreur lors de la récupération des avions" };
+    }
+    finally {
+        await prisma.$disconnect();
+    }
+}
