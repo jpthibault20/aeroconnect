@@ -4,6 +4,10 @@ import { flight_sessions } from '@prisma/client'
 import SessionPopup from '../SessionPopup'
 import { useEffect, useState } from 'react'
 import { getPlaneName } from '@/api/db/planes'
+import { LiaChalkboardTeacherSolid } from "react-icons/lia";
+import { PiStudent } from "react-icons/pi";
+
+
 
 interface SessionProps {
     PlaneProps: number
@@ -56,13 +60,20 @@ export function Session({ session, setSessions, PlaneProps }: SessionProps) {
                 </div>
 
                 {session.studentID && (
-                    <div className='flex items-center justify-end'>
-                        <span className="text-lg mt-1 font-medium">Complet</span>
+                    <div className='flex flex-col items-center justify-center'>
+                        <span className="text-lg font-medium">Complet</span>
+                        <div className='flex justify-center items-center space-x-1'>
+                            <PiStudent />
+                            <span>{session.studentLastName?.toUpperCase().slice(0, 1)}.{session.studentFirstName}</span>
+                        </div>
                     </div>
                 )}
 
                 <div className='flex items-start justify-end'>
-                    <span className="text-sm">{session.pilotLastName.toUpperCase().slice(0, 1)}.{session.pilotFirstName}</span>
+                    <div className='flex justify-center items-center space-x-1'>
+                        <LiaChalkboardTeacherSolid />
+                        <span className="text-sm">{session.pilotLastName.toUpperCase().slice(0, 1)}.{session.pilotFirstName}</span>
+                    </div>
                 </div>
             </div>
         </SessionPopup>

@@ -158,43 +158,46 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
             </div>
 
             {/* Calendrier */}
-            <div
-                ref={scrollRef}
-                className="flex overflow-x-auto scrollbar-hide  pt-2"
-                style={{ scrollSnapType: 'x mandatory' }}
-            >
-                {dates.map((date) => {
-                    const barColor = getBarColor(date);
-                    return (
-                        <button
-                            key={formatDateAsKey(date)}
-                            ref={date.toDateString() === new Date().toDateString() ? todayRef : null}
-                            onClick={() => setSelectedDate(date)}
-                            className={cn(
-                                'flex min-w-[60px] flex-col items-center rounded-lg px-2 py-3 text-center',
-                                selectedDate.toDateString() === date.toDateString()
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'hover:bg-muted'
-                            )}
-                            style={{ scrollSnapAlign: 'start' }}
-                        >
-                            <span className="text-sm font-medium">
-                                {date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3)}
-                            </span>
-                            <span className="text-xl font-bold">{date.getDate()}</span>
-                            {barColor && <div className={`h-1 w-5 ${barColor} rounded-full`}></div>}
-                        </button>
-                    );
-                })}
-            </div>
-
-            <div className='flex justify-between items-start mx-1'>
-                <button onClick={() => setSelectedDate(addDays(selectedDate, -1))}>
-                    <MoveLeft />
-                </button>
-                <button onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
-                    <MoveRight />
-                </button>
+            <div className='flex space-x-2 px-1'>
+                <div className='flex items-center justify-center'>
+                    <button onClick={() => setSelectedDate(addDays(selectedDate, -1))}>
+                        <MoveLeft />
+                    </button>
+                </div>
+                <div
+                    ref={scrollRef}
+                    className="flex overflow-x-auto scrollbar-hide  pt-2"
+                    style={{ scrollSnapType: 'x mandatory' }}
+                >
+                    {dates.map((date) => {
+                        const barColor = getBarColor(date);
+                        return (
+                            <button
+                                key={formatDateAsKey(date)}
+                                ref={date.toDateString() === new Date().toDateString() ? todayRef : null}
+                                onClick={() => setSelectedDate(date)}
+                                className={cn(
+                                    'flex min-w-[60px] flex-col items-center rounded-lg px-2 py-3 text-center',
+                                    selectedDate.toDateString() === date.toDateString()
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'hover:bg-muted'
+                                )}
+                                style={{ scrollSnapAlign: 'start' }}
+                            >
+                                <span className="text-sm font-medium">
+                                    {date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3)}
+                                </span>
+                                <span className="text-xl font-bold">{date.getDate()}</span>
+                                {barColor && <div className={`h-1 w-5 ${barColor} rounded-full`}></div>}
+                            </button>
+                        );
+                    })}
+                </div>
+                <div className='flex items-center justify-center'>
+                    <button onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+                        <MoveRight />
+                    </button>
+                </div>
             </div>
 
             {/* Date */}
