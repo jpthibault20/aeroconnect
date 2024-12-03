@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { flight_sessions, planes } from '@prisma/client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoveLeft, MoveRight } from 'lucide-react';
 import { Session } from './Session';
 import Filter from '../Filter';
 import NewSession from '@/components/NewSession';
@@ -96,9 +96,9 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
     };
 
     return (
-        <div className="relative w-full bg-background px-8 mt-6 pb-20">
+        <div className="relative w-full bg-background mt-6 pb-20">
             {/* Header */}
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center justify-between mt-4 px-8">
                 <div className="flex items-center space-x-2">
                     <Button
                         variant="ghost"
@@ -146,7 +146,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
                 </div>
             </div>
 
-            <div className="justify-between items-center my-4 flex">
+            <div className="justify-between items-center my-4 flex px-8">
                 <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display="phone" />
                 <NewSession display={'phone'} setSessions={setSessions} planesProp={planesProp} />
             </div>
@@ -154,7 +154,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
             {/* Calendrier */}
             <div
                 ref={scrollRef}
-                className="flex overflow-x-auto scrollbar-hide px-4 pb-4 pt-2 border-b border-gray-400"
+                className="flex overflow-x-auto scrollbar-hide  pt-2"
                 style={{ scrollSnapType: 'x mandatory' }}
             >
                 {dates.map((date) => {
@@ -182,11 +182,20 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
                 })}
             </div>
 
+            <div className='flex justify-between items-start mx-1'>
+                <span>
+                    <MoveLeft />
+                </span>
+                <span>
+                    <MoveRight />
+                </span>
+            </div>
+
             {/* Date */}
-            <div className="mt-4 text-center text-xl">{formatDate(selectedDate)}</div>
+            <div className="mt-4 text-center text-xl mx-8 border-t pt-6 border-gray-400 ">{formatDate(selectedDate)}</div>
 
             {/* Sessions */}
-            <div className="mt-4">
+            <div className="mt-4 px-8">
                 <h3 className="text-lg font-semibold mb-2"></h3>
                 {getSessionsForDate(selectedDate).map((session, index) => (
                     <Session key={index} PlaneProps={session.planeID.length} session={session} setSessions={setSessions} />
