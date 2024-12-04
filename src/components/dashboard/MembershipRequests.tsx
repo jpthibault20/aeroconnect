@@ -15,7 +15,7 @@ interface MembershipRequest {
 const membershipRequests: MembershipRequest[] = [
   { id: 1, firstName: 'Jean', lastName: 'Dupont', phone: '0123456789', email: 'jean.dupont@email.com', requestDate: '2023-05-15' },
   { id: 2, firstName: 'Marie', lastName: 'Martin', phone: '0987654321', email: 'marie.martin@email.com', requestDate: '2023-05-16' },
-  { id: 3, firstName: 'Pierre', lastName: 'Durand', phone: '0654321987', email: 'pierre.durand@email.com', requestDate: '2023-05-17' },
+  // { id: 3, firstName: 'Pierre', lastName: 'Durand', phone: '0654321987', email: 'pierre.durand@email.com', requestDate: '2023-05-17' },
 ]
 
 const MembershipRequests: FC = () => {
@@ -46,7 +46,7 @@ const MembershipRequests: FC = () => {
                 <TableCell>{request.requestDate}</TableCell>
                 <TableCell>
                   <Button variant="outline" className="mr-2">Accepter</Button>
-                  <Button variant="outline" className="bg-red-100 text-red-600">Rejeter</Button>
+                  <Button variant="outline" className="bg-red-100 text-red-600 hover:bg-red-600 hover:text-black">Rejeter</Button>
                 </TableCell>
               </TableRow>
             ))}
