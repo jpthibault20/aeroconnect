@@ -369,7 +369,7 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
                     sessionDateStart: sessionID ? undefined : undefined, // Placeholder for more 
                 },
             }),
-            
+
         ]);
         prisma.$disconnect();
 
@@ -435,4 +435,48 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
         console.error("Erreur lors de l'inscription de l'étudiant :", error);
         return { error: "Une erreur est survenue lors de l'inscription de l'étudiant." };
     }
+};
+
+export const getHoursByMonth = async (clubID: string) => {
+    const sessions = await prisma.flight_sessions.findMany({
+        where: { clubID: clubID },
+        select: {
+            sessionDateStart: true,
+            sessionDateDuration_min: true,
+            studentID: true,
+        },
+    });
+
+    await prisma.$disconnect();
+
+    // Filtrer les sessions valides (studentID non nul)
+    const validSessions = sessions.filter((session) => session.studentID);
+
+    // Obtenir l'année et le mois actuels
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0 = Janvier, 11 = Décembre
+
+    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+    // Initialiser le tableau avec tous les mois de l'année jusqu'au mois courant inclus
+    const hoursByMonth: { month: string; hours: number }[] = monthNames
+        .slice(0, currentMonth + 1) // Inclure les mois jusqu'au mois courant
+        .map((month) => ({ month, hours: 0 }));
+
+    // Ajouter les heures des sessions valides
+    validSessions.forEach((session) => {
+        if (session.sessionDateStart) {
+            const sessionDate = new Date(session.sessionDateStart);
+            if (sessionDate.getFullYear() === currentYear && sessionDate.getMonth() <= currentMonth) {
+                const monthIndex = sessionDate.getMonth(); // Mois (0 = Janvier, 11 = Décembre)
+                const hours = session.sessionDateDuration_min ? session.sessionDateDuration_min / 60 : 0;
+
+                // Ajouter les heures au mois correspondant
+                hoursByMonth[monthIndex].hours += hours;
+            }
+        }
+    });
+
+    return hoursByMonth;
 };

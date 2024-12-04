@@ -1,16 +1,12 @@
-import { FC } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const data = [
-  { month: 'Jan', hours: 50 },
-  { month: 'Fév', hours: 60 },
-  { month: 'Mar', hours: 75 },
-  { month: 'Avr', hours: 90 },
-  { month: 'Mai', hours: 110 },
-]
+interface Props {
+  HoursByMonth: { month: string; hours: number }[];
+}
 
-const MonthlyHoursChart: FC = () => {
+const MonthlyHoursChart = ({ HoursByMonth }: Props) => {
+  console.log(HoursByMonth);
   return (
     <Card>
       <CardHeader>
@@ -18,7 +14,7 @@ const MonthlyHoursChart: FC = () => {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data}>
+          <BarChart data={HoursByMonth}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
@@ -28,8 +24,7 @@ const MonthlyHoursChart: FC = () => {
         </ResponsiveContainer>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default MonthlyHoursChart
-
+export default MonthlyHoursChart;

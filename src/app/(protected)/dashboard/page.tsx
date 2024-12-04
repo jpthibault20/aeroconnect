@@ -1,5 +1,7 @@
 "use server"
+import { getHoursByMonth } from '@/api/db/sessions';
 import PageComponent from '@/components/dashboard/PageComponent';
+import { PrismaClient } from '@prisma/client';
 import React from 'react'
 
 interface PageProps {
@@ -8,12 +10,22 @@ interface PageProps {
 
 const Page = async ({ searchParams }: PageProps) => {
     const clubID = searchParams.clubID;
+    const prisma = new PrismaClient();
 
     if (!clubID) {
         throw new Error('clubID is required in the URL');
     }
+
+    const HoursByMonth = await getHoursByMonth(clubID);
+
+    const planes = await prisma.planes.findMany({
+        where: {
+            clubID: clubID
+        }
+    });
+
     return (
-        <PageComponent clubID={clubID} />
+        <PageComponent clubID={clubID} HoursByMonth={HoursByMonth} />
     )
 }
 
