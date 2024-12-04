@@ -1,17 +1,13 @@
-import { FC } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { COLORS } from "@/config/configClub";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
 
-const data = [
-  { name: 'Pierre', hours: 120 },
-  { name: 'Marie', hours: 80 },
-  { name: 'Jean', hours: 100 },
-  { name: 'Sophie', hours: 60 },
-]
+interface Props {
+  HoursByInstructor: { name: string; hours: number }[];
+}
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
 
-const InstructorHoursChart: FC = () => {
+const InstructorHoursChart = ({ HoursByInstructor }: Props) => {
   return (
     <Card>
       <CardHeader>
@@ -21,7 +17,7 @@ const InstructorHoursChart: FC = () => {
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
-              data={data}
+              data={HoursByInstructor}
               cx="50%"
               cy="50%"
               labelLine={false}
@@ -29,7 +25,7 @@ const InstructorHoursChart: FC = () => {
               fill="#8884d8"
               dataKey="hours"
             >
-              {data.map((entry, index) => (
+              {HoursByInstructor.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>

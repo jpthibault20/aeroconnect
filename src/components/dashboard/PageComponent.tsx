@@ -10,10 +10,11 @@ import AircraftHoursChart from './AircraftHoursChart';
 interface PageProps {
     clubID: string;
     HoursByMonth: { month: string; hours: number }[];
+    HoursByInstructor: { name: string; hours: number }[];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const PageComponent = ({ clubID, HoursByMonth }: PageProps) => {
+const PageComponent = ({ clubID, HoursByMonth, HoursByInstructor }: PageProps) => {
     return (
         <div className="min-h-screen bg-gray-100">
             <Header clubName="Aeroculb ULM du saulnois" />
@@ -26,7 +27,7 @@ const PageComponent = ({ clubID, HoursByMonth }: PageProps) => {
                         <MonthlyHoursChart HoursByMonth={HoursByMonth} />
                     </div>
                     <div className="col-span-1 md:col-span-1 lg:col-span-1">
-                        <InstructorHoursChart />
+                        <InstructorHoursChart HoursByInstructor={HoursByInstructor} />
                     </div>
                     <div className="col-span-1 md:col-span-1 lg:col-span-1">
                         <AircraftHoursChart />

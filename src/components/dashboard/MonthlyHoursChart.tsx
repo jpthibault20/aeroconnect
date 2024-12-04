@@ -6,7 +6,6 @@ interface Props {
 }
 
 const MonthlyHoursChart = ({ HoursByMonth }: Props) => {
-  console.log(HoursByMonth);
   return (
     <Card>
       <CardHeader>

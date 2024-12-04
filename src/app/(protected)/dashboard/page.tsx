@@ -1,5 +1,5 @@
 "use server"
-import { getHoursByMonth } from '@/api/db/sessions';
+import { getHoursByInstructor, getHoursByMonth } from '@/api/db/sessions';
 import PageComponent from '@/components/dashboard/PageComponent';
 import { PrismaClient } from '@prisma/client';
 import React from 'react'
@@ -17,6 +17,7 @@ const Page = async ({ searchParams }: PageProps) => {
     }
 
     const HoursByMonth = await getHoursByMonth(clubID);
+    const HoursByInstructor = await getHoursByInstructor(clubID);
 
     const planes = await prisma.planes.findMany({
         where: {
@@ -25,7 +26,7 @@ const Page = async ({ searchParams }: PageProps) => {
     });
 
     return (
-        <PageComponent clubID={clubID} HoursByMonth={HoursByMonth} />
+        <PageComponent clubID={clubID} HoursByMonth={HoursByMonth} HoursByInstructor={HoursByInstructor} />
     )
 }
 
