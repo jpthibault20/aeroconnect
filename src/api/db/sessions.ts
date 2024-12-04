@@ -454,7 +454,7 @@ export const getHoursByMonth = async (clubID: string) => {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth(); // 0 = Janvier, 11 = Décembre
-    
+
     // Filtrer les sessions valides (studentID non nul)
     const validSessions = sessions.filter(
         (session) =>
@@ -548,5 +548,72 @@ export const getHoursByInstructor = async (clubID: string) => {
         };
     });
 
+    return result;
+};
+
+export const getHoursByPlane = async (clubID: string) => {
+    const currentYear = new Date().getFullYear();
+
+    // Récupérer les sessions de vol pour l'année actuelle, avec les informations sur l'avion
+    const sessions = await prisma.flight_sessions.findMany({
+        where: {
+            clubID: clubID,
+            sessionDateStart: {
+                gte: new Date(`${currentYear}-01-01`), // Limiter aux sessions à partir du 1er janvier de l'année actuelle
+            },
+        },
+        select: {
+            studentPlaneID: true, // Identifiant de l'avion utilisé
+            sessionDateStart: true, // Date de la session
+            sessionDateDuration_min: true, // Durée de la session en minutes
+            studentID: true, // Identifiant de l'étudiant
+        },
+    });
+
+    await prisma.$disconnect();
+
+    // Filtrer les sessions valides : date dans le passé, studentID rempli, année actuelle, et studentPlaneID non nul
+    const validSessions = sessions.filter(
+        (session) =>
+            session.sessionDateStart &&
+            new Date(session.sessionDateStart) < new Date() &&  // Vérifier que la session est dans le passé
+            session.studentID &&  // Vérifier que studentID est rempli
+            new Date(session.sessionDateStart).getFullYear() === currentYear &&
+            session.studentPlaneID // Vérifier que studentPlaneID est non nul
+    );
+
+    // Regrouper les heures par avion
+    const hoursByPlane: { [planeID: string]: number } = {};
+
+    validSessions.forEach((session) => {
+        const planeID = session.studentPlaneID!;
+        const hours = session.sessionDateDuration_min ? session.sessionDateDuration_min / 60 : 0;
+
+        if (!hoursByPlane[planeID]) {
+            hoursByPlane[planeID] = 0;
+        }
+
+        hoursByPlane[planeID] += hours;
+    });
+
+    // Mapper les avions avec leurs informations
+    const result = await Promise.all(
+        Object.entries(hoursByPlane).map(async ([planeID, hours]) => {
+            // Chercher le nom de l'avion dans la table "planes"
+            const plane = await prisma.planes.findUnique({
+                where: { id: planeID },
+                select: { name: true },
+            });
+
+            // Si l'avion n'est pas trouvé, on met "Inconnu"
+            const planeName = plane ? plane.name : 'Inconnu';
+
+            return {
+                aircraft: planeName,
+                hours,
+            };
+        })
+    );
+    
     return result;
 };

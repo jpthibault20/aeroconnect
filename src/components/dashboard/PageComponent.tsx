@@ -11,10 +11,11 @@ interface PageProps {
     clubID: string;
     HoursByMonth: { month: string; hours: number }[];
     HoursByInstructor: { name: string; hours: number }[];
+    HoursByPlane: { aircraft: string; hours: number }[];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const PageComponent = ({ clubID, HoursByMonth, HoursByInstructor }: PageProps) => {
+const PageComponent = ({ clubID, HoursByMonth, HoursByInstructor, HoursByPlane }: PageProps) => {
     return (
         <div className="min-h-screen bg-gray-100">
             <Header clubName="Aeroculb ULM du saulnois" />
@@ -30,7 +31,7 @@ const PageComponent = ({ clubID, HoursByMonth, HoursByInstructor }: PageProps) =
                         <InstructorHoursChart HoursByInstructor={HoursByInstructor} />
                     </div>
                     <div className="col-span-1 md:col-span-1 lg:col-span-1">
-                        <AircraftHoursChart />
+                        <AircraftHoursChart HoursByPlane={HoursByPlane} />
                     </div>
                 </div>
             </main>
