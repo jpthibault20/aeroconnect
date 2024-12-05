@@ -53,10 +53,10 @@ model planes {
 model Club {
   id                 String   @id @unique
   Name               String
-  Address            String
-  City               String
-  Country            String
-  ZipCode            String
+  Address            String?
+  City               String?
+  Country            String?
+  ZipCode            String?
   OwnerId            String[]
   DaysOn             String[]
   HoursOn            String[]

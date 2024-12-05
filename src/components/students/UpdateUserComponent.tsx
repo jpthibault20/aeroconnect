@@ -39,6 +39,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
         clubID: user.clubID || '',
         restricted: user.restricted || false,
         country: user.country || null,
+        clubIDRequest: user.clubIDRequest || null,
     })
 
     useEffect(() => {
