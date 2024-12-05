@@ -213,7 +213,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                         <Label htmlFor="clubID">Identifiant club</Label>
                         <Input
                             id="clubID"
-                            value={userState.clubID}
+                            value={userState.clubID as string}
                             disabled
                         />
                     </div>
