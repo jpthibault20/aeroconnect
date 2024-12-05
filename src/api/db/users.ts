@@ -282,3 +282,49 @@ export const blockUser = async (userID: string, restricted: boolean) => {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 }
+
+export const requestClubID = async (clubID: string, userID: string) => {
+    if (!clubID) {
+        return { error: "Une erreur est survenue (E_001: clubID is undefined)" };
+    }
+    if (!userID) {
+        return { error: "Une erreur est survenue (E_001: userID is undefined)" };
+    }
+
+    try {
+        await prisma.user.update({
+            where: {
+                id: userID
+            },
+            data: {
+                clubIDRequest: clubID
+            }
+        });
+        prisma.$disconnect();
+        return { success: "L'utilisateur a été mis à jour avec succès !" };
+    } catch (error) {
+        console.error('Error blocking user:', error);
+        return { error: "Erreur lors de la mise à jour de l'utilisateur" };
+    }
+}
+export const cancelClubIDRequest = async (userID: string) => {
+    if (!userID) {
+        return { error: "Une erreur est survenue (E_001: userID is undefined)" };
+    }
+
+    try {
+        await prisma.user.update({
+            where: {
+                id: userID
+            },
+            data: {
+                clubIDRequest: null
+            }
+        });
+        prisma.$disconnect();
+        return { success: "L'utilisateur a été mis à jour avec succès !" };
+    } catch (error) {
+        console.error('Error blocking user:', error);
+        return { error: "Erreur lors de la mise à jour de l'utilisateur" };
+    }
+}

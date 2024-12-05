@@ -2,15 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
 import { getAllClubs } from "@/api/db/club";
-import { Button } from "./ui/button";
+import RequestClubID from "./RequestClubID";
+import { useCurrentUser } from "@/app/context/useCurrentUser";
+import WaitingClubResponse from "./WaitingClubResponse";
+import NewClub from "./NewClub";
 
 interface Club {
     id: string;
@@ -20,13 +16,12 @@ interface Club {
 const NoClubID = () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [isOpen, setIsOpen] = useState(true);
+    const [newClub, setNewClub] = useState(false);
     const [clubs, setClubs] = useState<Club[]>([]);
-    const [selectedClub, setSelectedClub] = useState<Club>({
-        id: "",
-        name: "Choisissez votre club",
-    });
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { currentUser } = useCurrentUser()
+
 
     // Fonction pour récupérer les clubs
     const fetchClubs = useCallback(async () => {
@@ -48,10 +43,9 @@ const NoClubID = () => {
         fetchClubs();
     }, [fetchClubs]);
 
-    const onSubmit = () => {
-        console.log("Submit button clicked");
-        console.log(selectedClub);
-    };
+    const newClubButton = () => {
+        setNewClub(true);
+    }
 
     return isOpen ? (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300">
@@ -60,50 +54,20 @@ const NoClubID = () => {
                     {/* Header */}
                     <div className="flex flex-col items-center space-y-2">
                         <h1 className="text-xl font-bold">Vous n&apos;avez pas de club</h1>
-                        <p className="text-gray-600">
+                        <p className="text-gray-600 text-center">
                             Rejoignez un club pour accéder à toutes les fonctionnalités de
                             l&apos;application.
                         </p>
                     </div>
 
-                    {/* Content */}
-                    <div className="flex flex-col space-y-4">
-                        <span className="font-semibold">Votre club :</span>
-                        {loading ? (
-                            <p className="text-gray-600">Chargement des clubs...</p>
-                        ) : error ? (
-                            <p className="text-red-500">{error}</p>
-                        ) : (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger>
-                                    <div className="border border-gray-600 rounded-lg px-3 py-2 flex items-center justify-between shadow-md">
-                                        <span>{selectedClub.name}</span>
-                                        <ChevronDown />
-                                    </div>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    {clubs.map((club) => (
-                                        <DropdownMenuItem
-                                            key={club.id}
-                                            onSelect={() => setSelectedClub(club)}
-                                        >
-                                            {club.name}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
-                    </div>
+                    {currentUser?.clubIDRequest ? (
+                        <WaitingClubResponse />
+                    ) : newClub ? (
+                        <NewClub setNewClub={setNewClub} />
+                    ) : (
+                        <RequestClubID setError={setError} setLoading={setLoading} clubs={clubs} loading={loading} error={error} newClubButton={newClubButton} />
+                    )}
 
-                    {/* Submit button */}
-                    <div className="flex justify-center items-center">
-                        <Button
-                            onClick={onSubmit}
-                            variant={"perso"}
-                        >
-                            Valider
-                        </Button>
-                    </div>
                 </CardContent>
             </Card>
         </div>

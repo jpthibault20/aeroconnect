@@ -29,3 +29,22 @@ export const getAllClubs = async () => {
         await prisma.$disconnect();
     }
 };
+
+export const getClub = async (clubID: string) => {
+    try {
+        // Récupérer tous les clubs dans la table "Club"
+        const club = await prisma.club.findUnique({
+            where: {
+                id: clubID,
+            }
+        });
+
+        return club;
+    } catch (error) {
+        console.error("Erreur lors de la récupération des clubs :", error);
+        return ;
+    } finally {
+        // Assurez-vous que Prisma se déconnecte correctement
+        await prisma.$disconnect();
+    }
+};
