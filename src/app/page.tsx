@@ -9,6 +9,6 @@ export default async function Home() {
     return redirect("/auth/login");
   }
   else {
-    return redirect(`/calendar?clubID=${user.user?.clubID || 'req'}`)
+    return redirect(`/calendar?clubID=${user.user?.clubID || ''}`)
   };
 }
