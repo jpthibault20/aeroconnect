@@ -26,6 +26,7 @@ const ProfilePage = () => {
         clubID: currentUser?.clubID || '',
         restricted: currentUser?.restricted || false,
         country: currentUser?.country || null,
+        clubIDRequest: currentUser?.clubIDRequest || null,
     })
 
     const onChangeUserState = (key: keyof typeof userState, value: string | boolean) => {
