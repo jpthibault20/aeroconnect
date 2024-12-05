@@ -73,7 +73,7 @@ const StudentsPage = ({ userProps }: props) => {
     }
 
     return (
-        <div className='p-6 '>
+        <div className='p-6 bg-gray-200 h-full'>
             <Header users={sortedUsers} />
 
             <div className='my-3 flex justify-end space-x-3'>
