@@ -5,10 +5,10 @@ export default async function Home() {
 
   const user = await getUser()
 
-  if (user.user?.clubID) {
-    return redirect(`/calendar?clubID=${user.user?.clubID}`);
+  if (user.error) {
+    return redirect("/auth/login");
   }
   else {
-    return redirect("/auth/login");
+    return redirect(`/calendar?clubID=${user.user?.clubID || 'req'}`)
   };
 }

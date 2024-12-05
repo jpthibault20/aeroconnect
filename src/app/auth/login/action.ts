@@ -29,7 +29,8 @@ export async function emailLogin(formData: FormData) {
     }
 
     revalidatePath('/', 'layout')
-    redirect(`/calendar?clubID=${user.user?.clubID}`)
+    console.log(user.user?.clubID)
+    redirect(`/calendar?clubID=${user.user?.clubID || ''}`)
 }
 
 export async function emailSignup(formData: FormData) {
@@ -43,12 +44,11 @@ export async function emailSignup(formData: FormData) {
 
     // type-casting here for convenience
     // in practice, you should validate your inputs
-    const data = {
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
-    }
 
-    const { error: errorAuth } = await supabase.auth.signUp(data)
+    const { error: errorAuth } = await supabase.auth.signUp({
+        email: formData.get('email') as string,
+        password: formData.get('password') as string
+    })
     if (errorAuth) {
         console.log(errorAuth.message)
         redirect('/auth/login?message=Could not create user')

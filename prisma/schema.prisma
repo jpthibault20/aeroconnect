@@ -11,7 +11,7 @@ datasource db {
 model User {
   id            String   @id @unique @default(uuid())
   email         String   @unique
-  clubID        String
+  clubID        String?
   firstName     String
   lastName      String
   phone         String?

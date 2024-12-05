@@ -13,6 +13,7 @@ import React from 'react';
 import InitialLoading from '@/components/InitialLoading';
 import PlanesPage from '@/components/plane/PlanesPage';
 import { PrismaClient } from '@prisma/client';
+import NoClubID from '@/components/NoClubID';
 
 const prisma = new PrismaClient();
 
@@ -23,21 +24,24 @@ interface PageProps {
 const Page = async ({ searchParams }: PageProps) => {
     const clubID = searchParams.clubID;
 
-    if (!clubID) {
-        throw new Error('clubID is required in the URL');
+    if (clubID) {
+        const planes = await prisma.planes.findMany({
+            where: {
+                clubID: clubID
+            }
+        });
+
+        return (
+            <InitialLoading className='bg-gray-100 h-full'>
+                <PlanesPage PlanesProps={planes} />
+            </InitialLoading>
+        );
     }
-
-    const planes = await prisma.planes.findMany({
-        where: {
-            clubID: clubID
-        }
-    });
-
-    return (
-        <InitialLoading className='bg-gray-100 h-full'>
-            <PlanesPage PlanesProps={planes} />
-        </InitialLoading>
-    );
+    else {
+        return (
+            <NoClubID />
+        )
+    }
 }
 
 export default Page;

@@ -13,7 +13,14 @@ export default async function ProtectLayout({
     children: ReactNode;
 }) {
     // Récupérer les informations utilisateur côté serveur
-    const { user } = await getUser();
+    const res = await getUser();
+
+    if (res.error) {
+        console.error("Erreur lors de la récupération de l'utilisateur :", res.error);
+        redirect('/auth/login');
+    }
+
+    const { user } = res;
 
     // Rediriger si l'utilisateur n'est pas connecté
     if (!user) {
