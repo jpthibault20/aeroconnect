@@ -9,7 +9,8 @@ interface NavLink {
     icon: React.ElementType;
     roles: Role[];
 }
-export const indexLinkPlane = 2;
+export const indexLinkPlane = 3;
+export const indexLinkDashboard = 1;
 
 export const navigationLinks: NavLink[] = [
     {

@@ -1,24 +1,23 @@
-import { getHoursByInstructor } from "@/api/db/sessions";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getHoursByStudent } from "@/api/db/sessions";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import { ResponsiveContainer, Tooltip, BarChart, CartesianGrid, XAxis, YAxis, Bar } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Spinner } from "../ui/SpinnerVariants";
 
 interface Props {
   clubID: string;
 }
 
-
-const InstructorHoursChart = ({ clubID }: Props) => {
+const StudentHoursChart = ({ clubID }: Props) => {
+  const [HoursByStudent, setHoursByStudent] = useState<{ student: string; hours: number }[]>([]);
   const [loading, setLoading] = useState(false);
-  const [HoursByInstructor, setHoursByInstructor] = useState<{ name: string; hours: number }[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true); // Activer le loader avant de démarrer la requête
       try {
-        const res = await getHoursByInstructor(clubID);
-        setHoursByInstructor(res);
+        const res = await getHoursByStudent(clubID);
+        setHoursByStudent(res);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -31,27 +30,25 @@ const InstructorHoursChart = ({ clubID }: Props) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Heures par instructeur</CardTitle>
+        <CardTitle>Heures de vol par élèves</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           {loading ? (
             <Spinner>Chargement des données...</Spinner>
           ) : (
-            <BarChart data={HoursByInstructor} layout="vertical">
+            <BarChart data={HoursByStudent}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="name" type="category" />
+              <XAxis dataKey="student" />
+              <YAxis />
               <Tooltip />
-              <Bar dataKey="hours" fill="#82ca9d" />
+              <Bar dataKey="hours" fill="#8884d8" />
             </BarChart>
           )}
         </ResponsiveContainer>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default InstructorHoursChart
-
-
+export default StudentHoursChart;

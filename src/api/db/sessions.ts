@@ -540,7 +540,7 @@ export const getHoursByInstructor = async (clubID: string) => {
     const result = Object.entries(hoursByInstructor).map(([instructorID, hours]) => {
         // Trouver la session du premier pilote avec cet instructorID pour récupérer son nom
         const firstSession = validSessions.find(session => session.pilotID === instructorID);
-        const name = firstSession ? `${firstSession.pilotFirstName} ${firstSession.pilotLastName}` : 'Inconnu';
+        const name = firstSession ? `${firstSession.pilotLastName.toUpperCase().slice(0, 1)}.${firstSession.pilotFirstName.toLowerCase().slice(0,3)}` : 'Inconnu';
 
         return {
             name,
@@ -614,6 +614,78 @@ export const getHoursByPlane = async (clubID: string) => {
             };
         })
     );
-    
+
+    return result;
+};
+
+export const getHoursByStudent = async (clubID: string) => {
+    const currentYear = new Date().getFullYear();
+
+    // Récupérer toutes les sessions de vol pour l'année actuelle
+    const sessions = await prisma.flight_sessions.findMany({
+        where: {
+            clubID: clubID,
+            sessionDateStart: {
+                gte: new Date(`${currentYear}-01-01`), // Sessions à partir du 1er janvier de l'année actuelle
+            },
+        },
+        select: {
+            studentID: true, // Identifiant de l'étudiant
+            sessionDateStart: true, // Date de la session
+            sessionDateDuration_min: true, // Durée de la session en minutes
+        },
+    });
+
+    // Récupérer uniquement les étudiants avec le rôle "STUDENT"
+    const students = await prisma.user.findMany({
+        where: {
+            role: "STUDENT", // Ne récupérer que les étudiants
+        },
+        select: {
+            id: true, // Identifiant de l'étudiant
+            firstName: true, // Prénom de l'étudiant
+            lastName: true, // Nom de l'étudiant
+        },
+    });
+
+    // Construire un mapping `id -> Nom complet` pour les étudiants
+    const studentMap = students.reduce<Record<string, string>>((acc, student) => {
+        acc[student.id] = `${student.lastName} ${student.firstName}`;
+        return acc;
+    }, {});
+
+    // Filtrer les sessions valides : passées, avec un `studentID`, et correspondant à un étudiant ayant le rôle "STUDENT"
+    const validSessions = sessions.filter(
+        (session) =>
+            session.sessionDateStart &&
+            new Date(session.sessionDateStart) < new Date() && // La session est dans le passé
+            session.studentID && // L'étudiant est renseigné
+            studentMap[session.studentID] // Le `studentID` correspond à un étudiant ayant le rôle "STUDENT"
+    );
+
+    // Regrouper les heures par étudiant
+    const hoursByStudent: { [studentID: string]: number } = {};
+
+    validSessions.forEach((session) => {
+        const studentID = session.studentID!;
+        const hours = session.sessionDateDuration_min ? session.sessionDateDuration_min / 60 : 0;
+
+        if (!hoursByStudent[studentID]) {
+            hoursByStudent[studentID] = 0;
+        }
+
+        hoursByStudent[studentID] += hours;
+    });
+
+    // Construire le résultat final avec le nom des étudiants
+    const result = Object.entries(hoursByStudent).map(([studentID, hours]) => {
+        const studentName = studentMap[studentID] || "Inconnu";
+        return {
+            student: studentName,
+            hours,
+        };
+    });
+
+    await prisma.$disconnect();
     return result;
 };
