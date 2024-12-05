@@ -1,5 +1,6 @@
 "use server"
 import PageComponent from '@/components/dashboard/PageComponent';
+import NoClubID from '@/components/NoClubID';
 import React from 'react'
 
 interface PageProps {
@@ -9,15 +10,16 @@ interface PageProps {
 const Page = async ({ searchParams }: PageProps) => {
     const clubID = searchParams.clubID;
 
-    if (!clubID) {
-        throw new Error('clubID is required in the URL');
+    if (clubID) {
+        return (
+            <PageComponent clubID={clubID} />
+        )
     }
-
-
-
-    return (
-        <PageComponent clubID={clubID} />
-    )
+    else {
+        return (
+            <NoClubID />
+        )
+    }
 }
 
 export default Page

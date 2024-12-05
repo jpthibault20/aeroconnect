@@ -32,7 +32,7 @@ const TabCalendar = ({ date, sessions, setSessions }: Props) => {
     };
 
     return (
-        <div className="w-full h-full">
+        <div className="w-full h-full ">
             <div className="table w-full h-full table-fixed">
                 {/* En-tête avec les jours de la semaine */}
                 <div className="table-header-group">

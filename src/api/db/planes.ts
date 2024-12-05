@@ -7,7 +7,7 @@ const prisma = new PrismaClient()
 interface AddPlane {
     name: string,
     immatriculation: string,
-    clubID: string
+    clubID: string | null
 }
 
 export const createPlane = async (dataPlane: AddPlane) => {

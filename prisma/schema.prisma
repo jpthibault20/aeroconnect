@@ -8,34 +8,20 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum userRole {
-  USER
-  STUDENT
-  INSTRUCTOR
-  PILOT
-  OWNER
-  ADMIN
-}
-
-enum flightType {
-  FIRST_FLIGHT
-  INITATION
-  TRAINING
-}
-
 model User {
-  id         String   @id @unique @default(uuid())
-  email      String   @unique
-  clubID     String
-  firstName  String
-  lastName   String
-  phone      String?
-  restricted Boolean  @default(false)
-  role       userRole @default(USER)
-  country    String?
-  zipCode    String?
-  adress     String?
-  city       String?
+  id            String   @id @unique @default(uuid())
+  email         String   @unique
+  clubID        String?
+  firstName     String
+  lastName      String
+  phone         String?
+  restricted    Boolean  @default(false)
+  role          userRole @default(USER)
+  country       String?
+  zipCode       String?
+  adress        String?
+  city          String?
+  clubIDRequest String?
 }
 
 model flight_sessions {
@@ -50,10 +36,10 @@ model flight_sessions {
   studentID               String?
   studentFirstName        String?
   studentLastName         String?
-  studentPlaneID          String?
   student_type            flightType?
   finalReccurence         DateTime?   @db.Timestamptz(6)
   planeID                 String[]
+  studentPlaneID          String?
 }
 
 model planes {
@@ -67,13 +53,28 @@ model planes {
 model Club {
   id                 String   @id @unique
   Name               String
-  Address            String
-  City               String
-  Country            String
-  ZipCode            String
+  Address            String?
+  City               String?
+  Country            String?
+  ZipCode            String?
   OwnerId            String[]
   DaysOn             String[]
   HoursOn            String[]
   SessionDurationMin Int
   AvailableMinutes   String[]
+}
+
+enum userRole {
+  USER
+  STUDENT
+  PILOT
+  OWNER
+  ADMIN
+  INSTRUCTOR
+}
+
+enum flightType {
+  FIRST_FLIGHT
+  INITATION
+  TRAINING
 }

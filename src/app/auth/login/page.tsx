@@ -6,7 +6,7 @@ import React, { Suspense } from 'react'
 const LoginPage = async () => {
     const user = await getUser();
 
-    if (!user.user?.clubID) {
+    if (user.error) {
         return (
             <Suspense fallback={<div>Loading...</div>}>
                 <div className="">
@@ -16,7 +16,7 @@ const LoginPage = async () => {
         )
     }
     else {
-        redirect(`/calendar?clubID=${user.user?.clubID}`)
+        redirect(`/calendar?clubID=${user.user?.clubID || ''}`)
     }
 
 

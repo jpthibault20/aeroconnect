@@ -49,6 +49,7 @@ export const Login = () => {
         } catch (error) {
             console.error("Erreur de connexion :", error);
         } finally {
+            setLoading(false);
         }
     };
 

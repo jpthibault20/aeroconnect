@@ -89,7 +89,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
     // Vérifier les conflits pour chaque session à créer avec une seule requête
     const existingSessions = await prisma.flight_sessions.findMany({
         where: {
-            clubID: user.clubID,
+            clubID: user.clubID as string,
             pilotID: user.id,
             sessionDateStart: { in: sessionsToCreate },
         }
@@ -106,7 +106,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
             sessionsToCreate.map(sessionDateStart =>
                 prisma.flight_sessions.create({
                     data: {
-                        clubID: user.clubID,
+                        clubID: user.clubID as string,
                         sessionDateStart,
                         sessionDateDuration_min: sessionData.duration,
                         finalReccurence: sessionData.endReccurence,

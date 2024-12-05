@@ -16,7 +16,7 @@
 "use client";
 import React from 'react';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { Spinner } from './ui/SpinnerVariants';
+// import { Spinner } from './ui/SpinnerVariants';
 
 interface props {
     className?: string;
@@ -31,7 +31,7 @@ const InitialLoading = ({ children, className }: props) => {
     if (!currentUser) {
         return (
             <div className={`${className} flex justify-center items-center`}>
-                <Spinner>Loading...</Spinner>
+                {/* <Spinner>Loading...</Spinner> */}
             </div>
         );
     }
