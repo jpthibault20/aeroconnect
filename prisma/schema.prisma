@@ -24,18 +24,19 @@ enum flightType {
 }
 
 model User {
-  id         String   @id @unique @default(uuid())
-  email      String   @unique
-  clubID     String
-  firstName  String
-  lastName   String
-  phone      String?
-  restricted Boolean  @default(false)
-  role       userRole @default(USER)
-  country    String?
-  zipCode    String?
-  adress     String?
-  city       String?
+  id            String   @id @unique @default(uuid())
+  email         String   @unique
+  clubID        String
+  clubIDRequest String
+  firstName     String
+  lastName      String
+  phone         String?
+  restricted    Boolean  @default(false)
+  role          userRole @default(USER)
+  country       String?
+  zipCode       String?
+  adress        String?
+  city          String?
 }
 
 model flight_sessions {
