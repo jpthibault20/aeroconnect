@@ -42,7 +42,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp }: Props) => {
         const fetchUsers = async () => {
             if (currentUser) {
                 try {
-                    const res = await getAllUser(currentUser.clubID);
+                    const res = await getAllUser(currentUser.clubID as string);
                     if (Array.isArray(res)) {
                         setUsers(res);
                     }
