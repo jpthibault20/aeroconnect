@@ -17,7 +17,10 @@ const Page = async ({ searchParams }: PageProps) => {
     }
     else {
         return (
-            <NoClubID />
+            <div className='h-full'>
+                <NoClubID />
+                <PageComponent clubID={""} />
+            </div>
         )
     }
 }

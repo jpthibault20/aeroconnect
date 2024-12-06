@@ -29,14 +29,14 @@ const Page = async ({ searchParams }: PageProps) => {
         });
         return (
             <div className='h-full'>
-                <PageComponent sessionsprops={sessions} planesProp={planes} />
+                <PageComponent sessionsprops={sessions} planesProp={planes} clubIDURL={clubID} />
             </div>)
     }
 
     return (
         <div className='h-full'>
             <NoClubID />
-            <PageComponent sessionsprops={[]} planesProp={[]} />
+            <PageComponent sessionsprops={[]} planesProp={[]} clubIDURL={clubID ?? ''} />
         </div>
     )
 };
