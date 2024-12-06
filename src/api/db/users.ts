@@ -328,3 +328,18 @@ export const cancelClubIDRequest = async (userID: string) => {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 }
+
+export const getAllUserRequestedClubID = async(clubID: string) => {
+    try {
+        const user = await prisma.user.findMany({
+            where: {
+                clubIDRequest: clubID
+            }
+        })
+        prisma.$disconnect();
+        return user;
+    } catch (error) {
+        console.error('Error getting user:', error);
+        return { error: "Erreur lors de la récupération des utilisateurs" };
+    }
+}
