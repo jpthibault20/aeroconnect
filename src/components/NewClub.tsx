@@ -31,7 +31,7 @@ const NewClub = ({ setNewClub }: props) => {
         <div className='flex flex-col justify-center items-center space-y-4'>
 
             {/* Form */}
-            <div>
+            <div className='w-full space-y-3'>
                 <InputComponent
                     id='name'
                     label='Nom du club'
@@ -48,6 +48,18 @@ const NewClub = ({ setNewClub }: props) => {
                     onChange={(value) => setClubState((prev) => ({ ...prev, id: value }))}
                     style=''
                 />
+                <p>
+                    DaysOn
+                </p>
+                <p>
+                    HoursOn
+                </p>
+                <p>
+                    SessionDurationMin
+                </p>
+                <p>
+                    Adress
+                </p>
 
             </div>
 

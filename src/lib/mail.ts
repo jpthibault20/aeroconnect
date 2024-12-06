@@ -1,3 +1,4 @@
+import AcceptedToClub from "@/emails/AcceptedToClub";
 import MagicLinkEmail from "@/emails/MagicLink";
 import NotificationBookingPilote from "@/emails/NotificationBookingPilote";
 import NotificationBookingStudent from "@/emails/NotificationBookingStudent";
@@ -71,5 +72,14 @@ export const sendNotificationSudentRemoveForPilot = async (email: string, startD
     to: email,
     subject: "vol annulé",
     react: NotificationSudentRemoveForPilot({startDate: formatedStartDate, endDate: formatedEndDate})
+  });
+}
+
+export const sendNotificationRequestClub = async (email: string, clubName: string) => {
+  await resend.emails.send({
+    from: 'stephane@vol-evasion.fr',
+    to: email,
+    subject: "Demande d'adhésion au club",
+    react: AcceptedToClub({clubName})
   });
 }

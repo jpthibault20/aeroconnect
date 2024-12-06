@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { User } from '@prisma/client'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
-import { getAllUserRequestedClubID } from '@/api/db/users'
+import { acceptMembershipRequest, getAllUserRequestedClubID, rejectMembershipRequest } from '@/api/db/users'
 
 
 
@@ -28,6 +28,18 @@ const MembershipRequests: FC = () => {
     }
     fetchMembershipRequests();
   }, [currentUser?.clubID]);
+
+  const onClickAccept = (user: User) => {
+    console.log("Accepter la demande d'adhésion de ", user.firstName);
+    acceptMembershipRequest(user.id, user.clubIDRequest);
+    setMembershipRequests(membershipRequests.filter(req => req.id !== user.id));
+  };
+
+  const onClickReject = (user: User) => {
+    console.log("Rejeter la demande d'adhésion de ", user.firstName);
+    rejectMembershipRequest(user.id);
+    setMembershipRequests(membershipRequests.filter(req => req.id !== user.id));
+  };
 
   return (
     <Card>
@@ -55,8 +67,21 @@ const MembershipRequests: FC = () => {
                 <TableCell>{request.email}</TableCell>
                 {/* <TableCell>{request.requestDate}</TableCell> */}
                 <TableCell>
-                  <Button variant="outline" className="mr-2">Accepter</Button>
-                  <Button variant="outline" className="bg-red-100 text-red-600 hover:bg-red-600 hover:text-black">Rejeter</Button>
+                  <Button
+                    variant="outline"
+                    className="mr-2 bg-green-100 text-green-600 hover:bg-green-600 hover:text-black"
+                    onClick={() => onClickAccept(request)}
+                  >
+                    Accepter
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="bg-red-100 text-red-600 hover:bg-red-600 hover:text-black"
+                    onClick={() => onClickReject(request)}
+                  >
+                    Rejeter
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

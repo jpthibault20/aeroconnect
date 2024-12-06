@@ -51,6 +51,9 @@ const WaitingClubResponse = ({ clubIDprops }: props) => {
                         &quot; n&apos;a pas encore répondu à votre demande.
                     </p>
                     <Spinner />
+                    <p className="text-gray-500">
+                        Vous recevrez un email de confirmation dès que votre demande sera acceptée.
+                    </p>
                 </div>
             )}
         </div>
