@@ -64,12 +64,12 @@ const NewClub = ({ setNewClub }: props) => {
             </div>
 
             {/* Submit button */}
-            <div className='flex flex-col'>
+            <div className='flex w-full justify-end items-center flex-row'>
+                <Button variant={"ghost"} onClick={() => setNewClub(false)} className='text-gray-500'>
+                    Retour
+                </Button>
                 <Button variant={"perso"} onClick={onSubmit}>
                     Créer le club
-                </Button>
-                <Button variant={"ghost"} onClick={() => setNewClub(false)}>
-                    Retour
                 </Button>
             </div>
 
