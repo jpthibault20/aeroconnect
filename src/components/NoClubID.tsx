@@ -21,6 +21,8 @@ const NoClubID = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { currentUser } = useCurrentUser()
+    const [requestClubID, setRequestClubID] = useState(false)
+    const [selectedClubID, setSelectedClubID] = useState("")
 
 
     // Fonction pour récupérer les clubs
@@ -60,12 +62,21 @@ const NoClubID = () => {
                         </p>
                     </div>
 
-                    {currentUser?.clubIDRequest ? (
-                        <WaitingClubResponse />
+                    {currentUser?.clubIDRequest || requestClubID ? (
+                        <WaitingClubResponse clubIDprops={selectedClubID} />
                     ) : newClub ? (
                         <NewClub setNewClub={setNewClub} />
                     ) : (
-                        <RequestClubID setError={setError} setLoading={setLoading} clubs={clubs} loading={loading} error={error} newClubButton={newClubButton} />
+                        <RequestClubID
+                            setError={setError}
+                            setLoading={setLoading}
+                            clubs={clubs}
+                            loading={loading}
+                            error={error}
+                            newClubButton={newClubButton}
+                            setRequestClubID={setRequestClubID}
+                            setSelectedClubID={setSelectedClubID}
+                        />
                     )}
 
                 </CardContent>

@@ -14,13 +14,15 @@ interface Club {
 interface props {
     setError: React.Dispatch<React.SetStateAction<string | null>>;
     setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+    setRequestClubID: React.Dispatch<React.SetStateAction<boolean>>;
     clubs: Club[];
     loading: boolean;
     error: string | null;
     newClubButton: () => void;
+    setSelectedClubID: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const RequestClubID = ({ setError, clubs, loading, error, newClubButton }: props) => {
+const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequestClubID, setSelectedClubID }: props) => {
     const { currentUser } = useCurrentUser();
     const [selectedClub, setSelectedClub] = useState<Club>({
         id: "",
@@ -28,12 +30,14 @@ const RequestClubID = ({ setError, clubs, loading, error, newClubButton }: props
     });
 
     const onSubmit = async () => {
+        setSelectedClubID(selectedClub.id)
         const res = await requestClubID(selectedClub.id, currentUser!.id)
         if (res.error) {
             console.log(res.error);
             setError(res.error);
         } else {
             setError(null);
+            setRequestClubID(true);
         }
     };
 
@@ -44,8 +48,6 @@ const RequestClubID = ({ setError, clubs, loading, error, newClubButton }: props
                 <span className="font-semibold">Votre club :</span>
                 {loading ? (
                     <p className="text-gray-600">Chargement des clubs...</p>
-                ) : error ? (
-                    <p className="text-red-500">{error}</p>
                 ) : (
                     <DropdownMenu>
                         <DropdownMenuTrigger>

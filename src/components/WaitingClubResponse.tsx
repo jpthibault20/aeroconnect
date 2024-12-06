@@ -4,7 +4,10 @@ import { Club } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Spinner } from "./ui/SpinnerVariants";
 
-const WaitingClubResponse = () => {
+interface props {
+    clubIDprops: string
+}
+const WaitingClubResponse = ({ clubIDprops }: props) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [club, setClub] = useState<Club>();
@@ -15,7 +18,7 @@ const WaitingClubResponse = () => {
         setError(null);
 
         try {
-            const fetchedClub = await getClub(currentUser?.clubIDRequest as string);
+            const fetchedClub = await getClub(currentUser?.clubIDRequest || clubIDprops);
             if (fetchedClub) {
                 setClub(fetchedClub);
             } else {
