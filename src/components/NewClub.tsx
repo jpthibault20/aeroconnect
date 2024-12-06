@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { Button } from './ui/button';
 import InputComponent from './InputComponent';
 import { Club } from '@prisma/client';
-import { set } from 'date-fns';
 
 interface props {
     setNewClub: React.Dispatch<React.SetStateAction<boolean>>;
