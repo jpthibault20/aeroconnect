@@ -102,7 +102,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
     };
 
     return (
-        <div className="relative w-full bg-background mt-6 pb-20">
+        <div className=" w-full bg-background mt-6 pb-20">
             {/* Header */}
             <div className="flex items-center justify-between mt-4 px-8">
                 <div className="flex items-center space-x-2">

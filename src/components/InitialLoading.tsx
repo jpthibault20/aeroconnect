@@ -14,21 +14,41 @@
  */
 
 "use client";
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { useRouter } from 'next/navigation';
 // import { Spinner } from './ui/SpinnerVariants';
 
 interface props {
     className?: string;
     children: React.ReactNode;
+    clubIDURL: string;
 }
 
-const InitialLoading = ({ children, className }: props) => {
+const InitialLoading = ({ children, className, clubIDURL }: props) => {
     const { currentUser } = useCurrentUser();
+    const router = useRouter();
+    const [isLoading, setIsLoading] = React.useState(true);
 
-    // console.log("InitialLoading | Rendering...");
+    useEffect(() => {
+        if (!currentUser) return;
+        if (
+            // Cas 1 : Si clubIDURL a une valeur mais qu'elle ne correspond pas à currentUser?.clubID
+            (clubIDURL && currentUser?.clubID !== clubIDURL) ||
+            // Cas 2 : Si les deux ont une valeur mais qu'elles ne correspondent pas
+            (currentUser?.clubID && clubIDURL && currentUser.clubID !== clubIDURL) ||
+            // Cas 3 : Si currentUser?.clubID a une valeur mais pas clubIDURL
+            (currentUser?.clubID && !clubIDURL)
+        ) {
+            router.replace("/"); // Redirection
+        }
+        else {
+            setIsLoading(false);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUser?.clubID, clubIDURL, router]);
 
-    if (!currentUser) {
+    if (isLoading) {
         return (
             <div className={`${className} flex justify-center items-center`}>
                 {/* <Spinner>Loading...</Spinner> */}

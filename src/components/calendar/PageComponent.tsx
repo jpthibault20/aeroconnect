@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -34,10 +33,10 @@ const useScreenSize = () => {
 interface props {
     sessionsprops: flight_sessions[]
     planesProp: planes[]
+    clubIDURL: string
 }
 
-const PageComponent = ({ sessionsprops, planesProp }: props) => {
-
+const PageComponent = ({ sessionsprops, planesProp, clubIDURL }: props) => {
     const isMobile = useScreenSize();
     const [sessions, setSessions] = useState<flight_sessions[]>([]);
 
@@ -45,10 +44,9 @@ const PageComponent = ({ sessionsprops, planesProp }: props) => {
         setSessions(sessionsprops);
     }, [sessionsprops]);
 
-
     // Rendu conditionnel en fonction de la taille de l'écran
     return (
-        <InitialLoading className="h-full w-full">
+        <InitialLoading className="h-full w-full" clubIDURL={clubIDURL}>
             {!isMobile ? (
                 <GlobalCalendarDesktop
                     sessions={sessions}

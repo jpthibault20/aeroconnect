@@ -31,14 +31,18 @@ const Page = async ({ searchParams }: PageProps) => {
         });
 
         return (
-            <InitialLoading className='w-full h-full bg-gray-100'>
+            <InitialLoading className='w-full h-full bg-gray-100' clubIDURL={clubID}>
                 <StudentsPage userProps={users} />
             </InitialLoading>
         );
     }
     else {
         return (
-            <NoClubID />
+            <div className='h-full'>
+                <StudentsPage userProps={[]} />
+                <NoClubID />
+            </div>
+
         )
     }
 }

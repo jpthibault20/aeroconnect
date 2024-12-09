@@ -1,5 +1,5 @@
 "use server";
-import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
+import { sendNotificationBooking, sendNotificationRequestClub, sendStudentNotificationBooking } from '@/lib/mail';
 import { createClient } from '@/utils/supabase/server';
 import { PrismaClient, userRole } from '@prisma/client'
 import { User } from '@prisma/client'
@@ -282,3 +282,105 @@ export const blockUser = async (userID: string, restricted: boolean) => {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 }
+
+export const requestClubID = async (clubID: string, userID: string) => {
+    if (!clubID) {
+        return { error: "Une erreur est survenue (E_001: clubID is undefined)" };
+    }
+    if (!userID) {
+        return { error: "Une erreur est survenue (E_001: userID is undefined)" };
+    }
+
+    try {
+        await prisma.user.update({
+            where: {
+                id: userID
+            },
+            data: {
+                clubIDRequest: clubID
+            }
+        });
+        prisma.$disconnect();
+        return { success: "L'utilisateur a été mis à jour avec succès !" };
+    } catch (error) {
+        console.error('Error blocking user:', error);
+        return { error: "Erreur lors de la mise à jour de l'utilisateur" };
+    }
+}
+
+
+export const getAllUserRequestedClubID = async(clubID: string) => {
+    try {
+        const user = await prisma.user.findMany({
+            where: {
+                clubIDRequest: clubID
+            }
+        })
+        prisma.$disconnect();
+        return user;
+    } catch (error) {
+        console.error('Error getting user:', error);
+        return { error: "Erreur lors de la récupération des utilisateurs" };
+    }
+}
+
+export const acceptMembershipRequest = async (userID: string, clubID: string | null) => {
+    if (!userID) {
+        return { error: "Une erreur est survenue (E_001: userID is undefined)" };
+    }
+    if (!clubID) {
+        return { error: "Une erreur est survenue (E_001: clubID is undefined)" };
+    }
+    try {
+        await prisma.user.update({
+            where: {
+                id: userID
+            },
+            data: {
+                clubIDRequest: null,
+                clubID: clubID
+            }
+        });
+        const instructor = await prisma.user.findUnique({
+            where: { id: userID },
+            select: {
+                email: true
+            }
+        })
+        const club = await prisma.club.findUnique({
+            where: { id: clubID },
+            select: {
+                Name: true
+            }
+        })
+        prisma.$disconnect();
+        sendNotificationRequestClub(instructor?.email as string, club?.Name as string);
+        return { success: "L'utilisateur a été mis à jour avec succès !" };
+    } catch (error) {
+        console.error('Error blocking user:', error);
+        return { error: "Erreur lors de la mise à jour de l'utilisateur" };
+    }
+};
+
+
+export const rejectMembershipRequest = async (userID: string) => {
+    if (!userID) {
+        return { error: "Une erreur est survenue (E_001: userID is undefined)" };
+    }
+
+    try {
+        await prisma.user.update({
+            where: {
+                id: userID
+            },
+            data: {
+                clubIDRequest: null
+            }
+        });
+        prisma.$disconnect();
+        return { success: "L'utilisateur a été mis à jour avec succès !" };
+    } catch (error) {
+        console.error('Error blocking user:', error);
+        return { error: "Erreur lors de la mise à jour de l'utilisateur" };
+    }
+};

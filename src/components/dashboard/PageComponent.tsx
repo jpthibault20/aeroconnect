@@ -10,6 +10,7 @@ import StudentHoursChart from './StudentHoursChart';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { indexLinkDashboard, navigationLinks } from '@/config/links';
 import { useRouter } from 'next/navigation';
+import InitialLoading from '../InitialLoading';
 
 interface PageProps {
     clubID: string;
@@ -25,7 +26,7 @@ const PageComponent = ({ clubID }: PageProps) => {
         router.push('/calendar?clubID=' + clubID);
     }
     return (
-        <div className="min-h-screen bg-gray-200 max-h-screen overflow-y-auto">
+        <InitialLoading className="min-h-screen bg-gray-200 max-h-screen overflow-y-auto" clubIDURL={clubID}>
             <Header clubName="Aeroculb ULM du saulnois" />
             <main className="container mx-auto px-4 py-7">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -46,7 +47,7 @@ const PageComponent = ({ clubID }: PageProps) => {
                     </div>
                 </div>
             </main>
-        </div>
+        </InitialLoading>
     )
 }
 

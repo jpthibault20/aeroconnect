@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
-import { workingHour } from '@/config/configClub';
 import { dayFr } from '@/config/date';
 import { formatTime, getDaysOfWeek, getSessionsFromDate } from '@/api/date';
-import { flight_sessions } from '@prisma/client';
+import { Club, flight_sessions } from '@prisma/client';
 import Session from './Session';
 
 interface Props {
@@ -10,15 +9,16 @@ interface Props {
     date: Date;
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
+    club: Club | undefined;
 }
 
-const TabCalendar = ({ date, sessions, setSessions }: Props) => {
+const TabCalendar = ({ date, sessions, setSessions, club }: Props) => {
     // Récupère les jours de la semaine
     const daysOfWeek = useMemo(() => getDaysOfWeek(date), [date]);
 
     const getSessions = (indexX: number, indexY: number) => {
-        const hour = workingHour[indexX] !== undefined ? Math.floor(workingHour[indexX]) : 0;
-        const minutes = workingHour[indexX] !== undefined ? Math.round((workingHour[indexX] % 1) * 60) : 0;
+        const hour = club?.HoursOn[indexX] !== undefined ? Math.floor(club?.HoursOn[indexX]) : 0;
+        const minutes = club?.HoursOn[indexX] !== undefined ? Math.round((club?.HoursOn[indexX] % 1) * 60) : 0;
 
         const sessionDate = new Date(
             date.getFullYear(),
@@ -55,7 +55,7 @@ const TabCalendar = ({ date, sessions, setSessions }: Props) => {
                 </div>
                 {/* Créneaux horaires */}
                 <div className="table-row-group h-full bg-[#E4E7ED]">
-                    {workingHour.map((hour, index) => (
+                    {club?.HoursOn.map((hour, index) => (
                         <div key={index} className="table-row">
                             <div className={`table-cell pl-3 text-center font-istok font-semibold text-[#646464] align-middle ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''} w-20`}>
                                 {formatTime(hour)}

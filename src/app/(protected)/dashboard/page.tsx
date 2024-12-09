@@ -1,5 +1,6 @@
 "use server"
 import PageComponent from '@/components/dashboard/PageComponent';
+import InitialLoading from '@/components/InitialLoading';
 import NoClubID from '@/components/NoClubID';
 import React from 'react'
 
@@ -12,12 +13,17 @@ const Page = async ({ searchParams }: PageProps) => {
 
     if (clubID) {
         return (
-            <PageComponent clubID={clubID} />
+            <InitialLoading clubIDURL={clubID} className="h-full w-full">
+                <PageComponent clubID={clubID} />
+            </InitialLoading>
         )
     }
     else {
         return (
-            <NoClubID />
+            <div className='h-full'>
+                <NoClubID />
+                <PageComponent clubID={""} />
+            </div>
         )
     }
 }

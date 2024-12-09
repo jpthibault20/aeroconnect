@@ -32,14 +32,17 @@ const Page = async ({ searchParams }: PageProps) => {
         });
 
         return (
-            <InitialLoading className='bg-gray-100 h-full'>
+            <InitialLoading className='bg-gray-100 h-full' clubIDURL={clubID}>
                 <PlanesPage PlanesProps={planes} />
             </InitialLoading>
         );
     }
     else {
         return (
-            <NoClubID />
+            <div>
+                <NoClubID />
+                <PlanesPage PlanesProps={[]} />
+            </div>
         )
     }
 }

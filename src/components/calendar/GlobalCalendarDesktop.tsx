@@ -11,7 +11,9 @@ import DaySelector from './DaySelector';
 import TabCalendar from './TabCalendar';
 import NewSession from "@/components/NewSession"
 import Filter from './Filter';
-import { flight_sessions, planes } from '@prisma/client';
+import { Club, flight_sessions, planes } from '@prisma/client';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { getClub } from '@/api/db/club';
 
 interface Props {
     sessions: flight_sessions[];
@@ -31,6 +33,8 @@ interface Props {
 const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp }: Props) => {
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
+    const [club, setClub] = useState<Club>();
+    const { currentUser } = useCurrentUser();
 
     const onClickNextweek = () => {
         setDate(prevDate => {
@@ -73,6 +77,17 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp }: Props) => 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [date]);
 
+    useEffect(() => {
+        const getClubAPI = async () => {
+            const club = await getClub(currentUser?.clubID as string);
+            if (!club) {
+                return;
+            }
+            setClub(club);
+        }
+        getClubAPI();
+    }, [currentUser?.clubID]);
+
     return (
         // Only rendered on large screens (hidden on smaller screens), includes a loading state.
         <div className='hidden lg:block h-full'>
@@ -108,6 +123,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp }: Props) => 
                         date={date}
                         sessions={sessionsFlitered}
                         setSessions={setSessions}
+                        club={club}
                     />
                 </div>
             </div>
