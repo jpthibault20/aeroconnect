@@ -59,7 +59,7 @@ model Club {
   ZipCode            String?
   OwnerId            String[]
   DaysOn             String[]
-  HoursOn            String[]
+  HoursOn            Int[]
   SessionDurationMin Int
   AvailableMinutes   String[]
 }

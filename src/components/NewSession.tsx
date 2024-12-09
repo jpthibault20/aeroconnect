@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { IoMdAddCircle } from "react-icons/io";
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { flight_sessions, planes, userRole } from '@prisma/client';
+import { Club, flight_sessions, planes, userRole } from '@prisma/client';
 import {
     Dialog,
     DialogClose,
@@ -15,24 +15,20 @@ import {
 } from "@/components/ui/dialog";
 import { IoIosWarning } from "react-icons/io";
 import { Button } from '../components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { CalendarIcon, Clock } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fr } from "date-fns/locale";
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { minutes, sessionDurationMin, workingHour } from '@/config/configClub';
+import { minutes, sessionDurationMin } from '@/config/configClub';
 import { FaArrowRightLong, FaCheck } from "react-icons/fa6";
 import { Switch } from "@/components/ui/switch";
 import { RxCross2 } from "react-icons/rx";
 import { interfaceSessions, newSession } from '@/api/db/sessions';
 import { useToast } from "@/hooks/use-toast"
 import { Spinner } from './ui/SpinnerVariants';
-import { getPlanes } from '@/api/db/planes';
-
-
+import { getClub } from '@/api/db/club';
 
 interface Props {
     display: "desktop" | "phone";
@@ -52,6 +48,7 @@ const NewSession = ({ display, setSessions, planesProp }: Props) => {
     const [isOpenCal1, setIsOpenCal1] = useState(false);
     const [isOpenCal2, setIsOpenCal2] = useState(false);
     const [switchReccurence, setSwitchReccurence] = useState(false);
+    const [club, setClub] = useState<Club>();
     const [sessionData, setSessionData] = useState<interfaceSessions>({
         date: undefined,
         startHour: "9",
@@ -91,6 +88,17 @@ const NewSession = ({ display, setSessions, planesProp }: Props) => {
             setWarning("")
         }
     }, [sessionData])
+
+    useEffect(() => {
+        const getClubAPI = async () => {
+            const club = await getClub(currentUser?.clubID as string);
+            if (!club) {
+                return;
+            }
+            setClub(club);
+        }
+        getClubAPI();
+    }, [currentUser?.clubID]);
 
     // si l'utilisateur n'as pas le bon role il ne pourras pas voir cette page de création de session
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR))) {
@@ -226,7 +234,7 @@ const NewSession = ({ display, setSessions, planesProp }: Props) => {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {workingHour.slice(0, -1).map((h) => (
+                                    {club?.HoursOn.slice(0, -1).map((h) => (
                                         <SelectItem key={`start-${h}`} value={h.toString()}>
                                             {h}
                                         </SelectItem>
@@ -257,7 +265,7 @@ const NewSession = ({ display, setSessions, planesProp }: Props) => {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {workingHour.map((h) => (
+                                    {club?.HoursOn.map((h) => (
                                         <SelectItem key={`end-${h}`} value={h.toString()}>
                                             {h}
                                         </SelectItem>

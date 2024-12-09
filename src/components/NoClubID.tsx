@@ -51,7 +51,7 @@ const NoClubID = () => {
 
     return isOpen ? (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300">
-            <Card className="w-[90%] max-w-md">
+            <Card className="w-[90%] max-w-md mb-44 mt-10 lg:my-0">
                 <CardContent className="p-6 space-y-6">
                     {/* Header */}
                     <div className="flex flex-col items-center space-y-2">
@@ -62,23 +62,24 @@ const NoClubID = () => {
                         </p>
                     </div>
 
-                    {currentUser?.clubIDRequest || requestClubID ? (
-                        <WaitingClubResponse clubIDprops={selectedClubID} />
-                    ) : newClub ? (
-                        <NewClub setNewClub={setNewClub} />
-                    ) : (
-                        <RequestClubID
-                            setError={setError}
-                            setLoading={setLoading}
-                            clubs={clubs}
-                            loading={loading}
-                            error={error}
-                            newClubButton={newClubButton}
-                            setRequestClubID={setRequestClubID}
-                            setSelectedClubID={setSelectedClubID}
-                        />
-                    )}
-
+                    <div className="max-h-[50vh] overflow-y-auto md:max-h-full">
+                        {currentUser?.clubIDRequest || requestClubID ? (
+                            <WaitingClubResponse clubIDprops={selectedClubID} />
+                        ) : newClub ? (
+                            <NewClub setNewClub={setNewClub} />
+                        ) : (
+                            <RequestClubID
+                                setError={setError}
+                                setLoading={setLoading}
+                                clubs={clubs}
+                                loading={loading}
+                                error={error}
+                                newClubButton={newClubButton}
+                                setRequestClubID={setRequestClubID}
+                                setSelectedClubID={setSelectedClubID}
+                            />
+                        )}
+                    </div>
                 </CardContent>
             </Card>
         </div>
