@@ -148,6 +148,10 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                                     variant={"outline"}
                                     className={`w-full justify-start text-left font-normal ${!sessionData.date && "text-muted-foreground"}`}
                                     onClick={() => setIsOpenCal1(true)}
+                                    onTouchStart={(e) => {
+                                        e.preventDefault();
+                                        setIsOpenCal1(!isOpenCal1);
+                                    }}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {sessionData.date ? sessionData.date.toLocaleDateString() : "Choisir une date"}
