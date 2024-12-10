@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -30,10 +30,7 @@ const clubFormSchema = z.object({
     workEndTime: z.string().min(1, "L'heure de fin est requise"),
     sessionDuration: z
         .number()
-        .min(30, "La durée des sessions doit être d'au moins 30 minutes")
-        .refine((value) => value % 15 === 0, {
-            message: "La durée des sessions doit être un multiple de 15 minutes.",
-        }),
+        .default(60)
 }).refine(
     (data) => parseInt(data.workEndTime) - parseInt(data.workStartTime) >= 3,
     {
@@ -60,6 +57,9 @@ const NewClub = ({ setNewClub }: Props) => {
         formState: { errors },
     } = useForm<ClubFormValues>({
         resolver: zodResolver(clubFormSchema),
+        defaultValues: {
+            sessionDuration: 60, // Valeur par défaut
+        },
     });
 
     const onSubmit = (data: ClubFormValues) => {
@@ -67,8 +67,7 @@ const NewClub = ({ setNewClub }: Props) => {
             const res = await createClub(data, currentUser?.id as string);
             if (res.error) {
                 setFormError(res.error);
-            }
-            else if (res.success) {
+            } else if (res.success) {
                 setNewClub(false);
                 setFormError(null);
                 console.log('/calendar?clubID=' + data.id);
@@ -214,14 +213,10 @@ const NewClub = ({ setNewClub }: Props) => {
                     <Input
                         id="sessionDuration"
                         type="number"
-                        placeholder="Durée (ex : 30)"
+                        disabled
+                        defaultValue={60}
                         {...register("sessionDuration", { valueAsNumber: true })}
                     />
-                    {errors.sessionDuration && (
-                        <p className="text-red-500 text-sm">
-                            {errors.sessionDuration.message}
-                        </p>
-                    )}
                 </div>
 
                 {/* Boutons */}

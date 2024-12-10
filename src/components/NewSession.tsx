@@ -76,7 +76,10 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
     useEffect(() => {
         const getClubAPI = async () => {
             const clubData = await getClub(currentUser?.clubID as string)
-            if (clubData) setClub(clubData)
+            if (clubData) {
+                setClub(clubData);
+                setSessionData(prev => ({ ...prev, startHour: clubData.HoursOn[0].toString(), duration: clubData.SessionDurationMin }))
+            }
         }
         getClubAPI()
     }, [currentUser?.clubID])
