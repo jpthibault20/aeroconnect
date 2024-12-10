@@ -2,11 +2,9 @@
 
 import React from 'react';
 import PageComponent from '@/components/calendar/PageComponent';
-import { PrismaClient } from '@prisma/client';
 import NoClubID from '@/components/NoClubID';
 import { workingHour } from '@/config/configClub';
-
-const prisma = new PrismaClient();
+import prisma from '@/api/prisma';
 
 interface PageProps {
     searchParams: { clubID: string | undefined };

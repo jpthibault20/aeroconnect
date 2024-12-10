@@ -12,10 +12,8 @@
 import InitialLoading from '@/components/InitialLoading';
 import StudentsPage from '@/components/students/StudentsPage';
 import React from 'react';
-import { PrismaClient } from '@prisma/client';
 import NoClubID from '@/components/NoClubID';
-
-const prisma = new PrismaClient();
+import prisma from '@/api/prisma';
 
 interface PageProps {
     searchParams: { clubID: string | undefined };

@@ -3,10 +3,8 @@ import { ClubFormValues } from "@/components/NewClub";
 import { minutes } from "@/config/configClub";
 import { dayFr } from "@/config/date";
 import { sendNotificationRequestClub } from "@/lib/mail";
-import { PrismaClient, userRole } from "@prisma/client";
-
-
-const prisma = new PrismaClient()
+import { userRole } from "@prisma/client";
+import prisma from "../prisma";
 
 export const getAllClubs = async () => {
     try {

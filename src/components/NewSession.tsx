@@ -140,6 +140,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                     <DialogDescription>Configuration de la nouvelle session</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                    {/* Date */}
                     <div className="grid gap-2">
                         <Label htmlFor="date">Date</Label>
                         <Popover open={isOpenCal1} onOpenChange={setIsOpenCal1}>
@@ -185,6 +186,8 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                             </PopoverContent>
                         </Popover>
                     </div>
+
+                    {/* Hours */}
                     <div className="grid gap-2">
                         <Label>Horaires</Label>
                         <div className="flex items-center space-x-2">

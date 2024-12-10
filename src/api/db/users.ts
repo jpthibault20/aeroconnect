@@ -1,10 +1,9 @@
 "use server";
 import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
 import { createClient } from '@/utils/supabase/server';
-import { PrismaClient, userRole } from '@prisma/client'
+import { userRole } from '@prisma/client'
 import { User } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import prisma from '../prisma';
 
 interface UserMin {
     firstName: string,

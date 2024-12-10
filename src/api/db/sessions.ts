@@ -1,10 +1,10 @@
 "use server";
 
-import { PrismaClient, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { differenceInHours, isBefore } from 'date-fns';
 import { sendStudentNotificationBooking, sendNotificationBooking, sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from "@/lib/mail";
+import prisma from '../prisma';
 
-const prisma = new PrismaClient();
 export interface interfaceSessions {
     date: Date | undefined;
     startHour: string;
@@ -173,7 +173,6 @@ export const getAllFutureSessions = async (clubID: string) => {
 };
 
 export const getPlanes = async (clubID: string) => {
-    const prisma = new PrismaClient()
     try {
         const planes = await prisma.planes.findMany({
             where: {
