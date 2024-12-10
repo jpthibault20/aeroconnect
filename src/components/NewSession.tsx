@@ -29,6 +29,13 @@ import { interfaceSessions, newSession } from '@/api/db/sessions';
 import { useToast } from "@/hooks/use-toast"
 import { Spinner } from './ui/SpinnerVariants';
 import { getClub } from '@/api/db/club';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar as CaledarIcon } from 'lucide-react';
+
 
 interface Props {
     display: "desktop" | "phone";
@@ -178,12 +185,12 @@ const NewSession = ({ display, setSessions, planesProp }: Props) => {
                 className={cn(
                     "bg-[#ffffff] max-w-full w-full p-4 sm:p-6",
                     "lg:max-w-[600px]", // Taille limitée pour les grands écrans
-                    "h-screen flex flex-col overflow-hidden" // Hauteur complète sur mobile
+                    "flex flex-col overflow-hidden" // Hauteur complète sur mobile
                 )}
             >
                 {/* Header fixe */}
                 <DialogHeader
-                    className="flex flex-col items-center mb-3 p-4 border-b"
+                    className="flex flex-col items-center pb-4 mb-2 border-b"
                 >
                     <DialogTitle className="text-lg font-bold">Nouvelle session</DialogTitle>
                     <DialogDescription className="text-sm text-gray-500">
@@ -192,38 +199,46 @@ const NewSession = ({ display, setSessions, planesProp }: Props) => {
                 </DialogHeader>
 
                 {/* Contenu défilable */}
-
                 <div className="flex-1 overflow-y-auto w-full">
-
-                    {/* Calendrier */}<Label>Date de la session</Label>
-                    <div className='flex w-full items-center justify-center'>
-                        <Calendar
-                            className=' border border-gray-200 rounded-md shadow-sm'
-                            mode="single"
-                            selected={sessionData.date}
-                            onSelect={(date) => {
-                                if (date) {
-                                    const localDate = new Date(date);
-                                    const utcDate = new Date(
-                                        Date.UTC(
-                                            localDate.getFullYear(),
-                                            localDate.getMonth(),
-                                            localDate.getDate(),
-                                            localDate.getHours(),
-                                            localDate.getMinutes(),
-                                            localDate.getSeconds()
-                                        )
-                                    );
-                                    setSessionData((prev) => ({ ...prev, date: utcDate }));
-                                }
-                                setIsOpenCal1(false);
-                            }}
-                            initialFocus
-                            locale={fr}
-                        />
+                    {/* Calendrier */}
+                    <div className='w-full items-center justify-center flex'>
+                        <Popover open={isOpenCal1} onOpenChange={setIsOpenCal1}>
+                            <PopoverTrigger className='w-full border rounded-md px-3 py-1 flex items-center justify-center gap-2 shadow-sm'>
+                                <CalendarIcon size={17} />
+                                {sessionData.date ? (
+                                    `${sessionData.date!.getUTCDate()}/${sessionData.date!.getUTCMonth() + 1
+                                    }/${sessionData.date!.getUTCFullYear()}`
+                                ) : (
+                                    "Choisir une date"
+                                )}
+                            </PopoverTrigger>
+                            <PopoverContent>
+                                <Calendar
+                                    mode="single"
+                                    selected={sessionData.date}
+                                    onSelect={(date) => {
+                                        if (date) {
+                                            const localDate = new Date(date);
+                                            const utcDate = new Date(
+                                                Date.UTC(
+                                                    localDate.getFullYear(),
+                                                    localDate.getMonth(),
+                                                    localDate.getDate(),
+                                                    localDate.getHours(),
+                                                    localDate.getMinutes(),
+                                                    localDate.getSeconds()
+                                                )
+                                            );
+                                            setSessionData((prev) => ({ ...prev, date: utcDate }));
+                                        }
+                                        setIsOpenCal1(false);
+                                    }}
+                                    initialFocus
+                                    locale={fr}
+                                />
+                            </PopoverContent>
+                        </Popover>
                     </div>
-
-
 
                     {/* Sélection des heures et minutes */}
                     <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4 mt-4">
@@ -345,24 +360,35 @@ const NewSession = ({ display, setSessions, planesProp }: Props) => {
 
                     {/* Récurrence avec Popover pour la date */}
                     {switchReccurence && (
-                        <div className='flex flex-col space-y-3 mt-6'>
-                            <Label>Date de la dernière session</Label>
-                            <div className="flex w-full items-center justify-center">
-                                <Calendar
-                                    className=' border border-gray-200 rounded-md shadow-sm'
-                                    key={sessionData?.endReccurence?.toISOString()}
-                                    mode="single"
-                                    selected={sessionData?.endReccurence}
-                                    defaultMonth={sessionData?.endReccurence || undefined}
-                                    onSelect={(date) => {
-                                        setSessionData(prev => ({ ...prev, endReccurence: date }))
-                                        setIsOpenCal2(false)
-                                    }}
-                                    initialFocus
-                                    locale={fr}
-                                />
+                        <div>
+                            {/* Calendrier */}
+                            < div className='w-full items-center justify-center flex py-3 '>
+                                <Popover open={isOpenCal2} onOpenChange={setIsOpenCal2}>
+                                    <PopoverTrigger className='w-full border rounded-md px-3 py-1 flex items-center justify-center gap-2 shadow-sm'>
+                                        <CalendarIcon size={17} />
+                                        {sessionData.endReccurence ? (
+                                            `${sessionData.endReccurence!.getUTCDate()}/${sessionData.endReccurence!.getUTCMonth() + 1
+                                            }/${sessionData.endReccurence!.getUTCFullYear()}`
+                                        ) : (
+                                            "Choisir une date de fin"
+                                        )}
+                                    </PopoverTrigger>
+                                    <PopoverContent>
+                                        <Calendar
+                                            mode="single"
+                                            selected={sessionData.endReccurence}
+                                            onSelect={(date) => {
+                                                setSessionData(prev => ({ ...prev, endReccurence: date }))
+                                                setIsOpenCal2(false)
+                                            }}
+                                            initialFocus
+                                            locale={fr}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
                             </div>
                         </div>
+
                     )}
                     {error && (
                         <div className='text-red-500 w-full p-2  bg-[#FFF4F4] rounded-lg flex items-center space-x-2'>
@@ -372,28 +398,27 @@ const NewSession = ({ display, setSessions, planesProp }: Props) => {
                             </div>
                         </div>
                     )}
+                    <div
+                        className=" border-t pt-6 mt-4 flex justify-end"
+                    >
+                        <DialogClose className=" text-black px-4 py-2 rounded-md w-full sm:w-auto text-center">
+                            Annuler
+                        </DialogClose>
+                        {loading ? (
+                            <Spinner />
+                        ) : (
+                            <Button
+                                onClick={onConfirm}
+                                disabled={loading}
+                                className="bg-[#774BBE] text-white px-4 py-2 rounded-md w-full sm:w-auto text-center"
+                            >
+                                Enregistrer
+                            </Button>
+                        )}
+                    </div>
                 </div>
-                <DialogFooter
-                    className="sticky bottom-0 z-50 p-4 border-t flex-shrink-0"
-                >
-                    <DialogClose className="bg-gray-200 text-black px-4 py-2 rounded-md w-full sm:w-auto text-center">
-                        Annuler
-                    </DialogClose>
-                    {loading ? (
-                        <Spinner />
-                    ) : (
-                        <Button
-                            onClick={onConfirm}
-                            disabled={loading}
-                            className="bg-[#774BBE] text-white px-4 py-2 rounded-md w-full sm:w-auto text-center"
-                        >
-                            Enregistrer
-                        </Button>
-                    )}
-                </DialogFooter>
-
             </DialogContent>
-        </Dialog>
+        </Dialog >
 
     );
 };
