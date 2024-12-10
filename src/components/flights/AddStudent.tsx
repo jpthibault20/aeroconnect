@@ -194,7 +194,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp }: Props) => {
                     </SelectContent>
                 </Select>
                 <DialogFooter>
-                    <DialogClose>Cancel</DialogClose>
+                    <DialogClose disabled={loading}>Cancel</DialogClose>
                     {loading ? (
                         <Spinner />
                     ) : (

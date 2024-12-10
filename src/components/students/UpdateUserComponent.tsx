@@ -11,6 +11,7 @@ import { Switch } from '../ui/switch'
 import { FaCheck } from "react-icons/fa";
 import { ImCross } from "react-icons/im";
 import { useCurrentUser } from '@/app/context/useCurrentUser'
+import { Spinner } from '../ui/SpinnerVariants'
 
 
 
@@ -238,7 +239,9 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                 <DialogFooter>
                     <button onClick={() => setShowPopup(false)} disabled={loading}>Annuler</button>
                     <Button onClick={onClickUpdateUser} disabled={loading}>
-                        Enregistrer
+                        {loading ? (
+                            <Spinner />
+                        ) : "Enregistrer"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -21,6 +21,7 @@ import { IoMdAddCircle } from "react-icons/io"
 import { IoIosWarning } from "react-icons/io"
 import { FaArrowRightLong } from "react-icons/fa6"
 import { CalendarIcon } from 'lucide-react'
+import { Spinner } from './ui/SpinnerVariants'
 
 interface Props {
     display: "desktop" | "phone"
@@ -309,13 +310,15 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                 <DialogFooter className='w-full'>
                     <span className='flex flex-row items-center justify-end'>
                         <span>
-                            <Button variant="link" onClick={() => setIsPopoverOpen(false)} className='w-fit text-gray-500'>
+                            <Button variant="link" onClick={() => setIsPopoverOpen(false)} className='w-fit text-gray-500' disabled={loading}>
                                 Annuler
                             </Button>
                         </span>
                         <span>
                             <Button variant="perso" onClick={onConfirm} disabled={loading} className='w-fit'>
-                                {loading ? "Enregistrement..." : "Enregistrer"}
+                                {loading ? (
+                                    <Spinner />
+                                ) : "Enregistrer"}
                             </Button>
                         </span>
                     </span>
