@@ -16,7 +16,7 @@ const NavBar = () => {
     )
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 lg:top-0 lg:bottom-auto">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
             <div className="container mx-auto px-4">
                 <div className="bg-gray-900 flex items-center justify-around rounded-t-xl lg:rounded-b-xl shadow-lg">
                     {filteredLinks.map((link) => {
