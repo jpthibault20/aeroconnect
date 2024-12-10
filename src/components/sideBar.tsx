@@ -34,7 +34,7 @@ const SideBar = () => {
 
             <div className='border-1 border-b border-[#797979] mx-3 mb-6' />
 
-            <Link className="bg-[#9BAAD1] p-1 mb-4 flex items-center mx-3 rounded-lg" href={'/profile'}>
+            <Link className="bg-[#9BAAD1] p-1 mb-4 flex items-center mx-3 rounded-lg" href={'/profile?clubID=' + currentUser?.clubID}>
                 <Image src="/images/profilePicture.png" alt="User" width={40} height={40} className="rounded-full mr-3" />
                 <div className='w-full'>
                     <p className="border-b font-medium text-sm w-fit">{currentUser?.lastName} {currentUser?.firstName}</p>
