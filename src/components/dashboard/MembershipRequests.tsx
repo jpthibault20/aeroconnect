@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { User } from '@prisma/client'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
-import { acceptMembershipRequest, getAllUserRequestedClubID, rejectMembershipRequest } from '@/api/db/users'
+import { acceptMembershipRequest, getAllUserRequestedClubID, rejectMembershipRequest } from '@/api/db/club'
 
 
 

@@ -3,7 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ChevronDown } from 'lucide-react';
 import { IoIosWarning } from 'react-icons/io';
 import { Button } from './ui/button';
-import { requestClubID } from '@/api/db/users';
+import { requestClubID } from '@/api/db/club';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface Club {
