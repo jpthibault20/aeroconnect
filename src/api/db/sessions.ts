@@ -355,7 +355,7 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
     }
 
     try {
-        // Charger les données nécessaires en une seule requête
+        // Étape 1 : Charger les données critiques
         const [student, session, conflictingSessions] = await Promise.all([
             prisma.user.findUnique({
                 where: { id: studentID },
@@ -394,6 +394,7 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
             }),
         ]);
 
+        // Vérifications critiques
         if (!student) {
             return { error: "Élève introuvable." };
         }
@@ -402,32 +403,27 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
             return { error: "Session introuvable ou non accessible." };
         }
 
-        // Vérification 0 : La session doit être dans le futur
         if (session.sessionDateStart < new Date()) {
             return { error: "La date de la session est passée." };
         }
 
-        // Vérification 1 : Restrictions sur l'utilisateur
         if (student.restricted) {
             return { error: "Contacter l'administrateur pour plus d'informations. (E_002: restricted)" };
         }
 
-        // Vérification 2 : Rôle de l'utilisateur
         const allowedRoles = ["STUDENT", "PILOT", "OWNER", "ADMIN", "INSTRUCTOR"];
         if (!allowedRoles.includes(student.role)) {
             return { error: "Vous n'avez pas les droits pour vous inscrire à une session. (E_003: User)" };
         }
 
-        // Vérification 3 : Conflits avec d'autres sessions
         const conflictingSession = conflictingSessions.find((s) =>
             s.sessionDateStart.getTime() === session.sessionDateStart.getTime()
         );
-
         if (conflictingSession) {
             return { error: "Conflit détecté avec une autre session (élève ou avion)." };
         }
 
-        // Inscription de l'étudiant à la session
+        // Étape 2 : Mise à jour rapide de la session
         await prisma.flight_sessions.update({
             where: { id: sessionID },
             data: {
@@ -438,34 +434,55 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
             },
         });
 
-        // Récupérer les informations de l'instructeur
-        const instructor = await prisma.user.findUnique({
-            where: { id: session.pilotID },
-            select: { email: true, firstName: true, lastName: true },
-        });
-
-        // Calculer l'heure de fin de la session
-        const endDate = new Date(session.sessionDateStart);
-        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
-
-        // Envoyer les notifications
-        await Promise.all([
-            sendNotificationBooking(
-                instructor?.email || "",
-                instructor?.firstName || "",
-                instructor?.lastName || "",
-                session.sessionDateStart,
-                endDate
-            ),
-            sendStudentNotificationBooking(student.email, session.sessionDateStart, endDate),
-        ]);
-
+        // Retour rapide de succès
         return { success: "Étudiant inscrit avec succès à la session." };
+
     } catch (error) {
         console.error("Erreur lors de l'inscription de l'étudiant :", error);
         return { error: "Une erreur est survenue lors de l'inscription de l'étudiant." };
+    } finally {
+        // Étape 3 : Traitement différé des tâches secondaires
+        process.nextTick(async () => {
+            try {
+                const session = await prisma.flight_sessions.findUnique({
+                    where: { id: sessionID },
+                    select: {
+                        sessionDateStart: true,
+                        sessionDateDuration_min: true,
+                        pilotID: true,
+                    },
+                });
+
+                const instructor = await prisma.user.findUnique({
+                    where: { id: session?.pilotID },
+                    select: { email: true, firstName: true, lastName: true },
+                });
+
+                const endDate = new Date(session!.sessionDateStart);
+                endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
+
+                await Promise.all([
+                    sendNotificationBooking(
+                        instructor?.email || "",
+                        instructor?.firstName || "",
+                        instructor?.lastName || "",
+                        session!.sessionDateStart,
+                        endDate
+                    ),
+                    sendStudentNotificationBooking(
+                        instructor?.email || "",
+                        session!.sessionDateStart,
+                        endDate
+                    ),
+                ]);
+            } catch (error) {
+                console.error("Erreur lors du traitement différé :", error);
+                // Ici, vous pourriez utiliser un mécanisme pour informer l'utilisateur d'une erreur différée.
+            }
+        });
     }
 };
+
 
 
 export const getHoursByMonth = async (clubID: string) => {

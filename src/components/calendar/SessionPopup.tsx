@@ -92,6 +92,8 @@ const SessionPopup = ({ sessions, children, setSessions }: Prop) => {
         );
     }, [plane, allInstructors, sessions]);
 
+
+
     const onSubmit = async () => {
         const sessionId = sessions.find(
             session => session.pilotID === instructor && session.planeID.includes(plane)
