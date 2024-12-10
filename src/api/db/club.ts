@@ -3,7 +3,7 @@ import { ClubFormValues } from "@/components/NewClub";
 import { minutes } from "@/config/configClub";
 import { dayFr } from "@/config/date";
 import { sendNotificationRequestClub } from "@/lib/mail";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, userRole } from "@prisma/client";
 
 
 const prisma = new PrismaClient()
@@ -91,7 +91,8 @@ export const createClub = async (data: ClubFormValues, userID: string) => {
             },
             data: {
                 clubID: data.id,
-                clubIDRequest: null
+                clubIDRequest: null,
+                role: userRole.OWNER
             }
         });
         await prisma.$disconnect();
