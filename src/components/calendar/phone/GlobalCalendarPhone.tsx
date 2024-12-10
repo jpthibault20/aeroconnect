@@ -11,7 +11,6 @@ interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
-    clubHours: number[]
 }
 
 const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
