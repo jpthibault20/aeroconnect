@@ -11,6 +11,7 @@ interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
+    clubHours: number[]
 }
 
 const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
@@ -23,10 +24,20 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
 
     useEffect(() => {
         const today = new Date();
-        setCurrentDate(today);
         setSelectedDate(today);
         const datesArray = getDaysInMonth(today.getFullYear(), today.getMonth());
         setDates(datesArray);
+
+        // Faire défiler automatiquement jusqu'à la date actuelle
+        setTimeout(() => {
+            if (todayRef.current) {
+                todayRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'center',
+                });
+            }
+        }, 0); // Petit délai pour que le rendu se fasse avant le scroll
     }, []);
 
     useEffect(() => {
