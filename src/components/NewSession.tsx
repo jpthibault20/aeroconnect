@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label'
 import { IoMdAddCircle } from "react-icons/io"
 import { IoIosWarning } from "react-icons/io"
 import { FaArrowRightLong } from "react-icons/fa6"
-import { CalendarIcon } from 'lucide-react'
+import { CalendarIcon, Check, X } from 'lucide-react'
 
 interface Props {
     display: "desktop" | "phone"
@@ -150,11 +150,15 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                                     onClick={() => setIsOpenCal1(true)}
                                     onTouchStart={(e) => {
                                         e.preventDefault();
-                                        setIsOpenCal1(!isOpenCal1);
+                                        setIsOpenCal1(true);
                                     }}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {sessionData.date ? sessionData.date.toLocaleDateString() : "Choisir une date"}
+                                    {sessionData.date ?
+                                        `
+                                        ${sessionData.date.getDate()}/${sessionData.date.getMonth() + 1}/${sessionData.date.getFullYear()}
+                                        `
+                                        : "Choisir une date"}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
@@ -162,7 +166,16 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                                     mode="single"
                                     selected={sessionData.date}
                                     onSelect={(date) => {
-                                        setSessionData((prev) => ({ ...prev, date }))
+                                        setSessionData((prev) => ({
+                                            ...prev, date: new Date(
+                                                date!.getFullYear(),
+                                                date!.getMonth(),
+                                                date!.getDate(),
+                                                date!.getUTCHours(),
+                                                date!.getUTCMinutes(),
+                                                0
+                                            )
+                                        }))
                                         setIsOpenCal1(false)
                                     }}
                                     initialFocus
@@ -232,12 +245,14 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                             {planesProp?.map((plane) => (
                                 <Button
                                     key={plane.id}
-                                    variant={sessionData.planeId.includes(plane.id) ? "default" : "outline"}
+                                    variant="outline"
                                     size="sm"
                                     onClick={() => onClickPlane(plane.id)}
+                                    className={`${sessionData.planeId.includes(plane.id) ? "bg-green-200" : "bg-red-200 text-gray-500"}`}
                                 >
                                     {plane.name}
                                 </Button>
+
                             ))}
                         </div>
                         {warning && (
