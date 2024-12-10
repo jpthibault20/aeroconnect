@@ -33,10 +33,11 @@ const useScreenSize = () => {
 interface props {
     sessionsprops: flight_sessions[]
     planesProp: planes[]
-    clubIDURL: string
+    clubHours: number[]
+    clubID: string
 }
 
-const PageComponent = ({ sessionsprops, planesProp, clubIDURL }: props) => {
+const PageComponent = ({ sessionsprops, planesProp, clubHours, clubID }: props) => {
     const isMobile = useScreenSize();
     const [sessions, setSessions] = useState<flight_sessions[]>([]);
 
@@ -46,12 +47,13 @@ const PageComponent = ({ sessionsprops, planesProp, clubIDURL }: props) => {
 
     // Rendu conditionnel en fonction de la taille de l'écran
     return (
-        <InitialLoading className="h-full w-full" clubIDURL={clubIDURL}>
+        <InitialLoading className="h-full w-full" clubIDURL={clubID}>
             {!isMobile ? (
                 <GlobalCalendarDesktop
                     sessions={sessions}
                     setSessions={setSessions}
                     planesProp={planesProp}
+                    clubHours={clubHours}
                 />
             ) : (
                 <GlobalCalendarPhone

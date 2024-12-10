@@ -4,6 +4,7 @@ import React from 'react';
 import PageComponent from '@/components/calendar/PageComponent';
 import { PrismaClient } from '@prisma/client';
 import NoClubID from '@/components/NoClubID';
+import { workingHour } from '@/config/configClub';
 
 const prisma = new PrismaClient();
 
@@ -12,35 +13,42 @@ interface PageProps {
 }
 
 const Page = async ({ searchParams }: PageProps) => {
-    const clubID = searchParams.clubID;
+    const { clubID } = searchParams;
 
-    // if (!clubID) {
-    //     throw new Error('clubID is required in the URL');
-    // }
     if (clubID) {
-        const sessions = await prisma.flight_sessions.findMany({
-            where: { clubID: clubID }
-        });
+        // Exécution parallèle des requêtes Prisma
+        const [sessions, planes, club] = await Promise.all([
+            prisma.flight_sessions.findMany({ where: { clubID } }),
+            prisma.planes.findMany({ where: { clubID } }),
+            prisma.club.findUnique({ where: { id: clubID } })
+        ]);
 
-        const planes = await prisma.planes.findMany({
-            where: {
-                clubID: clubID
-            }
-        });
-        return (
-            <div className='h-full'>
-                <PageComponent sessionsprops={sessions} planesProp={planes} clubIDURL={clubID} />
-            </div>)
+        // Vérification si les données du club sont valides
+        if (club?.HoursOn && sessions.length > 0) {
+            return (
+                <div className='h-full'>
+                    <PageComponent
+                        sessionsprops={sessions}
+                        planesProp={planes}
+                        clubHours={club.HoursOn}
+                        clubID={clubID}
+                    />
+                </div>
+            );
+        }
     }
 
     return (
         <div className='h-full'>
             <NoClubID />
-            <PageComponent sessionsprops={[]} planesProp={[]} clubIDURL={clubID ?? ''} />
+            <PageComponent
+                sessionsprops={[]}
+                planesProp={[]}
+                clubHours={workingHour}
+                clubID=''
+            />
         </div>
-    )
+    );
 };
-
-
 
 export default Page;
