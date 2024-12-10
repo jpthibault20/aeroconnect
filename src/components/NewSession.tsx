@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label'
 import { IoMdAddCircle } from "react-icons/io"
 import { IoIosWarning } from "react-icons/io"
 import { FaArrowRightLong } from "react-icons/fa6"
-import { CalendarIcon, Check, X } from 'lucide-react'
+import { CalendarIcon } from 'lucide-react'
 
 interface Props {
     display: "desktop" | "phone"
