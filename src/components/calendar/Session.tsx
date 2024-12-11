@@ -37,10 +37,10 @@ const Session = ({ sessions, setSessions }: Props) => {
     return (
         <SessionPopup sessions={[...bookedSessions, ...availableSessions]} setSessions={setSessions}>
             <div
-                className={`p-1 rounded-md flex flex-col h-full w-full ${availableSessions.length === 0 ? 'bg-[#CB8A8A] opacity-50' : 'bg-[#B9DFC1]'}`}
+                className={`p-1 rounded-md flex flex-col h-full w-full ${availableSessions.length === 0 ? 'bg-purple-100 opacity-70 text-purple-800' : 'bg-green-200 text-green-800'}`}
             >
                 <div className='w-full items-end'>
-                    <p className="text-xs text-[#646464] text-end">
+                    <p className="text-xs text-end">
                         {sessions[0].sessionDateStart.getUTCHours().toString().padStart(2, '0')}:
                         {sessions[0].sessionDateStart.getUTCMinutes().toString().padStart(2, '0')} -
                         {endSessionDate.getUTCHours().toString().padStart(2, '0')}:

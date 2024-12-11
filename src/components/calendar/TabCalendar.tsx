@@ -54,7 +54,7 @@ const TabCalendar = ({ date, sessions, setSessions, clubHours }: Props) => {
                     </div>
                 </div>
                 {/* Créneaux horaires */}
-                <div className="table-row-group h-full bg-[#E4E7ED]">
+                <div className="table-row-group h-full bg-gray-100">
                     {clubHours.map((hour, index) => (
                         <div key={index} className="table-row">
                             <div className={`table-cell pl-3 text-center font-istok font-semibold text-[#646464] align-middle ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''} w-20`}>
