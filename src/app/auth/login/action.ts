@@ -29,7 +29,6 @@ export async function emailLogin(formData: FormData) {
     }
 
     revalidatePath('/', 'layout')
-    console.log(user.user?.clubID)
     redirect(`/calendar?clubID=${user.user?.clubID || ''}`)
 }
 

@@ -35,13 +35,11 @@ const MembershipRequests: FC = () => {
   }, [currentUser?.clubID]);
 
   const onClickAccept = (user: User) => {
-    console.log("Accepter la demande d'adhésion de ", user.firstName);
     acceptMembershipRequest(user.id, user.clubIDRequest);
     setMembershipRequests(membershipRequests.filter(req => req.id !== user.id));
   };
 
   const onClickReject = (user: User) => {
-    console.log("Rejeter la demande d'adhésion de ", user.firstName);
     rejectMembershipRequest(user.id);
     setMembershipRequests(membershipRequests.filter(req => req.id !== user.id));
   };

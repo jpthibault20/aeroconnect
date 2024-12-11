@@ -70,7 +70,6 @@ const NewClub = ({ setNewClub }: Props) => {
             } else if (res.success) {
                 setNewClub(false);
                 setFormError(null);
-                console.log('/calendar?clubID=' + data.id);
                 router.replace('/calendar?clubID=' + data.id);
             }
         };
