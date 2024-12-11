@@ -4,13 +4,14 @@ import {
     Text,
 } from "@react-email/components";
 import * as React from "react";
-import EmailTemplate from "./Template";
+import EmailTemplate, { clubAdressType } from "./Template";
 
 interface props {
     clubName: string
+    clubAdress: clubAdressType;
 }
 
-const AcceptedToClub = ({ clubName }: props) => (
+const AcceptedToClub = ({ clubName, clubAdress }: props) => (
     <Tailwind
         config={{
             theme: {
@@ -24,7 +25,7 @@ const AcceptedToClub = ({ clubName }: props) => (
     >
 
 
-        <EmailTemplate preview={"Inscription"}>
+        <EmailTemplate preview={"Inscription"} clubAdress={clubAdress} clubName={clubName}>
             <Section className="my-6">
                 <Text className="text-lg leading-6">
                     Vous avez rejoint le club {clubName} !

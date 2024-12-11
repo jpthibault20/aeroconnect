@@ -158,11 +158,11 @@ export const acceptMembershipRequest = async (userID: string, clubID: string | n
         const club = await prisma.club.findUnique({
             where: { id: clubID },
             select: {
-                Name: true
+                id: true,
             }
         })
         prisma.$disconnect();
-        sendNotificationRequestClub(user?.email as string, club?.Name as string);
+        sendNotificationRequestClub(user?.email as string, club?.id as string);
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch (error) {
         console.error('Error blocking user:', error);
@@ -192,3 +192,23 @@ export const rejectMembershipRequest = async (userID: string) => {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 };
+
+export const getClubAdress = async (clubID: string) => {
+    try {
+        const club = await prisma.club.findUnique({
+            where: {
+                id: clubID
+            },
+            select: {
+                Country: true,
+                ZipCode: true,
+                City: true,
+                Address: true,
+            }
+        });
+        return club;
+    } catch (error) {
+        console.error('Error fetching club adress:', error);
+        return null;
+    }   
+}

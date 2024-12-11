@@ -5,13 +5,15 @@ import {
     Text,
 } from "@react-email/components";
 import * as React from "react";
-import EmailTemplate from "./Template";
+import EmailTemplate, { clubAdressType } from "./Template";
 
 interface MagicLinkEmailProps {
     magicLink?: string;
+    clubName: string | null;
+    clubAdress: clubAdressType;
 }
 
-export const MagicLinkEmail = ({ magicLink }: MagicLinkEmailProps) => (
+export const MagicLinkEmail = ({ magicLink, clubName, clubAdress }: MagicLinkEmailProps) => (
     <Tailwind
         config={{
             theme: {
@@ -25,7 +27,7 @@ export const MagicLinkEmail = ({ magicLink }: MagicLinkEmailProps) => (
     >
 
 
-        <EmailTemplate preview={"Inscription"}>
+        <EmailTemplate preview={"Inscription"} clubAdress={clubAdress} clubName={clubName}>
             <Section className="my-6">
                 <Text className="text-lg leading-6">
                     Vous avez demandé une création de compte, voici le lien de validation d&apos;email :

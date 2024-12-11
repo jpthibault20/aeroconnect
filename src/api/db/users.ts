@@ -138,6 +138,7 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
                 sessionDateStart: true,
                 sessionDateDuration_min: true,
                 pilotID: true,
+                clubID: true
             }
         });
         prisma.$disconnect();
@@ -160,8 +161,8 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
         const endDate = new Date(session.sessionDateStart)
         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min)
 
-        await sendNotificationBooking(instructor?.email as string, studentcomp?.firstName as string, studentcomp?.lastName as string, session.sessionDateStart as Date, endDate as Date);
-        await sendStudentNotificationBooking(studentcomp?.email as string, session.sessionDateStart as Date, endDate as Date);
+        await sendNotificationBooking(instructor?.email as string, studentcomp?.firstName as string, studentcomp?.lastName as string, session.sessionDateStart as Date, endDate as Date, session.clubID as string);
+        await sendStudentNotificationBooking(studentcomp?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID as string);
 
 
         return { success: "L'élève a été ajouté au vol !" };
