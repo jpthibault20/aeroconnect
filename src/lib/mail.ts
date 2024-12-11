@@ -1,4 +1,5 @@
 import prisma from "@/api/prisma";
+import { senderMailAdress } from "@/config/mail";
 import AcceptedToClub from "@/emails/AcceptedToClub";
 import MagicLinkEmail from "@/emails/MagicLink";
 import NotificationBookingPilote from "@/emails/NotificationBookingPilote";
@@ -52,7 +53,7 @@ export const sendVerificationEmail = async (email: string, token: string, clubID
   const { name, adress } = clubData;
 
   await resend.emails.send({
-    from: 'stephane@vol-evasion.fr',
+    from: senderMailAdress,
     to: email,
     subject: "Confirmation de votre compte",
     react: MagicLinkEmail({magicLink: confirmLink, clubName: name, clubAdress: adress as clubAdressType})
@@ -71,7 +72,7 @@ export const sendNotificationBooking = async (email: string, studentFirstname: s
   const { name, adress } = clubData;
 
   await resend.emails.send({
-    from: 'stephane@vol-evasion.fr',
+    from: senderMailAdress,
     to: email,
     subject: "Un élève s'est inscrit un vol",
     react: NotificationBookingPilote({startDate: formatedStartDate, endDate: formatedEndDate, name: studentLastname, firstName: studentFirstname, clubName: name, clubAdress: adress as clubAdressType})
@@ -90,7 +91,7 @@ export const sendStudentNotificationBooking = async (email: string, startDate: D
   const { name, adress } = clubData;
 
   await resend.emails.send({
-    from: 'stephane@vol-evasion.fr',
+    from: senderMailAdress,
     to: email,
     subject: "Confirmation de votre inscription a un vol",
     react: NotificationBookingStudent({startDate: formatedStartDate, endDate: formatedEndDate, clubName: name, clubAdress: adress as clubAdressType})
@@ -109,7 +110,7 @@ export const sendNotificationRemoveAppointment = async (email: string, startDate
   const { name, adress } = clubData;
 
   await resend.emails.send({
-    from: 'stephane@vol-evasion.fr',
+    from: senderMailAdress,
     to: email,
     subject: "vol annulé",
     react: NotificationSudentRemove({startDate: formatedStartDate, endDate: formatedEndDate, clubName: name, clubAdress: adress as clubAdressType})
@@ -129,7 +130,7 @@ export const sendNotificationSudentRemoveForPilot = async (email: string, startD
   const { name, adress } = clubData;
 
   await resend.emails.send({
-    from: 'stephane@vol-evasion.fr',
+    from: senderMailAdress,
     to: email,
     subject: "vol annulé",
     react: NotificationSudentRemoveForPilot({startDate: formatedStartDate, endDate: formatedEndDate, clubName: name, clubAdress: adress as clubAdressType})
@@ -146,7 +147,7 @@ export const sendNotificationRequestClub = async (email: string, clubID: string)
   const { name, adress } = clubData;
 
   await resend.emails.send({
-    from: 'stephane@vol-evasion.fr',
+    from: senderMailAdress,
     to: email,
     subject: "Demande d'adhésion au club",
     react: AcceptedToClub({clubName: name, clubAdress: adress as clubAdressType})
