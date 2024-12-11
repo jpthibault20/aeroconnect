@@ -40,7 +40,7 @@ const SideBar = () => {
                     <p className="border-b font-medium text-sm w-fit">{currentUser?.lastName} {currentUser?.firstName}</p>
                     <p className="text-sm ">   {currentUser?.role === 'STUDENT' ? 'Élève' :
                         currentUser?.role === "PILOT" ? 'Pilote' :
-                            currentUser?.role === 'OWNER' ? 'Gérant' :
+                            currentUser?.role === 'OWNER' ? 'Président' :
                                 currentUser?.role === 'USER' ? 'visiteur' :
                                     currentUser?.role}</p>
                 </div>
