@@ -22,7 +22,7 @@ const Page = async ({ searchParams }: PageProps) => {
         ]);
 
         // Vérification si les données du club sont valides
-        if (club?.HoursOn && sessions.length > 0) {
+        if (club?.HoursOn && sessions) {
             return (
                 <div className='h-full'>
                     <PageComponent
