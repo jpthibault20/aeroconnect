@@ -56,7 +56,7 @@ export const Login = () => {
     return (
         <div className="min-h-screen w-full flex flex-col lg:flex-row">
             {/* Left Section */}
-            <div className="relative hidden lg:flex lg:w-1/2 bg-purple-500">
+            <div className="relative hidden lg:flex lg:w-1/2 ">
                 <div className="absolute inset-0">
                     <Image
                         src="/images/bgLoginPages.svg"

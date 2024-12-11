@@ -79,7 +79,7 @@ export const getUser = async () => {
         const { data, error: authError } = await supabase.auth.getUser();
 
         if (authError) {
-            console.error("Erreur lors de la récupération de la session utilisateur :", authError);
+            console.error("Erreur lors de la récupération de la session utilisateur");
             return { error: "Error getting user session" };
         }
 
