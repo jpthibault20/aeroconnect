@@ -1,13 +1,11 @@
 "use server";
-import { PrismaClient } from "@prisma/client";
 
-
-const prisma = new PrismaClient()
+import prisma from "../prisma";
 
 interface AddPlane {
     name: string,
     immatriculation: string,
-    clubID: string
+    clubID: string | null
 }
 
 export const createPlane = async (dataPlane: AddPlane) => {

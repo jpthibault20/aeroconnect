@@ -115,7 +115,7 @@ const NewPlane = ({ setPlanes }: Props) => {
                 )}
 
                 <DialogFooter className="mt-4">
-                    <Button variant="outline" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" onClick={() => setIsOpen(false)} disabled={loading}>
                         Annuler
                     </Button>
                     {loading ? (

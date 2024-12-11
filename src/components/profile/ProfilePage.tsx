@@ -26,6 +26,7 @@ const ProfilePage = () => {
         clubID: currentUser?.clubID || '',
         restricted: currentUser?.restricted || false,
         country: currentUser?.country || null,
+        clubIDRequest: currentUser?.clubIDRequest || null,
     })
 
     const onChangeUserState = (key: keyof typeof userState, value: string | boolean) => {
@@ -62,7 +63,7 @@ const ProfilePage = () => {
     }
 
     return (
-        <div className="h-full bg-gray-100 font-istok p-6 space-y-6 max-h-[100vh] overflow-y-auto pb-20">
+        <div className="h-full bg-gray-200 font-istok p-6 space-y-6 max-h-[100vh] overflow-y-auto pb-20">
             <div className='flex flex-col justify-between items-center space-y-3'>
                 <h2 className='text-4xl font-semibold'>Profil</h2>
                 <p className='text-gray-600'>Vos informations personnelles</p>

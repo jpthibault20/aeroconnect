@@ -2,34 +2,51 @@
 
 import React from 'react';
 import PageComponent from '@/components/calendar/PageComponent';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import NoClubID from '@/components/NoClubID';
+import { workingHour } from '@/config/configClub';
+import prisma from '@/api/prisma';
 
 interface PageProps {
     searchParams: { clubID: string | undefined };
 }
 
 const Page = async ({ searchParams }: PageProps) => {
-    const clubID = searchParams.clubID;
+    const { clubID } = searchParams;
 
-    if (!clubID) {
-        throw new Error('clubID is required in the URL');
+    if (clubID) {
+        // Exécution parallèle des requêtes Prisma
+        const [sessions, planes, club] = await Promise.all([
+            prisma.flight_sessions.findMany({ where: { clubID } }),
+            prisma.planes.findMany({ where: { clubID } }),
+            prisma.club.findUnique({ where: { id: clubID } })
+        ]);
+
+        // Vérification si les données du club sont valides
+        if (club?.HoursOn && sessions.length > 0) {
+            return (
+                <div className='h-full'>
+                    <PageComponent
+                        sessionsprops={sessions}
+                        planesProp={planes}
+                        clubHours={club.HoursOn}
+                        clubID={clubID}
+                    />
+                </div>
+            );
+        }
     }
 
-    const sessions = await prisma.flight_sessions.findMany({
-        where: { clubID: clubID }
-    });
-
-    const planes = await prisma.planes.findMany({
-        where: {
-            clubID: clubID
-        }
-    });
-
-    return <PageComponent sessionsprops={sessions} planesProp={planes} />;
+    return (
+        <div className='h-full'>
+            <NoClubID />
+            <PageComponent
+                sessionsprops={[]}
+                planesProp={[]}
+                clubHours={workingHour}
+                clubID=''
+            />
+        </div>
+    );
 };
-
-
 
 export default Page;

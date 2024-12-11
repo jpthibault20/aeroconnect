@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { workingHour } from '@/config/configClub';
 import { dayFr } from '@/config/date';
 import { formatTime, getDaysOfWeek, getSessionsFromDate } from '@/api/date';
 import { flight_sessions } from '@prisma/client';
@@ -10,15 +9,16 @@ interface Props {
     date: Date;
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
+    clubHours: number[];
 }
 
-const TabCalendar = ({ date, sessions, setSessions }: Props) => {
+const TabCalendar = ({ date, sessions, setSessions, clubHours }: Props) => {
     // Récupère les jours de la semaine
     const daysOfWeek = useMemo(() => getDaysOfWeek(date), [date]);
 
     const getSessions = (indexX: number, indexY: number) => {
-        const hour = workingHour[indexX] !== undefined ? Math.floor(workingHour[indexX]) : 0;
-        const minutes = workingHour[indexX] !== undefined ? Math.round((workingHour[indexX] % 1) * 60) : 0;
+        const hour = clubHours[indexX] !== undefined ? Math.floor(clubHours[indexX]) : 0;
+        const minutes = clubHours[indexX] !== undefined ? Math.round((clubHours[indexX] % 1) * 60) : 0;
 
         const sessionDate = new Date(
             date.getFullYear(),
@@ -32,7 +32,7 @@ const TabCalendar = ({ date, sessions, setSessions }: Props) => {
     };
 
     return (
-        <div className="w-full h-full">
+        <div className="w-full h-full ">
             <div className="table w-full h-full table-fixed">
                 {/* En-tête avec les jours de la semaine */}
                 <div className="table-header-group">
@@ -54,8 +54,8 @@ const TabCalendar = ({ date, sessions, setSessions }: Props) => {
                     </div>
                 </div>
                 {/* Créneaux horaires */}
-                <div className="table-row-group h-full bg-[#E4E7ED]">
-                    {workingHour.map((hour, index) => (
+                <div className="table-row-group h-full bg-gray-100">
+                    {clubHours.map((hour, index) => (
                         <div key={index} className="table-row">
                             <div className={`table-cell pl-3 text-center font-istok font-semibold text-[#646464] align-middle ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''} w-20`}>
                                 {formatTime(hour)}

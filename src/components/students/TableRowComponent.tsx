@@ -34,7 +34,6 @@ const TableRowComponent = ({ user, setUsers }: props) => {
     // Handler for deleting a user; removes the user from the state upon successful deletion.
     const onClickDeleteUser = () => async () => {
         if (user.id === currentUser?.id) {
-            console.log('Vous ne pouvez pas supprimer votre propre compte');
             toast({
                 title: "Vous ne pouvez pas supprimer votre propre compte",
                 description: "Contactez un administrateur pour supprimer votre compte",
@@ -97,7 +96,7 @@ const TableRowComponent = ({ user, setUsers }: props) => {
                 {user.role === "STUDENT" && "Elève"}
                 {user.role === "INSTRUCTOR" && "Instructeur"}
                 {user.role === "PILOT" && "Pilote"}
-                {user.role === "OWNER" && "Gérant"}
+                {user.role === "OWNER" && "Président"}
                 {user.role === "ADMIN" && "Administrateur"}
             </TableCell>
             <TableCell className="text-center">

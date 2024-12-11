@@ -1,10 +1,11 @@
 "use server";
 
-import { flight_sessions, planes, PrismaClient, User } from "@prisma/client";
+import { flight_sessions, planes, User } from "@prisma/client";
 import { getAllUser } from "./db/users";
 import { getPlaneById } from "./db/planes";
+import prisma from "./prisma";
 
-const prisma = new PrismaClient();
+
 
 interface Obj {
     pilotes: User[];

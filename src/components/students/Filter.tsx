@@ -17,7 +17,7 @@ const Filter = ({ roleFilter, handle }: Props) => {
                 <DropdownMenuTrigger asChild>
                     <Button className="px-4 py-2 rounded-md transition-colors text-gray-500" variant="outline">
                         {roleFilter === 'all' && 'Filtre'}
-                        {roleFilter === 'OWNER' && 'Gérant'}
+                        {roleFilter === 'OWNER' && 'Président'}
                         {roleFilter === 'ADMIN' && 'Admin'}
                         {roleFilter === 'INSTRUCTOR' && 'Instructeur'}
                         {roleFilter === 'PILOT' && 'Pilote'}
@@ -37,7 +37,7 @@ const Filter = ({ roleFilter, handle }: Props) => {
                         checked={roleFilter === 'OWNER'}
                         onCheckedChange={() => handle('OWNER')}
                     >
-                        Gérant
+                        Président
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                         checked={roleFilter === 'ADMIN'}

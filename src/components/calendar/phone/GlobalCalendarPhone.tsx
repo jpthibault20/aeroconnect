@@ -23,10 +23,20 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
 
     useEffect(() => {
         const today = new Date();
-        setCurrentDate(today);
         setSelectedDate(today);
         const datesArray = getDaysInMonth(today.getFullYear(), today.getMonth());
         setDates(datesArray);
+
+        // Faire défiler automatiquement jusqu'à la date actuelle
+        setTimeout(() => {
+            if (todayRef.current) {
+                todayRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'center',
+                });
+            }
+        }, 0); // Petit délai pour que le rendu se fasse avant le scroll
     }, []);
 
     useEffect(() => {
@@ -102,7 +112,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
     };
 
     return (
-        <div className="relative w-full bg-background mt-6 pb-20">
+        <div className=" w-full bg-background mt-6 pb-20">
             {/* Header */}
             <div className="flex items-center justify-between mt-4 px-8">
                 <div className="flex items-center space-x-2">

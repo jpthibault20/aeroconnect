@@ -1,10 +1,9 @@
 "use server";
 import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
 import { createClient } from '@/utils/supabase/server';
-import { PrismaClient, userRole } from '@prisma/client'
+import { userRole } from '@prisma/client'
 import { User } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import prisma from '../prisma';
 
 interface UserMin {
     firstName: string,
@@ -22,7 +21,6 @@ export const createUser = async (dataUser: UserMin) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const user = await prisma.user.create({
             data: {
-                clubID: "LF5722",
                 firstName: dataUser.firstName,
                 lastName: dataUser.lastName,
                 email: dataUser.email,
@@ -74,32 +72,47 @@ export const getSession = async () => {
 }
 
 export const getUser = async () => {
-    const supabase = createClient()
-    let result;
-    let data;
+    const supabase = createClient();
 
     try {
-        data = await supabase.auth.getUser();
-    } catch (error) {
-        console.log(error)
-        return { error: "Error getting user session" };
-    }
+        // Étape 1 : Récupérer l'utilisateur connecté via Supabase
+        const { data, error: authError } = await supabase.auth.getUser();
 
-    try {
-        result = await prisma.user.findUnique({
-            where: { email: data?.data.user?.email },
-        })
-        prisma.$disconnect();
-    } catch (error) {
-        console.log(error)
-        return { error: "Error getting user from database" };
-    }
+        if (authError) {
+            console.error("Erreur lors de la récupération de la session utilisateur");
+            return { error: "Error getting user session" };
+        }
 
-    return {
-        succes: "User retrieved successfully",
-        user: result
+        const userEmail = data?.user?.email;
+
+        if (!userEmail) {
+            console.error("L'email de l'utilisateur est introuvable dans la session Supabase.");
+            return { error: "Error getting user session" };
+        }
+
+        // Étape 2 : Récupérer l'utilisateur dans la base de données Prisma
+        const user = await prisma.user.findUnique({
+            where: { email: userEmail },
+        });
+
+        if (!user) {
+            console.error(`Aucun utilisateur trouvé avec l'email : ${userEmail}`);
+            return { error: "User not found in the database" };
+        }
+
+        // Retourner l'utilisateur avec un message de succès
+        return {
+            success: "User retrieved successfully",
+            user,
+        };
+    } catch (error) {
+        console.error("Erreur lors de l'exécution de la fonction getUser :", error);
+        return { error: "An unexpected error occurred" };
+    } finally {
+        // Assurez-vous que Prisma se déconnecte, même en cas d'erreur
+        await prisma.$disconnect();
     }
-}
+};
 
 export const addStudentToSession = async (sessionID: string, student: { id: string, firstName: string, lastName: string, planeId: string }) => {
     if (!sessionID && !student.id && !student.firstName && !student.lastName) {
@@ -125,6 +138,7 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
                 sessionDateStart: true,
                 sessionDateDuration_min: true,
                 pilotID: true,
+                clubID: true
             }
         });
         prisma.$disconnect();
@@ -135,7 +149,7 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
 
         if (!session?.pilotID) return { error: "Student not found" }
         const instructor = await prisma.user.findUnique({
-            where: { id: session.pilotID},
+            where: { id: session.pilotID },
             select: {
                 email: true,
                 firstName: true,
@@ -146,11 +160,11 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
 
         const endDate = new Date(session.sessionDateStart)
         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min)
-        
-        await sendNotificationBooking(instructor?.email as string, studentcomp?.firstName as string, studentcomp?.lastName as string, session.sessionDateStart as Date, endDate as Date);
-        await sendStudentNotificationBooking(studentcomp?.email as string, session.sessionDateStart as Date, endDate as Date);
 
-        
+        await sendNotificationBooking(instructor?.email as string, studentcomp?.firstName as string, studentcomp?.lastName as string, session.sessionDateStart as Date, endDate as Date, session.clubID as string);
+        await sendStudentNotificationBooking(studentcomp?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID as string);
+
+
         return { success: "L'élève a été ajouté au vol !" };
     } catch (error) {
         console.error('Error adding student:', error);
@@ -206,7 +220,7 @@ export const updateUser = async (user: User) => {
     } catch (error) {
         console.error('Error updating user:', error);
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
-    }   
+    }
 }
 
 export const getUserByID = async (id: string[]) => {

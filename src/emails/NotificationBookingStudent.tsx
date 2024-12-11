@@ -4,14 +4,16 @@ import {
     Text,
 } from "@react-email/components";
 import * as React from "react";
-import EmailTemplate from "./Template";
+import EmailTemplate, { clubAdressType } from "./Template";
 
 interface NotificationBookingStudentProps {
     startDate: string;
     endDate: string
+    clubName: string | null;
+    clubAdress: clubAdressType;
 }
 
-export const NotificationBookingStudent = ({ startDate, endDate }: NotificationBookingStudentProps) => (
+export const NotificationBookingStudent = ({ startDate, endDate, clubName, clubAdress }: NotificationBookingStudentProps) => (
     <Tailwind
         config={{
             theme: {
@@ -25,7 +27,7 @@ export const NotificationBookingStudent = ({ startDate, endDate }: NotificationB
     >
 
 
-        <EmailTemplate preview={"Inscription à une heure de vol"}>
+        <EmailTemplate preview={"Inscription à une heure de vol"} clubAdress={clubAdress} clubName={clubName}>
             <Section className="my-6">
                 <Text className="text-lg leading-6">
                     Vous êtes inscrit à une nouvelle heure de vol :

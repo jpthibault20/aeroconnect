@@ -1,11 +1,10 @@
 'use server';
 
 import React from 'react';
-import { PrismaClient } from '@prisma/client';
 import FlightsPageComponent from '@/components/flights/FlightsPageComponent';
 import InitialLoading from '@/components/InitialLoading';
-
-const prisma = new PrismaClient();
+import NoClubID from '@/components/NoClubID';
+import prisma from '@/api/prisma';
 
 interface PageProps {
     searchParams: { clubID: string | undefined };
@@ -15,31 +14,34 @@ const Page = async ({ searchParams }: PageProps) => {
     const clubID = searchParams.clubID;
 
     if (!clubID) {
-        throw new Error('clubID is required in the URL');
+        return (
+            <div>
+                <NoClubID />
+                <FlightsPageComponent sessionsProp={[]} planesProp={[]} />
+            </div>
+        );
     }
 
-    const sessions = await prisma.flight_sessions.findMany({
-        where: {
-            clubID: clubID,
-            sessionDateStart: {
-                gte: new Date()
-            }
-        }
-    });
-
-    const planes = await prisma.planes.findMany({
-        where: {
-            clubID: clubID
-        }
-    });
+    // Regrouper les appels à la base de données pour optimiser les performances
+    const [sessions, planes] = await Promise.all([
+        prisma.flight_sessions.findMany({
+            where: {
+                clubID,
+                sessionDateStart: {
+                    gte: new Date(),
+                },
+            },
+        }),
+        prisma.planes.findMany({
+            where: { clubID },
+        }),
+    ]);
 
     return (
-        <InitialLoading className="h-full w-full bg-gray-100">
+        <InitialLoading className="h-full w-full bg-gray-100" clubIDURL={clubID}>
             <FlightsPageComponent sessionsProp={sessions} planesProp={planes} />
         </InitialLoading>
     );
 };
-
-
 
 export default Page;

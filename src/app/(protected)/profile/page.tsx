@@ -1,10 +1,17 @@
+"use server"
 import InitialLoading from '@/components/InitialLoading'
 import ProfilePage from '@/components/profile/ProfilePage'
 import React from 'react'
 
-const Page = () => {
+interface PageProps {
+    searchParams: { clubID: string | undefined };
+}
+
+const Page = async ({ searchParams }: PageProps) => {
+    const clubID = searchParams.clubID;
+
     return (
-        <InitialLoading className='h-full w-full'>
+        <InitialLoading className='h-full w-full' clubIDURL={clubID ?? ''}>
             <ProfilePage />
         </InitialLoading>
     )

@@ -111,7 +111,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp }: Props) => {
     };
 
     return (
-        <div className='h-full p-6'>
+        <div className='h-full p-6 bg-gray-200'>
             <div className='flex space-x-3'>
                 <p className='font-medium text-3xl'>Les vols</p>
                 <p className='text-[#797979] text-3xl'>{currentUser?.role !== userRole.USER && filteredSessions.length}</p>

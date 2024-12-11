@@ -4,14 +4,16 @@ import {
     Text,
 } from "@react-email/components";
 import * as React from "react";
-import EmailTemplate from "./Template";
+import EmailTemplate, { clubAdressType } from "./Template";
 
 interface NotificationSudentRemoveForPilotProps {
     startDate: string;
-    endDate: string
+    endDate: string;
+    clubName: string | null;
+    clubAdress: clubAdressType;
 }
 
-export const NotificationSudentRemoveForPilot = ({ startDate, endDate }: NotificationSudentRemoveForPilotProps) => (
+export const NotificationSudentRemoveForPilot = ({ startDate, endDate, clubName, clubAdress }: NotificationSudentRemoveForPilotProps) => (
     <Tailwind
         config={{
             theme: {
@@ -25,7 +27,7 @@ export const NotificationSudentRemoveForPilot = ({ startDate, endDate }: Notific
     >
 
 
-        <EmailTemplate preview={"Oups un élèvé ses désinscrit"}>
+        <EmailTemplate preview={"Oups un élèvé ses désinscrit"} clubName={clubName} clubAdress={clubAdress}>
             <Section className="my-6">
                 <Text className="text-lg leading-6">
                     Mauvaise nouvelle, un élève n&apos;est plus inscrit au vol :

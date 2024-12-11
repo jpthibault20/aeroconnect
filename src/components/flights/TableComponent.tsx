@@ -109,7 +109,7 @@ const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp }
                 <Button
                     onClick={handlePrevPage}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 bg-gray-200 text-black rounded hover:bg-gray-300 disabled:bg-gray-100"
+                    className="px-4 py-2 bg-white text-black rounded hover:bg-gray-300 disabled:bg-gray-100"
                 >
                     Précédent
                 </Button>
@@ -119,7 +119,7 @@ const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp }
                 <Button
                     onClick={handleNextPage}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 bg-gray-200 text-black rounded hover:bg-gray-300 disabled:bg-gray-100"
+                    className="px-4 py-2 bg-white text-black rounded hover:bg-gray-300 disabled:bg-gray-100"
                 >
                     Suivant
                 </Button>

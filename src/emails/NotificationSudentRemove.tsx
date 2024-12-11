@@ -4,14 +4,16 @@ import {
     Text,
 } from "@react-email/components";
 import * as React from "react";
-import EmailTemplate from "./Template";
+import EmailTemplate, { clubAdressType } from "./Template";
 
 interface NotificationSudentRemoveProps {
     startDate: string;
     endDate: string
+    clubName: string | null;
+    clubAdress: clubAdressType;
 }
 
-export const NotificationSudentRemove = ({ startDate, endDate }: NotificationSudentRemoveProps) => (
+export const NotificationSudentRemove = ({ startDate, endDate, clubName, clubAdress }: NotificationSudentRemoveProps) => (
     <Tailwind
         config={{
             theme: {
@@ -25,7 +27,7 @@ export const NotificationSudentRemove = ({ startDate, endDate }: NotificationSud
     >
 
 
-        <EmailTemplate preview={"Oups une heure à était annulé"}>
+        <EmailTemplate preview={"Oups une heure à était annulé"} clubName={clubName} clubAdress={clubAdress}>
             <Section className="my-6">
                 <Text className="text-lg leading-6">
                     Mauvaise nouvelle, votre vol :

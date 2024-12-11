@@ -60,7 +60,7 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
                     <AlertDialogDescription>{description}</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setIsOpen(false)}>{cancel}</AlertDialogCancel>
+                    <AlertDialogCancel onClick={() => setIsOpen(false)} disabled={loading}>{cancel}</AlertDialogCancel>
                     {loading ? (
                         <div className="flex justify-center items-center">
                             <Spinner /> {/* Affiche un spinner pendant le chargement */}

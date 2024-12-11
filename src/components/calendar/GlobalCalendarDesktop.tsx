@@ -17,6 +17,7 @@ interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
+    clubHours: number[]
 }
 
 /**
@@ -28,7 +29,7 @@ interface Props {
  * within a desktop-only layout, hidden on mobile devices.
  * 
  */
-const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp }: Props) => {
+const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, clubHours }: Props) => {
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
 
@@ -73,6 +74,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp }: Props) => 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [date]);
 
+
     return (
         // Only rendered on large screens (hidden on smaller screens), includes a loading state.
         <div className='hidden lg:block h-full'>
@@ -108,6 +110,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp }: Props) => 
                         date={date}
                         sessions={sessionsFlitered}
                         setSessions={setSessions}
+                        clubHours={clubHours}
                     />
                 </div>
             </div>

@@ -26,7 +26,7 @@ const PlanesPage = ({ PlanesProps }: Props) => {
     const [planes, setPlanes] = useState<planes[]>(PlanesProps);
 
     return (
-        <div className='p-6'>
+        <div className='p-6 h-full bg-gray-200'>
             <Header planesLenght={planes.length} />
 
             <div className='my-3 flex justify-end'>

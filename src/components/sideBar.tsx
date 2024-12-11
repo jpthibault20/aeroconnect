@@ -34,13 +34,13 @@ const SideBar = () => {
 
             <div className='border-1 border-b border-[#797979] mx-3 mb-6' />
 
-            <Link className="bg-[#9BAAD1] p-1 mb-4 flex items-center mx-3 rounded-lg" href={'/profile'}>
+            <Link className="bg-[#9BAAD1] p-1 mb-4 flex items-center mx-3 rounded-lg" href={'/profile?clubID=' + currentUser?.clubID}>
                 <Image src="/images/profilePicture.png" alt="User" width={40} height={40} className="rounded-full mr-3" />
                 <div className='w-full'>
                     <p className="border-b font-medium text-sm w-fit">{currentUser?.lastName} {currentUser?.firstName}</p>
                     <p className="text-sm ">   {currentUser?.role === 'STUDENT' ? 'Élève' :
                         currentUser?.role === "PILOT" ? 'Pilote' :
-                            currentUser?.role === 'OWNER' ? 'Gérant' :
+                            currentUser?.role === 'OWNER' ? 'Président' :
                                 currentUser?.role === 'USER' ? 'visiteur' :
                                     currentUser?.role}</p>
                 </div>
@@ -52,7 +52,7 @@ const SideBar = () => {
                     .map((link) => {
                         const IconComponent = link.icon
                         return (
-                            <Link key={link.name} href={`${link.path}?clubID=${currentUser?.clubID}`} className={`flex items-center px-4 py-4 mx-3 ${pathname === link.path ? 'rounded-full bg-[#3E3E3E] text-white' : 'text-[#C2C2C2] hover:text-white'}`}>
+                            <Link key={link.name} href={`${link.path}?clubID=${currentUser?.clubID || ''}`} className={`flex items-center px-4 py-4 mx-3 ${pathname === link.path ? 'rounded-full bg-[#3E3E3E] text-white' : 'text-[#C2C2C2] hover:text-white'}`}>
                                 <IconComponent className="mr-3" size={25} />
                                 {link.name}
                             </Link>

@@ -1,10 +1,10 @@
 "use server";
 
-import { PrismaClient, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { differenceInHours, isBefore } from 'date-fns';
 import { sendStudentNotificationBooking, sendNotificationBooking, sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from "@/lib/mail";
+import prisma from '../prisma';
 
-const prisma = new PrismaClient();
 export interface interfaceSessions {
     date: Date | undefined;
     startHour: string;
@@ -89,7 +89,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
     // Vérifier les conflits pour chaque session à créer avec une seule requête
     const existingSessions = await prisma.flight_sessions.findMany({
         where: {
-            clubID: user.clubID,
+            clubID: user.clubID as string,
             pilotID: user.id,
             sessionDateStart: { in: sessionsToCreate },
         }
@@ -106,7 +106,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
             sessionsToCreate.map(sessionDateStart =>
                 prisma.flight_sessions.create({
                     data: {
-                        clubID: user.clubID,
+                        clubID: user.clubID as string,
                         sessionDateStart,
                         sessionDateDuration_min: sessionData.duration,
                         finalReccurence: sessionData.endReccurence,
@@ -173,7 +173,6 @@ export const getAllFutureSessions = async (clubID: string) => {
 };
 
 export const getPlanes = async (clubID: string) => {
-    const prisma = new PrismaClient()
     try {
         const planes = await prisma.planes.findMany({
             where: {
@@ -232,8 +231,8 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
             endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
             if (studentEmail) {
-                sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate);
-                sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date);
+                sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, session.clubID);
+                sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
             }
         }
 
@@ -303,8 +302,8 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
         const endDate = new Date(session.sessionDateStart);
         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
-        sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date);
-        sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date);
+        sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
+        sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
         return { success: "L'élève a été désinscrit de la session !" };
     } catch (error) {
         console.error('Error deleting flight session:', error);
@@ -355,29 +354,46 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
     }
 
     try {
-        // Charger les données nécessaires en une seule requête
+        // Étape 1 : Charger les données critiques
         const [student, session, conflictingSessions] = await Promise.all([
             prisma.user.findUnique({
                 where: { id: studentID },
+                select: {
+                    id: true,
+                    role: true,
+                    restricted: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    clubID: true,
+                },
             }),
             prisma.flight_sessions.findUnique({
                 where: { id: sessionID },
+                select: {
+                    id: true,
+                    pilotID: true,
+                    sessionDateStart: true,
+                    sessionDateDuration_min: true,
+                    clubID: true,
+                },
             }),
             prisma.flight_sessions.findMany({
                 where: {
-                    clubID: studentID ? undefined : undefined, // Placeholder for better filtering
-                    sessionDateStart: sessionID ? undefined : undefined, // Placeholder for more 
+                    OR: [
+                        { studentID },
+                        { studentPlaneID: planeID },
+                    ],
+                },
+                select: {
+                    studentID: true,
+                    studentPlaneID: true,
+                    sessionDateStart: true,
                 },
             }),
-            
         ]);
-        prisma.$disconnect();
 
-        const instructor = await prisma.user.findUnique({
-            where: { id: session?.pilotID }
-        })
-        prisma.$disconnect();
-
+        // Vérifications critiques
         if (!student) {
             return { error: "Élève introuvable." };
         }
@@ -386,53 +402,340 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
             return { error: "Session introuvable ou non accessible." };
         }
 
-        // Vérification 0 : la date de la session doit être dans le futur
         if (session.sessionDateStart < new Date()) {
             return { error: "La date de la session est passée." };
         }
 
-        // Vérification 1 : restrictions sur l'utilisateur
         if (student.restricted) {
             return { error: "Contacter l'administrateur pour plus d'informations. (E_002: restricted)" };
         }
 
-        // Vérification 2 : rôle de l'utilisateur
         const allowedRoles = ["STUDENT", "PILOT", "OWNER", "ADMIN", "INSTRUCTOR"];
         if (!allowedRoles.includes(student.role)) {
             return { error: "Vous n'avez pas les droits pour vous inscrire à une session. (E_003: User)" };
         }
 
-        // Vérification 3 et 4 : Conflits avec d'autres sessions
         const conflictingSession = conflictingSessions.find((s) =>
-            (s.studentID === studentID || s.studentPlaneID === planeID) &&
             s.sessionDateStart.getTime() === session.sessionDateStart.getTime()
         );
-
         if (conflictingSession) {
             return { error: "Conflit détecté avec une autre session (élève ou avion)." };
         }
 
-        // Inscrire l'étudiant à la session
+        // Étape 2 : Mise à jour rapide de la session
         await prisma.flight_sessions.update({
             where: { id: sessionID },
             data: {
-                studentID: studentID,
+                studentID,
                 studentPlaneID: planeID,
                 studentFirstName: student.firstName,
                 studentLastName: student.lastName,
             },
         });
-        prisma.$disconnect();
 
-        const endDate = new Date(session.sessionDateStart)
-        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min)
-
-        await sendNotificationBooking(instructor?.email as string, instructor?.firstName as string, instructor?.lastName as string, session.sessionDateStart as Date, endDate as Date);
-        await sendStudentNotificationBooking(student.email as string, session.sessionDateStart as Date, endDate as Date);
-
+        // Retour rapide de succès
         return { success: "Étudiant inscrit avec succès à la session." };
+
     } catch (error) {
         console.error("Erreur lors de l'inscription de l'étudiant :", error);
         return { error: "Une erreur est survenue lors de l'inscription de l'étudiant." };
+    } finally {
+        // Étape 3 : Traitement différé des tâches secondaires
+        process.nextTick(async () => {
+            try {
+                const session = await prisma.flight_sessions.findUnique({
+                    where: { id: sessionID },
+                    select: {
+                        sessionDateStart: true,
+                        sessionDateDuration_min: true,
+                        pilotID: true,
+                        clubID: true
+                    },
+                });
+
+                const instructor = await prisma.user.findUnique({
+                    where: { id: session?.pilotID },
+                    select: { email: true, firstName: true, lastName: true },
+                });
+
+                const endDate = new Date(session!.sessionDateStart);
+                endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
+
+                await Promise.all([
+                    sendNotificationBooking(
+                        instructor?.email || "",
+                        instructor?.firstName || "",
+                        instructor?.lastName || "",
+                        session!.sessionDateStart,
+                        endDate,
+                        session?.clubID as string
+                    ),
+                    sendStudentNotificationBooking(
+                        instructor?.email || "",
+                        session!.sessionDateStart,
+                        endDate,
+                        session?.clubID as string
+                    ),
+                ]);
+            } catch (error) {
+                console.error("Erreur lors du traitement différé :", error);
+                // Ici, vous pourriez utiliser un mécanisme pour informer l'utilisateur d'une erreur différée.
+            }
+        });
     }
+};
+
+
+
+export const getHoursByMonth = async (clubID: string) => {
+    const sessions = await prisma.flight_sessions.findMany({
+        where: { clubID: clubID },
+        select: {
+            sessionDateStart: true,
+            sessionDateDuration_min: true,
+            studentID: true,
+            pilotID: true,
+        },
+    });
+
+    await prisma.$disconnect();
+
+    // Obtenir l'année et le mois actuels
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0 = Janvier, 11 = Décembre
+
+    // Filtrer les sessions valides (studentID non nul)
+    const validSessions = sessions.filter(
+        (session) =>
+            session.sessionDateStart &&
+            new Date(session.sessionDateStart) < new Date() &&  // Vérifier que la session est dans le passé
+            session.studentID &&  // Vérifier que studentID est rempli
+            new Date(session.sessionDateStart).getFullYear() === currentYear &&
+            session.pilotID // Vérifier que instructorID est non nul
+    );
+
+
+    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+    // Initialiser le tableau avec tous les mois de l'année jusqu'au mois courant inclus
+    const hoursByMonth: { month: string; hours: number }[] = monthNames
+        .slice(0, currentMonth + 1) // Inclure les mois jusqu'au mois courant
+        .map((month) => ({ month, hours: 0 }));
+
+    // Ajouter les heures des sessions valides
+    validSessions.forEach((session) => {
+        if (session.sessionDateStart) {
+            const sessionDate = new Date(session.sessionDateStart);
+            if (sessionDate.getFullYear() === currentYear && sessionDate.getMonth() <= currentMonth) {
+                const monthIndex = sessionDate.getMonth(); // Mois (0 = Janvier, 11 = Décembre)
+                const hours = session.sessionDateDuration_min ? session.sessionDateDuration_min / 60 : 0;
+
+                // Ajouter les heures au mois correspondant
+                hoursByMonth[monthIndex].hours += hours;
+            }
+        }
+    });
+    return hoursByMonth;
+};
+
+export const getHoursByInstructor = async (clubID: string) => {
+    const currentYear = new Date().getFullYear();
+
+    // Récupérer les sessions de vol pour l'année actuelle, avec les informations sur le pilote
+    const sessions = await prisma.flight_sessions.findMany({
+        where: {
+            clubID: clubID,
+            sessionDateStart: {
+                gte: new Date(`${currentYear}-01-01`), // Limiter aux sessions à partir du 1er janvier de l'année actuelle
+            },
+        },
+        select: {
+            pilotID: true, // Identifiant du pilote
+            sessionDateStart: true, // Date de la session
+            sessionDateDuration_min: true, // Durée de la session en minutes
+            pilotFirstName: true, // Prénom du pilote
+            pilotLastName: true,  // Nom du pilote
+            studentID: true, // Identifiant de l'étudiant
+        },
+    });
+
+    await prisma.$disconnect();
+
+    // Filtrer les sessions valides : date dans le passé, studentID rempli, année actuelle, et instructorID non nul
+    const validSessions = sessions.filter(
+        (session) =>
+            session.sessionDateStart &&
+            new Date(session.sessionDateStart) < new Date() &&  // Vérifier que la session est dans le passé
+            session.studentID &&  // Vérifier que studentID est rempli
+            new Date(session.sessionDateStart).getFullYear() === currentYear &&
+            session.pilotID // Vérifier que instructorID est non nul
+    );
+
+    // Regrouper les heures par instructeur
+    const hoursByInstructor: { [instructorID: string]: number } = {};
+
+    validSessions.forEach((session) => {
+        const instructorID = session.pilotID!;
+        const hours = session.sessionDateDuration_min ? session.sessionDateDuration_min / 60 : 0;
+
+        if (!hoursByInstructor[instructorID]) {
+            hoursByInstructor[instructorID] = 0;
+        }
+
+        hoursByInstructor[instructorID] += hours;
+    });
+
+    // Mapper les instructeurs avec leurs informations
+    const result = Object.entries(hoursByInstructor).map(([instructorID, hours]) => {
+        // Trouver la session du premier pilote avec cet instructorID pour récupérer son nom
+        const firstSession = validSessions.find(session => session.pilotID === instructorID);
+        const name = firstSession ? `${firstSession.pilotLastName.toUpperCase().slice(0, 1)}.${firstSession.pilotFirstName.toLowerCase().slice(0,3)}` : 'Inconnu';
+
+        return {
+            name,
+            hours,
+        };
+    });
+
+    return result;
+};
+
+export const getHoursByPlane = async (clubID: string) => {
+    const currentYear = new Date().getFullYear();
+
+    // Récupérer les sessions de vol pour l'année actuelle, avec les informations sur l'avion
+    const sessions = await prisma.flight_sessions.findMany({
+        where: {
+            clubID: clubID,
+            sessionDateStart: {
+                gte: new Date(`${currentYear}-01-01`), // Limiter aux sessions à partir du 1er janvier de l'année actuelle
+            },
+        },
+        select: {
+            studentPlaneID: true, // Identifiant de l'avion utilisé
+            sessionDateStart: true, // Date de la session
+            sessionDateDuration_min: true, // Durée de la session en minutes
+            studentID: true, // Identifiant de l'étudiant
+        },
+    });
+
+    await prisma.$disconnect();
+
+    // Filtrer les sessions valides : date dans le passé, studentID rempli, année actuelle, et studentPlaneID non nul
+    const validSessions = sessions.filter(
+        (session) =>
+            session.sessionDateStart &&
+            new Date(session.sessionDateStart) < new Date() &&  // Vérifier que la session est dans le passé
+            session.studentID &&  // Vérifier que studentID est rempli
+            new Date(session.sessionDateStart).getFullYear() === currentYear &&
+            session.studentPlaneID // Vérifier que studentPlaneID est non nul
+    );
+
+    // Regrouper les heures par avion
+    const hoursByPlane: { [planeID: string]: number } = {};
+
+    validSessions.forEach((session) => {
+        const planeID = session.studentPlaneID!;
+        const hours = session.sessionDateDuration_min ? session.sessionDateDuration_min / 60 : 0;
+
+        if (!hoursByPlane[planeID]) {
+            hoursByPlane[planeID] = 0;
+        }
+
+        hoursByPlane[planeID] += hours;
+    });
+
+    // Mapper les avions avec leurs informations
+    const result = await Promise.all(
+        Object.entries(hoursByPlane).map(async ([planeID, hours]) => {
+            // Chercher le nom de l'avion dans la table "planes"
+            const plane = await prisma.planes.findUnique({
+                where: { id: planeID },
+                select: { name: true },
+            });
+
+            // Si l'avion n'est pas trouvé, on met "Inconnu"
+            const planeName = plane ? plane.name : 'Inconnu';
+
+            return {
+                aircraft: planeName,
+                hours,
+            };
+        })
+    );
+
+    return result;
+};
+
+export const getHoursByStudent = async (clubID: string) => {
+    const currentYear = new Date().getFullYear();
+
+    // Récupérer toutes les sessions de vol pour l'année actuelle
+    const sessions = await prisma.flight_sessions.findMany({
+        where: {
+            clubID: clubID,
+            sessionDateStart: {
+                gte: new Date(`${currentYear}-01-01`), // Sessions à partir du 1er janvier de l'année actuelle
+            },
+        },
+        select: {
+            studentID: true, // Identifiant de l'étudiant
+            sessionDateStart: true, // Date de la session
+            sessionDateDuration_min: true, // Durée de la session en minutes
+        },
+    });
+
+    // Récupérer uniquement les étudiants avec le rôle "STUDENT"
+    const students = await prisma.user.findMany({
+        where: {
+            role: "STUDENT", // Ne récupérer que les étudiants
+        },
+        select: {
+            id: true, // Identifiant de l'étudiant
+            firstName: true, // Prénom de l'étudiant
+            lastName: true, // Nom de l'étudiant
+        },
+    });
+
+    // Construire un mapping `id -> Nom complet` pour les étudiants
+    const studentMap = students.reduce<Record<string, string>>((acc, student) => {
+        acc[student.id] = `${student.lastName} ${student.firstName}`;
+        return acc;
+    }, {});
+
+    // Filtrer les sessions valides : passées, avec un `studentID`, et correspondant à un étudiant ayant le rôle "STUDENT"
+    const validSessions = sessions.filter(
+        (session) =>
+            session.sessionDateStart &&
+            new Date(session.sessionDateStart) < new Date() && // La session est dans le passé
+            session.studentID && // L'étudiant est renseigné
+            studentMap[session.studentID] // Le `studentID` correspond à un étudiant ayant le rôle "STUDENT"
+    );
+
+    // Regrouper les heures par étudiant
+    const hoursByStudent: { [studentID: string]: number } = {};
+
+    validSessions.forEach((session) => {
+        const studentID = session.studentID!;
+        const hours = session.sessionDateDuration_min ? session.sessionDateDuration_min / 60 : 0;
+
+        if (!hoursByStudent[studentID]) {
+            hoursByStudent[studentID] = 0;
+        }
+
+        hoursByStudent[studentID] += hours;
+    });
+
+    // Construire le résultat final avec le nom des étudiants
+    const result = Object.entries(hoursByStudent).map(([studentID, hours]) => {
+        const studentName = studentMap[studentID] || "Inconnu";
+        return {
+            student: studentName,
+            hours,
+        };
+    });
+
+    await prisma.$disconnect();
+    return result;
 };
