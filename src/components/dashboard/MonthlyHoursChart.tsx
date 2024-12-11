@@ -36,9 +36,7 @@ const MonthlyHoursChart = ({ clubID }: Props) => {
         <ResponsiveContainer width="100%" height={300}>
           {loading ? (
             // Afficher le loader pendant le chargement
-            <Spinner>
-              Chargement des données...
-            </Spinner>
+            <Spinner></Spinner>
           ) : (
             // Afficher le graphique une fois les données chargées
             <LineChart data={HoursByMonth}>

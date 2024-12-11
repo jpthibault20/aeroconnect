@@ -5,17 +5,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { User } from '@prisma/client'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { acceptMembershipRequest, getAllUserRequestedClubID, rejectMembershipRequest } from '@/api/db/club'
+import { Spinner } from '../ui/SpinnerVariants'
 
 
 
 const MembershipRequests: FC = () => {
   const { currentUser } = useCurrentUser();
   const [membershipRequests, setMembershipRequests] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchMembershipRequests = async () => {
       if (!currentUser?.clubID) return;
       try {
+        setIsLoading(true);
         const res = await getAllUserRequestedClubID(currentUser?.clubID);
         if (Array.isArray(res)) {
           setMembershipRequests(res);
@@ -24,6 +27,8 @@ const MembershipRequests: FC = () => {
         }
       } catch (error) {
         console.error("Failed to fetch membership requests", error);
+      } finally {
+        setIsLoading(false);
       }
     }
     fetchMembershipRequests();
@@ -87,10 +92,14 @@ const MembershipRequests: FC = () => {
             ))}
           </TableBody>
         </Table>
-        {membershipRequests.length === 0 && (
-          <div className="text-center text-gray-500 py-4">
-            Aucune demande d&apos;adhésion.
-          </div>
+        {isLoading ? (
+          <Spinner></Spinner>
+        ) : (
+          membershipRequests.length === 0 && (
+            <div className="text-center text-gray-500 py-4">
+              Aucune demande d&apos;adhésion.
+            </div>
+          )
         )}
       </CardContent>
     </Card>

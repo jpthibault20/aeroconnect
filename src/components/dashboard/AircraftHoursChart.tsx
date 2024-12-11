@@ -35,7 +35,7 @@ const AircraftHoursChart = ({ clubID }: Props) => {
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           {loading ? (
-            <Spinner>Chargement des données...</Spinner>
+            <Spinner></Spinner>
           ) : (
             <BarChart data={HoursByPlane} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" />

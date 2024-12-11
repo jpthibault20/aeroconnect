@@ -35,7 +35,7 @@ const StudentHoursChart = ({ clubID }: Props) => {
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           {loading ? (
-            <Spinner>Chargement des données...</Spinner>
+            <Spinner></Spinner>
           ) : (
             <BarChart data={HoursByStudent}>
               <CartesianGrid strokeDasharray="3 3" />
