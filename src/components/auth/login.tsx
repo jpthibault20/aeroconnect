@@ -1,7 +1,6 @@
-
 "use client";
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React from 'react'
+import React from 'react';
 import Link from 'next/link';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,22 +12,22 @@ import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
 import { Input } from '../ui/input';
 import { Logo } from '../Logo';
-import Image from "next/image"
+import Image from "next/image";
 import { Spinner } from '../ui/SpinnerVariants';
+import { Eye, EyeOff } from 'lucide-react';
 
 export const Login = () => {
     const [loading, setLoading] = React.useState(false);
     const [message, setMessage] = React.useState('');
     const [messageG, setMessageG] = React.useState('');
+    const [showPassword, setShowPassword] = React.useState(false); // État pour la visibilité du mot de passe
     const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
 
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
         setMessageG(searchParams.get('messageG') ?? '');
-        setLoading(false) // Réinitialiser le loading à false après avoir récupéré les paramètres de recherche
+        setLoading(false); // Réinitialiser le loading à false après avoir récupéré les paramètres de recherche
     }, [searchParams]);
-
-
 
     const {
         register,
@@ -56,7 +55,6 @@ export const Login = () => {
         }
     };
 
-
     return (
         <div className="min-h-screen w-full flex flex-col lg:flex-row">
             {/* Left Section */}
@@ -66,7 +64,7 @@ export const Login = () => {
                         src="/images/bgLoginPages.svg"
                         alt="Background"
                         fill
-                        className="object-cover "
+                        className="object-cover"
                         priority
                     />
                 </div>
@@ -105,7 +103,7 @@ export const Login = () => {
                 <div className="flex-1 flex items-center justify-center">
                     <div className="w-full max-w-md space-y-8">
                         <div className='hidden lg:flex lg:flex-col lg:items-center'>
-                            <h1 className='text-black font-thin  text-4xl'>
+                            <h1 className='text-black font-thin text-4xl'>
                                 Aéro Connect
                             </h1>
                         </div>
@@ -138,13 +136,22 @@ export const Login = () => {
                                 <label htmlFor="password" className="text-sm font-medium">
                                     Mot de passe
                                 </label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    placeholder="******"
-                                    className="bg-gray-50"
-                                    {...register("password")}
-                                />
+                                <div className="relative">
+                                    <Input
+                                        id="password"
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="******"
+                                        className="bg-gray-50"
+                                        {...register("password")}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute inset-y-0 right-2 flex items-center text-gray-500 hover:text-gray-700"
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
                                 {errors.password && <p className='text-red-500'>{errors.password.message}</p>}
                                 <div>
                                     {message && (
@@ -183,11 +190,10 @@ export const Login = () => {
                             >
                                 {loading ? <Spinner className='text-white' /> : "Se connecter"}
                             </Button>
-
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     );
-}
+};
