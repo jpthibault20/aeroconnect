@@ -140,7 +140,7 @@ const ForgotPassword = () => {
                                 type='submit'
                                 disabled={loading}
                             >
-                                {loading ? <Spinner className='text-white' /> : "Réinitialiser le mot de passe"}
+                                {loading ? <Spinner className='text-white' /> : "Envoyer le lien de réinitialisation"}
                             </Button>
 
                             <div className="text-center">
