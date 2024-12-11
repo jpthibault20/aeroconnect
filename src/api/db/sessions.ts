@@ -519,9 +519,9 @@ export const getHoursByMonth = async (clubID: string) => {
     const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
     // Initialiser le tableau avec tous les mois de l'année jusqu'au mois courant inclus
-    const hoursByMonth: { month: string; hours: number }[] = monthNames
+    const hoursByMonth: { name: string; hours: number }[] = monthNames
         .slice(0, currentMonth + 1) // Inclure les mois jusqu'au mois courant
-        .map((month) => ({ month, hours: 0 }));
+        .map((name) => ({ name, hours: 0 }));
 
     // Ajouter les heures des sessions valides
     validSessions.forEach((session) => {
@@ -659,7 +659,7 @@ export const getHoursByPlane = async (clubID: string) => {
             const planeName = plane ? plane.name : 'Inconnu';
 
             return {
-                aircraft: planeName,
+                name: planeName,
                 hours,
             };
         })
@@ -731,7 +731,7 @@ export const getHoursByStudent = async (clubID: string) => {
     const result = Object.entries(hoursByStudent).map(([studentID, hours]) => {
         const studentName = studentMap[studentID] || "Inconnu";
         return {
-            student: studentName,
+            name: studentName,
             hours,
         };
     });

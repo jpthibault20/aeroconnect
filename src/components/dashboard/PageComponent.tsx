@@ -11,14 +11,20 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { indexLinkDashboard, navigationLinks } from '@/config/links';
 import { useRouter } from 'next/navigation';
 import InitialLoading from '../InitialLoading';
+import { dashboardProps } from '@/app/(protected)/dashboard/page';
+import { User } from '@prisma/client';
 
 interface PageProps {
     clubID: string;
-
+    HoursByInstructor: dashboardProps[],
+    hoursByPlanes: dashboardProps[],
+    HoursByStudent: dashboardProps[],
+    HoursByMonth: dashboardProps[],
+    UsersRequestedClubID: User[],
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const PageComponent = ({ clubID }: PageProps) => {
+const PageComponent = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStudent, HoursByMonth, UsersRequestedClubID }: PageProps) => {
     const { currentUser } = useCurrentUser();
     const router = useRouter();
 
@@ -31,19 +37,19 @@ const PageComponent = ({ clubID }: PageProps) => {
             <main className="container mx-auto px-4 py-7">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="col-span-1 md:col-span-2 lg:col-span-3">
-                        <MembershipRequests />
+                        <MembershipRequests UsersRequestedClubID={UsersRequestedClubID} />
                     </div>
                     <div className="col-span-1 md:col-span-2">
-                        <MonthlyHoursChart clubID={clubID} />
+                        <MonthlyHoursChart HoursByMonth={HoursByMonth} />
                     </div>
                     <div className="col-span-1 md:col-span-1 lg:col-span-1">
-                        <InstructorHoursChart clubID={clubID} />
+                        <InstructorHoursChart HoursByInstructor={HoursByInstructor} />
                     </div>
                     <div className="col-span-1 md:col-span-1 lg:col-span-1">
-                        <AircraftHoursChart clubID={clubID} />
+                        <AircraftHoursChart hoursByPlanes={hoursByPlanes} />
                     </div>
                     <div className="col-span-1 md:col-span-2">
-                        <StudentHoursChart clubID={clubID} />
+                        <StudentHoursChart HoursByStudent={HoursByStudent} />
                     </div>
                 </div>
             </main>
