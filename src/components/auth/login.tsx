@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import React from 'react';
 import Link from 'next/link';
 import { useForm } from "react-hook-form";
@@ -9,7 +9,6 @@ import { emailLogin } from '@/app/auth/login/action';
 import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '../ui/button';
-import { Checkbox } from '../ui/checkbox';
 import { Input } from '../ui/input';
 import { Logo } from '../Logo';
 import Image from "next/image";
@@ -34,7 +33,7 @@ export const Login = () => {
         register,
         handleSubmit,
         formState: { errors },
-        reset,
+        // reset,
     } = useForm<LoginSchema>({
         resolver: zodResolver(loginSchema),
     });
@@ -51,8 +50,6 @@ export const Login = () => {
 
         } catch (error) {
             console.error("Erreur de connexion :", error);
-        } finally {
-            setLoading(false);
         }
     };
 
