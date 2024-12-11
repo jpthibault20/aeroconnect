@@ -15,6 +15,7 @@ import { Logo } from '../Logo';
 import Image from "next/image";
 import { Spinner } from '../ui/SpinnerVariants';
 import { Eye, EyeOff } from 'lucide-react';
+import { Label } from '../ui/label';
 
 export const Login = () => {
     const [loading, setLoading] = React.useState(false);
@@ -119,9 +120,9 @@ export const Login = () => {
 
                         <form className="space-y-4" action="#" onSubmit={handleSubmit(onSubmit)}>
                             <div className="space-y-2">
-                                <label htmlFor="email" className="text-sm font-medium">
+                                <Label htmlFor="email" className="text-sm font-medium">
                                     Email
-                                </label>
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -133,9 +134,9 @@ export const Login = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <label htmlFor="password" className="text-sm font-medium">
+                                <Label htmlFor="password" className="text-sm font-medium">
                                     Mot de passe
-                                </label>
+                                </Label>
                                 <div className="relative">
                                     <Input
                                         id="password"
@@ -169,13 +170,13 @@ export const Login = () => {
 
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2">
-                                    <Checkbox id="remember" />
-                                    <label
+                                    {/* <Checkbox id="remember" />
+                                    <Label
                                         htmlFor="remember"
                                         className="text-sm text-gray-500 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                     >
                                         Se souvenir de moi
-                                    </label>
+                                    </Label> */}
                                 </div>
                                 <Link href={'/auth/forgotPassword'} className="text-sm text-purple-600 hover:text-purple-500">
                                     Mot de passe oublié ?
