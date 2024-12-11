@@ -488,254 +488,173 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
 
 
 export const getHoursByMonth = async (clubID: string) => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
     const sessions = await prisma.flight_sessions.findMany({
-        where: { clubID: clubID },
+        where: {
+            clubID,
+            sessionDateStart: {
+                gte: new Date(`${currentYear}-01-01`), // Début de l'année
+                lte: now, // Date actuelle
+            },
+            studentID: { not: null },
+        },
         select: {
             sessionDateStart: true,
             sessionDateDuration_min: true,
-            studentID: true,
-            pilotID: true,
         },
     });
 
-    await prisma.$disconnect();
-
-    // Obtenir l'année et le mois actuels
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth(); // 0 = Janvier, 11 = Décembre
-
-    // Filtrer les sessions valides (studentID non nul)
-    const validSessions = sessions.filter(
-        (session) =>
-            session.sessionDateStart &&
-            new Date(session.sessionDateStart) < new Date() &&  // Vérifier que la session est dans le passé
-            session.studentID &&  // Vérifier que studentID est rempli
-            new Date(session.sessionDateStart).getFullYear() === currentYear &&
-            session.pilotID // Vérifier que instructorID est non nul
-    );
-
-
     const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
-    // Initialiser le tableau avec tous les mois de l'année jusqu'au mois courant inclus
-    const hoursByMonth: { name: string; hours: number }[] = monthNames
-        .slice(0, currentMonth + 1) // Inclure les mois jusqu'au mois courant
-        .map((name) => ({ name, hours: 0 }));
+    const hoursByMonth = Array.from({ length: currentMonth + 1 }, (_, monthIndex) => ({
+        name: monthNames[monthIndex],
+        hours: 0,
+    }));
 
-    // Ajouter les heures des sessions valides
-    validSessions.forEach((session) => {
-        if (session.sessionDateStart) {
-            const sessionDate = new Date(session.sessionDateStart);
-            if (sessionDate.getFullYear() === currentYear && sessionDate.getMonth() <= currentMonth) {
-                const monthIndex = sessionDate.getMonth(); // Mois (0 = Janvier, 11 = Décembre)
-                const hours = session.sessionDateDuration_min ? session.sessionDateDuration_min / 60 : 0;
+    sessions.forEach((session) => {
+        const sessionDate = new Date(session.sessionDateStart!);
+        const monthIndex = sessionDate.getMonth();
 
-                // Ajouter les heures au mois correspondant
-                hoursByMonth[monthIndex].hours += hours;
-            }
+        if (monthIndex <= currentMonth) {
+            hoursByMonth[monthIndex].hours += (session.sessionDateDuration_min || 0) / 60;
         }
     });
+
     return hoursByMonth;
 };
 
 export const getHoursByInstructor = async (clubID: string) => {
     const currentYear = new Date().getFullYear();
 
-    // Récupérer les sessions de vol pour l'année actuelle, avec les informations sur le pilote
     const sessions = await prisma.flight_sessions.findMany({
         where: {
-            clubID: clubID,
+            clubID,
             sessionDateStart: {
-                gte: new Date(`${currentYear}-01-01`), // Limiter aux sessions à partir du 1er janvier de l'année actuelle
+                gte: new Date(`${currentYear}-01-01`),
+                lte: new Date(),
             },
+            studentID: { not: null },
         },
         select: {
-            pilotID: true, // Identifiant du pilote
-            sessionDateStart: true, // Date de la session
-            sessionDateDuration_min: true, // Durée de la session en minutes
-            pilotFirstName: true, // Prénom du pilote
-            pilotLastName: true,  // Nom du pilote
-            studentID: true, // Identifiant de l'étudiant
+            pilotID: true,
+            sessionDateDuration_min: true,
+            pilotFirstName: true,
+            pilotLastName: true,
         },
     });
 
-    await prisma.$disconnect();
+    const instructorHoursMap: Record<string, { name: string; hours: number }> = {};
 
-    // Filtrer les sessions valides : date dans le passé, studentID rempli, année actuelle, et instructorID non nul
-    const validSessions = sessions.filter(
-        (session) =>
-            session.sessionDateStart &&
-            new Date(session.sessionDateStart) < new Date() &&  // Vérifier que la session est dans le passé
-            session.studentID &&  // Vérifier que studentID est rempli
-            new Date(session.sessionDateStart).getFullYear() === currentYear &&
-            session.pilotID // Vérifier que instructorID est non nul
-    );
-
-    // Regrouper les heures par instructeur
-    const hoursByInstructor: { [instructorID: string]: number } = {};
-
-    validSessions.forEach((session) => {
+    sessions.forEach((session) => {
         const instructorID = session.pilotID!;
-        const hours = session.sessionDateDuration_min ? session.sessionDateDuration_min / 60 : 0;
+        const hours = (session.sessionDateDuration_min || 0) / 60;
 
-        if (!hoursByInstructor[instructorID]) {
-            hoursByInstructor[instructorID] = 0;
+        if (!instructorHoursMap[instructorID]) {
+            const name = session.pilotLastName && session.pilotFirstName
+                ? `${session.pilotLastName.toUpperCase().slice(0, 1)}.${session.pilotFirstName.toLowerCase().slice(0, 3)}`
+                : 'Inconnu';
+
+            instructorHoursMap[instructorID] = { name, hours: 0 };
         }
 
-        hoursByInstructor[instructorID] += hours;
+        instructorHoursMap[instructorID].hours += hours;
     });
 
-    // Mapper les instructeurs avec leurs informations
-    const result = Object.entries(hoursByInstructor).map(([instructorID, hours]) => {
-        // Trouver la session du premier pilote avec cet instructorID pour récupérer son nom
-        const firstSession = validSessions.find(session => session.pilotID === instructorID);
-        const name = firstSession ? `${firstSession.pilotLastName.toUpperCase().slice(0, 1)}.${firstSession.pilotFirstName.toLowerCase().slice(0,3)}` : 'Inconnu';
-
-        return {
-            name,
-            hours,
-        };
-    });
-
-    return result;
+    return Object.values(instructorHoursMap);
 };
 
 export const getHoursByPlane = async (clubID: string) => {
     const currentYear = new Date().getFullYear();
 
-    // Récupérer les sessions de vol pour l'année actuelle, avec les informations sur l'avion
     const sessions = await prisma.flight_sessions.findMany({
         where: {
-            clubID: clubID,
+            clubID,
             sessionDateStart: {
-                gte: new Date(`${currentYear}-01-01`), // Limiter aux sessions à partir du 1er janvier de l'année actuelle
+                gte: new Date(`${currentYear}-01-01`),
+                lte: new Date(),
             },
+            studentPlaneID: { not: null },
         },
         select: {
-            studentPlaneID: true, // Identifiant de l'avion utilisé
-            sessionDateStart: true, // Date de la session
-            sessionDateDuration_min: true, // Durée de la session en minutes
-            studentID: true, // Identifiant de l'étudiant
+            studentPlaneID: true,
+            sessionDateDuration_min: true,
         },
     });
 
-    await prisma.$disconnect();
+    const planeHoursMap: Record<string, number> = {};
 
-    // Filtrer les sessions valides : date dans le passé, studentID rempli, année actuelle, et studentPlaneID non nul
-    const validSessions = sessions.filter(
-        (session) =>
-            session.sessionDateStart &&
-            new Date(session.sessionDateStart) < new Date() &&  // Vérifier que la session est dans le passé
-            session.studentID &&  // Vérifier que studentID est rempli
-            new Date(session.sessionDateStart).getFullYear() === currentYear &&
-            session.studentPlaneID // Vérifier que studentPlaneID est non nul
-    );
-
-    // Regrouper les heures par avion
-    const hoursByPlane: { [planeID: string]: number } = {};
-
-    validSessions.forEach((session) => {
+    sessions.forEach((session) => {
         const planeID = session.studentPlaneID!;
-        const hours = session.sessionDateDuration_min ? session.sessionDateDuration_min / 60 : 0;
+        const hours = (session.sessionDateDuration_min || 0) / 60;
 
-        if (!hoursByPlane[planeID]) {
-            hoursByPlane[planeID] = 0;
+        if (!planeHoursMap[planeID]) {
+            planeHoursMap[planeID] = 0;
         }
 
-        hoursByPlane[planeID] += hours;
+        planeHoursMap[planeID] += hours;
     });
 
-    // Mapper les avions avec leurs informations
-    const result = await Promise.all(
-        Object.entries(hoursByPlane).map(async ([planeID, hours]) => {
-            // Chercher le nom de l'avion dans la table "planes"
-            const plane = await prisma.planes.findUnique({
-                where: { id: planeID },
-                select: { name: true },
-            });
+    const planes = await prisma.planes.findMany({
+        where: {
+            id: { in: Object.keys(planeHoursMap) },
+        },
+        select: { id: true, name: true },
+    });
 
-            // Si l'avion n'est pas trouvé, on met "Inconnu"
-            const planeName = plane ? plane.name : 'Inconnu';
-
-            return {
-                name: planeName,
-                hours,
-            };
-        })
-    );
-
-    return result;
+    return planes.map((plane) => ({
+        name: plane.name || 'Inconnu',
+        hours: planeHoursMap[plane.id] || 0,
+    }));
 };
+
 
 export const getHoursByStudent = async (clubID: string) => {
     const currentYear = new Date().getFullYear();
 
-    // Récupérer toutes les sessions de vol pour l'année actuelle
-    const sessions = await prisma.flight_sessions.findMany({
-        where: {
-            clubID: clubID,
-            sessionDateStart: {
-                gte: new Date(`${currentYear}-01-01`), // Sessions à partir du 1er janvier de l'année actuelle
+    const [sessions, students] = await Promise.all([
+        prisma.flight_sessions.findMany({
+            where: {
+                clubID,
+                sessionDateStart: {
+                    gte: new Date(`${currentYear}-01-01`),
+                    lte: new Date(),
+                },
+                studentID: { not: null },
             },
-        },
-        select: {
-            studentID: true, // Identifiant de l'étudiant
-            sessionDateStart: true, // Date de la session
-            sessionDateDuration_min: true, // Durée de la session en minutes
-        },
-    });
+            select: {
+                studentID: true,
+                sessionDateDuration_min: true,
+            },
+        }),
+        prisma.user.findMany({
+            where: { role: 'STUDENT' },
+            select: { id: true, firstName: true, lastName: true },
+        }),
+    ]);
 
-    // Récupérer uniquement les étudiants avec le rôle "STUDENT"
-    const students = await prisma.user.findMany({
-        where: {
-            role: "STUDENT", // Ne récupérer que les étudiants
-        },
-        select: {
-            id: true, // Identifiant de l'étudiant
-            firstName: true, // Prénom de l'étudiant
-            lastName: true, // Nom de l'étudiant
-        },
-    });
-
-    // Construire un mapping `id -> Nom complet` pour les étudiants
     const studentMap = students.reduce<Record<string, string>>((acc, student) => {
         acc[student.id] = `${student.lastName} ${student.firstName}`;
         return acc;
     }, {});
 
-    // Filtrer les sessions valides : passées, avec un `studentID`, et correspondant à un étudiant ayant le rôle "STUDENT"
-    const validSessions = sessions.filter(
-        (session) =>
-            session.sessionDateStart &&
-            new Date(session.sessionDateStart) < new Date() && // La session est dans le passé
-            session.studentID && // L'étudiant est renseigné
-            studentMap[session.studentID] // Le `studentID` correspond à un étudiant ayant le rôle "STUDENT"
-    );
+    const studentHoursMap: Record<string, number> = {};
 
-    // Regrouper les heures par étudiant
-    const hoursByStudent: { [studentID: string]: number } = {};
-
-    validSessions.forEach((session) => {
+    sessions.forEach((session) => {
         const studentID = session.studentID!;
-        const hours = session.sessionDateDuration_min ? session.sessionDateDuration_min / 60 : 0;
+        const hours = (session.sessionDateDuration_min || 0) / 60;
 
-        if (!hoursByStudent[studentID]) {
-            hoursByStudent[studentID] = 0;
+        if (!studentHoursMap[studentID]) {
+            studentHoursMap[studentID] = 0;
         }
 
-        hoursByStudent[studentID] += hours;
+        studentHoursMap[studentID] += hours;
     });
 
-    // Construire le résultat final avec le nom des étudiants
-    const result = Object.entries(hoursByStudent).map(([studentID, hours]) => {
-        const studentName = studentMap[studentID] || "Inconnu";
-        return {
-            name: studentName,
-            hours,
-        };
-    });
-
-    await prisma.$disconnect();
-    return result;
+    return Object.entries(studentHoursMap).map(([studentID, hours]) => ({
+        name: studentMap[studentID] || 'Inconnu',
+        hours,
+    }));
 };
