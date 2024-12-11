@@ -22,7 +22,7 @@ import { useRouter } from "next/navigation";
 // Schéma de validation avec Zod
 const clubFormSchema = z.object({
     name: z.string().min(1, "Le nom du club est requis"),
-    id: z.string().min(6, "L'ID du club n'est pas valide").max(6, "L'ID du club n'est pas valide"),
+    id: z.string().min(3, "L'ID du club n'est pas valide"),
     address: z.string().optional(),
     city: z.string().optional(),
     zipCode: z.string().optional(),
