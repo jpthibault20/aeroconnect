@@ -5,7 +5,6 @@ import { IoIosWarning } from 'react-icons/io';
 import { Button } from './ui/button';
 import { requestClubID } from '@/api/db/club';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import LogoutButton from './logoutButton';
 
 interface Club {
     id: string;
@@ -41,8 +40,6 @@ const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequ
             setRequestClubID(true);
         }
     };
-
-
 
     return (
         <div className="p-6 space-y-6">
@@ -98,10 +95,6 @@ const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequ
                     <button className='underline text-gray-400 hover:text-gray-700 text-sm' onClick={newClubButton}>
                         Ajouter un club
                     </button>
-                </div>
-
-                <div className='w-full flex items-center justify-end'>
-                    <LogoutButton />
                 </div>
             </div>
 
