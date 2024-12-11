@@ -610,7 +610,6 @@ export const getHoursByPlane = async (clubID: string) => {
     }));
 };
 
-
 export const getHoursByStudent = async (clubID: string) => {
     const currentYear = new Date().getFullYear();
 
