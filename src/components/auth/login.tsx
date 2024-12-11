@@ -70,17 +70,6 @@ export const Login = () => {
                         priority
                     />
                 </div>
-                {/* <div className="w-full h-full grid grid-rows-3 items-center justify-center">
-                    <div className="row-start-1"></div>
-                    <div className="row-start-2"></div>
-                    <div className="row-start-3 text-center text-black font-istok">
-                        <h1 className='text-black font-istok text-5xl'>
-                            <span className='font-bold'>A</span>ero
-                            {" "}
-                            <span className='font-bold'>C</span>onnect
-                        </h1>
-                    </div>
-                </div> */}
             </div>
 
             {/* Right Section */}
