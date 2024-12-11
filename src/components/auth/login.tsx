@@ -124,7 +124,7 @@ export const Login = () => {
                             <h1 className="text-2xl font-bold">Connexion</h1>
                             <p className="text-gray-500">
                                 Pas encore de compte ?{" "}
-                                <Link href="/register" className="text-purple-600 hover:text-purple-500">
+                                <Link href="/auth/register" className="text-purple-600 hover:text-purple-500">
                                     S&apos;inscrire
                                 </Link>
                             </p>
