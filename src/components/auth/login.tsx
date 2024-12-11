@@ -125,6 +125,7 @@ export const Login = () => {
                                     type="email"
                                     placeholder="nom@exemple.com"
                                     className="bg-gray-50"
+                                    autoComplete='email'
                                     {...register("email")}
                                 />
                                 {errors.email && <p className='text-red-500'>{errors.email.message}</p>}
@@ -140,6 +141,7 @@ export const Login = () => {
                                         type={showPassword ? "text" : "password"}
                                         placeholder="******"
                                         className="bg-gray-50"
+                                        autoComplete='password'
                                         {...register("password")}
                                     />
                                     <button
