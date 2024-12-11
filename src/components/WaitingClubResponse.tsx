@@ -3,6 +3,7 @@ import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { Club } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Spinner } from "./ui/SpinnerVariants";
+import LogoutButton from "./logoutButton";
 
 interface props {
     clubIDprops: string
@@ -40,7 +41,7 @@ const WaitingClubResponse = ({ clubIDprops }: props) => {
     return (
         <div>
             {loading ? (
-                <p>Chargement...</p>
+                <Spinner />
             ) : error ? (
                 <p>Erreur : {error}</p>
             ) : (
@@ -56,6 +57,9 @@ const WaitingClubResponse = ({ clubIDprops }: props) => {
                     </p>
                 </div>
             )}
+            <div className='w-full flex items-center justify-end'>
+                <LogoutButton />
+            </div>
         </div>
     )
 }
