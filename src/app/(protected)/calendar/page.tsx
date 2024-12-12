@@ -1,6 +1,6 @@
 'use server';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import PageComponent from '@/components/calendar/PageComponent';
 import NoClubID from '@/components/NoClubID';
 import { workingHour } from '@/config/configClub';
@@ -24,14 +24,16 @@ const Page = async ({ searchParams }: PageProps) => {
         // Vérification si les données du club sont valides
         if (club?.HoursOn && sessions) {
             return (
-                <div className='h-full'>
-                    <PageComponent
-                        sessionsprops={sessions}
-                        planesProp={planes}
-                        clubHours={club.HoursOn}
-                        clubID={clubID}
-                    />
-                </div>
+                <Suspense fallback={"chargement..."}>
+                    <div className='h-full'>
+                        <PageComponent
+                            sessionsprops={sessions}
+                            planesProp={planes}
+                            clubHours={club.HoursOn}
+                            clubID={clubID}
+                        />
+                    </div>
+                </Suspense>
             );
         }
     }
