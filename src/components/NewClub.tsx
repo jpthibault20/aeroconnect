@@ -17,7 +17,6 @@ import {
 } from "./ui/select";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { createClub } from "@/api/db/club";
-import { useRouter } from "next/navigation";
 
 // Schéma de validation avec Zod
 const clubFormSchema = z.object({
@@ -48,7 +47,6 @@ interface Props {
 const NewClub = ({ setNewClub }: Props) => {
     const [formError, setFormError] = useState<string | null>(null);
     const { currentUser } = useCurrentUser();
-    const router = useRouter();
 
     const {
         register,
@@ -70,7 +68,7 @@ const NewClub = ({ setNewClub }: Props) => {
             } else if (res.success) {
                 setNewClub(false);
                 setFormError(null);
-                router.replace('/calendar?clubID=' + data.id);
+                window.location.href = '/calendar?clubID=' + data.id;
             }
         };
         createClubAPI();

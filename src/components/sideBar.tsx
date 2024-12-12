@@ -21,7 +21,6 @@ const SideBar = () => {
 
     const logout = () => {
         signOut();
-        router.push("/login"); // Redirige après déconnexion
     };
 
     return (
