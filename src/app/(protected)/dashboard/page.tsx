@@ -4,7 +4,8 @@ import { getHoursByInstructor, getHoursByMonth, getHoursByPlane, getHoursByStude
 import PageComponent from '@/components/dashboard/PageComponent';
 import InitialLoading from '@/components/InitialLoading';
 import NoClubID from '@/components/NoClubID';
-import React from 'react'
+import { Skeleton } from '@/components/ui/skeleton';
+import React, { Suspense } from 'react'
 
 export interface dashboardProps {
     name: string;
@@ -37,15 +38,17 @@ const Page = async ({ searchParams }: PageProps) => {
         }
 
         return (
-            <InitialLoading clubIDURL={clubID} className="h-full w-full">
-                <PageComponent
-                    clubID={clubID}
-                    HoursByInstructor={HoursByInstructor}
-                    UsersRequestedClubID={UsersRequestedClubID}
-                    HoursByMonth={HoursByMonth}
-                    HoursByStudent={HoursByStudent}
-                    hoursByPlanes={hoursByPlanes} />
-            </InitialLoading>
+            <Suspense fallback={<Skeleton className="w-[100px] h-[20px] rounded-full" />}>
+                <InitialLoading clubIDURL={clubID} className="h-full w-full">
+                    <PageComponent
+                        clubID={clubID}
+                        HoursByInstructor={HoursByInstructor}
+                        UsersRequestedClubID={UsersRequestedClubID}
+                        HoursByMonth={HoursByMonth}
+                        HoursByStudent={HoursByStudent}
+                        hoursByPlanes={hoursByPlanes} />
+                </InitialLoading>
+            </Suspense>
         )
     }
     else {

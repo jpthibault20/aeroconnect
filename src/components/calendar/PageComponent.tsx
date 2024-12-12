@@ -39,11 +39,7 @@ interface props {
 
 const PageComponent = ({ sessionsprops, planesProp, clubHours, clubID }: props) => {
     const isMobile = useScreenSize();
-    const [sessions, setSessions] = useState<flight_sessions[]>([]);
-
-    useEffect(() => {
-        setSessions(sessionsprops);
-    }, [sessionsprops]);
+    const [sessions, setSessions] = useState<flight_sessions[]>(sessionsprops);
 
     // Rendu conditionnel en fonction de la taille de l'écran
     return (
