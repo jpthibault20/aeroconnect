@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { FaPlus } from "react-icons/fa6";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { addStudentToSession, getAllUser } from '@/api/db/users';
+import { addStudentToSession } from '@/api/db/users';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import { Button } from '../ui/button';
@@ -15,9 +15,10 @@ interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
+    usersProp: User[]
 }
 
-const AddStudent = ({ session, sessions, setSessions, planesProp }: Props) => {
+const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const [users, setUsers] = useState<User[]>([]);
     const [student, setStudent] = useState<string>(currentUser?.role !== "ADMIN" && currentUser?.role !== "OWNER" && currentUser?.role !== "INSTRUCTOR" ? currentUser?.id || "" : " ");
@@ -37,27 +38,10 @@ const AddStudent = ({ session, sessions, setSessions, planesProp }: Props) => {
         }
     }, [session, planesProp]);
 
-
-    useEffect(() => {
-        const fetchUsers = async () => {
-            if (currentUser) {
-                try {
-                    const res = await getAllUser(currentUser.clubID as string);
-                    if (Array.isArray(res)) {
-                        setUsers(res);
-                    }
-                } catch (error) {
-                    console.error('Error fetching users:', error);
-                }
-            }
-        };
-        fetchUsers();
-    }, [currentUser]);
-
     useEffect(() => {
         const fetchPlanesAndUsers = async () => {
             try {
-                const { students: studentRes, planes: planesRes } = await getFreePlanesUsers(session, sessions);
+                const { students: studentRes, planes: planesRes } = await getFreePlanesUsers(session, sessions, usersProp, planesProp);
 
                 // Mettre à jour les états ou utiliser les données
                 setUsers(studentRes || []); // Exemple : mettre à jour les instructeurs disponibles
@@ -68,7 +52,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp }: Props) => {
         };
 
         fetchPlanesAndUsers();
-    }, [sessions, session]);
+    }, [sessions, session, usersProp, planesProp]);
 
     if (currentUser?.role === userRole.USER) return null;
 

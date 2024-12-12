@@ -13,7 +13,7 @@ import TableComponent from "@/components/flights/TableComponent";
 import Filter from '@/components/flights/Filter';
 import { removeSessionsByID } from '@/api/db/sessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { flight_sessions, planes, userRole } from '@prisma/client';
+import { Club, flight_sessions, planes, User, userRole } from '@prisma/client';
 import NewSession from '../NewSession';
 import { Spinner } from '../ui/SpinnerVariants';
 import { Button } from '../ui/button';
@@ -23,6 +23,8 @@ import { toast } from '@/hooks/use-toast';
 interface Props {
     sessionsProp: flight_sessions[];
     planesProp: planes[];
+    usersProp: User[]
+    clubProp: Club | null
 }
 
 /**
@@ -31,7 +33,7 @@ interface Props {
  * 
  * @returns  The rendered component.
  */
-const FlightsPageComponent = ({ sessionsProp, planesProp }: Props) => {
+const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const [sessionChecked, setSessionChecked] = useState<string[]>([]);
     const [filterAvailable, setFilterAvailable] = useState(false);
@@ -133,13 +135,16 @@ const FlightsPageComponent = ({ sessionsProp, planesProp }: Props) => {
                             </AlertConfirmDeleted>
                         ) : null
                     }
-
-                    <div className='hidden lg:block h-full'>
-                        <NewSession display={'desktop'} setSessions={setSessions} planesProp={planesProp} />
-                    </div>
-                    <div className='lg:hidden block'>
-                        <NewSession display={'phone'} setSessions={setSessions} planesProp={planesProp} />
-                    </div>
+                    {clubProp ? (
+                        <>
+                            <div className='hidden lg:block h-full'>
+                                <NewSession display={'desktop'} setSessions={setSessions} planesProp={planesProp} club={clubProp} />
+                            </div>
+                            <div className='lg:hidden block'>
+                                <NewSession display={'phone'} setSessions={setSessions} planesProp={planesProp} club={clubProp} />
+                            </div>
+                        </>
+                    ) : null}
 
                 </div>
                 <Filter
@@ -167,6 +172,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp }: Props) => {
                     setSessions={setSessions}
                     setSessionChecked={setSessionChecked}
                     planesProp={planesProp}
+                    usersProp={usersProp}
                 />
             )}
         </div>

@@ -16,7 +16,7 @@
 import React, { useState, useEffect } from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { Checkbox } from '../ui/checkbox';
-import { flight_sessions, planes, userRole } from '@prisma/client';
+import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import { IoMdClose } from 'react-icons/io';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/sessions';
@@ -33,9 +33,10 @@ interface props {
     setSessionChecked: React.Dispatch<React.SetStateAction<string[]>>; ///< Function to update selected session IDs
     isAllChecked: boolean; ///< Indicates if "select all" is checked
     planesProp: planes[];
+    usersProp: User[]
 }
 
-const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp }: props) => {
+const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp, usersProp }: props) => {
     const { currentUser } = useCurrentUser();
     const [isChecked, setIsChecked] = useState(false); // State for individual checkbox
     const [loading, setLoading] = useState(false);
@@ -208,7 +209,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                         }
                     </div>
                 ) : (
-                    <AddStudent session={session} setSessions={setSessions} sessions={sessions} planesProp={planesProp} />
+                    <AddStudent session={session} setSessions={setSessions} sessions={sessions} planesProp={planesProp} usersProp={usersProp} />
                 )}
             </TableCell>
             <TableCell className='text-center'>
