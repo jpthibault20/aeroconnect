@@ -114,12 +114,14 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club, usersP
                     </div>
                 </div>
                 <div className='h-full'>
-                    {/* <TabCalendar
+                    <TabCalendar
                         date={date}
                         sessions={sessionsFlitered}
                         setSessions={setSessions}
                         clubHours={club.HoursOn}
-                    /> */}
+                        usersProps={usersProps}
+                        planesProp={planesProp}
+                    />
                 </div>
             </div>
         </div>

@@ -16,9 +16,11 @@ interface Prop {
     children: React.ReactNode;
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
+    usersProps: User[]
+    planesProp: planes[]
 }
 
-const SessionPopup = ({ sessions, children, setSessions }: Prop) => {
+const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp }: Prop) => {
     const { currentUser } = useCurrentUser();
 
     const [isOpen, setIsOpen] = useState(false);
@@ -41,7 +43,7 @@ const SessionPopup = ({ sessions, children, setSessions }: Prop) => {
 
         const loadPilotsAndPlanes = async () => {
             try {
-                const { pilotes, planes } = await filterPilotePlane(sessions);
+                const { pilotes, planes } = await filterPilotePlane(sessions, usersProps, planesProp);
                 setAllInstructors(pilotes);
                 setAllPlanes(planes);
                 setAvailableInstructors(pilotes);
@@ -68,6 +70,7 @@ const SessionPopup = ({ sessions, children, setSessions }: Prop) => {
             setSubmitDisabled(false);
             setDisabledMessage("");
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sessions]);
 
     // Mise à jour des avions disponibles selon l'instructeur sélectionné

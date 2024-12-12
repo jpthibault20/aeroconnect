@@ -1,10 +1,8 @@
-"use server";
+"use client";
 
 import { flight_sessions, planes, User } from "@prisma/client";
 import { getAllUser } from "./db/users";
 import { getPlaneById } from "./db/planes";
-import prisma from "./prisma";
-
 
 
 interface Obj {
@@ -12,12 +10,17 @@ interface Obj {
     planes: planes[];
 }
 
-export const filterPilotePlane = async (sessions: flight_sessions[]): Promise<Obj> => {
+export const filterPilotePlane = async (
+    sessions: flight_sessions[],
+    users: User[],
+    planes: planes[]
+): Promise<Obj> => {
     // Cas où il n'y a pas de sessions
     if (sessions.length === 0) {
         return { pilotes: [], planes: [] };
     }
 
+    // Sessions disponibles (sans étudiant assigné)
     const availableSessions = sessions.filter(session => session.studentID === null);
 
     // Récupérer les IDs uniques des pilotes et des avions
@@ -29,29 +32,21 @@ export const filterPilotePlane = async (sessions: flight_sessions[]): Promise<Ob
         .filter(session => session.studentPlaneID !== null)
         .map(session => session.studentPlaneID);
 
-    // Récupérer les pilotes uniques
-    const pilotes = (await Promise.all(
-        uniquePilotIDs.map(async (id) => {
-            return await prisma.user.findUnique({ where: { id } });
-        })
-    )).filter((pilot): pilot is User => pilot !== null); // Filtrer les pilotes non nuls
-    prisma.$disconnect();
+    // Filtrer les pilotes depuis les `props` en utilisant les IDs uniques
+    const pilotes = users.filter(user => uniquePilotIDs.includes(user.id));
 
-    // Récupérer les avions uniques et filtrer ceux présents dans studentPlaneIDs
-    const planes = (await Promise.all(
-        uniquePlaneIDs.map(async (id) => {
-            return await prisma.planes.findUnique({ where: { id } });
-        })
-    )).filter(
-        (plane): plane is planes => plane !== null && !studentPlaneIDs.includes(plane.id)
+    // Filtrer les avions depuis les `props` en utilisant les IDs uniques
+    // et exclure ceux qui sont assignés à des étudiants
+    const filteredPlanes = planes.filter(
+        plane => uniquePlaneIDs.includes(plane.id) && !studentPlaneIDs.includes(plane.id)
     );
-    prisma.$disconnect();
 
     return { 
-        pilotes, // Les pilotes uniques sans valeur null
-        planes   // Les avions uniques sans valeur null et non assignés aux étudiants
+        pilotes,  // Les pilotes uniques correspondant aux sessions disponibles
+        planes: filteredPlanes // Les avions uniques non assignés aux étudiants
     };
 };
+
 
 export const getFreePlanesUsers = async (actualSession: flight_sessions, sessions: flight_sessions[]) => {
 

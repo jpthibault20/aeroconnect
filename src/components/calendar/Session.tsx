@@ -2,14 +2,16 @@ import React from 'react';
 import AvailableSession from './AvailableSession';
 import BookedSession from './BookedSession';
 import SessionPopup from './SessionPopup';
-import { flight_sessions } from '@prisma/client';
+import { flight_sessions, planes, User } from '@prisma/client';
 
 interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
+    usersProps: User[]
+    planesProp: planes[]
 }
 
-const Session = ({ sessions, setSessions }: Props) => {
+const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
     // Sépare les sessions réservées et disponibles
     const availableSessions = sessions.filter(session => session.studentID === null);
     const bookedSessions = sessions.filter(session => session.studentID !== null);
@@ -35,7 +37,7 @@ const Session = ({ sessions, setSessions }: Props) => {
 
 
     return (
-        <SessionPopup sessions={[...bookedSessions, ...availableSessions]} setSessions={setSessions}>
+        <SessionPopup sessions={[...bookedSessions, ...availableSessions]} setSessions={setSessions} usersProps={usersProps} planesProp={planesProp}>
             <div
                 className={`p-1 rounded-md flex flex-col h-full w-full ${availableSessions.length === 0 ? 'bg-purple-100 opacity-70 text-purple-800' : 'bg-green-200 text-green-800'}`}
             >
