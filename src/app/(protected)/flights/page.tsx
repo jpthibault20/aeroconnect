@@ -1,6 +1,6 @@
 'use server';
 
-import ServerPage from '@/components/flights/ServerPage';
+import ServerPage from '@/components/flights/ServerPageComp';
 import LoadingPage from '@/components/LoadingPage';
 import React, { Suspense } from 'react';
 

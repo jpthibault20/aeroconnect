@@ -1,6 +1,6 @@
 'use server';
 
-import ServerPage from '@/components/calendar/serverPage';
+import ServerPage from '@/components/calendar/ServerPageComp';
 import LoadingPage from '@/components/LoadingPage';
 import React, { Suspense } from 'react';
 
