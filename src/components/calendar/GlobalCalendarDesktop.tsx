@@ -12,7 +12,7 @@ import DaySelector from './DaySelector';
 import TabCalendar from './TabCalendar';
 import NewSession from "@/components/NewSession"
 import Filter from './Filter';
-import { Club, flight_sessions, planes } from '@prisma/client';
+import { Club, flight_sessions, planes, User } from '@prisma/client';
 import { getClub } from '@/api/db/club';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 
@@ -20,6 +20,7 @@ interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
+    usersProps: User[]
     club: Club
 }
 
@@ -32,7 +33,7 @@ interface Props {
  * within a desktop-only layout, hidden on mobile devices.
  * 
  */
-const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club }: Props) => {
+const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club, usersProps }: Props) => {
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
     const { currentUser } = useCurrentUser();
@@ -101,18 +102,24 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club }: Prop
                                 <div>
                                     <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} club={club} />
                                 </div>
-                                <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='desktop' />
+                                <Filter
+                                    sessions={sessions}
+                                    setSessionsFiltered={setSessionsFiltered}
+                                    display='desktop'
+                                    usersProps={usersProps}
+                                    planesProp={planesProp}
+                                />
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className='h-full'>
-                    <TabCalendar
+                    {/* <TabCalendar
                         date={date}
                         sessions={sessionsFlitered}
                         setSessions={setSessions}
                         clubHours={club.HoursOn}
-                    />
+                    /> */}
                 </div>
             </div>
         </div>

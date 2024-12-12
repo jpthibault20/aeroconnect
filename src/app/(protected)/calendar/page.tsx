@@ -15,10 +15,11 @@ const Page = async ({ searchParams }: PageProps) => {
 
     if (clubID) {
         // Exécution parallèle des requêtes Prisma
-        const [sessions, planes, club] = await Promise.all([
+        const [sessions, planes, club, users] = await Promise.all([
             prisma.flight_sessions.findMany({ where: { clubID } }),
             prisma.planes.findMany({ where: { clubID } }),
-            prisma.club.findUnique({ where: { id: clubID } })
+            prisma.club.findUnique({ where: { id: clubID } }),
+            prisma.user.findMany({ where: { clubID } })
         ]);
 
         // Vérification si les données du club sont valides
@@ -31,6 +32,7 @@ const Page = async ({ searchParams }: PageProps) => {
                             planesProp={planes}
                             club={club}
                             clubIDUrl={clubID}
+                            usersProps={users}
                         />
                     </div>
                 </Suspense>

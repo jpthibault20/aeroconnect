@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import GlobalCalendarDesktop from '@/components/calendar/GlobalCalendarDesktop';
 import GlobalCalendarPhone from '@/components/calendar/phone/GlobalCalendarPhone';
 import InitialLoading from '@/components/InitialLoading';
-import { Club, flight_sessions, planes } from '@prisma/client';
+import { Club, flight_sessions, planes, User } from '@prisma/client';
 
 /**
  * Hook personnalisé pour détecter si l'écran est de taille mobile ou desktop.
@@ -33,11 +33,12 @@ const useScreenSize = () => {
 interface props {
     sessionsprops: flight_sessions[]
     planesProp: planes[]
+    usersProps: User[]
     club: Club
     clubIDUrl: string
 }
 
-const PageComponent = ({ sessionsprops, planesProp, club, clubIDUrl }: props) => {
+const PageComponent = ({ sessionsprops, planesProp, club, clubIDUrl, usersProps }: props) => {
     const isMobile = useScreenSize();
     const [sessions, setSessions] = useState<flight_sessions[]>([]);
 
@@ -53,6 +54,7 @@ const PageComponent = ({ sessionsprops, planesProp, club, clubIDUrl }: props) =>
                     sessions={sessions}
                     setSessions={setSessions}
                     planesProp={planesProp}
+                    usersProps={usersProps}
                     club={club}
                 />
             ) : (

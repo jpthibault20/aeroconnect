@@ -1,47 +1,23 @@
-import { flight_sessions, planes, User } from '@prisma/client'
+import { flight_sessions, planes, User, userRole } from '@prisma/client'
 import React, { useEffect, useState } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { Settings2 } from 'lucide-react'
-import { getInsctructors } from '@/api/db/users'
-import { useCurrentUser } from '@/app/context/useCurrentUser'
-import { getAllPlanesOperational } from '@/api/db/planes'
 
 interface Props {
     sessions: flight_sessions[],
     display: "desktop" | "phone"
     setSessionsFiltered: React.Dispatch<React.SetStateAction<flight_sessions[]>>
+    planesProp: planes[]
+    usersProps: User[]
 }
 
-const Filter = ({ sessions, setSessionsFiltered, display }: Props) => {
-    const { currentUser } = useCurrentUser();
+const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps }: Props) => {
     const [plane, setPlane] = useState("all") // Stocke l'ID de l'avion sélectionné
     const [instructor, setInstructor] = useState("all") // Stocke l'ID de l'instructeur sélectionné
-    const [allInstructors, setAllInstructors] = useState<User[]>([]);
-    const [allPlanes, setAllPlanes] = useState<planes[]>([]);
 
-    useEffect(() => {
-        // Vérifie que `currentUser?.clubID` est défini avant de faire les requêtes
-        if (!currentUser?.clubID) return;
-
-        Promise.all([getInsctructors(currentUser.clubID), getAllPlanesOperational(currentUser.clubID)])
-            .then(([instructorsRes, planesRes]) => {
-                // Vérifie que la réponse pour les instructeurs est un tableau
-                if (Array.isArray(instructorsRes)) {
-                    setAllInstructors(instructorsRes);
-                } else {
-                    console.log('Unexpected response format for instructors:', instructorsRes);
-                }
-
-                // Vérifie que la réponse pour les avions est un tableau
-                if (Array.isArray(planesRes)) {
-                    setAllPlanes(planesRes);
-                } else {
-                    console.log('Unexpected response format for planes:', planesRes);
-                }
-            })
-            .catch(error => console.error("Error fetching data:", error));
-    }, [currentUser?.clubID]); // Déclenche le useEffect uniquement lorsque clubID change
+    const operationalPlanes = planesProp.filter((plane) => plane.operational);
+    const instructors = usersProps.filter((instructor) => instructor.role === userRole.INSTRUCTOR || instructor.role === userRole.OWNER || instructor.role === userRole.ADMIN);
 
 
     // Effet pour filtrer les sessions lorsque l'avion ou l'instructeur change
@@ -75,7 +51,7 @@ const Filter = ({ sessions, setSessionsFiltered, display }: Props) => {
                         <SelectContent>
                             {/* Option pour "Tous" les instructeurs */}
                             <SelectItem value="all">Instructeurs</SelectItem>
-                            {allInstructors.map((item, index) => (
+                            {instructors.map((item, index) => (
                                 <SelectItem key={index} value={item.id}>
                                     {item.firstName} {item.lastName}
                                 </SelectItem>
@@ -93,7 +69,7 @@ const Filter = ({ sessions, setSessionsFiltered, display }: Props) => {
                         <SelectContent>
                             {/* Option pour "Tous" les avions */}
                             <SelectItem value="all">Avions</SelectItem>
-                            {allPlanes.map((item, index) => (
+                            {operationalPlanes.map((item, index) => (
                                 <SelectItem key={index} value={item.id}>
                                     {item.name}
                                 </SelectItem>
@@ -129,7 +105,7 @@ const Filter = ({ sessions, setSessionsFiltered, display }: Props) => {
                                         <SelectContent>
                                             {/* Option pour "Tous" les instructeurs */}
                                             <SelectItem value="all">Instructeurs</SelectItem>
-                                            {allInstructors.map((item, index) => (
+                                            {instructors.map((item, index) => (
                                                 <SelectItem key={index} value={item.id}>
                                                     {item.firstName} {item.lastName}
                                                 </SelectItem>
@@ -147,7 +123,7 @@ const Filter = ({ sessions, setSessionsFiltered, display }: Props) => {
                                         <SelectContent>
                                             {/* Option pour "Tous" les avions */}
                                             <SelectItem value="all">Avions</SelectItem>
-                                            {allPlanes.map((item, index) => (
+                                            {operationalPlanes.map((item, index) => (
                                                 <SelectItem key={index} value={item.id}>
                                                     {item.name}
                                                 </SelectItem>
