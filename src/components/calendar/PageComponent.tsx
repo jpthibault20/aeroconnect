@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -48,20 +49,20 @@ const PageComponent = ({ sessionsprops, planesProp, clubHours, clubID }: props) 
     // Rendu conditionnel en fonction de la taille de l'écran
     return (
         <InitialLoading className="h-full w-full" clubIDURL={clubID}>
-            {!isMobile ? (
-                <GlobalCalendarDesktop
-                    sessions={sessions}
-                    setSessions={setSessions}
-                    planesProp={planesProp}
-                    clubHours={clubHours}
-                />
-            ) : (
+            {/* {!isMobile ? ( */}
+            <GlobalCalendarDesktop
+                sessions={sessions}
+                setSessions={setSessions}
+                planesProp={planesProp}
+                clubHours={clubHours}
+            />
+            {/* ) : (
                 <GlobalCalendarPhone
                     sessions={sessions}
                     setSessions={setSessions}
                     planesProp={planesProp}
                 />
-            )}
+            )} */}
         </InitialLoading>
     );
 };
