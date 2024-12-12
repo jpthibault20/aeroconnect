@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useMemo } from 'react';
 import { dayFr } from '@/config/date';
 import { formatTime, getDaysOfWeek, getSessionsFromDate } from '@/api/date';
@@ -69,12 +68,12 @@ const TabCalendar = ({ date, sessions, setSessions, clubHours }: Props) => {
                                         className={`table-cell p-1 border-b border-[#C1C1C1] ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''}`}
                                         key={indexday}
                                     >
-                                        {/* {slotSessions?.length > 0 && (
+                                        {slotSessions?.length > 0 && (
                                             <Session
                                                 sessions={slotSessions}
                                                 setSessions={setSessions}
                                             />
-                                        )} */}
+                                        )}
                                     </div>
                                 );
                             })}
