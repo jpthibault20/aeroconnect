@@ -18,7 +18,7 @@ const AircraftHoursChart = ({ hoursByPlanes }: Props) => {
           <BarChart data={hoursByPlanes} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" />
-            <YAxis dataKey="name" type="category" />
+            <YAxis dataKey="aircraft" type="category" />
             <Tooltip />
             <Bar dataKey="hours" fill="#82ca9d" />
           </BarChart>
