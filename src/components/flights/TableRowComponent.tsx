@@ -22,7 +22,6 @@ import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/sessions';
 import { toast } from '@/hooks/use-toast';
 import AddStudent from './AddStudent';
-import { Button } from '../ui/button';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 
@@ -113,9 +112,12 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                 }
             }
         };
-
         removeSessions();
     }
+
+    useEffect(() => {
+        console.log(loading);
+    }, [loading]);
 
     const removeStudent = (sessionID: string | null) => {
         const removeSessions = async () => {
@@ -145,7 +147,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                             return updatedSessions;
                         });
                         setPlane(undefined)
-                        setLoading(false);
+                            ;
                     }
 
                     if (res.error) {
@@ -157,12 +159,13 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                     }
                 } catch (error) {
                     console.log(error);
+                } finally {
+                    setLoading(false);
                 }
             }
         };
 
         removeSessions();
-        // setLoading(false);
     };
 
 
@@ -202,9 +205,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                                 confirmAction={() => removeStudent(session.id)}
                                 loading={loading}
                             >
-                                <button>
-                                    <IoMdClose color='red' size={20} />
-                                </button>
+                                <IoMdClose color='red' size={20} />
                             </AlertConfirmDeleted>
                         }
                     </div>
@@ -227,7 +228,9 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                             confirmAction={() => removeFlight([session.id])}
                             loading={loading}
                         >
-                            <Button className='w-fit' variant={"destructive"} >Supprimer</Button>
+                            <div className='px-2 py-1 bg-red-600 text-white rounded-lg'>
+                                Supprimer
+                            </div>
                         </AlertConfirmDeleted>
                     ) : null
                 }

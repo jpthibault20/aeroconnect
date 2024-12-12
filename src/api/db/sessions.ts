@@ -94,7 +94,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
             sessionDateStart: { in: sessionsToCreate },
         }
     });
-    prisma.$disconnect();
+    
 
     if (existingSessions.length > 0) {
         return { error: "Une session existe déjà avec cette configuration pour l'une des dates." };
@@ -122,7 +122,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
                 })
             )
         );
-        prisma.$disconnect();
+        
 
         return { success: "Les sessions ont été créées !", sessions: createdSessions };
     } catch (error) {
@@ -144,7 +144,7 @@ export const getAllSessions = async (clubID: string, monthSelected: Date) => {
                 },
             },
         });
-        prisma.$disconnect();
+        
         return sessions;
     } catch (error) {
         console.error('Error getting flight sessions:', error);
@@ -163,7 +163,7 @@ export const getAllFutureSessions = async (clubID: string) => {
                 }
             }
         })
-        prisma.$disconnect();
+        
         return sessions;
     } catch (error) {
         console.error('Error getting flight sessions:', error);
@@ -179,7 +179,7 @@ export const getPlanes = async (clubID: string) => {
                 clubID: clubID
             }
         })
-        prisma.$disconnect();
+        
         return planes;
     } catch (error) {
         console.error('Error getting planes:', error);
@@ -268,7 +268,7 @@ export const removeStudentFromSessionID = async (sessionID: string): Promise<Rem
         const session = await prisma.flight_sessions.findUnique({
             where: { id: sessionID },
         });
-        prisma.$disconnect();
+        
 
         if (!session || !session.sessionDateStart || !session.studentID || !session.pilotID) {
             return { error: "Session introuvable ou incomplète." };
@@ -277,12 +277,12 @@ export const removeStudentFromSessionID = async (sessionID: string): Promise<Rem
         const student = await prisma.user.findUnique({
             where: { id: session.studentID }
         })
-        prisma.$disconnect();
+        
 
         const pilote = await prisma.user.findUnique({
             where: { id: session.pilotID }
         })
-        prisma.$disconnect();
+        
 
         const sessionDateUTC = new Date(session.sessionDateStart); // Assurez-vous que cette date est UTC
 
@@ -307,7 +307,7 @@ export const removeStudentFromSessionID = async (sessionID: string): Promise<Rem
                 studentPlaneID: null,
             }
         });
-        prisma.$disconnect();
+        
 
         // Retourner immédiatement avant d'envoyer les notifications
         const result = { success: "L'élève a été désinscrit de la session !" };
@@ -337,7 +337,7 @@ export const getSessionPlanes = async (sessionID: string) => {
                 id: sessionID
             },
         });
-        prisma.$disconnect();
+        
 
         // Si aucun planeID n'est trouvé, retourne un tableau vide
         if (!session?.planeID || session.planeID.length === 0) {
@@ -357,7 +357,7 @@ export const getSessionPlanes = async (sessionID: string) => {
                 name: true
             }
         });
-        prisma.$disconnect();
+        
 
         return planes; // Retourne le tableau d'avions avec `id` et `name`
     } catch (error) {

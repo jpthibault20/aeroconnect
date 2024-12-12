@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -26,13 +26,6 @@ interface Props {
 const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, confirmAction, loading, style }: Props) => {
     const [isOpen, setIsOpen] = useState(false);
 
-    // Ferme le dialogue automatiquement lorsque loading devient false
-    useEffect(() => {
-        if (!loading) {
-            setIsOpen(false); // Ferme le dialogue lorsque loading est false
-        }
-    }, [loading]); // Déclenchement quand loading change
-
     const handleConfirm = () => {
         confirmAction(); // Exécute l'action de confirmation
     };
@@ -42,16 +35,11 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
         setIsOpen(true); // Ouvre le dialogue
     };
 
-    // Empêche de fermer le dialogue lorsque loading est true
-    const handleDialogClose = (open: boolean) => {
-        if (!loading) {
-            setIsOpen(open); // Si loading est false, on permet de fermer la boîte
-        }
-    };
+
 
     return (
-        <AlertDialog open={isOpen} onOpenChange={handleDialogClose}>
-            <AlertDialogTrigger asChild className={style} onClick={handleTriggerClick}>
+        <AlertDialog open={isOpen}>
+            <AlertDialogTrigger className={style} onClick={handleTriggerClick}>
                 {children}
             </AlertDialogTrigger>
             <AlertDialogContent>

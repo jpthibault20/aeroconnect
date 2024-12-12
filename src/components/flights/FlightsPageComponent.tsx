@@ -16,7 +16,6 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Club, flight_sessions, planes, User, userRole } from '@prisma/client';
 import NewSession from '../NewSession';
 import { Spinner } from '../ui/SpinnerVariants';
-import { Button } from '../ui/button';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { toast } from '@/hooks/use-toast';
 import { workingHour } from '@/config/configClub';
@@ -132,7 +131,9 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
                                 confirmAction={() => removeFlight(sessionChecked)}
                                 loading={loading}
                             >
-                                <Button className='bg-red-700 hover:bg-red-800 text-white'>Supprimer</Button>
+                                <div className='px-2 py-1 bg-red-600 text-white rounded-lg'>
+                                    Supprimer
+                                </div>
                             </AlertConfirmDeleted>
                         ) : null
                     }
