@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @file GlobalCalendarDesktop.js
  * @brief This component renders the desktop version of the calendar with filters for instructors and planes.
@@ -106,12 +107,12 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, clubHours }:
                 </div>
                 <div className='h-full'>
 
-                    <TabCalendar
+                    {/* <TabCalendar
                         date={date}
                         sessions={sessionsFlitered}
                         setSessions={setSessions}
                         clubHours={clubHours}
-                    />
+                    /> */}
                 </div>
             </div>
         </div>
