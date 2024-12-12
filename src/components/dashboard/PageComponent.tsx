@@ -11,8 +11,8 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { indexLinkDashboard, navigationLinks } from '@/config/links';
 import { useRouter } from 'next/navigation';
 import InitialLoading from '../InitialLoading';
-import { dashboardProps } from '@/app/(protected)/dashboard/page';
 import { User } from '@prisma/client';
+import { dashboardProps } from './ServerPageComp';
 
 interface PageProps {
     clubID: string;
