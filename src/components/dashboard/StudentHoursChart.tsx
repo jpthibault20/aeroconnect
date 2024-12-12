@@ -17,7 +17,7 @@ const StudentHoursChart = ({ HoursByStudent }: Props) => {
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={HoursByStudent}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="student" />
+            <XAxis dataKey="name" />
             <YAxis />
             <Tooltip />
             <Bar dataKey="hours" fill="#8884d8" />
