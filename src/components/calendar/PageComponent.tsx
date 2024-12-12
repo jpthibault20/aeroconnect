@@ -34,7 +34,7 @@ interface props {
     sessionsprops: flight_sessions[]
     planesProp: planes[]
     usersProps: User[]
-    club: Club
+    club: Club | null
     clubIDUrl: string
 }
 

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ResponsiveContainer, Tooltip, BarChart, CartesianGrid, XAxis, YAxis, Bar } from 'recharts'
-import { dashboardProps } from "@/app/(protected)/dashboard/page";
+import { dashboardProps } from "./ServerPageComp"
 
 interface Props {
   HoursByInstructor: dashboardProps[],

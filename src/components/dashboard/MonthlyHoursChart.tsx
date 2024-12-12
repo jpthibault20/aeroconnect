@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line } from 'recharts';
-import { dashboardProps } from "@/app/(protected)/dashboard/page";
+import { dashboardProps } from "./ServerPageComp";
 
 interface Props {
   HoursByMonth: dashboardProps[],
