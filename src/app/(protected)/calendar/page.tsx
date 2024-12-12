@@ -2,8 +2,7 @@
 
 import React, { Suspense } from 'react';
 import PageComponent from '@/components/calendar/PageComponent';
-// import NoClubID from '@/components/NoClubID';
-// import { workingHour } from '@/config/configClub';
+import NoClubID from '@/components/NoClubID';
 import prisma from '@/api/prisma';
 
 interface PageProps {
@@ -40,16 +39,18 @@ const Page = async ({ searchParams }: PageProps) => {
         }
     }
 
-    // return (
-    //     <div className='h-full'>
-    //         <NoClubID />
-    //         <PageComponent
-    //             sessionsprops={[]}
-    //             planesProp={[]}
-    //             clubID=''
-    //         />
-    //     </div>
-    // );
+    return (
+        <div className='h-full'>
+            <NoClubID />
+            <PageComponent
+                sessionsprops={[]}
+                planesProp={[]}
+                club={null}
+                clubIDUrl={""}
+                usersProps={[]}
+            />
+        </div>
+    );
 };
 
 export default Page;

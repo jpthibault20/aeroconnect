@@ -13,15 +13,14 @@ import TabCalendar from './TabCalendar';
 import NewSession from "@/components/NewSession"
 import Filter from './Filter';
 import { Club, flight_sessions, planes, User } from '@prisma/client';
-import { getClub } from '@/api/db/club';
-import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { workingHour } from '@/config/configClub';
 
 interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
     usersProps: User[]
-    club: Club
+    club: Club | null
 }
 
 /**
@@ -36,7 +35,6 @@ interface Props {
 const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club, usersProps }: Props) => {
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
-    const { currentUser } = useCurrentUser();
 
     const onClickNextweek = () => {
         setDate(prevDate => {
@@ -57,6 +55,8 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club, usersP
     const onClickToday = () => {
         setDate(new Date())
     }
+
+    const clubHours = club?.HoursOn || workingHour;
 
     // Effect pour récupérer les jours de la semaine
     useEffect(() => {
@@ -99,7 +99,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club, usersP
                             />
                             <div className='flex space-x-2 px-3 '>
                                 <div>
-                                    <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} club={club} />
+                                    <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} clubHours={clubHours} />
                                 </div>
                                 <Filter
                                     sessions={sessions}
@@ -117,7 +117,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club, usersP
                         date={date}
                         sessions={sessionsFlitered}
                         setSessions={setSessions}
-                        clubHours={club.HoursOn}
+                        clubHours={clubHours}
                         usersProps={usersProps}
                         planesProp={planesProp}
                     />

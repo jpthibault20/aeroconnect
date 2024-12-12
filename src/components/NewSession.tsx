@@ -29,10 +29,10 @@ interface Props {
     style?: string
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>
     planesProp: planes[]
-    club: Club
+    clubHours: number[]
 }
 
-const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, club }) => {
+const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHours }) => {
     const { currentUser } = useCurrentUser()
     const { toast } = useToast()
     const [loading, setLoading] = useState(false)
@@ -189,7 +189,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, club })
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {club?.HoursOn.slice(0, -1).map((h) => (
+                                    {clubHours.slice(0, -1).map((h) => (
                                         <SelectItem key={`start-${h}`} value={h.toString()}>{h}</SelectItem>
                                     ))}
                                 </SelectContent>
@@ -211,7 +211,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, club })
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {club?.HoursOn.map((h) => (
+                                    {clubHours.map((h) => (
                                         <SelectItem key={`end-${h}`} value={h.toString()}>{h}</SelectItem>
                                     ))}
                                 </SelectContent>
