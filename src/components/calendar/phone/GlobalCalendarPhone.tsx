@@ -225,7 +225,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps, cl
             <div className="mt-4 px-8">
                 <h3 className="text-lg font-semibold mb-2"></h3>
                 {getSessionsForDate(selectedDate).map((session, index) => (
-                    <Session key={index} PlaneProps={session.planeID.length} session={session} setSessions={setSessions} />
+                    <Session key={index} PlaneProps={planesProp} session={session} setSessions={setSessions} userProps={usersProps} />
                 ))}
             </div>
         </div>
