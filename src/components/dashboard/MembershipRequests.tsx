@@ -1,38 +1,17 @@
-import { FC, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { User } from '@prisma/client'
-import { useCurrentUser } from '@/app/context/useCurrentUser'
-import { acceptMembershipRequest, getAllUserRequestedClubID, rejectMembershipRequest } from '@/api/db/club'
-import { Spinner } from '../ui/SpinnerVariants'
+import { acceptMembershipRequest, rejectMembershipRequest } from '@/api/db/club'
 
+interface MembershipRequestsProps {
+  UsersRequestedClubID: User[];
+}
 
+const MembershipRequests = ({ UsersRequestedClubID }: MembershipRequestsProps) => {
+  const [membershipRequests, setMembershipRequests] = useState<User[]>(UsersRequestedClubID);
 
-const MembershipRequests: FC = () => {
-  const { currentUser } = useCurrentUser();
-  const [membershipRequests, setMembershipRequests] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchMembershipRequests = async () => {
-      if (!currentUser?.clubID) return;
-      try {
-        setIsLoading(true);
-        const res = await getAllUserRequestedClubID(currentUser?.clubID);
-        if (Array.isArray(res)) {
-          setMembershipRequests(res);
-        } else {
-          console.error("Unexpected response format", res);
-        }
-      } catch (error) {
-        console.error("Failed to fetch membership requests", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchMembershipRequests();
-  }, [currentUser?.clubID]);
 
   const onClickAccept = (user: User) => {
     acceptMembershipRequest(user.id, user.clubIDRequest);
@@ -90,15 +69,12 @@ const MembershipRequests: FC = () => {
             ))}
           </TableBody>
         </Table>
-        {isLoading ? (
-          <Spinner></Spinner>
-        ) : (
+        {
           membershipRequests.length === 0 && (
             <div className="text-center text-gray-500 py-4">
               Aucune demande d&apos;adhésion.
             </div>
-          )
-        )}
+          )}
       </CardContent>
     </Card>
   )

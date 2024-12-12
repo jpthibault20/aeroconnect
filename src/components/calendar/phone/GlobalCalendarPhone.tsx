@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { flight_sessions, planes } from '@prisma/client';
+import { Club, flight_sessions, planes, User } from '@prisma/client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, MoveLeft, MoveRight } from 'lucide-react';
@@ -11,9 +11,12 @@ interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
+    usersProps: User[]
+    club: Club
+
 }
 
-const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
+const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps, club }: Props) => {
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -163,9 +166,14 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
             </div>
 
             <div className="justify-between items-center my-4 flex px-8">
-                <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display="phone" />
-                <NewSession display={'phone'} setSessions={setSessions} planesProp={planesProp} />
-            </div>
+                <NewSession display='phone' setSessions={setSessions} planesProp={planesProp} club={club} />
+                <Filter
+                    sessions={sessions}
+                    setSessionsFiltered={setSessionsFiltered}
+                    display='phone'
+                    usersProps={usersProps}
+                    planesProp={planesProp}
+                />            </div>
 
             {/* Calendrier */}
             <div className='flex space-x-2 px-1'>
@@ -217,7 +225,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp }: Props) => {
             <div className="mt-4 px-8">
                 <h3 className="text-lg font-semibold mb-2"></h3>
                 {getSessionsForDate(selectedDate).map((session, index) => (
-                    <Session key={index} PlaneProps={session.planeID.length} session={session} setSessions={setSessions} />
+                    <Session key={index} PlaneProps={planesProp} session={session} setSessions={setSessions} userProps={usersProps} />
                 ))}
             </div>
         </div>

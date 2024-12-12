@@ -1,6 +1,6 @@
 import { Clock, Plane } from 'lucide-react'
 import { cn } from "@/lib/utils"
-import { flight_sessions } from '@prisma/client'
+import { flight_sessions, planes, User } from '@prisma/client'
 import SessionPopup from '../SessionPopup'
 import { useEffect, useState } from 'react'
 import { getPlaneName } from '@/api/db/planes'
@@ -10,13 +10,15 @@ import { PiStudent } from "react-icons/pi";
 
 
 interface SessionProps {
-    PlaneProps: number
+    PlaneProps: planes[]
     session: flight_sessions
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
+    userProps: User[]
 }
 
-export function Session({ session, setSessions, PlaneProps }: SessionProps) {
+export function Session({ session, setSessions, PlaneProps, userProps }: SessionProps) {
     const [planeName, setPlaneName] = useState("");
+    const numberPlanes = PlaneProps.length;
 
     useEffect(() => {
         if (session.studentPlaneID) {
@@ -38,7 +40,7 @@ export function Session({ session, setSessions, PlaneProps }: SessionProps) {
     );
 
     return (
-        <SessionPopup sessions={[session]} setSessions={setSessions}>
+        <SessionPopup sessions={[session]} setSessions={setSessions} usersProps={userProps} planesProp={PlaneProps}>
             <div className={cn(
                 "p-2 rounded-md mb-3 gap-3",
                 session.studentID ? "bg-gray-100 text-gray-500 grid grid-cols-3" : "bg-green-100 grid grid-cols-2"
@@ -46,7 +48,7 @@ export function Session({ session, setSessions, PlaneProps }: SessionProps) {
                 <div className='flex flex-col items-start justify-center'>
                     <span className='flex justify-center items-center'>
                         <Plane className="w-4 h-4 mr-1" />
-                        {planeName || PlaneProps + " Avion(s)"}
+                        {planeName || numberPlanes + " Avion(s)"}
                     </span>
                     <span className='flex justify-center items-center'>
                         <Clock className="w-4 h-4 mr-1" />

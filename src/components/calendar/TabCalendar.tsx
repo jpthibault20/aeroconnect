@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useMemo } from 'react';
 import { dayFr } from '@/config/date';
 import { formatTime, getDaysOfWeek, getSessionsFromDate } from '@/api/date';
-import { flight_sessions } from '@prisma/client';
+import { flight_sessions, planes, User } from '@prisma/client';
 import Session from './Session';
 
 interface Props {
@@ -10,9 +11,11 @@ interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     clubHours: number[];
+    usersProps: User[]
+    planesProp: planes[]
 }
 
-const TabCalendar = ({ date, sessions, setSessions, clubHours }: Props) => {
+const TabCalendar = ({ date, sessions, setSessions, clubHours, usersProps, planesProp }: Props) => {
     // Récupère les jours de la semaine
     const daysOfWeek = useMemo(() => getDaysOfWeek(date), [date]);
 
@@ -72,6 +75,8 @@ const TabCalendar = ({ date, sessions, setSessions, clubHours }: Props) => {
                                             <Session
                                                 sessions={slotSessions}
                                                 setSessions={setSessions}
+                                                usersProps={usersProps}
+                                                planesProp={planesProp}
                                             />
                                         )}
                                     </div>

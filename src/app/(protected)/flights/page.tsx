@@ -17,13 +17,13 @@ const Page = async ({ searchParams }: PageProps) => {
         return (
             <div>
                 <NoClubID />
-                <FlightsPageComponent sessionsProp={[]} planesProp={[]} />
+                <FlightsPageComponent sessionsProp={[]} planesProp={[]} usersProp={[]} clubProp={null} />
             </div>
         );
     }
 
     // Regrouper les appels à la base de données pour optimiser les performances
-    const [sessions, planes] = await Promise.all([
+    const [sessions, planes, club, users] = await Promise.all([
         prisma.flight_sessions.findMany({
             where: {
                 clubID,
@@ -35,11 +35,13 @@ const Page = async ({ searchParams }: PageProps) => {
         prisma.planes.findMany({
             where: { clubID },
         }),
+        prisma.club.findUnique({ where: { id: clubID } }),
+        prisma.user.findMany({ where: { clubID } }),
     ]);
 
     return (
         <InitialLoading className="h-full w-full bg-gray-100" clubIDURL={clubID}>
-            <FlightsPageComponent sessionsProp={sessions} planesProp={planes} />
+            <FlightsPageComponent sessionsProp={sessions} planesProp={planes} usersProp={users} clubProp={club} />
         </InitialLoading>
     );
 };
