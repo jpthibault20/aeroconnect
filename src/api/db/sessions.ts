@@ -188,7 +188,12 @@ export const getPlanes = async (clubID: string) => {
 
 };
 
-export const removeSessionsByID = async (sessionIDs: string[]) => {
+interface RemoveSessionsResult {
+    success?: string;
+    error?: string;
+}
+
+export const removeSessionsByID = async (sessionIDs: string[]): Promise<RemoveSessionsResult> => {
     try {
         // Récupérer les sessions avec les studentID associés
         const sessions = await prisma.flight_sessions.findMany({
@@ -196,62 +201,68 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
                 id: { in: sessionIDs },
             },
         });
-        prisma.$disconnect();
-
 
         // Récupérer les étudiants associés via leur ID
-        const studentIDs = sessions
-            .map((session) => session.studentID)
-            .filter((id): id is string => id !== null);
-        const students = await prisma.user.findMany({
-            where: {
-                id: { in: studentIDs },
-            },
-        });
-        prisma.$disconnect();
-
+        const studentIDs = sessions.map((session) => session.studentID).filter((id): id is string => id !== null);
         const piloteIDs = sessions.map((session) => session.pilotID).filter((id): id is string => id !== null);
-        const pilotes = await prisma.user.findMany({
-            where: {
-                id: { in: piloteIDs },
-            },
+
+        const [students, pilotes] = await prisma.$transaction(async (prisma) => {
+            const students = await prisma.user.findMany({
+                where: {
+                    id: { in: studentIDs },
+                },
+            });
+            const pilotes = await prisma.user.findMany({
+                where: {
+                    id: { in: piloteIDs },
+                },
+            });
+            return [students, pilotes];
         });
-        prisma.$disconnect();
 
         const piloteMap = new Map(pilotes.map((pilot) => [pilot.id, pilot.email]));
-
         // Créer une map pour accéder facilement aux étudiants par leur ID
         const studentMap = new Map(students.map((student) => [student.id, student.email]));
 
-        // Envoyer une notification pour chaque session
-        for (const session of sessions) {
-            const studentEmail = studentMap.get(session.studentID || '');
-            const piloteEmail = piloteMap.get(session.pilotID || '');
-            const endDate = new Date(session.sessionDateStart);
-            endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
-
-            if (studentEmail) {
-                sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, session.clubID);
-                sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
-            }
-        }
-
-        // Supprimer les sessions après notification
+        // Supprimer les sessions après récupération des informations
         await prisma.flight_sessions.deleteMany({
             where: {
                 id: { in: sessionIDs },
             },
         });
-        prisma.$disconnect();
 
-        return { success: "Les sessions ont été supprimées !" };
+        // Libérer immédiatement la fonction avec un succès
+        const result = { success: "Les sessions ont été supprimées !" };
+
+        // Envoyer une notification pour chaque session en arrière-plan avec process.nextTick
+        process.nextTick(async () => {
+            for (const session of sessions) {
+                const studentEmail = studentMap.get(session.studentID || '');
+                const piloteEmail = piloteMap.get(session.pilotID || '');
+                const endDate = new Date(session.sessionDateStart);
+                endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+
+                // Envoi des notifications
+                if (studentEmail) {
+                    await sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, session.clubID);
+                    await sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
+                }
+            }
+        });
+
+        return result;
     } catch (error) {
         console.error('Error deleting flight sessions:', error);
         return { error: "Erreur lors de la suppression des sessions de vol" };
     }
 };
 
-export const removeStudentFromSessionID = async (sessionID: string) => {
+interface RemoveStudentResult {
+    success?: string;
+    error?: string;
+}
+
+export const removeStudentFromSessionID = async (sessionID: string): Promise<RemoveStudentResult> => {
     try {
         // Récupérer les informations de la session
         const session = await prisma.flight_sessions.findUnique({
@@ -272,7 +283,6 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
             where: { id: session.pilotID }
         })
         prisma.$disconnect();
-
 
         const sessionDateUTC = new Date(session.sessionDateStart); // Assurez-vous que cette date est UTC
 
@@ -299,17 +309,25 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
         });
         prisma.$disconnect();
 
-        const endDate = new Date(session.sessionDateStart);
-        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+        // Retourner immédiatement avant d'envoyer les notifications
+        const result = { success: "L'élève a été désinscrit de la session !" };
 
-        sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
-        sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
-        return { success: "L'élève a été désinscrit de la session !" };
+        // Utiliser process.nextTick pour envoyer les notifications après le return
+        process.nextTick(() => {
+            const endDate = new Date(session.sessionDateStart);
+            endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+
+            sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
+            sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
+        });
+
+        return result;
     } catch (error) {
         console.error('Error deleting flight session:', error);
         return { error: "Erreur lors de la suppression de la session de vol" };
     }
 };
+
 
 export const getSessionPlanes = async (sessionID: string) => {
     try {
