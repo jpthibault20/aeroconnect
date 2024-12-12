@@ -122,9 +122,9 @@ const TableRowComponent = ({ user, setUsers }: props) => {
                         confirmAction={onClickDeleteUser()}
                         loading={loading}
                     >
-                        <Button variant="destructive" className="w-fit">
+                        <div className='px-2 py-1 bg-red-600 text-white rounded-lg'>
                             Supprimer
-                        </Button>
+                        </div>
                     </AlertConfirmDeleted>
 
 

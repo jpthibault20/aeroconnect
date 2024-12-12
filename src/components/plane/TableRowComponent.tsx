@@ -16,7 +16,6 @@
 import React, { useState } from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { planes, userRole } from '@prisma/client';
-import { Button } from '../ui/button';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { deletePlane, updateOperationalByID } from '@/api/db/planes';
 import { toast } from '@/hooks/use-toast';
@@ -124,9 +123,9 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                                     confirmAction={onClickDeletePlane}
                                     loading={loading}
                                 >
-                                    <Button className="w-fit" variant={"destructive"}>
+                                    <div className='px-2 py-1 bg-red-600 text-white rounded-lg'>
                                         Supprimer
-                                    </Button>
+                                    </div>
                                 </AlertConfirmDeleted>
                             </TableCell>
                         </>

@@ -3,9 +3,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
-import { Club, flight_sessions, planes, userRole } from '@prisma/client'
+import { flight_sessions, planes, userRole } from '@prisma/client'
 import { useToast } from "@/hooks/use-toast"
-import { getClub } from '@/api/db/club'
 import { interfaceSessions, newSession } from '@/api/db/sessions'
 import { sessionDurationMin } from '@/config/configClub'
 import { fr } from "date-fns/locale"
