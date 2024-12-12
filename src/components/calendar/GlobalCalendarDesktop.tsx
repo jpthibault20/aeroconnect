@@ -5,7 +5,7 @@
  * The component includes logic for navigating through weeks, selecting the current day, and filtering by instructor and plane. 
  * It is optimized for larger screens (hidden on smaller screens) and provides a smooth user experience for scheduling sessions.
  */
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { monthFr } from '@/config/date';
 import DaySelector from './DaySelector';
 import TabCalendar from './TabCalendar';
@@ -53,21 +53,26 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, clubHours }:
         setDate(new Date())
     }
 
-    const newDate = new Date(date); // Crée une copie de la date donnée
+    // Effect pour récupérer les jours de la semaine
+    useEffect(() => {
+        const newDate = new Date(date); // Crée une copie de la date donnée
 
-    // On récupère le jour de la semaine (0 = dimanche, 1 = lundi, ..., 6 = samedi)
-    const dayOfWeek = newDate.getDay();
+        // On récupère le jour de la semaine (0 = dimanche, 1 = lundi, ..., 6 = samedi)
+        const dayOfWeek = newDate.getDay();
 
-    // Si le jour est dimanche (0), on doit reculer d'un jour pour commencer la semaine le lundi
-    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        // Si le jour est dimanche (0), on doit reculer d'un jour pour commencer la semaine le lundi
+        const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
 
-    // Calculer le premier jour de la semaine (lundi)
-    const startOfWeek = new Date(newDate);
-    startOfWeek.setDate(newDate.getDate() + diffToMonday);
+        // Calculer le premier jour de la semaine (lundi)
+        const startOfWeek = new Date(newDate);
+        startOfWeek.setDate(newDate.getDate() + diffToMonday);
 
-    // Calculer le dernier jour de la semaine (dimanche)
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
+        // Calculer le dernier jour de la semaine (dimanche)
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [date]);
 
 
     return (

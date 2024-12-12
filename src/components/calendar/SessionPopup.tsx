@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { DialogContent, DialogTrigger } from "../ui/dialog";
 import { flight_sessions, planes, User } from "@prisma/client";
 import { Dialog } from "@radix-ui/react-dialog";
@@ -32,25 +31,9 @@ const SessionPopup = ({ sessions, children, setSessions }: Prop) => {
     const [plane, setPlane] = useState<string>("nothing");
 
     const [allInstructors, setAllInstructors] = useState<User[]>([]);
-    // const [availableInstructors, setAvailableInstructors] = useState<User[]>([]);
+    const [availableInstructors, setAvailableInstructors] = useState<User[]>([]);
     const [allPlanes, setAllPlanes] = useState<planes[]>([]);
-    // const [availablePlanes, setAvailablePlanes] = useState<planes[]>([]);
-
-    let availablePlanes = useMemo(() => {
-        return instructor === "nothing"
-            ? allPlanes
-            : allPlanes.filter(plane =>
-                sessions.some(session => session.pilotID === instructor && session.planeID.includes(plane.id))
-            );
-    }, [instructor, allPlanes, sessions]);
-
-    let availableInstructors = useMemo(() => {
-        return plane === "nothing"
-            ? allInstructors
-            : allInstructors.filter(instructor =>
-                sessions.some(session => session.planeID.includes(plane) && session.pilotID === instructor.id)
-            );
-    }, [plane, allInstructors, sessions]);
+    const [availablePlanes, setAvailablePlanes] = useState<planes[]>([]);
 
     // Charger les pilotes et avions disponibles
     useEffect(() => {
@@ -61,10 +44,8 @@ const SessionPopup = ({ sessions, children, setSessions }: Prop) => {
                 const { pilotes, planes } = await filterPilotePlane(sessions);
                 setAllInstructors(pilotes);
                 setAllPlanes(planes);
-                // setAvailableInstructors(pilotes);
-                availableInstructors = pilotes
-                // setAvailablePlanes(planes);
-                availablePlanes = planes
+                setAvailableInstructors(pilotes);
+                setAvailablePlanes(planes);
             } catch (err) {
                 console.error("Error loading pilots and planes:", err);
             }
@@ -88,6 +69,30 @@ const SessionPopup = ({ sessions, children, setSessions }: Prop) => {
             setDisabledMessage("");
         }
     }, [sessions]);
+
+    // Mise à jour des avions disponibles selon l'instructeur sélectionné
+    useEffect(() => {
+        setAvailablePlanes(
+            instructor === "nothing"
+                ? allPlanes
+                : allPlanes.filter(plane =>
+                    sessions.some(session => session.pilotID === instructor && session.planeID.includes(plane.id))
+                )
+        );
+    }, [instructor, allPlanes, sessions]);
+
+    // Mise à jour des instructeurs disponibles selon l'avion sélectionné
+    useEffect(() => {
+        setAvailableInstructors(
+            plane === "nothing"
+                ? allInstructors
+                : allInstructors.filter(instructor =>
+                    sessions.some(session => session.planeID.includes(plane) && session.pilotID === instructor.id)
+                )
+        );
+    }, [plane, allInstructors, sessions]);
+
+
 
     const onSubmit = async () => {
         const sessionId = sessions.find(

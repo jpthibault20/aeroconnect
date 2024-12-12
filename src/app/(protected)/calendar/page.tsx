@@ -1,11 +1,10 @@
 'use server';
 
-import React, { Suspense } from 'react';
+import React from 'react';
 import PageComponent from '@/components/calendar/PageComponent';
 import NoClubID from '@/components/NoClubID';
 import { workingHour } from '@/config/configClub';
 import prisma from '@/api/prisma';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface PageProps {
     searchParams: { clubID: string | undefined };
@@ -25,16 +24,14 @@ const Page = async ({ searchParams }: PageProps) => {
         // Vérification si les données du club sont valides
         if (club?.HoursOn && sessions) {
             return (
-                <Suspense fallback={<Skeleton className="w-[100px] h-[20px] rounded-full" />}>
-                    <div className='h-full'>
-                        <PageComponent
-                            sessionsprops={sessions}
-                            planesProp={planes}
-                            clubHours={club.HoursOn}
-                            clubID={clubID}
-                        />
-                    </div>
-                </Suspense>
+                <div className='h-full'>
+                    <PageComponent
+                        sessionsprops={sessions}
+                        planesProp={planes}
+                        clubHours={club.HoursOn}
+                        clubID={clubID}
+                    />
+                </div>
             );
         }
     }
