@@ -115,62 +115,107 @@ export const getUser = async () => {
 };
 
 export const addStudentToSession = async (sessionID: string, student: { id: string, firstName: string, lastName: string, planeId: string }) => {
-    if (!sessionID && !student.id && !student.firstName && !student.lastName) {
-        return { error: "Une erreur est survenue (E_001: sessionID ou student.id is undefined)" };
+    if (!sessionID || !student.id || !student.firstName || !student.lastName || !student.planeId) {
+        return { error: "Une erreur est survenue (E_001: paramètres invalides)" };
     }
+
+    let studentGlobal: { id: string; email: string; firstName: string; lastName: string; }
+
     try {
+        // Étape 1 : Charger les données critiques
+        const [session, studentDetails] = await Promise.all([
+            prisma.flight_sessions.findUnique({
+                where: { id: sessionID },
+                select: {
+                    id: true,
+                    pilotID: true,
+                    sessionDateStart: true,
+                    sessionDateDuration_min: true,
+                    clubID: true,
+                },
+            }),
+            prisma.user.findUnique({
+                where: { id: student.id },
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                },
+            }),
+        ]);
+
+        // Vérifications critiques
+        if (!session) {
+            return { error: "Session introuvable." };
+        }
+
+        if (session.sessionDateStart < new Date()) {
+            return { error: "La date de la session est passée." };
+        }
+
+        if (studentDetails === null) {
+            return { error: "Détails de l'étudiant introuvables." };
+        }
+
+        studentGlobal = studentDetails;
+
+        // Étape 2 : Mise à jour rapide de la session
         await prisma.flight_sessions.update({
-            where: {
-                id: sessionID
-            },
+            where: { id: sessionID },
             data: {
                 studentID: student.id,
                 studentFirstName: student.firstName,
                 studentLastName: student.lastName,
                 studentPlaneID: student.planeId,
-                // student_type: student.type,
+            },
+        });
+
+        // Retour rapide de succès
+        const endDate = new Date(session.sessionDateStart);
+        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+
+        // Étape 3 : Traitement différé des notifications
+        process.nextTick(async () => {
+            try {
+                const instructor = await prisma.user.findUnique({
+                    where: { id: session.pilotID },
+                    select: {
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                    },
+                });
+
+                await Promise.all([
+                    sendNotificationBooking(
+                        instructor?.email || "",
+                        studentGlobal.firstName,
+                        studentGlobal.lastName,
+                        session.sessionDateStart,
+                        endDate,
+                        session.clubID
+                    ),
+                    sendStudentNotificationBooking(
+                        studentGlobal.email || "",
+                        session.sessionDateStart,
+                        endDate,
+                        session.clubID
+                    ),
+                ]);
+            } catch (error) {
+                console.error("Erreur lors du traitement différé des notifications :", error);
             }
         });
-        prisma.$disconnect();
-        const session = await prisma.flight_sessions.findUnique({
-            where: { id: sessionID },
-            select: {
-                sessionDateStart: true,
-                sessionDateDuration_min: true,
-                pilotID: true,
-                clubID: true
-            }
-        });
-        prisma.$disconnect();
-        const studentcomp = await prisma.user.findUnique({
-            where: { id: student.id },
-        });
-        prisma.$disconnect();
-
-        if (!session?.pilotID) return { error: "Student not found" }
-        const instructor = await prisma.user.findUnique({
-            where: { id: session.pilotID },
-            select: {
-                email: true,
-                firstName: true,
-                lastName: true,
-            }
-        })
-        prisma.$disconnect();
-
-        const endDate = new Date(session.sessionDateStart)
-        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min)
-
-        await sendNotificationBooking(instructor?.email as string, studentcomp?.firstName as string, studentcomp?.lastName as string, session.sessionDateStart as Date, endDate as Date, session.clubID as string);
-        await sendStudentNotificationBooking(studentcomp?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID as string);
-
 
         return { success: "L'élève a été ajouté au vol !" };
+
     } catch (error) {
-        console.error('Error adding student:', error);
-        return { error: "Erreur lors de l'ajout de l'élève au vol" };
+        console.error("Erreur lors de l'ajout de l'élève :", error);
+        return { error: "Erreur lors de l'ajout de l'élève au vol." };
     }
-}
+};
+
 
 export const deleteUser = async (studentID: string) => {
     if (!studentID) {
