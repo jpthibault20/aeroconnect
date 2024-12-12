@@ -12,13 +12,15 @@ import DaySelector from './DaySelector';
 import TabCalendar from './TabCalendar';
 import NewSession from "@/components/NewSession"
 import Filter from './Filter';
-import { flight_sessions, planes } from '@prisma/client';
+import { Club, flight_sessions, planes } from '@prisma/client';
+import { getClub } from '@/api/db/club';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
-    clubHours: number[]
+    club: Club
 }
 
 /**
@@ -30,9 +32,10 @@ interface Props {
  * within a desktop-only layout, hidden on mobile devices.
  * 
  */
-const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, clubHours }: Props) => {
+const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club }: Props) => {
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
+    const { currentUser } = useCurrentUser();
 
     const onClickNextweek = () => {
         setDate(prevDate => {
@@ -75,7 +78,6 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, clubHours }:
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [date]);
 
-
     return (
         // Only rendered on large screens (hidden on smaller screens), includes a loading state.
         <div className='hidden lg:block h-full'>
@@ -97,16 +99,14 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, clubHours }:
                             <div className='flex space-x-2 px-3 '>
                                 {/* Button to create a new session (desktop view only). */}
                                 <div>
-                                    <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} />
+                                    <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} club={club} />
                                 </div>
-                                {/* <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='desktop' /> */}
-
+                                <Filter sessions={sessions} setSessionsFiltered={setSessionsFiltered} display='desktop' />
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className='h-full'>
-
                     {/* <TabCalendar
                         date={date}
                         sessions={sessionsFlitered}

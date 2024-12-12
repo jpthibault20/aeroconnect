@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -28,9 +29,10 @@ interface Props {
     style?: string
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>
     planesProp: planes[]
+    club: Club
 }
 
-const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
+const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, club }) => {
     const { currentUser } = useCurrentUser()
     const { toast } = useToast()
     const [loading, setLoading] = useState(false)
@@ -40,7 +42,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
     const [isOpenCal1, setIsOpenCal1] = useState(false)
     const [isOpenCal2, setIsOpenCal2] = useState(false)
     const [switchRecurrence, setSwitchRecurrence] = useState(false)
-    const [club, setClub] = useState<Club>()
     const [sessionData, setSessionData] = useState<interfaceSessions>({
         date: undefined,
         startHour: "9",
@@ -72,17 +73,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
     useEffect(() => {
         setWarning(sessionData.planeId.length === 0 ? "Attention, aucun avion n'a été sélectionné" : "")
     }, [sessionData.planeId])
-
-    useEffect(() => {
-        const getClubAPI = async () => {
-            const clubData = await getClub(currentUser?.clubID as string)
-            if (clubData) {
-                setClub(clubData);
-                setSessionData(prev => ({ ...prev, startHour: clubData.HoursOn[0].toString(), duration: clubData.SessionDurationMin }))
-            }
-        }
-        getClubAPI()
-    }, [currentUser?.clubID])
 
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR))) {
         return null
