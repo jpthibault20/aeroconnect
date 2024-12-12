@@ -19,7 +19,7 @@ interface PageProps {
     searchParams: { clubID: string | undefined };
 }
 
-const ServerPage = async ({ searchParams }: PageProps) => {
+const ServerPageComp = async ({ searchParams }: PageProps) => {
 
     const clubID = searchParams.clubID;
 
@@ -45,4 +45,4 @@ const ServerPage = async ({ searchParams }: PageProps) => {
     }
 }
 
-export default ServerPage;
+export default ServerPageComp;

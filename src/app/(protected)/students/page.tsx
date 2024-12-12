@@ -1,7 +1,7 @@
 'use server';
 
 import LoadingPage from '@/components/LoadingPage';
-import ServerPage from '@/components/students/ServerPage';
+import ServerPage from '@/components/students/ServerPageComp';
 import React, { Suspense } from 'react';
 
 interface PageProps {
