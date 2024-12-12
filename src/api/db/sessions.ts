@@ -353,6 +353,8 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
         return { error: "Une erreur est survenue (E_00x: paramètres invalides)" };
     }
 
+    let studentGlobal;
+
     try {
         // Étape 1 : Charger les données critiques
         const [student, session, conflictingSessions] = await Promise.all([
@@ -422,16 +424,7 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
             return { error: "Conflit détecté avec une autre session (élève ou avion)." };
         }
 
-        // Étape 2 : Mise à jour rapide de la session
-        await prisma.flight_sessions.update({
-            where: { id: sessionID },
-            data: {
-                studentID,
-                studentPlaneID: planeID,
-                studentFirstName: student.firstName,
-                studentLastName: student.lastName,
-            },
-        });
+        studentGlobal = student;
 
         // Retour rapide de succès
         return { success: "Étudiant inscrit avec succès à la session." };
@@ -440,6 +433,20 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
         console.error("Erreur lors de l'inscription de l'étudiant :", error);
         return { error: "Une erreur est survenue lors de l'inscription de l'étudiant." };
     } finally {
+
+        // Étape 2 : Mise à jour rapide de la session
+        if (studentGlobal) {
+        await prisma.flight_sessions.update({
+            where: { id: sessionID },
+            data: {
+                studentID,
+                studentPlaneID: planeID,
+                studentFirstName: studentGlobal.firstName,
+                studentLastName: studentGlobal.lastName,
+            },
+        });
+    }
+
         // Étape 3 : Traitement différé des tâches secondaires
         process.nextTick(async () => {
             try {
@@ -479,7 +486,7 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
                 ]);
             } catch (error) {
                 console.error("Erreur lors du traitement différé :", error);
-                // Ici, vous pourriez utiliser un mécanisme pour informer l'utilisateur d'une erreur différée.
+                return { error: "Une erreur est survenue lors du traitement différé." };
             }
         });
     }
