@@ -189,9 +189,12 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {clubHours.slice(0, -1).map((h) => (
-                                        <SelectItem key={`start-${h}`} value={h.toString()}>{h}</SelectItem>
+                                    {clubHours.map((h) => (
+                                        <SelectItem key={`start-${h}`} value={String(h)}>
+                                            {h}
+                                        </SelectItem>
                                     ))}
+
                                 </SelectContent>
                             </Select>
                             <span>:</span>

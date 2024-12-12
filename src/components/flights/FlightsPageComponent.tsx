@@ -19,6 +19,7 @@ import { Spinner } from '../ui/SpinnerVariants';
 import { Button } from '../ui/button';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { toast } from '@/hooks/use-toast';
+import { workingHour } from '@/config/configClub';
 
 interface Props {
     sessionsProp: flight_sessions[];
@@ -43,7 +44,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
     const [sessions, setSessions] = useState<flight_sessions[]>(sessionsProp);
     const [filteredSessions, setFilteredSessions] = useState(sessions); // State for filtered sessions
     const [loading, setLoading] = useState(false);
-
+    const clubHours = clubProp?.HoursOn || workingHour;
     // Logic for filtering sessions based on selected filters
     useEffect(() => {
         const filtered = sessions.filter(session => {
@@ -138,10 +139,10 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
                     {clubProp ? (
                         <>
                             <div className='hidden lg:block h-full'>
-                                <NewSession display={'desktop'} setSessions={setSessions} planesProp={planesProp} club={clubProp} />
+                                <NewSession display={'desktop'} setSessions={setSessions} planesProp={planesProp} clubHours={clubHours} />
                             </div>
                             <div className='lg:hidden block'>
-                                <NewSession display={'phone'} setSessions={setSessions} planesProp={planesProp} club={clubProp} />
+                                <NewSession display={'phone'} setSessions={setSessions} planesProp={planesProp} clubHours={clubHours} />
                             </div>
                         </>
                     ) : null}
