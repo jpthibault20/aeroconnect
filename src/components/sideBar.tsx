@@ -8,6 +8,7 @@ import { signOut } from "@/app/auth/login/action";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { navigationLinks } from "@/config/links";
 import { userRole } from "@prisma/client";
+import Link from "next/link";
 
 const SideBar = () => {
     const pathname = usePathname();
@@ -15,7 +16,7 @@ const SideBar = () => {
     const { currentUser } = useCurrentUser();
 
     const handleNavigation = (href: string) => {
-        window.location.href = href;
+        router.push(href); // Navigation instantanée
     };
 
     const logout = () => {
@@ -38,9 +39,9 @@ const SideBar = () => {
 
             <div className="border-1 border-b border-[#797979] mx-3 mb-6" />
 
-            <button
+            <Link
+                href={`/profile?clubID=${currentUser?.clubID}`}
                 className="bg-[#9BAAD1] p-1 mb-4 flex items-center mx-3 rounded-lg"
-                onClick={() => handleNavigation(`/profile?clubID=${currentUser?.clubID}`)}
             >
                 <Image
                     src="/images/profilePicture.png"
@@ -63,7 +64,7 @@ const SideBar = () => {
                                     : "Visiteur"}
                     </p>
                 </div>
-            </button>
+            </Link>
 
             <nav className="flex-1">
                 {navigationLinks
@@ -71,19 +72,17 @@ const SideBar = () => {
                     .map((link) => {
                         const IconComponent = link.icon;
                         return (
-                            <button
+                            <Link
+                                href={`${link.path}?clubID=${currentUser?.clubID || ""}`}
                                 key={link.name}
                                 className={`flex items-center px-4 py-4 mx-3 ${pathname === link.path
                                     ? "rounded-full bg-[#3E3E3E] text-white"
                                     : "text-[#C2C2C2] hover:text-white"
                                     }`}
-                                onClick={() =>
-                                    handleNavigation(`${link.path}?clubID=${currentUser?.clubID || ""}`)
-                                }
                             >
                                 <IconComponent className="mr-3" size={25} />
                                 {link.name}
-                            </button>
+                            </Link>
                         );
                     })}
             </nav>
