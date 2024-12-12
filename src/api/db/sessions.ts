@@ -659,6 +659,9 @@ export const getHoursByStudent = async (clubID: string) => {
         }),
     ]);
 
+    // Créer une map pour vérifier rapidement si un ID correspond à un étudiant
+    const validStudentIDs = new Set(students.map((student) => student.id));
+
     const studentMap = students.reduce<Record<string, string>>((acc, student) => {
         acc[student.id] = `${student.lastName} ${student.firstName}`;
         return acc;
@@ -666,16 +669,19 @@ export const getHoursByStudent = async (clubID: string) => {
 
     const studentHoursMap: Record<string, number> = {};
 
-    sessions.forEach((session) => {
-        const studentID = session.studentID!;
-        const hours = (session.sessionDateDuration_min || 0) / 60;
+    // Filtrer les sessions pour ne garder que celles des étudiants
+    sessions
+        .filter((session) => validStudentIDs.has(session.studentID!)) // Vérifie si l'ID est valide
+        .forEach((session) => {
+            const studentID = session.studentID!;
+            const hours = (session.sessionDateDuration_min || 0) / 60;
 
-        if (!studentHoursMap[studentID]) {
-            studentHoursMap[studentID] = 0;
-        }
+            if (!studentHoursMap[studentID]) {
+                studentHoursMap[studentID] = 0;
+            }
 
-        studentHoursMap[studentID] += hours;
-    });
+            studentHoursMap[studentID] += hours;
+        });
 
     return Object.entries(studentHoursMap).map(([studentID, hours]) => ({
         name: studentMap[studentID] || 'Inconnu',
