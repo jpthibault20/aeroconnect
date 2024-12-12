@@ -88,12 +88,12 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, clubHours }:
                     <div className='flex-1'>
                         <div className='w-full flex justify-between items-end pl-6'>
                             {/* Day selector component allowing navigation between weeks. */}
-                            {/* <DaySelector
+                            <DaySelector
                                 className="h-full flex items-end"
                                 onClickNextWeek={onClickNextweek}
                                 onClickPreviousWeek={onClickPreviousWeek}
                                 onClickToday={onClickToday}
-                            /> */}
+                            />
                             <div className='flex space-x-2 px-3 '>
                                 {/* Button to create a new session (desktop view only). */}
                                 <div>
