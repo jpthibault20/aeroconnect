@@ -15,7 +15,7 @@ const SideBar = () => {
     const { currentUser } = useCurrentUser();
 
     const handleNavigation = (href: string) => {
-        router.push(href); // Navigation instantanée
+        window.location.href = href;
     };
 
     const logout = () => {
@@ -74,8 +74,8 @@ const SideBar = () => {
                             <button
                                 key={link.name}
                                 className={`flex items-center px-4 py-4 mx-3 ${pathname === link.path
-                                        ? "rounded-full bg-[#3E3E3E] text-white"
-                                        : "text-[#C2C2C2] hover:text-white"
+                                    ? "rounded-full bg-[#3E3E3E] text-white"
+                                    : "text-[#C2C2C2] hover:text-white"
                                     }`}
                                 onClick={() =>
                                     handleNavigation(`${link.path}?clubID=${currentUser?.clubID || ""}`)
