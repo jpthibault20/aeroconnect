@@ -123,7 +123,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, club })
     return (
         <Dialog open={isOpenPopover} onOpenChange={setIsPopoverOpen}>
             <DialogTrigger
-                className={`${display === "desktop" ? "bg-[#774BBE] hover:bg-[#3d2365] text-white" : ""} h-full rounded-md px-2 font-medium`}
+                className={`${display === "desktop" ? "bg-[#774BBE] hover:bg-[#3d2365] text-white " : ""} h-full rounded-md px-2 font-medium`}
             >
                 {display === "desktop" ? <p>Nouvelle session</p> : <IoMdAddCircle size={27} color="#774BBE" />}
             </DialogTrigger>
