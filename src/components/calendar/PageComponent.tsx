@@ -62,6 +62,8 @@ const PageComponent = ({ sessionsprops, planesProp, club, clubIDUrl, usersProps 
                     sessions={sessions}
                     setSessions={setSessions}
                     planesProp={planesProp}
+                    usersProps={usersProps}
+                    club={club}
                 />
             )}
         </InitialLoading>

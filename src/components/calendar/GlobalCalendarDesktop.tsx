@@ -98,10 +98,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club, usersP
                                 onClickToday={onClickToday}
                             />
                             <div className='flex space-x-2 px-3 '>
-                                {/* Button to create a new session (desktop view only). */}
-                                <div>
-                                    <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} club={club} />
-                                </div>
+                                <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} club={club} />
                                 <Filter
                                     sessions={sessions}
                                     setSessionsFiltered={setSessionsFiltered}
