@@ -1,46 +1,47 @@
 "use client";
 
 import React, { useState } from 'react';
-import InputComponent from '../InputComponent';
 import { Button } from '../ui/button';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import PhoneLogoutButton from './PhoneLogoutButton';
 import { User, userRole } from '@prisma/client';
 import { updateUser } from '@/api/db/users';
 import { toast } from '@/hooks/use-toast';
+import { Label } from '../ui/label';
+import { Input } from '../ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { signOut } from '@/app/auth/login/action';
+import { Spinner } from '../ui/SpinnerVariants';
 
 const ProfilePage = () => {
     const [loading, setLoading] = useState(false);
     const { currentUser } = useCurrentUser();
 
-    const [userState, setUserState] = useState<User>({
-        id: currentUser?.id || '',
-        firstName: currentUser?.firstName || '',
-        lastName: currentUser?.lastName || '',
-        email: currentUser?.email || '',
-        phone: currentUser?.phone || null,
-        adress: currentUser?.adress || null,
-        city: currentUser?.city || null,
-        zipCode: currentUser?.zipCode || null,
-        role: currentUser?.role || userRole.USER,
-        clubID: currentUser?.clubID || '',
-        restricted: currentUser?.restricted || false,
-        country: currentUser?.country || null,
-        clubIDRequest: currentUser?.clubIDRequest || null,
+    const [profile, setProfile] = useState<User>(currentUser || {
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        adress: '',
+        city: '',
+        zipCode: '',
+        country: '',
+        role: userRole.USER,
+        clubID: '',
+        restricted: false,
+        clubIDRequest: '',
+        id: '',
     })
 
-    const onChangeUserState = (key: keyof typeof userState, value: string | boolean) => {
-        setUserState((prev) => ({
-            ...prev,
-            [key]: value,
-        }))
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setProfile({ ...profile, [e.target.name]: e.target.value })
     }
 
-    const onClickSubmit = () => {
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
         const updateUserAction = async () => {
             setLoading(true);
             try {
-                const res = await updateUser(userState);
+                const res = await updateUser(profile);
                 if (res.success) {
                     setLoading(false);
                     toast({
@@ -62,112 +63,69 @@ const ProfilePage = () => {
         updateUserAction();
     }
 
+    const handleLogout = () => {
+        signOut();
+    }
+
     return (
-        <div className="h-full bg-gray-200 font-istok p-6 space-y-6 max-h-[100vh] overflow-y-auto pb-20">
-            <div className='flex flex-col justify-between items-center space-y-3'>
-                <h2 className='text-4xl font-semibold'>Profil</h2>
-                <p className='text-gray-600'>Vos informations personnelles</p>
-            </div>
-
-            <div className='w-full flex justify-center items-center border-t border-gray-300 pt-3'>
-                <div className='w-5/6 lg:w-1/2 h-fit flex flex-col justify-center items-center space-y-6'>
-                    {/* firstname lastname */}
-                    <div className='grid grid-cols-2 items-center gap-6 w-full'>
-                        <InputComponent
-                            id='firstName'
-                            label='Prénom'
-                            value={userState.firstName}
-                            loading={loading}
-                            onChange={(value) => onChangeUserState('firstName', value)}
-                            style='grid items-center gap-2'
-                        />
-                        <InputComponent
-                            id='lastName'
-                            label='Nom'
-                            value={userState.lastName}
-                            loading={loading}
-                            onChange={(value) => onChangeUserState('lastName', value)}
-                            style='grid items-center gap-2'
-                        />
-                    </div>
-
-                    {/* email */}
-                    <div className='grid grid-cols-1 items-center gap-6 w-full'>
-                        <InputComponent
-                            id='email'
-                            label='Email'
-                            value={userState.email}
-                            loading={true}
-                            onChange={(value) => onChangeUserState('email', value)}
-                            style='grid items-center gap-2'
-                        />
-                    </div>
-
-                    {/* phone */}
-                    <div className='grid grid-cols-1 items-center gap-6 w-full'>
-                        <InputComponent
-                            id='phone'
-                            label='Téléphone'
-                            value={userState.phone}
-                            loading={loading}
-                            onChange={(value) => onChangeUserState('phone', value)}
-                            style='grid items-center gap-2'
-                        />
-                    </div>
-
-                    {/* adresse */}
-                    <div className='grid grid-cols-1 items-center gap-6 w-full'>
-                        <InputComponent
-                            id='adress'
-                            label='Adresse'
-                            value={userState.adress}
-                            loading={loading}
-                            onChange={(value) => onChangeUserState('adress', value)}
-                            style='grid items-center gap-2'
-                        />
-                    </div>
-
-                    {/* City zipcode */}
-                    <div className='grid grid-cols-2 items-center gap-6 w-full'>
-                        <InputComponent
-                            id='city'
-                            label='Ville'
-                            value={userState.city}
-                            loading={loading}
-                            onChange={(value) => onChangeUserState('city', value)}
-                            style='grid items-center gap-2'
-                        />
-                        <InputComponent
-                            id='zipCode'
-                            label='Code postal'
-                            value={userState.zipCode}
-                            loading={loading}
-                            onChange={(value) => onChangeUserState('zipCode', value)}
-                            style='grid items-center gap-2'
-                        />
-                    </div>
-
-                    {/* Country */}
-                    <div className='grid grid-cols-1 items-center gap-6 w-full'>
-                        <InputComponent
-                            id='country'
-                            label='Pays'
-                            value={userState.country}
-                            loading={loading}
-                            onChange={(value) => onChangeUserState('country', value)}
-                            style='grid items-center gap-2'
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className='justify-between lg:justify-end items-end flex w-full border-t border-gray-300'>
-                <PhoneLogoutButton style='' />
-                <Button className='mt-6 bg-[#774BBE] hover:bg-[#3d2365]' disabled={loading} onClick={onClickSubmit}>
-                    Enregistrer
-                </Button>
-            </div>
-        </div >
+        <div className="container mx-auto p-4 pb-16">
+            <Card className="w-full max-w-2xl mx-auto">
+                <CardHeader>
+                    <CardTitle>Profil Utilisateur</CardTitle>
+                    <CardDescription>Mettez à jour vos informations personnelles</CardDescription>
+                </CardHeader>
+                <form onSubmit={handleSubmit}>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="firstName">Prénom</Label>
+                                <Input id="firstName" name="firstName" value={profile.firstName} onChange={handleChange} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="lastName">Nom</Label>
+                                <Input id="lastName" name="lastName" value={profile.lastName} onChange={handleChange} required />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input id="email" name="email" type="email" value={profile.email} onChange={handleChange} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Téléphone</Label>
+                            <Input id="phone" name="phone" type="tel" value={profile.phone as string} onChange={handleChange} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="adress">Adresse</Label>
+                            <Input id="adress" name="adress" value={profile.adress as string} onChange={handleChange} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="city">Ville</Label>
+                                <Input id="city" name="city" value={profile.city as string} onChange={handleChange} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="zipCode">Code Postal</Label>
+                                <Input id="zipCode" name="zipCode" value={profile.zipCode as string} onChange={handleChange} />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="country">Pays</Label>
+                            <Input id="country" name="country" value={profile.country as string} onChange={handleChange} />
+                        </div>
+                    </CardContent>
+                    <CardFooter className="flex justify-between">
+                        <Button type="submit">
+                            {loading ? (
+                                <Spinner />
+                            ) : (
+                                'Enregistrer'
+                            )}
+                        </Button>
+                        <Button variant="outline" disabled={loading} onClick={handleLogout}>Déconnexion</Button>
+                    </CardFooter>
+                </form>
+            </Card>
+        </div>
     );
 }
 
