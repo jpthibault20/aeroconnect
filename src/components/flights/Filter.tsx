@@ -24,6 +24,7 @@ import DatePicker from 'react-datepicker'; // Import the date picker component
 import 'react-datepicker/dist/react-datepicker.css'; // Import CSS for the date picker
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { userRole } from '@prisma/client';
+import { fr } from 'date-fns/locale';
 
 interface props {
     filterAvailable: boolean; ///< Indicates if the filter for available flights is active
@@ -83,8 +84,10 @@ const Filter = ({ filterAvailable, filterReccurence, filterDate, myFlights, setF
                         dateFormat="dd/MM/yyyy"
                         placeholderText="Choisir une date"
                         className="w-full p-2 text-base border border-gray-300 rounded-md"
-                        todayButton="Today"
+                        todayButton="Aujourd'hui"
                         isClearable
+                        readOnly
+                        locale={fr}
                     />
                 </div>
             </PopoverContent>
