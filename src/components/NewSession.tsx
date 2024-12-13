@@ -162,7 +162,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                                 <SelectTrigger className="w-[70px]">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className='h-[40vh] overflow-y-auto'>
                                     {clubHours.map((h) => (
                                         <SelectItem key={`start-${h}`} value={String(h)}>
                                             {h}
@@ -187,7 +187,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                                 <SelectTrigger className="w-[70px]">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className='h-[40vh] overflow-y-auto'>
                                     {clubHours.map((h) => (
                                         <SelectItem key={`end-${h}`} value={h.toString()}>{h}</SelectItem>
                                     ))}
