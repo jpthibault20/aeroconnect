@@ -69,7 +69,7 @@ export const Login = () => {
             </div>
 
             {/* Right Section */}
-            <div className="flex-1 flex flex-col lg:w-1/2">
+            <div className="flex-1 flex flex-col lg:w-1/2 px-3">
                 <div className="flex justify-end p-4">
                     <Link
                         href="#"
