@@ -275,12 +275,21 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                             <Popover open={isOpenCal2} onOpenChange={setIsOpenCal2}>
                                 <PopoverTrigger asChild>
                                     <Button
-                                        id="endRecurrence"
+                                        id="date"
                                         variant={"outline"}
                                         className={`w-full justify-start text-left font-normal ${!sessionData.endReccurence && "text-muted-foreground"}`}
+                                        onClick={() => setIsOpenCal2(true)}
+                                        onTouchStart={(e) => {
+                                            e.preventDefault();
+                                            setIsOpenCal2(true);
+                                        }}
                                     >
                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {sessionData.endReccurence ? sessionData.endReccurence.toLocaleDateString() : "Choisir une date de fin"}
+                                        {sessionData.endReccurence ?
+                                            `
+                                        ${sessionData.endReccurence.getDate()}/${sessionData.endReccurence.getMonth() + 1}/${sessionData.endReccurence.getFullYear()}
+                                        `
+                                            : "Choisir une date"}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0" align="start">
