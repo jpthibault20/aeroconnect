@@ -81,7 +81,7 @@ const Filter = ({ filterAvailable, filterReccurence, filterDate, myFlights, setF
                         selected={filterDate}
                         onChange={handleDateChange}
                         dateFormat="dd/MM/yyyy"
-                        placeholderText="Select a date"
+                        placeholderText="Choisir une date"
                         className="w-full p-2 text-base border border-gray-300 rounded-md"
                         todayButton="Today"
                         isClearable
