@@ -138,6 +138,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                             onInputClick={() => setIsOpenCal1(true)}
                             onSelect={() => setIsOpenCal1(false)}
                             open={isOpenCal1}
+                            readOnly
                             showIcon
                             selected={sessionData.date}
                             onChange={(date) => {
@@ -263,6 +264,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                                 todayButton="Aujourd'hui"
                                 locale={fr}
                                 isClearable
+                                readOnly
                             />
                         </div>
                     )}
