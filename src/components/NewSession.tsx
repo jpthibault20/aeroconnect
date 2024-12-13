@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -11,8 +10,6 @@ import { fr } from "date-fns/locale"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from "@/components/ui/switch"
 import { Label } from '@/components/ui/label'
@@ -20,8 +17,10 @@ import { Label } from '@/components/ui/label'
 import { IoMdAddCircle } from "react-icons/io"
 import { IoIosWarning } from "react-icons/io"
 import { FaArrowRightLong } from "react-icons/fa6"
-import { CalendarIcon } from 'lucide-react'
 import { Spinner } from './ui/SpinnerVariants'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'; // Import CSS for the date picker
+
 
 interface Props {
     display: "desktop" | "phone"
@@ -135,48 +134,24 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                     {/* Date */}
                     <div className="grid gap-2">
                         <Label htmlFor="date">Date</Label>
-                        <Popover open={isOpenCal1} onOpenChange={setIsOpenCal1}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    id="date"
-                                    variant={"outline"}
-                                    className={`w-full justify-start text-left font-normal ${!sessionData.date && "text-muted-foreground"}`}
-                                    onClick={() => setIsOpenCal1(true)}
-                                    onTouchStart={(e) => {
-                                        e.preventDefault();
-                                        setIsOpenCal1(true);
-                                    }}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {sessionData.date ?
-                                        `
-                                        ${sessionData.date.getDate()}/${sessionData.date.getMonth() + 1}/${sessionData.date.getFullYear()}
-                                        `
-                                        : "Choisir une date"}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={sessionData.date}
-                                    onSelect={(date) => {
-                                        setSessionData((prev) => ({
-                                            ...prev, date: new Date(
-                                                date!.getFullYear(),
-                                                date!.getMonth(),
-                                                date!.getDate(),
-                                                date!.getUTCHours(),
-                                                date!.getUTCMinutes(),
-                                                0
-                                            )
-                                        }))
-                                        setIsOpenCal1(false)
-                                    }}
-                                    initialFocus
-                                    locale={fr}
-                                />
-                            </PopoverContent>
-                        </Popover>
+                        <DatePicker
+                            onInputClick={() => setIsOpenCal1(true)}
+                            onSelect={() => setIsOpenCal1(false)}
+                            open={isOpenCal1}
+                            readOnly
+                            showIcon
+                            selected={sessionData.date}
+                            onChange={(date) => {
+                                if (!date) setSessionData((prev) => ({ ...prev, date: undefined }))
+                                else setSessionData((prev) => ({ ...prev, date: new Date(date!.getFullYear(), date!.getMonth(), date!.getDate(), date!.getUTCHours(), date!.getUTCMinutes(), 0) }))
+                            }}
+                            dateFormat="dd/MM/yyyy"
+                            placeholderText="Select a date"
+                            className="w-full p-2 text-base border border-gray-300 rounded-md"
+                            todayButton="Aujourd'hui"
+                            locale={fr}
+                            isClearable
+                        />
                     </div>
 
                     {/* Hours */}
@@ -187,7 +162,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                                 <SelectTrigger className="w-[70px]">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className='h-[40vh] overflow-y-auto'>
                                     {clubHours.map((h) => (
                                         <SelectItem key={`start-${h}`} value={String(h)}>
                                             {h}
@@ -212,7 +187,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                                 <SelectTrigger className="w-[70px]">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className='h-[40vh] overflow-y-auto'>
                                     {clubHours.map((h) => (
                                         <SelectItem key={`end-${h}`} value={h.toString()}>{h}</SelectItem>
                                     ))}
@@ -272,39 +247,25 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                     {switchRecurrence && (
                         <div className="grid gap-2">
                             <Label htmlFor="endRecurrence">Date de fin de récurrence</Label>
-                            <Popover open={isOpenCal2} onOpenChange={setIsOpenCal2}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        id="date"
-                                        variant={"outline"}
-                                        className={`w-full justify-start text-left font-normal ${!sessionData.endReccurence && "text-muted-foreground"}`}
-                                        onClick={() => setIsOpenCal2(true)}
-                                        onTouchStart={(e) => {
-                                            e.preventDefault();
-                                            setIsOpenCal2(true);
-                                        }}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {sessionData.endReccurence ?
-                                            `
-                                        ${sessionData.endReccurence.getDate()}/${sessionData.endReccurence.getMonth() + 1}/${sessionData.endReccurence.getFullYear()}
-                                        `
-                                            : "Choisir une date"}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={sessionData.endReccurence}
-                                        onSelect={(date) => {
-                                            setSessionData(prev => ({ ...prev, endReccurence: date }))
-                                            setIsOpenCal2(false)
-                                        }}
-                                        initialFocus
-                                        locale={fr}
-                                    />
-                                </PopoverContent>
-                            </Popover>
+
+                            <DatePicker
+                                onInputClick={() => setIsOpenCal2(true)}
+                                onSelect={() => setIsOpenCal2(false)}
+                                open={isOpenCal2}
+                                showIcon
+                                selected={sessionData.endReccurence}
+                                onChange={(endReccurence) => {
+                                    if (!endReccurence) setSessionData((prev) => ({ ...prev, endReccurence: undefined }))
+                                    else setSessionData((prev) => ({ ...prev, endReccurence: new Date(endReccurence!.getFullYear(), endReccurence!.getMonth(), endReccurence!.getDate(), endReccurence!.getUTCHours(), endReccurence!.getUTCMinutes(), 0) }))
+                                }}
+                                dateFormat="dd/MM/yyyy"
+                                placeholderText="Select a date"
+                                className="w-full p-2 text-base border border-gray-300 rounded-md"
+                                todayButton="Aujourd'hui"
+                                locale={fr}
+                                isClearable
+                                readOnly
+                            />
                         </div>
                     )}
                 </div>

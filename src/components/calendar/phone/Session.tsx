@@ -18,17 +18,17 @@ interface SessionProps {
 
 export function Session({ session, setSessions, PlaneProps, userProps }: SessionProps) {
     const [planeName, setPlaneName] = useState("");
-    const numberPlanes = PlaneProps.length;
+    const numberPlanes = session.planeID.length;
 
     useEffect(() => {
-        if (session.studentPlaneID) {
-            getPlaneName(session.studentPlaneID).then(res => {
+        if (session.planeID.length === 1) {
+            getPlaneName(session.planeID[0]).then(res => {
                 if (res && 'name' in res) {
                     setPlaneName(res.name);
                 }
             })
         }
-    }, [session.studentPlaneID])
+    }, [session.planeID])
 
     const endSessionDate = new Date(
         session.sessionDateStart.getFullYear(),

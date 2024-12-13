@@ -11,7 +11,7 @@ const Header = ({ users }: Props) => {
 
     return (
         <div className='flex space-x-3'>
-            <p className='font-medium text-3xl'>{navigationLinks[3].name}</p>
+            <p className='font-medium text-3xl'>{navigationLinks[4].name}</p>
             <p className='text-[#797979] text-3xl'>{users?.filter(user => user.id !== currentUser?.id).length}</p>
         </div>
     )
