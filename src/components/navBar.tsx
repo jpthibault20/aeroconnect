@@ -9,6 +9,7 @@ import { Button } from './ui/button'
 import { LogOut, Menu, X } from 'lucide-react'
 import { signOut } from '@/app/auth/login/action'
 import Link from 'next/link'
+import Image from 'next/image'
 
 const NavBar = () => {
     const { currentUser } = useCurrentUser()
@@ -30,7 +31,35 @@ const NavBar = () => {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="bottom" className="h-fit rounded-t-3xl">
-                    <nav className="flex flex-col space-y-4 mt-8">
+                    <div
+                        className="p-1 flex items-center rounded-lg bg-gray-200 border border-gray-300 shadow-lg my-6"
+                    >
+                        <Image
+                            src="/images/profilePicture.png"
+                            alt="User"
+                            width={40}
+                            height={40}
+                            className="rounded-full mr-3"
+                        />
+                        <div className="w-full">
+                            <p className="border-b font-medium text-sm w-fit">
+                                {currentUser?.lastName} {currentUser?.firstName}
+                            </p>
+                            <p className="text-sm ">
+                                {currentUser?.role === "STUDENT"
+                                    ? "Élève"
+                                    : currentUser?.role === "PILOT"
+                                        ? "Pilote"
+                                        : currentUser?.role === "OWNER"
+                                            ? "Président"
+                                            : currentUser?.role === "ADMIN"
+                                                ? "Administrateur"
+                                                : "Visiteur"
+                                }
+                            </p>
+                        </div>
+                    </div>
+                    <nav className="flex flex-col space-y-4">
                         {filteredLinks.map((item) => (
                             <Link
                                 key={item.path}
