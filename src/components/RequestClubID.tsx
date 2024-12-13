@@ -22,7 +22,7 @@ interface props {
     setSelectedClubID: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequestClubID, setSelectedClubID }: props) => {
+const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequestClubID, setSelectedClubID, setLoading }: props) => {
     const { currentUser } = useCurrentUser();
     const [selectedClub, setSelectedClub] = useState<Club>({
         id: "",
@@ -30,6 +30,7 @@ const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequ
     });
 
     const onSubmit = async () => {
+        setLoading(true);
         setSelectedClubID(selectedClub.id)
         const res = await requestClubID(selectedClub.id, currentUser!.id)
         if (res.error) {
@@ -38,7 +39,9 @@ const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequ
         } else {
             setError(null);
             setRequestClubID(true);
+
         }
+        setLoading(false);
     };
 
     return (

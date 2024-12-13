@@ -17,18 +17,31 @@ interface SessionProps {
 }
 
 export function Session({ session, setSessions, PlaneProps, userProps }: SessionProps) {
-    const [planeName, setPlaneName] = useState("");
-    const numberPlanes = session.planeID.length;
+    const [planesString, setPlanesString] = useState("");
 
     useEffect(() => {
-        if (session.planeID.length === 1) {
-            getPlaneName(session.planeID[0]).then(res => {
+        console.log("student", session.studentPlaneID)
+        console.log("plane", session.planeID)
+        if (session.studentPlaneID) {
+            console.log("student plane")
+            getPlaneName(session.studentPlaneID).then(res => {
                 if (res && 'name' in res) {
-                    setPlaneName(res.name);
+                    setPlanesString(res.name);
                 }
             })
         }
-    }, [session.planeID])
+        else if (session.planeID.length === 1) {
+            console.log("one plane")
+            getPlaneName(session.planeID[0]).then(res => {
+                if (res && 'name' in res) {
+                    setPlanesString(res.name);
+                }
+            })
+        }
+        else {
+            setPlanesString(session.planeID.length + " avions");
+        }
+    }, [session.planeID, session.studentPlaneID])
 
     const endSessionDate = new Date(
         session.sessionDateStart.getFullYear(),
@@ -48,7 +61,7 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
                 <div className='flex flex-col items-start justify-center'>
                     <span className='flex justify-center items-center'>
                         <Plane className="w-4 h-4 mr-1" />
-                        {planeName || numberPlanes + " Avion(s)"}
+                        {planesString}
                     </span>
                     <span className='flex justify-center items-center'>
                         <Clock className="w-4 h-4 mr-1" />

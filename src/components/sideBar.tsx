@@ -14,6 +14,7 @@ const SideBar = () => {
     const pathname = usePathname();
     const router = useRouter();
     const { currentUser } = useCurrentUser();
+    const [isLoadingSignout, setIsLoadingSignout] = React.useState(false);
 
     const handleNavigation = (href: string) => {
         router.push(href); // Navigation instantanée
@@ -21,6 +22,7 @@ const SideBar = () => {
 
     const logout = () => {
         signOut();
+        setIsLoadingSignout(true);
     };
 
     return (
@@ -60,7 +62,10 @@ const SideBar = () => {
                                 ? "Pilote"
                                 : currentUser?.role === "OWNER"
                                     ? "Président"
-                                    : "Visiteur"}
+                                    : currentUser?.role === "ADMIN"
+                                        ? "Administrateur"
+                                        : "Visiteur"
+                        }
                     </p>
                 </div>
             </Link>
@@ -93,7 +98,11 @@ const SideBar = () => {
                 onClick={logout}
             >
                 <LogOut className="mr-3" size={20} />
-                Déconnexion
+                {isLoadingSignout ? (
+                    "Déconnexione en cours..."
+                ) : (
+                    "Déconnexion"
+                )}
             </button>
         </aside>
     );

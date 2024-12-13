@@ -234,8 +234,6 @@ export const removeSessionsByID = async (sessionIDs: string[]): Promise<RemoveSe
         // Libérer immédiatement la fonction avec un succès
         const result = { success: "Les sessions ont été supprimées !" };
 
-        // Envoyer une notification pour chaque session en arrière-plan avec process.nextTick
-        process.nextTick(async () => {
             for (const session of sessions) {
                 const studentEmail = studentMap.get(session.studentID || '');
                 const piloteEmail = piloteMap.get(session.pilotID || '');
@@ -248,7 +246,6 @@ export const removeSessionsByID = async (sessionIDs: string[]): Promise<RemoveSe
                     await sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
                 }
             }
-        });
 
         return result;
     } catch (error) {
@@ -313,13 +310,11 @@ export const removeStudentFromSessionID = async (sessionID: string): Promise<Rem
         const result = { success: "L'élève a été désinscrit de la session !" };
 
         // Utiliser process.nextTick pour envoyer les notifications après le return
-        process.nextTick(() => {
             const endDate = new Date(session.sessionDateStart);
             endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
             sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
             sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
-        });
 
         return result;
     } catch (error) {
@@ -454,60 +449,57 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
 
         // Étape 2 : Mise à jour rapide de la session
         if (studentGlobal) {
-        await prisma.flight_sessions.update({
-            where: { id: sessionID },
-            data: {
-                studentID,
-                studentPlaneID: planeID,
-                studentFirstName: studentGlobal.firstName,
-                studentLastName: studentGlobal.lastName,
-            },
-        });
+
+        const session = await prisma.flight_sessions.findUnique({
+                where: { id: sessionID },
+                select: {
+                    sessionDateStart: true,
+                    sessionDateDuration_min: true,
+                    pilotID: true,
+                    clubID: true
+                },
+            });
+
+        const [, instructor] = await Promise.all([
+            await prisma.flight_sessions.update({
+                where: { id: sessionID },
+                data: {
+                    studentID,
+                    studentPlaneID: planeID,
+                    studentFirstName: studentGlobal.firstName,
+                    studentLastName: studentGlobal.lastName,
+                },
+            }),
+            await prisma.user.findUnique({
+                where: { id: session?.pilotID },
+                select: { email: true, firstName: true, lastName: true },
+            }),
+        ]);
+        
+
+        
+        const endDate = new Date(session!.sessionDateStart);
+        endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
+
+        await Promise.all([
+            sendNotificationBooking(
+                instructor?.email || "",
+                instructor?.firstName || "",
+                instructor?.lastName || "",
+                session!.sessionDateStart,
+                endDate,
+                session?.clubID as string
+            ),
+            sendStudentNotificationBooking(
+                instructor?.email || "",
+                session!.sessionDateStart,
+                endDate,
+                session?.clubID as string
+            ),
+        ]);
+    }
     }
 
-        // Étape 3 : Traitement différé des tâches secondaires
-        process.nextTick(async () => {
-            try {
-                const session = await prisma.flight_sessions.findUnique({
-                    where: { id: sessionID },
-                    select: {
-                        sessionDateStart: true,
-                        sessionDateDuration_min: true,
-                        pilotID: true,
-                        clubID: true
-                    },
-                });
-
-                const instructor = await prisma.user.findUnique({
-                    where: { id: session?.pilotID },
-                    select: { email: true, firstName: true, lastName: true },
-                });
-
-                const endDate = new Date(session!.sessionDateStart);
-                endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
-
-                await Promise.all([
-                    sendNotificationBooking(
-                        instructor?.email || "",
-                        instructor?.firstName || "",
-                        instructor?.lastName || "",
-                        session!.sessionDateStart,
-                        endDate,
-                        session?.clubID as string
-                    ),
-                    sendStudentNotificationBooking(
-                        instructor?.email || "",
-                        session!.sessionDateStart,
-                        endDate,
-                        session?.clubID as string
-                    ),
-                ]);
-            } catch (error) {
-                console.error("Erreur lors du traitement différé :", error);
-                return { error: "Une erreur est survenue lors du traitement différé." };
-            }
-        });
-    }
 };
 
 

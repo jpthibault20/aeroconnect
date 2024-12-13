@@ -7,6 +7,9 @@ import RequestClubID from "./RequestClubID";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import WaitingClubResponse from "./WaitingClubResponse";
 import NewClub from "./NewClub";
+import { LogOut } from "lucide-react"
+import { signOut } from "@/app/auth/login/action";
+import { Spinner } from "./ui/SpinnerVariants";
 
 interface Club {
     id: string;
@@ -23,6 +26,7 @@ const NoClubID = () => {
     const { currentUser } = useCurrentUser()
     const [requestClubID, setRequestClubID] = useState(false)
     const [selectedClubID, setSelectedClubID] = useState("")
+    const [logoutLoading, setLogoutLoading] = useState(false)
 
 
     // Fonction pour récupérer les clubs
@@ -63,7 +67,7 @@ const NoClubID = () => {
                     </div>
 
                     <div className="max-h-[50vh] overflow-y-auto md:max-h-full">
-                        {currentUser?.clubIDRequest && requestClubID ? (
+                        {currentUser?.clubIDRequest || requestClubID ? (
                             <WaitingClubResponse clubIDprops={selectedClubID} />
                         ) : newClub ? (
                             <NewClub setNewClub={setNewClub} />
@@ -80,6 +84,20 @@ const NoClubID = () => {
                             />
                         )}
                     </div>
+
+                    <div className="w-full flex justify-end items-center">
+                        <button onClick={() => {
+                            signOut()
+                            setLogoutLoading(true)
+                        }}>
+                            {logoutLoading ? (
+                                <Spinner />
+                            ) : (
+                                <LogOut size={20} />
+                            )}
+                        </button>
+                    </div>
+
                 </CardContent>
             </Card>
         </div>
