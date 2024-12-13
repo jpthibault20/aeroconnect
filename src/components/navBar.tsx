@@ -6,7 +6,9 @@ import { userRole } from '@prisma/client'
 import React from 'react'
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet'
 import { Button } from './ui/button'
-import { Menu, X } from 'lucide-react'
+import { LogOut, Menu, X } from 'lucide-react'
+import { signOut } from '@/app/auth/login/action'
+import Link from 'next/link'
 
 const NavBar = () => {
     const { currentUser } = useCurrentUser()
@@ -15,23 +17,22 @@ const NavBar = () => {
     const filteredLinks = navigationLinks.filter(link =>
         link.roles.includes(currentUser?.role as userRole)
     )
-
     return (
         <div className="fixed bottom-4 right-4 z-50 lg:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
                 <SheetTrigger asChild>
                     <Button
                         size="icon"
-                        className="h-14 w-14 rounded-full shadow-lg"
+                        className="h-14 w-14 rounded-full shadow-lg bg-[#774BBE]"
                     >
                         {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                         <span className="sr-only">Ouvrir le menu</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="bottom" className="h-[70vh] rounded-t-3xl">
+                <SheetContent side="bottom" className="h-fit rounded-t-3xl">
                     <nav className="flex flex-col space-y-4 mt-8">
                         {filteredLinks.map((item) => (
-                            <a
+                            <Link
                                 key={item.path}
                                 href={`${item.path}?clubID=${currentUser?.clubID}`}
                                 className="flex items-center space-x-4 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
@@ -39,8 +40,15 @@ const NavBar = () => {
                             >
                                 <item.icon className="h-6 w-6" />
                                 <span className="text-lg font-medium">{item.name}</span>
-                            </a>
+                            </Link>
                         ))}
+                        <button
+                            className="flex items-center space-x-4 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
+                            onClick={() => signOut()}
+                        >
+                            <LogOut className="h-6 w-6" />
+                            <span className="text-lg font-medium">Déconnexion</span>
+                        </button>
                     </nav>
                 </SheetContent>
             </Sheet>
