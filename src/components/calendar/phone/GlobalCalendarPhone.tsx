@@ -176,7 +176,8 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps, cl
                     display='phone'
                     usersProps={usersProps}
                     planesProp={planesProp}
-                />            </div>
+                />
+            </div>
 
             {/* Calendrier */}
             <div className='flex space-x-2 px-1'>

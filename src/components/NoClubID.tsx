@@ -63,7 +63,7 @@ const NoClubID = () => {
                     </div>
 
                     <div className="max-h-[50vh] overflow-y-auto md:max-h-full">
-                        {currentUser?.clubIDRequest || requestClubID ? (
+                        {currentUser?.clubIDRequest && requestClubID ? (
                             <WaitingClubResponse clubIDprops={selectedClubID} />
                         ) : newClub ? (
                             <NewClub setNewClub={setNewClub} />
