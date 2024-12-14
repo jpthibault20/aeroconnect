@@ -1,6 +1,6 @@
 "use client";
 
-import { flight_sessions, planes, User } from "@prisma/client";
+import { flight_sessions, planes, User, userRole } from "@prisma/client";
 
 
 interface Obj {
@@ -70,8 +70,10 @@ export const getFreePlanesUsers = async (
         .map(session => session.studentPlaneID)
         .filter((id): id is string => id !== null); // Filtrer les null
 
-    // Filtrer les étudiants disponibles
-    const students = usersProp.filter(user => !usedStudentIDs.includes(user.id));
+    // Filtrer les utilisateurs avec le rôle "admin" et les étudiants disponibles
+    const students = usersProp.filter(
+        user => user.role === userRole.ADMIN && !usedStudentIDs.includes(user.id)
+    );
 
     // Filtrer les avions disponibles
     const freePlanes = planesProp.filter(plane => !usedStudentPlaneIDs.includes(plane.id));

@@ -88,7 +88,9 @@ const SideBar = ({ clubsProp }: props) => {
                                     ? "Président"
                                     : currentUser?.role === "ADMIN"
                                         ? "Administrateur"
-                                        : "Visiteur"
+                                        : currentUser?.role === "INSTRUCTOR"
+                                            ? "Instructeur"
+                                            : "Visiteur"
                         }
                     </p>
                 </div>

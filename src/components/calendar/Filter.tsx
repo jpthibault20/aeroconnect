@@ -17,7 +17,7 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
     const [instructor, setInstructor] = useState("all") // Stocke l'ID de l'instructeur sélectionné
 
     const operationalPlanes = planesProp.filter((plane) => plane.operational);
-    const instructors = usersProps.filter((instructor) => instructor.role === userRole.INSTRUCTOR || instructor.role === userRole.OWNER || instructor.role === userRole.ADMIN);
+    const instructors = usersProps.filter((instructor) => instructor.role === userRole.INSTRUCTOR || instructor.role === userRole.OWNER);
 
 
     // Effet pour filtrer les sessions lorsque l'avion ou l'instructeur change
