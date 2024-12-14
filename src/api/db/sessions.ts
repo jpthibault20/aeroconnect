@@ -294,9 +294,10 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
         const endDate = new Date(session.sessionDateStart);
         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
-        sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
-        sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
-        console.log('Notification envoyée', student?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
+        await Promise.all([
+            sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID),
+            sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID),
+        ]);
 
         return { success: "L'élève a été désinscrit de la session !" };
     } catch (error) {
