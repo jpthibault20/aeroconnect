@@ -2,19 +2,33 @@
 
 import React from "react";
 import Image from "next/image";
-import { LogOut } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "@/app/auth/login/action";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { navigationLinks } from "@/config/links";
-import { userRole } from "@prisma/client";
+import { Club, userRole } from "@prisma/client";
 import Link from "next/link";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useSearchParams } from "next/navigation";
+import { updateUserClub } from "@/api/db/users";
 
-const SideBar = () => {
+interface props {
+    clubsProp: Club[]
+}
+const SideBar = ({ clubsProp }: props) => {
     const pathname = usePathname();
     const router = useRouter();
     const { currentUser } = useCurrentUser();
     const [isLoadingSignout, setIsLoadingSignout] = React.useState(false);
+    const searchParams = useSearchParams();
+    const clubID = searchParams.get("clubID");
+    const [clubForAdmin, setClubForAdmin] = React.useState<string | null>(clubID);
 
     const handleNavigation = (href: string) => {
         router.push(href); // Navigation instantanée
@@ -23,6 +37,16 @@ const SideBar = () => {
     const logout = () => {
         signOut();
         setIsLoadingSignout(true);
+    };
+
+    const handleClubChange = async (clubID: string) => {
+        setClubForAdmin(clubID);
+
+        if (currentUser?.id) {
+            await updateUserClub(currentUser.id, clubID);
+            window.location.href = `/calendar?clubID=${clubID}`;
+        }
+
     };
 
     return (
@@ -69,6 +93,34 @@ const SideBar = () => {
                     </p>
                 </div>
             </Link>
+
+            {currentUser?.role === userRole.ADMIN &&
+            <div className="flex items-center justify-between space-x-2 mb-4 mx-3 px-4">
+                <p>
+                    club :
+                </p>
+                <div className="shadow-sm shadow-white rounded-lg bg-white px-2 py-1 text-black mr-6">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger className="flex items-center space-x-4">
+                            <p>
+                                {clubForAdmin}
+                            </p>
+                            <ChevronDown size={20} />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            {clubsProp.map((club) => {
+                                return (
+                                    <DropdownMenuItem onClick={() => handleClubChange(club.id)} key={club.id}>
+                                        {club.id}
+                                    </DropdownMenuItem>
+                                );
+                            })}
+
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </div>
+}
 
             <nav className="flex-1">
                 {navigationLinks
