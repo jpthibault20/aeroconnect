@@ -5,6 +5,7 @@ import { IoIosWarning } from 'react-icons/io';
 import { Button } from './ui/button';
 import { requestClubID } from '@/api/db/club';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { Spinner } from './ui/SpinnerVariants';
 
 interface Club {
     id: string;
@@ -88,8 +89,13 @@ const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequ
                     <Button
                         onClick={onSubmit}
                         variant={"perso"}
+                        disabled={loading}
                     >
-                        Valider
+                        {loading ? (
+                            <Spinner />
+                        ) : (
+                            "Valider"
+                        )}
                     </Button>
 
                 </div>

@@ -49,9 +49,14 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
                         {endSessionDate.getUTCMinutes().toString().padStart(2, '0')}
                     </p>
                 </div>
+
                 <div className='w-full h-full flex items-center'>
                     {availableSessions.length === 0 ? (
-                        <BookedSession sessions={bookedSessions} />
+                        <div>
+                            <BookedSession sessions={bookedSessions} />
+                            {planesProp.find(plane => plane.id === sessions[0].planeID[0])?.name}
+                        </div>
+
                     ) : (
                         <AvailableSession
                             availablePlanes={Array.from(availablePlanes)}
