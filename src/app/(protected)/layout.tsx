@@ -6,6 +6,7 @@ import { getUser } from "@/api/db/users";
 import { CurrentUserWrapper } from "../context/useCurrentUser";
 import UpdateContext from "@/components/UpdateContext";
 import Navigation from "@/components/navigation";
+import prisma from "@/api/prisma";
 
 export default async function ProtectLayout({
     children,
@@ -14,6 +15,7 @@ export default async function ProtectLayout({
 }) {
     // Récupérer les informations utilisateur côté serveur
     const res = await getUser();
+    const clubs = await prisma.club.findMany();
 
     if (res.error) {
         console.error("Erreur lors de la récupération de l'utilisateur :", res.error);
@@ -31,7 +33,7 @@ export default async function ProtectLayout({
         <div className="h-full">
             <CurrentUserWrapper>
                 <UpdateContext userProp={user} />
-                <Navigation>{children}</Navigation>
+                <Navigation clubsProp={clubs}>{children}</Navigation>
             </CurrentUserWrapper>
         </div>
     );

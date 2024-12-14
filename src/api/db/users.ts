@@ -327,3 +327,23 @@ export const blockUser = async (userID: string, restricted: boolean) => {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 }
+
+export const updateUserClub = async (userID: string, clubID: string) => {
+    if (!userID) {
+        return { error: "Une erreur est survenue (E_001: userID is undefined)" };
+    }
+    try {
+        await prisma.user.update({
+            where: {
+                id: userID
+            },
+            data: {
+                clubID: clubID
+            }
+        });
+        return { success: "L'utilisateur a été mis à jour avec succès !" };
+    } catch (error) {
+        console.error('Error updating user:', error);
+        return { error: "Erreur lors de la mise à jour de l'utilisateur" };
+    }
+}
