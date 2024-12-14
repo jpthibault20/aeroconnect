@@ -15,14 +15,6 @@ export interface interfaceSessions {
     endReccurence: Date | undefined;
     planeId: string[];
 }
-interface RemoveSessionsResult {
-    success?: string;
-    error?: string;
-}
-interface RemoveStudentResult {
-    success?: string;
-    error?: string;
-}
 
 export const newSession = async (sessionData: interfaceSessions, user: User) => {
     if (!sessionData) {
@@ -195,7 +187,7 @@ export const getPlanes = async (clubID: string) => {
 
 };
 
-export const removeSessionsByID = async (sessionIDs: string[]): Promise<RemoveSessionsResult> => {
+export const removeSessionsByID = async (sessionIDs: string[]) => {
     try {
         // Récupérer les sessions avec les studentID associés
         const sessions = await prisma.flight_sessions.findMany({
@@ -253,7 +245,7 @@ export const removeSessionsByID = async (sessionIDs: string[]): Promise<RemoveSe
     }
 };
 
-export const removeStudentFromSessionID = async (sessionID: string): Promise<RemoveStudentResult> => {
+export const removeStudentFromSessionID = async (sessionID: string) => {
     try {
         // Récupérer les informations de la session
         const session = await prisma.flight_sessions.findUnique({
