@@ -30,13 +30,13 @@ const TableComponent = ({ users, setUsers }: props): JSX.Element => {
                 </TableHeader>
                 <TableBody className="max-h-[60vh] overflow-y-auto w-full">
                     {users.map((user) =>
-                        user.id !== currentUser?.id && (
+                        user.id !== currentUser?.id && user.role !== "ADMIN" ? (
                             <TableRowComponent
                                 user={user}
                                 key={user.id}
                                 setUsers={setUsers}
                             />
-                        )
+                        ) : null
                     )}
                 </TableBody>
             </Table>
