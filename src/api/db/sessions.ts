@@ -299,17 +299,14 @@ export const removeStudentFromSessionID = async (sessionID: string): Promise<Rem
             }
         });
 
-
-        // Retourner immédiatement avant d'envoyer les notifications
-        const result = { success: "L'élève a été désinscrit de la session !" };
-
         const endDate = new Date(session.sessionDateStart);
         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
         sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
         sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
+        console.log('Notification envoyée', student?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
 
-        return result;
+        return { success: "L'élève a été désinscrit de la session !" };
     } catch (error) {
         console.error('Error deleting flight session:', error);
         return { error: "Erreur lors de la suppression de la session de vol" };
