@@ -175,8 +175,6 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
         const endDate = new Date(session.sessionDateStart);
         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
-        // Étape 3 : Traitement différé des notifications
-        process.nextTick(async () => {
             try {
                 const instructor = await prisma.user.findUnique({
                     where: { id: session.pilotID },
@@ -206,7 +204,6 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             } catch (error) {
                 console.error("Erreur lors du traitement différé des notifications :", error);
             }
-        });
 
         return { success: "L'élève a été ajouté au vol !" };
 

@@ -28,7 +28,7 @@ export const getAllClubs = async () => {
         return [];
     } finally {
         // Assurez-vous que Prisma se déconnecte correctement
-        await prisma.$disconnect();
+        
     }
 };
 
@@ -47,7 +47,7 @@ export const getClub = async (clubID: string) => {
         return ;
     } finally {
         // Assurez-vous que Prisma se déconnecte correctement
-        await prisma.$disconnect();
+        
     }
 };
 
@@ -93,7 +93,7 @@ export const createClub = async (data: ClubFormValues, userID: string) => {
                 role: userRole.OWNER
             }
         });
-        await prisma.$disconnect();
+        
     }
 };
 
@@ -114,7 +114,6 @@ export const requestClubID = async (clubID: string, userID: string) => {
                 clubIDRequest: clubID
             }
         });
-        prisma.$disconnect();
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch (error) {
         console.error('Error blocking user:', error);
@@ -161,7 +160,6 @@ export const acceptMembershipRequest = async (userID: string, clubID: string | n
                 id: true,
             }
         })
-        prisma.$disconnect();
         sendNotificationRequestClub(user?.email as string, club?.id as string);
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch (error) {
