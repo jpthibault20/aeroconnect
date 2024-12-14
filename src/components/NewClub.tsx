@@ -17,6 +17,7 @@ import {
 } from "./ui/select";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { createClub } from "@/api/db/club";
+import { Spinner } from "./ui/SpinnerVariants";
 
 // Schéma de validation avec Zod
 const clubFormSchema = z.object({
@@ -47,6 +48,7 @@ interface Props {
 const NewClub = ({ setNewClub }: Props) => {
     const [formError, setFormError] = useState<string | null>(null);
     const { currentUser } = useCurrentUser();
+    const [loading, setLoading] = useState(false);
 
     const {
         register,
@@ -62,6 +64,7 @@ const NewClub = ({ setNewClub }: Props) => {
 
     const onSubmit = (data: ClubFormValues) => {
         const createClubAPI = async () => {
+            setLoading(true);
             const res = await createClub(data, currentUser?.id as string);
             if (res.error) {
                 setFormError(res.error);
@@ -70,6 +73,7 @@ const NewClub = ({ setNewClub }: Props) => {
                 setFormError(null);
                 window.location.href = '/calendar?clubID=' + data.id;
             }
+            setLoading(false);
         };
         createClubAPI();
     };
@@ -223,11 +227,16 @@ const NewClub = ({ setNewClub }: Props) => {
                         type="button"
                         onClick={() => setNewClub(false)}
                         className="text-gray-500"
+                        disabled={loading}
                     >
                         Retour
                     </Button>
                     <Button type="submit" variant="perso">
-                        Créer le club
+                        {loading ? (
+                            <Spinner />
+                        ) : (
+                            "Créer le club"
+                        )}
                     </Button>
                 </div>
             </form>
