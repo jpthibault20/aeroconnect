@@ -144,29 +144,37 @@ export const acceptMembershipRequest = async (userID: string, clubID: string | n
     if (!clubID) {
         return { error: "Une erreur est survenue (E_001: clubID is undefined)" };
     }
+
     try {
-        const user = await prisma.user.update({
-            where: {
-                id: userID
-            },
-            data: {
-                clubIDRequest: null,
-                clubID: clubID
-            }
+        // Mise à jour utilisateur et récupération club en parallèle
+        const [user, club] = await Promise.all([
+            prisma.user.update({
+                where: { id: userID },
+                data: { clubIDRequest: null, clubID: clubID },
+                select: { email: true }, // Récupérer uniquement ce qui est nécessaire
+            }),
+            prisma.club.findUnique({
+                where: { id: clubID },
+                select: { id: true },
+            }),
+        ]);
+
+        if (!club) {
+            return { error: "Le club spécifié est introuvable." };
+        }
+
+        // Envoi de l'email en tâche de fond
+        sendNotificationRequestClub(user.email as string, club.id).catch((err) => {
+            console.error("Erreur lors de l'envoi de l'email :", err);
         });
-        const club = await prisma.club.findUnique({
-            where: { id: clubID },
-            select: {
-                id: true,
-            }
-        })
-        sendNotificationRequestClub(user?.email as string, club?.id as string);
+
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch (error) {
-        console.error('Error blocking user:', error);
+        console.error("Erreur lors de la mise à jour de l'utilisateur :", error);
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 };
+
 
 
 export const rejectMembershipRequest = async (userID: string) => {
