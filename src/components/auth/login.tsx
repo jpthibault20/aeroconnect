@@ -72,7 +72,7 @@ export const Login = () => {
             <div className="flex-1 flex flex-col lg:w-1/2 px-3">
                 <div className="flex justify-end p-4">
                     <Link
-                        href="#"
+                        href="https://www.aeroconnect.fr"
                         className="text-sm text-purple-600 hover:text-purple-500 flex items-center gap-2"
                     >
                         Retour au site
