@@ -164,9 +164,7 @@ export const acceptMembershipRequest = async (userID: string, clubID: string | n
         }
 
         // Envoi de l'email en tâche de fond
-        sendNotificationRequestClub(user.email as string, club.id).catch((err) => {
-            console.error("Erreur lors de l'envoi de l'email :", err);
-        });
+        await  sendNotificationRequestClub(user.email as string, club.id)
 
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch (error) {
