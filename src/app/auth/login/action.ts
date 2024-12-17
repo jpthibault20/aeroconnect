@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '@/utils/supabase/server'
 import { Provider } from '@supabase/supabase-js'
-import { createUser, getUser } from '@/api/db/users'
+import { createUser } from '@/api/db/users'
+import prisma from '@/api/prisma'
 
 
 export async function emailLogin(formData: FormData) {
@@ -18,18 +19,17 @@ export async function emailLogin(formData: FormData) {
         password: formData.get('password') as string,
     }
 
-    const { error } = await supabase.auth.signInWithPassword(data)
-    const user = await getUser()
+    const [{error}, userClubId] = await Promise.all([
+        supabase.auth.signInWithPassword(data),
+        prisma.user.findFirst({ where: { email: data.email }, select: { clubID: true } })
+    ])
 
     if (error) {
         redirect("/auth/login?message=Impossible d'authentifier l'utilisateur")
     }
-    if (!user.user?.clubID){
-        redirect("/auth/login?message=Impossible d'authentifier l'utilisateur")
-    }
 
     revalidatePath('/', 'layout')
-    redirect(`/calendar?clubID=${user.user?.clubID || ''}`)
+    redirect(`/calendar?clubID=${userClubId?.clubID || ''}`)
 }
 
 export async function emailSignup(formData: FormData) {
