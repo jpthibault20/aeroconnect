@@ -5,7 +5,7 @@ import "./globals.css";
 
 
 export const metadata: Metadata = {
-  title: "aeroconnect",
+  title: "AeroConnect",
   description: "planning for flying clubs",
 };
 
