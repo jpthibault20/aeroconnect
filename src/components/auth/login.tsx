@@ -141,7 +141,7 @@ export const Login = () => {
                                         type={showPassword ? "text" : "password"}
                                         placeholder="******"
                                         className="bg-gray-50"
-                                        autoComplete='password'
+                                        autoComplete='current-password'
                                         {...register("password")}
                                     />
                                     <button

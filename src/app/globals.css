@@ -109,3 +109,19 @@ html, body{
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+@media (max-width: 768px) {
+  body {
+    touch-action: manipulation;
+  }
+
+  html {
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  meta[name="viewport"] {
+    content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no";
+  }
+}

@@ -5,6 +5,7 @@ export interface DayInfo {
     dayName: string;
     dayNumber: number;
     month: number; // Ajout du numéro du mois
+    year: number;
     isToday: boolean;
 }
 
@@ -26,6 +27,7 @@ export const getDaysOfWeek = (inputDate: Date): DayInfo[] => {
             dayName: day.toLocaleString('default', { weekday: 'long' }), // Nom du jour
             dayNumber: day.getDate(), // Numéro du jour
             month: day.getMonth(), // Numéro du mois (ajouter 1 car getMonth() est zéro-indexé)
+            year: day.getFullYear(),
             isToday: day.toDateString() === currentDate.toDateString(), // Comparaison pour savoir si c'est aujourd'hui
         };
 

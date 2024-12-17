@@ -129,6 +129,7 @@ const NewPassword = () => {
                                         type={showPassword ? "text" : "password"}
                                         placeholder="******"
                                         className="bg-gray-50"
+                                        autoComplete='new-password'
                                         {...register("password")}
                                     />
                                     <button

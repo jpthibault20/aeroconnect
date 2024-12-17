@@ -116,6 +116,7 @@ const ForgotPassword = () => {
                                     type="email"
                                     placeholder="nom@exemple.com"
                                     className="bg-gray-50"
+                                    autoComplete='email'
                                     {...register("email")}
                                 />
                                 {errors.email && <p className='text-red-500'>{errors.email.message}</p>}
