@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { dayFr } from '@/config/date';
 import { formatTime, getDaysOfWeek, getSessionsFromDate } from '@/api/date';
 import { flight_sessions, planes, User } from '@prisma/client';
@@ -16,6 +16,7 @@ interface Props {
 }
 
 const TabCalendar = ({ date, sessions, setSessions, clubHours, usersProps, planesProp }: Props) => {
+    const [year, setYear] = useState(date.getFullYear());
     // Récupère les jours de la semaine
     const daysOfWeek = useMemo(() => getDaysOfWeek(date), [date]);
 
@@ -23,8 +24,12 @@ const TabCalendar = ({ date, sessions, setSessions, clubHours, usersProps, plane
         const hour = clubHours[indexX] !== undefined ? Math.floor(clubHours[indexX]) : 0;
         const minutes = clubHours[indexX] !== undefined ? Math.round((clubHours[indexX] % 1) * 60) : 0;
 
+        if (daysOfWeek[indexY]?.month === 11 && daysOfWeek[indexY]?.dayNumber === 31 && year === date.getFullYear()) {
+            setYear(year + 1);
+        }
+
         const sessionDate = new Date(
-            date.getFullYear(),
+            year,
             daysOfWeek[indexY]?.month ?? 0,
             daysOfWeek[indexY]?.dayNumber ?? 1,
             hour,
