@@ -222,7 +222,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                                     variant="outline"
                                     size="sm"
                                     onClick={() => onClickPlane(plane.id)}
-                                    className={`${sessionData.planeId.includes(plane.id) ? "bg-green-200" : "bg-red-200 text-gray-500"}`}
+                                    className={`${sessionData.planeId.includes(plane.id) ? "bg-green-200 hover:bg-green-200" : "bg-red-200 text-gray-500 hover:bg-red-200 hover:text-gray-500"}`}
                                 >
                                     {plane.name}
                                 </Button>
