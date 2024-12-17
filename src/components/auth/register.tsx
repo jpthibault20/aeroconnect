@@ -128,6 +128,7 @@ const Register = () => {
                                         id="firstname"
                                         placeholder="Entrez votre prénom"
                                         className="bg-gray-50"
+                                        autoComplete='given-name'
                                         {...register("firstName")}
                                     />
                                     {errors.firstName && <p className='text-red-500'>{errors.firstName.message}</p>}
@@ -140,6 +141,7 @@ const Register = () => {
                                         id="lastname"
                                         placeholder="Entrez votre nom"
                                         className="bg-gray-50"
+                                        autoComplete='family-name'
                                         {...register("lastName")}
                                     />
                                     {errors.lastName && <p className='text-red-500'>{errors.lastName.message}</p>}
@@ -155,6 +157,7 @@ const Register = () => {
                                     type="email"
                                     placeholder="nom@exemple.com"
                                     className="bg-gray-50"
+                                    autoComplete='email'
                                     {...register("email")}
                                 />
                                 {errors.email && <p className='text-red-500'>{errors.email.message}</p>}
@@ -169,6 +172,7 @@ const Register = () => {
                                     type="tel"
                                     placeholder="06 12 34 56 78"
                                     className="bg-gray-50"
+                                    autoComplete='tel'
                                     {...register("phone")}
                                 />
                                 {errors.phone && <p className='text-red-500'>{errors.phone.message}</p>}
@@ -184,6 +188,7 @@ const Register = () => {
                                         type={showPassword ? "text" : "password"}
                                         placeholder="******"
                                         className="bg-gray-50"
+                                        autoComplete='new-password'
                                         {...register("password")}
                                     />
                                     <button
