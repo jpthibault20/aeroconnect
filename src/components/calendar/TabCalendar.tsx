@@ -29,7 +29,7 @@ const TabCalendar = ({ date, sessions, setSessions, clubHours, usersProps, plane
         }
 
         const sessionDate = new Date(
-            year,
+            daysOfWeek[indexY]?.year ?? 0,
             daysOfWeek[indexY]?.month ?? 0,
             daysOfWeek[indexY]?.dayNumber ?? 1,
             hour,
