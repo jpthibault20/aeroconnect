@@ -23,6 +23,7 @@ import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/session
 import { toast } from '@/hooks/use-toast';
 import AddStudent from './AddStudent';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail';
 
 
 interface props {
@@ -127,8 +128,26 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                 try {
                     const student = usersProp.find(item => item.id === session.studentID)
                     const pilote = usersProp.find(item => item.id === session.pilotID)
-                    const res = await removeStudentFromSessionID(session, student as User, pilote as User, clubProp);
+                    const res = await removeStudentFromSessionID(session);
                     if (res.success) {
+                        const endDate = new Date(session.sessionDateStart);
+                        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+
+                        // Envoi de notifications en parallèle
+                        await Promise.all([
+                            student?.email && sendNotificationRemoveAppointment(
+                                student.email,
+                                session.sessionDateStart as Date,
+                                endDate,
+                                clubProp as Club
+                            ),
+                            pilote?.email && sendNotificationSudentRemoveForPilot(
+                                pilote.email,
+                                session.sessionDateStart as Date,
+                                endDate,
+                                clubProp as Club
+                            ),
+                        ]);
                         toast({
                             title: res.success,
                         });
