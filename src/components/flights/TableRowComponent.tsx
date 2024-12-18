@@ -16,7 +16,7 @@
 import React, { useState, useEffect } from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { Checkbox } from '../ui/checkbox';
-import { flight_sessions, planes, User, userRole } from '@prisma/client';
+import { Club, flight_sessions, planes, User, userRole } from '@prisma/client';
 import { IoMdClose } from 'react-icons/io';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/sessions';
@@ -32,10 +32,11 @@ interface props {
     setSessionChecked: React.Dispatch<React.SetStateAction<string[]>>; ///< Function to update selected session IDs
     isAllChecked: boolean; ///< Indicates if "select all" is checked
     planesProp: planes[];
-    usersProp: User[]
+    usersProp: User[];
+    clubProp: Club;
 }
 
-const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp, usersProp }: props) => {
+const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp, usersProp, clubProp }: props) => {
     const { currentUser } = useCurrentUser();
     const [isChecked, setIsChecked] = useState(false); // State for individual checkbox
     const [loading, setLoading] = useState(false);
@@ -124,8 +125,9 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
             if (sessionID) {
                 setLoading(true);
                 try {
-                    // Suppression de l'étudiant de la session
-                    const res = await removeStudentFromSessionID(sessionID);
+                    const student = usersProp.find(item => item.id === session.studentID)
+                    const pilote = usersProp.find(item => item.id === session.pilotID)
+                    const res = await removeStudentFromSessionID(session, student as User, pilote as User, clubProp);
                     if (res.success) {
                         toast({
                             title: res.success,

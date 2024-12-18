@@ -1,6 +1,6 @@
 "use server";
 
-import { Club, User } from '@prisma/client';
+import { Club, flight_sessions, User } from '@prisma/client';
 import { differenceInHours, isBefore } from 'date-fns';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { sendStudentNotificationBooking, sendNotificationBooking, sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from "@/lib/mail";
@@ -249,23 +249,8 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
     }
 };
 
-export const removeStudentFromSessionID = async (sessionID: string) => {
+export const removeStudentFromSessionID = async (session:flight_sessions, student: User, pilote: User, club: Club) => {
     try {
-        // Récupérer les informations de la session et les utilisateurs en parallèle
-        const session = await prisma.flight_sessions.findUnique({ where: { id: sessionID } });
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const [student, pilote, club] = await Promise.all([
-            prisma.user.findUnique({
-                where: { id: session?.studentID || undefined }
-            }),
-            prisma.user.findUnique({
-                where: { id: session?.pilotID || undefined }
-            }),
-            prisma.club.findUnique({
-                where: { id: session?.clubID }
-            })
-        ]);
-
         // Validation précoce 
         if (!session || !session.sessionDateStart || !session.studentID || !session.pilotID) {
             return { error: "Session introuvable ou incomplète." };
@@ -281,7 +266,7 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
 
         // Mettre à jour la session en une seule requête
         await prisma.flight_sessions.update({
-            where: { id: sessionID },
+            where: { id: session.id },
             data: {
                 studentID: null,
                 studentFirstName: null,
@@ -291,25 +276,25 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
             }
         });
 
-        // // Calcul de la date de fin de session
-        // const endDate = new Date(session.sessionDateStart);
-        // endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+        // Calcul de la date de fin de session
+        const endDate = new Date(session.sessionDateStart);
+        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
-        // // Envoi de notifications en parallèle
-        // await Promise.all([
-        //     student?.email && sendNotificationRemoveAppointment(
-        //         student.email, 
-        //         session.sessionDateStart as Date, 
-        //         endDate, 
-        //         club as Club
-        //     ),
-        //     pilote?.email && sendNotificationSudentRemoveForPilot(
-        //         pilote.email, 
-        //         session.sessionDateStart as Date, 
-        //         endDate, 
-        //         club as Club
-        //     ),
-        // ]);
+        // Envoi de notifications en parallèle
+        await Promise.all([
+            student?.email && sendNotificationRemoveAppointment(
+                student.email, 
+                session.sessionDateStart as Date, 
+                endDate, 
+                club as Club
+            ),
+            pilote?.email && sendNotificationSudentRemoveForPilot(
+                pilote.email, 
+                session.sessionDateStart as Date, 
+                endDate, 
+                club as Club
+            ),
+        ]);
 
         return { success: "L'élève a été désinscrit de la session !" };
     } catch (error) {
