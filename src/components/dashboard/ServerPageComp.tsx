@@ -1,15 +1,18 @@
-"use server"
+"use server";
+
 import { getAllUserRequestedClubID } from '@/api/db/club';
 import { getHoursByInstructor, getHoursByMonth, getHoursByPlane, getHoursByStudent } from '@/api/db/sessions';
 import PageComponent from '@/components/dashboard/PageComponent';
 import InitialLoading from '@/components/InitialLoading';
 import NoClubID from '@/components/NoClubID';
-import React from 'react'
+import { getFromCache } from '@/lib/cache'; // Import du cache
+import React from 'react';
 
 export interface dashboardProps {
     name: string;
     hours: number;
 }
+
 interface PageProps {
     searchParams: { clubID: string | undefined };
 }
@@ -18,15 +21,22 @@ const ServerPageComp = async ({ searchParams }: PageProps) => {
     const clubID = searchParams.clubID;
 
     if (clubID) {
-
-        const [hoursByPlanes, HoursByInstructor, UsersRequestedClubID, HoursByMonth, HoursByStudent] = await Promise.all([
-            await getHoursByPlane(clubID),
-            await getHoursByInstructor(clubID),
-            await getAllUserRequestedClubID(clubID),
-            await getHoursByMonth(clubID),
-            await getHoursByStudent(clubID),
+        // Récupérer les données via le cache ou la base de données
+        const [
+            hoursByPlanes,
+            HoursByInstructor,
+            UsersRequestedClubID,
+            HoursByMonth,
+            HoursByStudent,
+        ] = await Promise.all([
+            getFromCache(`hoursByPlanes:${clubID}`, () => getHoursByPlane(clubID)),
+            getFromCache(`HoursByInstructor:${clubID}`, () => getHoursByInstructor(clubID)),
+            getFromCache(`UsersRequestedClubID:${clubID}`, () => getAllUserRequestedClubID(clubID)),
+            getFromCache(`HoursByMonth:${clubID}`, () => getHoursByMonth(clubID)),
+            getFromCache(`HoursByStudent:${clubID}`, () => getHoursByStudent(clubID)),
         ]);
 
+        // Gestion des erreurs pour `UsersRequestedClubID`
         if ('error' in UsersRequestedClubID) {
             console.error(UsersRequestedClubID.error);
             return (
@@ -36,6 +46,7 @@ const ServerPageComp = async ({ searchParams }: PageProps) => {
             );
         }
 
+        // Rendu du composant avec les données récupérées
         return (
             <InitialLoading clubIDURL={clubID} className="h-full w-full">
                 <PageComponent
@@ -44,13 +55,14 @@ const ServerPageComp = async ({ searchParams }: PageProps) => {
                     UsersRequestedClubID={UsersRequestedClubID}
                     HoursByMonth={HoursByMonth}
                     HoursByStudent={HoursByStudent}
-                    hoursByPlanes={hoursByPlanes} />
+                    hoursByPlanes={hoursByPlanes}
+                />
             </InitialLoading>
-        )
-    }
-    else {
+        );
+    } else {
+        // Si aucun clubID n'est fourni
         return (
-            <div className='h-full'>
+            <div className="h-full">
                 <NoClubID />
                 <PageComponent
                     clubID={""}
@@ -58,10 +70,11 @@ const ServerPageComp = async ({ searchParams }: PageProps) => {
                     UsersRequestedClubID={[]}
                     HoursByMonth={[]}
                     HoursByStudent={[]}
-                    hoursByPlanes={[]} />
+                    hoursByPlanes={[]}
+                />
             </div>
-        )
+        );
     }
-}
+};
 
-export default ServerPageComp
+export default ServerPageComp;

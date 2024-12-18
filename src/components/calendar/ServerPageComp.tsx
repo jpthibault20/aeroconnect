@@ -10,7 +10,6 @@ interface PageProps {
 }
 
 const ServerPageComp = async ({ searchParams }: PageProps) => {
-    'use cache'
     const { clubID } = searchParams;
 
     if (clubID) {
