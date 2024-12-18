@@ -1,3 +1,4 @@
+"use server"
 import prisma from "@/api/prisma";
 import { senderMailAdress } from "@/config/mail";
 import AcceptedToClub from "@/emails/AcceptedToClub";
