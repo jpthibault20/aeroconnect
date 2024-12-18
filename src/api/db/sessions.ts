@@ -2,6 +2,7 @@
 
 import { Club, User } from '@prisma/client';
 import { differenceInHours, isBefore } from 'date-fns';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { sendStudentNotificationBooking, sendNotificationBooking, sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from "@/lib/mail";
 import prisma from '../prisma';
 
@@ -252,6 +253,7 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
     try {
         // Récupérer les informations de la session et les utilisateurs en parallèle
         const session = await prisma.flight_sessions.findUnique({ where: { id: sessionID } });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const [student, pilote, club] = await Promise.all([
             prisma.user.findUnique({
                 where: { id: session?.studentID || undefined }
@@ -289,25 +291,25 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
             }
         });
 
-        // Calcul de la date de fin de session
-        const endDate = new Date(session.sessionDateStart);
-        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+        // // Calcul de la date de fin de session
+        // const endDate = new Date(session.sessionDateStart);
+        // endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
-        // Envoi de notifications en parallèle
-        await Promise.all([
-            student?.email && sendNotificationRemoveAppointment(
-                student.email, 
-                session.sessionDateStart as Date, 
-                endDate, 
-                club as Club
-            ),
-            pilote?.email && sendNotificationSudentRemoveForPilot(
-                pilote.email, 
-                session.sessionDateStart as Date, 
-                endDate, 
-                club as Club
-            ),
-        ]);
+        // // Envoi de notifications en parallèle
+        // await Promise.all([
+        //     student?.email && sendNotificationRemoveAppointment(
+        //         student.email, 
+        //         session.sessionDateStart as Date, 
+        //         endDate, 
+        //         club as Club
+        //     ),
+        //     pilote?.email && sendNotificationSudentRemoveForPilot(
+        //         pilote.email, 
+        //         session.sessionDateStart as Date, 
+        //         endDate, 
+        //         club as Club
+        //     ),
+        // ]);
 
         return { success: "L'élève a été désinscrit de la session !" };
     } catch (error) {
@@ -452,6 +454,7 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
                 },
             });
 
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const [, instructor] = await Promise.all([
                 await prisma.flight_sessions.update({
                     where: { id: sessionID },
@@ -470,25 +473,25 @@ export const studentRegistration = async (sessionID: string, studentID: string, 
 
 
 
-            const endDate = new Date(session!.sessionDateStart);
-            endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
+            // const endDate = new Date(session!.sessionDateStart);
+            // endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
 
-            await Promise.all([
-                sendNotificationBooking(
-                    instructor?.email || "",
-                    instructor?.firstName || "",
-                    instructor?.lastName || "",
-                    session!.sessionDateStart,
-                    endDate,
-                    session?.clubID as string
-                ),
-                sendStudentNotificationBooking(
-                    instructor?.email || "",
-                    session!.sessionDateStart,
-                    endDate,
-                    session?.clubID as string
-                ),
-            ]);
+            // await Promise.all([
+            //     sendNotificationBooking(
+            //         instructor?.email || "",
+            //         instructor?.firstName || "",
+            //         instructor?.lastName || "",
+            //         session!.sessionDateStart,
+            //         endDate,
+            //         session?.clubID as string
+            //     ),
+            //     sendStudentNotificationBooking(
+            //         instructor?.email || "",
+            //         session!.sessionDateStart,
+            //         endDate,
+            //         session?.clubID as string
+            //     ),
+            // ]);
         }
     }
 
