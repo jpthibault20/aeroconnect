@@ -10,10 +10,10 @@ import { clubAdressType } from "@/emails/Template";
 import { Club } from "@prisma/client";
 import { Resend } from "resend";
 
-export const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 const domain = process.env.NEXT_PUBLIC_APP_URL;
 
-export const formattedDate = (date: Date) => {
+const formattedDate = (date: Date) => {
   const formatedDateString = date.toISOString();
 
   return (`${formatedDateString.slice(8, 10)}/${formatedDateString.slice(5, 7)}/${formatedDateString.slice(0, 4)} ${formatedDateString.slice(11, 19)}`)

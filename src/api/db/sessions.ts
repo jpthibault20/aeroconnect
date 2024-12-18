@@ -4,7 +4,6 @@ import { Club, User } from '@prisma/client';
 import { differenceInHours, isBefore } from 'date-fns';
 import { sendStudentNotificationBooking, sendNotificationBooking, sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from "@/lib/mail";
 import prisma from '../prisma';
-import { sendBackgroundNotifications } from '../notifications';
 
 export interface interfaceSessions {
     date: Date | undefined;
@@ -251,16 +250,17 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
 
 export const removeStudentFromSessionID = async (sessionID: string) => {
     try {
-        // Récupérer les informations de la session et des utilisateurs en parallèle
-        const session = await prisma.flight_sessions.findUnique({
-            where: { id: sessionID }
-        });
-        const [student, pilote] = await Promise.all([
+        // Récupérer les informations de la session et les utilisateurs en parallèle
+        const session = await prisma.flight_sessions.findUnique({ where: { id: sessionID } });
+        const [student, pilote, club] = await Promise.all([
             prisma.user.findUnique({
                 where: { id: session?.studentID || undefined }
             }),
             prisma.user.findUnique({
                 where: { id: session?.pilotID || undefined }
+            }),
+            prisma.club.findUnique({
+                where: { id: session?.clubID }
             })
         ]);
 
@@ -293,15 +293,21 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
         const endDate = new Date(session.sessionDateStart);
         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
-        // Déclenchement des notifications en arrière-plan
-        // Utilisation d'une promesse non attendue pour ne pas bloquer la réponse
-        sendBackgroundNotifications(
-            student?.email, 
-            pilote?.email, 
-            session.sessionDateStart, 
-            endDate, 
-            session.clubID
-        );
+        // Envoi de notifications en parallèle
+        await Promise.all([
+            student?.email && sendNotificationRemoveAppointment(
+                student.email, 
+                session.sessionDateStart as Date, 
+                endDate, 
+                club as Club
+            ),
+            pilote?.email && sendNotificationSudentRemoveForPilot(
+                pilote.email, 
+                session.sessionDateStart as Date, 
+                endDate, 
+                club as Club
+            ),
+        ]);
 
         return { success: "L'élève a été désinscrit de la session !" };
     } catch (error) {
