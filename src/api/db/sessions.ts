@@ -247,41 +247,33 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
 
 export const removeStudentFromSessionID = async (sessionID: string) => {
     try {
-        // Récupérer les informations de la session
-        const session = await prisma.flight_sessions.findUnique({
-            where: { id: sessionID },
-        });
+        // Récupérer les informations de la session et les utilisateurs en parallèle
+        const session = await prisma.flight_sessions.findUnique({ where: { id: sessionID } });
+        const [student, pilote] = await Promise.all([
+            prisma.user.findUnique({
+                where: { id: session?.studentID || undefined }
+            }),
+            prisma.user.findUnique({
+                where: { id: session?.pilotID || undefined }
+            })
+        ]);
 
-
+        // Validation précoce 
         if (!session || !session.sessionDateStart || !session.studentID || !session.pilotID) {
             return { error: "Session introuvable ou incomplète." };
         }
 
-        const student = await prisma.user.findUnique({
-            where: { id: session.studentID }
-        })
-
-
-        const pilote = await prisma.user.findUnique({
-            where: { id: session.pilotID }
-        })
-
-
-        const sessionDateUTC = new Date(session.sessionDateStart); // Assurez-vous que cette date est UTC
-
-        // Vérifier si la date de la session est dans le futur et à plus de 3 heures de l'heure actuelle
-        const nowUTC = new Date(); // Date actuelle en UTC
+        const sessionDateUTC = new Date(session.sessionDateStart);
+        const nowUTC = new Date();
         const hoursUntilSession = differenceInHours(sessionDateUTC, nowUTC);
 
         if (isBefore(sessionDateUTC, nowUTC) || hoursUntilSession < 3) {
             return { error: "La session ne peut être modifiée que si elle est dans plus de 3 heures." };
         }
 
-        // Mettre à jour la session en supprimant les informations de l'élève
-        await prisma.flight_sessions.update({
-            where: {
-                id: sessionID
-            },
+        // Mettre à jour la session en une seule requête
+         await prisma.flight_sessions.update({
+            where: { id: sessionID },
             data: {
                 studentID: null,
                 studentFirstName: null,
@@ -291,12 +283,24 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
             }
         });
 
+        // Calcul de la date de fin de session
         const endDate = new Date(session.sessionDateStart);
         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
+        // Envoi de notifications en parallèle
         await Promise.all([
-            sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID),
-            sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date, session.clubID),
+            student?.email && sendNotificationRemoveAppointment(
+                student.email, 
+                session.sessionDateStart as Date, 
+                endDate, 
+                session.clubID
+            ),
+            pilote?.email && sendNotificationSudentRemoveForPilot(
+                pilote.email, 
+                session.sessionDateStart as Date, 
+                endDate, 
+                session.clubID
+            ),
         ]);
 
         return { success: "L'élève a été désinscrit de la session !" };
