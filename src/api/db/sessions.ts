@@ -1,6 +1,6 @@
 "use server";
 
-import { User } from '@prisma/client';
+import { Club, User } from '@prisma/client';
 import { differenceInHours, isBefore } from 'date-fns';
 import { sendStudentNotificationBooking, sendNotificationBooking, sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from "@/lib/mail";
 import prisma from '../prisma';
@@ -200,7 +200,7 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
         const studentIDs = sessions.map((session) => session.studentID).filter((id): id is string => id !== null);
         const piloteIDs = sessions.map((session) => session.pilotID).filter((id): id is string => id !== null);
 
-        const [students, pilotes] = await prisma.$transaction(async (prisma) => {
+        const [students, pilotes, club] = await prisma.$transaction(async (prisma) => {
             const students = await prisma.user.findMany({
                 where: {
                     id: { in: studentIDs },
@@ -211,7 +211,10 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
                     id: { in: piloteIDs },
                 },
             });
-            return [students, pilotes];
+            const club = await prisma.club.findUnique({
+                where: { id: sessions[0].clubID }
+            })
+            return [students, pilotes, club];
         });
 
         const piloteMap = new Map(pilotes.map((pilot) => [pilot.id, pilot.email]));
@@ -233,8 +236,8 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
 
             // Envoi des notifications
             if (studentEmail) {
-                await sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, session.clubID);
-                await sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, session.clubID);
+                await sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, club as Club);
+                await sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, club as Club);
             }
         }
 
@@ -249,12 +252,15 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
     try {
         // Récupérer les informations de la session et les utilisateurs en parallèle
         const session = await prisma.flight_sessions.findUnique({ where: { id: sessionID } });
-        const [student, pilote] = await Promise.all([
+        const [student, pilote, club] = await Promise.all([
             prisma.user.findUnique({
                 where: { id: session?.studentID || undefined }
             }),
             prisma.user.findUnique({
                 where: { id: session?.pilotID || undefined }
+            }),
+            prisma.club.findUnique({
+                where: { id: session?.clubID }
             })
         ]);
 
@@ -272,7 +278,7 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
         }
 
         // Mettre à jour la session en une seule requête
-         await prisma.flight_sessions.update({
+        await prisma.flight_sessions.update({
             where: { id: sessionID },
             data: {
                 studentID: null,
@@ -293,13 +299,13 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
                 student.email, 
                 session.sessionDateStart as Date, 
                 endDate, 
-                session.clubID
+                club as Club
             ),
             pilote?.email && sendNotificationSudentRemoveForPilot(
                 pilote.email, 
                 session.sessionDateStart as Date, 
                 endDate, 
-                session.clubID
+                club as Club
             ),
         ]);
 
