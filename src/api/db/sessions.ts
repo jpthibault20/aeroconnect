@@ -2,8 +2,6 @@
 
 import { flight_sessions, User } from '@prisma/client';
 import { differenceInHours, isBefore } from 'date-fns';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { sendStudentNotificationBooking, sendNotificationBooking, sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from "@/lib/mail";
 import prisma from '../prisma';
 
 export interface interfaceSessions {

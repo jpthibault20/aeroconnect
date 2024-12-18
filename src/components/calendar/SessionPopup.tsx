@@ -127,7 +127,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
                 const endDate = new Date(session!.sessionDateStart);
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
                 const instructorFull = usersProps.find(user => user.id === session.pilotID);
-                await Promise.all([
+                Promise.all([
                     sendNotificationBooking(
                         instructorFull?.email || "",
                         currentUser?.firstName || "",
