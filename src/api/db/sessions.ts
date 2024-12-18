@@ -249,6 +249,7 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
     }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const removeStudentFromSessionID = async (session:flight_sessions, student: User, pilote: User, club: Club) => {
     try {
         // Validation précoce 
@@ -277,24 +278,24 @@ export const removeStudentFromSessionID = async (session:flight_sessions, studen
         });
 
         // Calcul de la date de fin de session
-        const endDate = new Date(session.sessionDateStart);
-        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+        // const endDate = new Date(session.sessionDateStart);
+        // endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
-        // Envoi de notifications en parallèle
-        await Promise.all([
-            student?.email && sendNotificationRemoveAppointment(
-                student.email, 
-                session.sessionDateStart as Date, 
-                endDate, 
-                club as Club
-            ),
-            pilote?.email && sendNotificationSudentRemoveForPilot(
-                pilote.email, 
-                session.sessionDateStart as Date, 
-                endDate, 
-                club as Club
-            ),
-        ]);
+        // // Envoi de notifications en parallèle
+        // await Promise.all([
+        //     student?.email && sendNotificationRemoveAppointment(
+        //         student.email, 
+        //         session.sessionDateStart as Date, 
+        //         endDate, 
+        //         club as Club
+        //     ),
+        //     pilote?.email && sendNotificationSudentRemoveForPilot(
+        //         pilote.email, 
+        //         session.sessionDateStart as Date, 
+        //         endDate, 
+        //         club as Club
+        //     ),
+        // ]);
 
         return { success: "L'élève a été désinscrit de la session !" };
     } catch (error) {
