@@ -114,6 +114,15 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
             if (res.error) {
                 setError(res.error);
             } else if (res.success) {
+                toast({ title: res.success, duration: 3000 });
+                setIsOpen(false);
+                setSessions(prev =>
+                    prev.map(s =>
+                        s.id === session.id
+                            ? { ...s, studentID: currentUser!.id, studentFirstName: currentUser!.firstName, studentLastName: currentUser!.lastName, studentPlaneID: plane }
+                            : s
+                    )
+                );
 
                 const endDate = new Date(session!.sessionDateStart);
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
@@ -134,16 +143,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
                         session?.clubID as string
                     ),
                 ]);
-
-                toast({ title: res.success, duration: 3000 });
-                setIsOpen(false);
-                setSessions(prev =>
-                    prev.map(s =>
-                        s.id === session.id
-                            ? { ...s, studentID: currentUser!.id, studentFirstName: currentUser!.firstName, studentLastName: currentUser!.lastName, studentPlaneID: plane }
-                            : s
-                    )
-                );
             }
         } catch (err) {
             console.error(err);

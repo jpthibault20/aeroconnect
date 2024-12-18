@@ -97,6 +97,15 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                         });
                     }
                     if (res.success) {
+                        toast({
+                            title: res.success,
+                        });
+
+                        //supprimer les sessions de la base de données local
+                        setSessions(prevSessions => {
+                            const updatedSessions = prevSessions.filter(session => !sessionID.includes(session.id));
+                            return updatedSessions;
+                        });
 
                         const pilotes = usersProp.filter((items) => items.role === userRole.PILOT || items.role === userRole.OWNER || items.role === userRole.ADMIN);
                         const students = usersProp.filter((items) => items.role === userRole.STUDENT || items.role === userRole.PILOT);
@@ -118,15 +127,6 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                                 ])
                             }
                         }
-                        toast({
-                            title: res.success,
-                        });
-
-                        //supprimer les sessions de la base de données local
-                        setSessions(prevSessions => {
-                            const updatedSessions = prevSessions.filter(session => !sessionID.includes(session.id));
-                            return updatedSessions;
-                        });
                     }
                 } catch (error) {
                     console.log(error);
@@ -151,24 +151,6 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                     const pilote = usersProp.find(item => item.id === session.pilotID)
                     const res = await removeStudentFromSessionID(session);
                     if (res.success) {
-                        const endDate = new Date(session.sessionDateStart);
-                        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
-
-                        Promise.all([
-                            student?.email && sendNotificationRemoveAppointment(
-                                student.email,
-                                session.sessionDateStart as Date,
-                                endDate,
-                                clubProp as Club
-                            ),
-                            pilote?.email && sendNotificationSudentRemoveForPilot(
-                                pilote.email,
-                                session.sessionDateStart as Date,
-                                endDate,
-                                clubProp as Club
-                            ),
-                        ]);
-
                         toast({
                             title: res.success,
                         });
@@ -188,8 +170,25 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                             );
                             return updatedSessions;
                         });
-                        setPlane(undefined)
-                            ;
+                        setPlane(undefined);
+
+                        const endDate = new Date(session.sessionDateStart);
+                        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+
+                        Promise.all([
+                            student?.email && sendNotificationRemoveAppointment(
+                                student.email,
+                                session.sessionDateStart as Date,
+                                endDate,
+                                clubProp as Club
+                            ),
+                            pilote?.email && sendNotificationSudentRemoveForPilot(
+                                pilote.email,
+                                session.sessionDateStart as Date,
+                                endDate,
+                                clubProp as Club
+                            ),
+                        ]);
                     }
 
                     if (res.error) {
