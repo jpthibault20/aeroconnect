@@ -134,7 +134,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
                         // Envoi de notifications en parallèle
-                        await Promise.all([
+                        Promise.all([
                             student?.email && sendNotificationRemoveAppointment(
                                 student.email,
                                 session.sessionDateStart as Date,
