@@ -84,12 +84,12 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
     };
 
     // Remove flights from session
-    const removeFlight = (sessions: string[]) => {
+    const removeFlight = (sessionID: string[]) => {
         const removeSessions = async () => {
             if (sessions.length > 0) {
                 setLoading(true);
                 try {
-                    const res = await removeSessionsByID(sessions);
+                    const res = await removeSessionsByID(sessionID);
                     if (res.error) {
                         toast({
                             title: "Oups, une erreur est survenue",
@@ -97,13 +97,34 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                         });
                     }
                     if (res.success) {
+
+                        const pilotes = usersProp.filter((items) => items.role === userRole.PILOT || items.role === userRole.OWNER || items.role === userRole.ADMIN);
+                        const students = usersProp.filter((items) => items.role === userRole.STUDENT || items.role === userRole.PILOT);
+                        const piloteMap = new Map(pilotes.map((pilot) => [pilot.id, pilot.email]));
+                        const studentMap = new Map(students.map((student) => [student.id, student.email]));
+                        const sessionstype = sessions.filter((session) => sessionID.includes(session.id));
+
+                        for (const session of sessionstype) {
+                            const studentEmail = studentMap.get(session.studentID || '');
+                            const piloteEmail = piloteMap.get(session.pilotID || '');
+                            const endDate = new Date(session.sessionDateStart);
+                            endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+
+                            // Envoi des notifications
+                            if (studentEmail) {
+                                Promise.all([
+                                    sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, clubProp),
+                                    sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, clubProp)
+                                ])
+                            }
+                        }
                         toast({
                             title: res.success,
                         });
 
                         //supprimer les sessions de la base de données local
                         setSessions(prevSessions => {
-                            const updatedSessions = prevSessions.filter(session => !sessions.includes(session.id));
+                            const updatedSessions = prevSessions.filter(session => !sessionID.includes(session.id));
                             return updatedSessions;
                         });
                     }
@@ -133,7 +154,6 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                         const endDate = new Date(session.sessionDateStart);
                         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
-                        // Envoi de notifications en parallèle
                         Promise.all([
                             student?.email && sendNotificationRemoveAppointment(
                                 student.email,
@@ -148,6 +168,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                                 clubProp as Club
                             ),
                         ]);
+
                         toast({
                             title: res.success,
                         });
