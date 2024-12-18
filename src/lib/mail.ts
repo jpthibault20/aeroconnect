@@ -99,56 +99,91 @@ export const sendStudentNotificationBooking = async (email: string, startDate: D
   });
 }
 
-export const sendNotificationRemoveAppointment = async (email: string, startDate: Date, endDate: Date, club: Club) => {
-  const formatedStartDate = formattedDate(startDate)
-  const formatedEndDate = formattedDate(endDate)
-
-  if (!club || !club.Name) {
-    throw new Error("Club data or club name is undefined");
+export const sendNotificationRemoveAppointment = async (
+  email: string, 
+  startDate: Date, 
+  endDate: Date, 
+  club: Club
+) => {
+  // Validation précoce et rapide
+  if (!email || !club?.Name) {
+    console.warn('Notification skipped: Missing email or club name');
+    return;
   }
 
-  const { Name } = club;
+  try {
+    // Déstructuration et formatage en une seule étape
+    const { 
+      Name: clubName, 
+      Country: countrie, 
+      ZipCode: zipCode, 
+      City: city, 
+      Address: adress 
+    } = club;
 
-  const adress = {
-    countrie: club.Country,
-    zipCode: club.ZipCode,
-    city: club.City,
-    adress: club.Address
+    const formatedStartDate = formattedDate(startDate);
+    const formatedEndDate = formattedDate(endDate);
+
+    // Configuration minimale pour réduire la charge
+    await resend.emails.send({
+      from: senderMailAdress,
+      to: email,
+      subject: "Vol annulé",
+      react: NotificationSudentRemove({ 
+        startDate: formatedStartDate, 
+        endDate: formatedEndDate, 
+        clubName, 
+        clubAdress: { countrie, zipCode, city, adress } 
+      })
+    });
+  } catch (error) {
+    // Gestion d'erreur avec logging minimal
+    console.error('Failed to send removal notification:', error);
+  }
+};
+
+export const sendNotificationSudentRemoveForPilot = async (
+  email: string, 
+  startDate: Date, 
+  endDate: Date, 
+  club: Club
+) => {
+  // Validation précoce et rapide
+  if (!email || !club?.Name) {
+    console.warn('Pilot notification skipped: Missing email or club name');
+    return;
   }
 
-  await resend.emails.send({
-    from: senderMailAdress,
-    to: email,
-    subject: "vol annulé",
-    react: NotificationSudentRemove({ startDate: formatedStartDate, endDate: formatedEndDate, clubName: Name, clubAdress: adress })
-  });
+  try {
+    // Déstructuration et formatage en une seule étape
+    const { 
+      Name: clubName, 
+      Country: countrie, 
+      ZipCode: zipCode, 
+      City: city, 
+      Address: adress 
+    } = club;
 
-}
+    const formatedStartDate = formattedDate(startDate);
+    const formatedEndDate = formattedDate(endDate);
 
-export const sendNotificationSudentRemoveForPilot = async (email: string, startDate: Date, endDate: Date, club: Club) => {
-  const formatedStartDate = formattedDate(startDate)
-  const formatedEndDate = formattedDate(endDate)
-
-  if (!club || !club.Name) {
-    throw new Error("Club data or club name is undefined");
+    // Configuration minimale pour réduire la charge
+    await resend.emails.send({
+      from: senderMailAdress,
+      to: email,
+      subject: "Vol annulé",
+      react: NotificationSudentRemoveForPilot({ 
+        startDate: formatedStartDate, 
+        endDate: formatedEndDate, 
+        clubName, 
+        clubAdress: { countrie, zipCode, city, adress } 
+      })
+    });
+  } catch (error) {
+    // Gestion d'erreur avec logging minimal
+    console.error('Failed to send pilot removal notification:', error);
   }
-
-  const { Name } = club;
-
-  const adress = {
-    countrie: club.Country,
-    zipCode: club.ZipCode,
-    city: club.City,
-    adress: club.Address
-  }
-
-  await resend.emails.send({
-    from: senderMailAdress,
-    to: email,
-    subject: "vol annulé",
-    react: NotificationSudentRemoveForPilot({ startDate: formatedStartDate, endDate: formatedEndDate, clubName: Name, clubAdress: adress })
-  });
-}
+};
 
 export const sendNotificationRequestClub = async (email: string, clubID: string) => {
   const clubData = await getClubData(clubID);
