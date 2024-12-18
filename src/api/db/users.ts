@@ -4,6 +4,8 @@ import { createClient } from '@/utils/supabase/server';
 import { userRole } from '@prisma/client'
 import { User } from '@prisma/client'
 import prisma from '../prisma';
+import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 interface UserMin {
     firstName: string,
@@ -72,45 +74,45 @@ export const getSession = async () => {
 }
 
 export const getUser = async () => {
-    const supabase = createClient();
+    // Étape 1 : Création d'une instance Supabase côté serveur
+    const supabase = createServerActionClient({
+        cookies
+    });
 
     try {
-        // Étape 1 : Récupérer l'utilisateur connecté via Supabase
+        // Étape 2 : Récupérer les informations utilisateur via Supabase
         const { data, error: authError } = await supabase.auth.getUser();
 
-        if (authError) {
-            console.error("Erreur lors de la récupération de la session utilisateur");
-            return { error: "Error getting user session" };
+        if (authError || !data?.user) {
+            console.error("Erreur de récupération de l'utilisateur Supabase :", authError?.message);
+            return { error: "Utilisateur non connecté ou session invalide." };
         }
 
-        const userEmail = data?.user?.email;
+        const userEmail = data.user.email;
 
         if (!userEmail) {
-            console.error("L'email de l'utilisateur est introuvable dans la session Supabase.");
-            return { error: "Error getting user session" };
+            console.error("L'utilisateur connecté n'a pas d'email.");
+            return { error: "L'email de l'utilisateur est introuvable dans la session Supabase." };
         }
 
-        // Étape 2 : Récupérer l'utilisateur dans la base de données Prisma
+        // Étape 3 : Récupérer les détails utilisateur dans Prisma
         const user = await prisma.user.findUnique({
             where: { email: userEmail },
         });
 
         if (!user) {
             console.error(`Aucun utilisateur trouvé avec l'email : ${userEmail}`);
-            return { error: "User not found in the database" };
+            return { error: `Aucun utilisateur n'est associé à l'email : ${userEmail}` };
         }
 
-        // Retourner l'utilisateur avec un message de succès
+        // Étape 4 : Retourner les détails utilisateur
         return {
-            success: "User retrieved successfully",
+            success: "Utilisateur récupéré avec succès",
             user,
         };
     } catch (error) {
         console.error("Erreur lors de l'exécution de la fonction getUser :", error);
-        return { error: "An unexpected error occurred" };
-    } finally {
-        // Assurez-vous que Prisma se déconnecte, même en cas d'erreur
-        await prisma.$disconnect();
+        return { error: "Une erreur inattendue est survenue lors de la récupération de l'utilisateur." };
     }
 };
 

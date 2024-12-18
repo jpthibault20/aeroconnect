@@ -7,27 +7,36 @@ import { createClient } from '@/utils/supabase/server'
 import { Provider } from '@supabase/supabase-js'
 import { createUser } from '@/api/db/users'
 import prisma from '@/api/prisma'
+import { createServerActionClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
 
 export async function emailLogin(formData: FormData) {
-    const supabase = createClient()
+    // Création d'une instance de Supabase avec gestion des cookies
+    const supabase = createServerActionClient({
+    cookies
+    });
 
     const data = {
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
+        email: formData.get("email") as string,
+        password: formData.get("password") as string,
+    };
+
+    // Connexion de l'utilisateur via Supabase
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword(data);
+
+    if (authError || !authData.session) {
+        redirect("/auth/login?message=Impossible d'authentifier l'utilisateur");
     }
 
-    const [{error}, userClubId] = await Promise.all([
-        supabase.auth.signInWithPassword(data),
-        prisma.user.findFirst({ where: { email: data.email }, select: { clubID: true } })
-    ])
+    // Récupération d'informations supplémentaires dans Prisma (par exemple, clubID)
+    const userClub = await prisma.user.findFirst({
+        where: { email: data.email },
+        select: { clubID: true },
+    });
 
-    if (error) {
-        redirect("/auth/login?message=Impossible d'authentifier l'utilisateur")
-    }
-
-    revalidatePath('/', 'layout')
-    redirect(`/calendar?clubID=${userClubId?.clubID || ''}`)
+    // Réponse réussie : Redirection vers une autre page
+    redirect(`/calendar?clubID=${userClub?.clubID || ''}`);
 }
 
 export async function emailSignup(formData: FormData) {

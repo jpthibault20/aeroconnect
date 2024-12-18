@@ -15,6 +15,7 @@ import Image from "next/image";
 import { Spinner } from '../ui/SpinnerVariants';
 import { Eye, EyeOff } from 'lucide-react';
 import { Label } from '../ui/label';
+import useSupabaseSession from '@/hooks/useSupabaseSession';
 
 export const Login = () => {
     const [loading, setLoading] = React.useState(false);
@@ -22,6 +23,9 @@ export const Login = () => {
     const [messageG, setMessageG] = React.useState('');
     const [showPassword, setShowPassword] = React.useState(false); // État pour la visibilité du mot de passe
     const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
+
+    const useSession = useSupabaseSession();
+    console.log(useSession)
 
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
