@@ -8,13 +8,14 @@ import prisma from '@/api/prisma';
 import { getFromCache } from '@/lib/cache';
 
 interface PageProps {
-    searchParams: { clubID: string | undefined };
+    ClubIDprop: string | string[] | undefined;
 }
 
-const ServerPageComp = async ({ searchParams }: PageProps) => {
-    const clubID = searchParams.clubID;
+const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
 
-    if (clubID) {
+    if (ClubIDprop) {
+        const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
+
         // Fonction pour récupérer les avions depuis Prisma
         const fetchPlanes = async () => {
             return prisma.planes.findMany({

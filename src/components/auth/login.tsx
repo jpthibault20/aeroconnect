@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginSchema, loginSchema } from "../../schemas/loginSchema"; // Assure-toi que le chemin est correct
-import { emailLogin } from '@/app/auth/login/action';
 import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '../ui/button';
@@ -15,6 +14,7 @@ import Image from "next/image";
 import { Spinner } from '../ui/SpinnerVariants';
 import { Eye, EyeOff } from 'lucide-react';
 import { Label } from '../ui/label';
+import { login } from "@/app/auth/login/action"
 
 export const Login = () => {
     const [loading, setLoading] = React.useState(false);
@@ -46,7 +46,7 @@ export const Login = () => {
             formData.append('password', data.password);
 
             // Appel API de connexion
-            await emailLogin(formData);
+            await login(formData);
 
         } catch (error) {
             console.error("Erreur de connexion :", error);

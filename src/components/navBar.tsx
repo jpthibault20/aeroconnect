@@ -4,7 +4,7 @@ import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { navigationLinks } from '@/config/links'
 import { userRole } from '@prisma/client'
 import React from 'react'
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet'
 import { Button } from './ui/button'
 import { LogOut, Menu, X } from 'lucide-react'
 import { signOut } from '@/app/auth/login/action'
@@ -31,6 +31,9 @@ const NavBar = () => {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="bottom" className="h-fit rounded-t-3xl">
+                    <SheetHeader>
+                        <SheetTitle></SheetTitle>
+                    </SheetHeader>
                     <div
                         className="p-1 flex items-center rounded-lg bg-gray-200 border border-gray-300 shadow-lg my-6"
                     >

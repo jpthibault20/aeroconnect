@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updatePasswordSchema, UpdatePasswordSchema } from '../../schemas/newPasswordSchema';
 import Link from 'next/link';
-import { updatePassword } from '@/app/auth/login/action';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -12,6 +11,7 @@ import { Logo } from '../Logo';
 import Image from 'next/image';
 import { Spinner } from '../ui/SpinnerVariants';
 import { Eye, EyeOff } from 'lucide-react';
+import { updatePassword } from '@/app/auth/newPassword/action';
 
 const NewPassword = () => {
     const [loading, setLoading] = React.useState(false);

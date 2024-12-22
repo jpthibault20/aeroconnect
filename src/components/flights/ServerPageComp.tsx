@@ -7,22 +7,15 @@ import NoClubID from '@/components/NoClubID';
 import prisma from '@/api/prisma';
 
 interface PageProps {
-    searchParams: { clubID: string | undefined };
+    ClubIDprop: string | string[] | undefined;
 }
 
-const ServerPageComp = async ({ searchParams }: PageProps) => {
-    const clubID = searchParams.clubID;
+const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
 
-    if (!clubID) {
-        return (
-            <div>
-                <NoClubID />
-                <FlightsPageComponent sessionsProp={[]} planesProp={[]} usersProp={[]} clubProp={null} />
-            </div>
-        );
-    }
+    if (ClubIDprop) {
+        const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
 
-    // Regrouper les appels à la base de données pour optimiser les performances
+         // Regrouper les appels à la base de données pour optimiser les performances
     const [sessions, planes, club, users] = await Promise.all([
         prisma.flight_sessions.findMany({
             where: {
@@ -44,6 +37,17 @@ const ServerPageComp = async ({ searchParams }: PageProps) => {
             <FlightsPageComponent sessionsProp={sessions} planesProp={planes} usersProp={users} clubProp={club} />
         </InitialLoading>
     );
+       
+    }
+
+
+ return (
+            <div>
+                <NoClubID />
+                <FlightsPageComponent sessionsProp={[]} planesProp={[]} usersProp={[]} clubProp={null} />
+            </div>
+        );
+   
 };
 
 export default ServerPageComp;

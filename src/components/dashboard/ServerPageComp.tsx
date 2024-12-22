@@ -14,13 +14,13 @@ export interface dashboardProps {
 }
 
 interface PageProps {
-    searchParams: { clubID: string | undefined };
+    ClubIDprop: string | string[] | undefined;
 }
 
-const ServerPageComp = async ({ searchParams }: PageProps) => {
-    const clubID = searchParams.clubID;
+const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
 
-    if (clubID) {
+    if (ClubIDprop) {
+        const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
         // Récupérer les données via le cache ou la base de données
         const [
             hoursByPlanes,
