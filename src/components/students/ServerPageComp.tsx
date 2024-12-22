@@ -14,19 +14,23 @@ import StudentsPage from '@/components/students/StudentsPage';
 import React from 'react';
 import NoClubID from '@/components/NoClubID';
 import prisma from '@/api/prisma';
+import { getFromCache } from '@/lib/cache';
 
 interface PageProps {
-    searchParams: { clubID: string | undefined };
+    ClubIDprop: string | string[] | undefined;
 }
 
-const ServerPageComp = async ({ searchParams }: PageProps) => {
+const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
 
-    const clubID = searchParams.clubID;
+    if (ClubIDprop) {
+        const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
 
-    if (clubID) {
-        const users = await prisma.user.findMany({
-            where: { clubID: clubID }
-        });
+        const fetchUsers = async () => {
+            return prisma.user.findMany({
+                where: { clubID },
+            });
+        };
+        const users = await getFromCache(`users:${clubID}`, fetchUsers);
 
         return (
             <InitialLoading className='w-full h-full bg-gray-100' clubIDURL={clubID}>

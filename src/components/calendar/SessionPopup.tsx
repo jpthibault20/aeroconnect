@@ -11,6 +11,7 @@ import SubmitButton from "./SubmitButton";
 import { toast } from "@/hooks/use-toast";
 import { filterPilotePlane } from "@/api/popupCalendar";
 import { studentRegistration } from "@/api/db/sessions";
+import { sendNotificationBooking, sendStudentNotificationBooking } from "@/lib/mail";
 
 interface Prop {
     children: React.ReactNode;
@@ -98,18 +99,18 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
 
 
     const onSubmit = async () => {
-        const sessionId = sessions.find(
+        const session = sessions.find(
             session => session.pilotID === instructor && session.planeID.includes(plane)
-        )?.id;
+        );
 
-        if (!sessionId) {
+        if (!session) {
             setError("Une erreur est survenue (E_002: informations undefined)");
             return;
         }
 
         try {
             setLoading(true);
-            const res = await studentRegistration(sessionId, currentUser!.id, plane);
+            const res = await studentRegistration(session, currentUser as User, plane);
             if (res.error) {
                 setError(res.error);
             } else if (res.success) {
@@ -117,11 +118,31 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
                 setIsOpen(false);
                 setSessions(prev =>
                     prev.map(s =>
-                        s.id === sessionId
+                        s.id === session.id
                             ? { ...s, studentID: currentUser!.id, studentFirstName: currentUser!.firstName, studentLastName: currentUser!.lastName, studentPlaneID: plane }
                             : s
                     )
                 );
+
+                const endDate = new Date(session!.sessionDateStart);
+                endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
+                const instructorFull = usersProps.find(user => user.id === session.pilotID);
+                Promise.all([
+                    sendNotificationBooking(
+                        instructorFull?.email || "",
+                        currentUser?.firstName || "",
+                        currentUser?.lastName || "",
+                        session!.sessionDateStart,
+                        endDate,
+                        session?.clubID as string
+                    ),
+                    sendStudentNotificationBooking(
+                        currentUser?.email || "",
+                        session!.sessionDateStart,
+                        endDate,
+                        session?.clubID as string
+                    ),
+                ]);
             }
         } catch (err) {
             console.error(err);
