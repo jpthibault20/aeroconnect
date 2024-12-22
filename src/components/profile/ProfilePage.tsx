@@ -79,38 +79,38 @@ const ProfilePage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="firstName">Prénom</Label>
-                                <Input id="firstName" name="firstName" value={profile.firstName} onChange={handleChange} required />
+                                <Input id="firstName" name="firstName" value={profile.firstName || ""} onChange={handleChange} required />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="lastName">Nom</Label>
-                                <Input id="lastName" name="lastName" value={profile.lastName} onChange={handleChange} required />
+                                <Input id="lastName" name="lastName" value={profile.lastName || ""} onChange={handleChange} required />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email</Label>
-                            <Input id="email" name="email" type="email" value={profile.email} onChange={handleChange} required />
+                            <Input id="email" name="email" type="email" value={profile.email || ""} onChange={handleChange} required />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="phone">Téléphone</Label>
-                            <Input id="phone" name="phone" type="tel" value={profile.phone as string} onChange={handleChange} />
+                            <Input id="phone" name="phone" type="tel" value={profile.phone || ""} onChange={handleChange} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="adress">Adresse</Label>
-                            <Input id="adress" name="adress" value={profile.adress as string} onChange={handleChange} />
+                            <Input id="adress" name="adress" value={profile.adress || ""} onChange={handleChange} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="city">Ville</Label>
-                                <Input id="city" name="city" value={profile.city as string} onChange={handleChange} />
+                                <Input id="city" name="city" value={profile.city || ""} onChange={handleChange} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="zipCode">Code Postal</Label>
-                                <Input id="zipCode" name="zipCode" value={profile.zipCode as string} onChange={handleChange} />
+                                <Input id="zipCode" name="zipCode" value={profile.zipCode || ""} onChange={handleChange} />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="country">Pays</Label>
-                            <Input id="country" name="country" value={profile.country as string} onChange={handleChange} />
+                            <Input id="country" name="country" value={profile.country || ""} onChange={handleChange} />
                         </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">

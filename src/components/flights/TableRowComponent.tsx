@@ -16,13 +16,14 @@
 import React, { useState, useEffect } from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { Checkbox } from '../ui/checkbox';
-import { flight_sessions, planes, User, userRole } from '@prisma/client';
+import { Club, flight_sessions, planes, User, userRole } from '@prisma/client';
 import { IoMdClose } from 'react-icons/io';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/sessions';
 import { toast } from '@/hooks/use-toast';
 import AddStudent from './AddStudent';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail';
 
 
 interface props {
@@ -32,10 +33,11 @@ interface props {
     setSessionChecked: React.Dispatch<React.SetStateAction<string[]>>; ///< Function to update selected session IDs
     isAllChecked: boolean; ///< Indicates if "select all" is checked
     planesProp: planes[];
-    usersProp: User[]
+    usersProp: User[];
+    clubProp: Club;
 }
 
-const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp, usersProp }: props) => {
+const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp, usersProp, clubProp }: props) => {
     const { currentUser } = useCurrentUser();
     const [isChecked, setIsChecked] = useState(false); // State for individual checkbox
     const [loading, setLoading] = useState(false);
@@ -82,12 +84,12 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
     };
 
     // Remove flights from session
-    const removeFlight = (sessions: string[]) => {
+    const removeFlight = (sessionID: string[]) => {
         const removeSessions = async () => {
             if (sessions.length > 0) {
                 setLoading(true);
                 try {
-                    const res = await removeSessionsByID(sessions);
+                    const res = await removeSessionsByID(sessionID);
                     if (res.error) {
                         toast({
                             title: "Oups, une erreur est survenue",
@@ -101,9 +103,30 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
 
                         //supprimer les sessions de la base de données local
                         setSessions(prevSessions => {
-                            const updatedSessions = prevSessions.filter(session => !sessions.includes(session.id));
+                            const updatedSessions = prevSessions.filter(session => !sessionID.includes(session.id));
                             return updatedSessions;
                         });
+
+                        const pilotes = usersProp.filter((items) => items.role === userRole.PILOT || items.role === userRole.OWNER || items.role === userRole.ADMIN);
+                        const students = usersProp.filter((items) => items.role === userRole.STUDENT || items.role === userRole.PILOT);
+                        const piloteMap = new Map(pilotes.map((pilot) => [pilot.id, pilot.email]));
+                        const studentMap = new Map(students.map((student) => [student.id, student.email]));
+                        const sessionstype = sessions.filter((session) => sessionID.includes(session.id));
+
+                        for (const session of sessionstype) {
+                            const studentEmail = studentMap.get(session.studentID || '');
+                            const piloteEmail = piloteMap.get(session.pilotID || '');
+                            const endDate = new Date(session.sessionDateStart);
+                            endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+
+                            // Envoi des notifications
+                            if (studentEmail) {
+                                Promise.all([
+                                    sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, clubProp),
+                                    sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, clubProp)
+                                ])
+                            }
+                        }
                     }
                 } catch (error) {
                     console.log(error);
@@ -124,8 +147,9 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
             if (sessionID) {
                 setLoading(true);
                 try {
-                    // Suppression de l'étudiant de la session
-                    const res = await removeStudentFromSessionID(sessionID);
+                    const student = usersProp.find(item => item.id === session.studentID)
+                    const pilote = usersProp.find(item => item.id === session.pilotID)
+                    const res = await removeStudentFromSessionID(session);
                     if (res.success) {
                         toast({
                             title: res.success,
@@ -146,8 +170,25 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                             );
                             return updatedSessions;
                         });
-                        setPlane(undefined)
-                            ;
+                        setPlane(undefined);
+
+                        const endDate = new Date(session.sessionDateStart);
+                        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+
+                        Promise.all([
+                            student?.email && sendNotificationRemoveAppointment(
+                                student.email,
+                                session.sessionDateStart as Date,
+                                endDate,
+                                clubProp as Club
+                            ),
+                            pilote?.email && sendNotificationSudentRemoveForPilot(
+                                pilote.email,
+                                session.sessionDateStart as Date,
+                                endDate,
+                                clubProp as Club
+                            ),
+                        ]);
                     }
 
                     if (res.error) {

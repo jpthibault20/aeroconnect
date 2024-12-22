@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Spinner } from '../ui/SpinnerVariants';
 import { getFreePlanesUsers } from '@/api/popupCalendar';
+import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
 
 interface Props {
     session: flight_sessions;
@@ -94,6 +95,26 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                             title: res.success,
                             duration: 5000,
                         });
+
+                        const endDate = new Date(session.sessionDateStart);
+                        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+                        const instructor = usersProp.find((user) => user.id === session.pilotID);
+                        Promise.all([
+                            sendNotificationBooking(
+                                instructor?.email || "",
+                                selectedUser.firstName,
+                                selectedUser.lastName,
+                                session.sessionDateStart,
+                                endDate,
+                                session.clubID
+                            ),
+                            sendStudentNotificationBooking(
+                                selectedUser.email || "",
+                                session.sessionDateStart,
+                                endDate,
+                                session.clubID
+                            ),
+                        ]);
 
                         // Mettre à jour la session avec les informations de l'étudiant et l'avion
                         setSessions(prevSessions => {

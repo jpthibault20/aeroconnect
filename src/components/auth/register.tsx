@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RegisterSchema, registerSchema } from "../../schemas/registerSchema"; // Assure-toi que le chemin est correct  
-import { emailSignup } from '@/app/auth/login/action';
+import { signup } from '@/app/auth/register/action';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import Image from 'next/image';
@@ -45,7 +45,7 @@ const Register = () => {
             formData.append('phone', data.phone);
 
             // Logique de soumission du formulaire, comme un appel API
-            await emailSignup(formData);
+            await signup(formData);
 
         } catch (error) {
             console.log(error);

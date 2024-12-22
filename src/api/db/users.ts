@@ -1,5 +1,4 @@
 "use server";
-import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
 import { createClient } from '@/utils/supabase/server';
 import { userRole } from '@prisma/client'
 import { User } from '@prisma/client'
@@ -57,7 +56,7 @@ export const getAllUser = async (clubID: string) => {
 
 // récupération de la session de l'utilisateur
 export const getSession = async () => {
-    const supabase = createClient()
+    const supabase = await createClient()
     try {
         const {
             data: { user },
@@ -72,45 +71,36 @@ export const getSession = async () => {
 }
 
 export const getUser = async () => {
-    const supabase = createClient();
-
+    const supabase = await createClient()
     try {
-        // Étape 1 : Récupérer l'utilisateur connecté via Supabase
         const { data, error: authError } = await supabase.auth.getUser();
-
-        if (authError) {
-            console.error("Erreur lors de la récupération de la session utilisateur");
-            return { error: "Error getting user session" };
+        if (authError || !data?.user) {
+            console.log("Erreur de récupération de l'utilisateur Supabase :", authError?.message);
+            return { error: "Utilisateur non connecté ou session invalide." };
         }
 
-        const userEmail = data?.user?.email;
-
+        const userEmail = data.user.email;
         if (!userEmail) {
-            console.error("L'email de l'utilisateur est introuvable dans la session Supabase.");
-            return { error: "Error getting user session" };
+            console.error("L'utilisateur connecté n'a pas d'email.");
+            return { error: "L'email de l'utilisateur est introuvable dans la session Supabase." };
         }
 
-        // Étape 2 : Récupérer l'utilisateur dans la base de données Prisma
         const user = await prisma.user.findUnique({
             where: { email: userEmail },
         });
 
         if (!user) {
             console.error(`Aucun utilisateur trouvé avec l'email : ${userEmail}`);
-            return { error: "User not found in the database" };
+            return { error: `Aucun utilisateur n'est associé à l'email : ${userEmail}` };
         }
 
-        // Retourner l'utilisateur avec un message de succès
         return {
-            success: "User retrieved successfully",
+            success: "Utilisateur récupéré avec succès",
             user,
         };
     } catch (error) {
         console.error("Erreur lors de l'exécution de la fonction getUser :", error);
-        return { error: "An unexpected error occurred" };
-    } finally {
-        // Assurez-vous que Prisma se déconnecte, même en cas d'erreur
-        await prisma.$disconnect();
+        return { error: "Une erreur inattendue est survenue lors de la récupération de l'utilisateur." };
     }
 };
 
@@ -118,8 +108,6 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
     if (!sessionID || !student.id || !student.firstName || !student.lastName || !student.planeId) {
         return { error: "Une erreur est survenue (E_001: paramètres invalides)" };
     }
-
-    let studentGlobal: { id: string; email: string; firstName: string; lastName: string; }
 
     try {
         // Étape 1 : Charger les données critiques
@@ -158,8 +146,6 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             return { error: "Détails de l'étudiant introuvables." };
         }
 
-        studentGlobal = studentDetails;
-
         // Étape 2 : Mise à jour rapide de la session
         await prisma.flight_sessions.update({
             where: { id: sessionID },
@@ -170,40 +156,6 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
                 studentPlaneID: student.planeId,
             },
         });
-
-        // Retour rapide de succès
-        const endDate = new Date(session.sessionDateStart);
-        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
-
-            try {
-                const instructor = await prisma.user.findUnique({
-                    where: { id: session.pilotID },
-                    select: {
-                        email: true,
-                        firstName: true,
-                        lastName: true,
-                    },
-                });
-
-                await Promise.all([
-                    sendNotificationBooking(
-                        instructor?.email || "",
-                        studentGlobal.firstName,
-                        studentGlobal.lastName,
-                        session.sessionDateStart,
-                        endDate,
-                        session.clubID
-                    ),
-                    sendStudentNotificationBooking(
-                        studentGlobal.email || "",
-                        session.sessionDateStart,
-                        endDate,
-                        session.clubID
-                    ),
-                ]);
-            } catch (error) {
-                console.error("Erreur lors du traitement différé des notifications :", error);
-            }
 
         return { success: "L'élève a été ajouté au vol !" };
 

@@ -175,6 +175,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
                     setSessionChecked={setSessionChecked}
                     planesProp={planesProp}
                     usersProp={usersProp}
+                    clubProp={clubProp as Club}
                 />
             )}
         </div>

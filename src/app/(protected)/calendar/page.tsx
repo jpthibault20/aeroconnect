@@ -5,13 +5,14 @@ import LoadingPage from '@/components/LoadingPage';
 import React, { Suspense } from 'react';
 
 interface PageProps {
-    searchParams: { clubID: string | undefined };
+    searchParams: Promise<{ [clubID: string]: string | string[] | undefined }>
 }
 
 const Page = async ({ searchParams }: PageProps) => {
+    const { clubID } = await searchParams;
     return (
         <Suspense fallback={<LoadingPage />}>
-            <ServerPage searchParams={searchParams} />
+            <ServerPage ClubIDprop={clubID} />
         </Suspense>
     )
 };
