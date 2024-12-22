@@ -5,13 +5,13 @@ import Link from 'next/link'
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { newPasswordSchema, NewPasswordSchema } from "../../schemas/newPasswordSchema"; // Assure-toi que le chemin est correct
-import { forgotPassword } from '../../app/auth/login/action';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Logo } from '../Logo';
 import Image from 'next/image';
 import { Spinner } from '../ui/SpinnerVariants';
+import { forgotPassword } from '@/app/auth/forgotPassword/action';
 
 
 const ForgotPassword = () => {
@@ -42,7 +42,6 @@ const ForgotPassword = () => {
             const formData = new FormData();
             formData.append('email', data.email);
             forgotPassword(formData);
-
 
         } catch (error) {
             console.log(error);

@@ -6,19 +6,20 @@ import NoClubID from '@/components/NoClubID';
 import prisma from '@/api/prisma';
 
 interface PageProps {
-    searchParams: { clubID: string | undefined };
+    ClubIDprop: string | string[] | undefined;
 }
 
-const ServerPageComp = async ({ searchParams }: PageProps) => {
-    const { clubID } = searchParams;
+const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
 
-    if (clubID) {
+    if (ClubIDprop) {
+
+        const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
         // Exécution parallèle des requêtes Prisma
         const [sessions, planes, club, users] = await Promise.all([
-            prisma.flight_sessions.findMany({ where: { clubID } }),
-            prisma.planes.findMany({ where: { clubID } }),
+            prisma.flight_sessions.findMany({ where: { clubID:clubID } }),
+            prisma.planes.findMany({ where: { clubID: clubID } }),
             prisma.club.findUnique({ where: { id: clubID } }),
-            prisma.user.findMany({ where: { clubID } })
+            prisma.user.findMany({ where: { clubID: clubID } })
         ]);
 
         // Vérification si les données du club sont valides

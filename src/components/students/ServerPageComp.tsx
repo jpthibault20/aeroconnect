@@ -17,14 +17,14 @@ import prisma from '@/api/prisma';
 import { getFromCache } from '@/lib/cache';
 
 interface PageProps {
-    searchParams: { clubID: string | undefined };
+    ClubIDprop: string | string[] | undefined;
 }
 
-const ServerPageComp = async ({ searchParams }: PageProps) => {
+const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
 
-    const clubID = searchParams.clubID;
+    if (ClubIDprop) {
+        const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
 
-    if (clubID) {
         const fetchUsers = async () => {
             return prisma.user.findMany({
                 where: { clubID },

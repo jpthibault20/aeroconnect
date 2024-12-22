@@ -3,8 +3,6 @@ import { createClient } from '@/utils/supabase/server';
 import { userRole } from '@prisma/client'
 import { User } from '@prisma/client'
 import prisma from '../prisma';
-import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 
 interface UserMin {
     firstName: string,
@@ -58,7 +56,7 @@ export const getAllUser = async (clubID: string) => {
 
 // récupération de la session de l'utilisateur
 export const getSession = async () => {
-    const supabase = createClient()
+    const supabase = await createClient()
     try {
         const {
             data: { user },
@@ -73,28 +71,20 @@ export const getSession = async () => {
 }
 
 export const getUser = async () => {
-    // Étape 1 : Création d'une instance Supabase côté serveur
-    const supabase = createServerActionClient({
-        cookies
-    });
-
+    const supabase = await createClient()
     try {
-        // Étape 2 : Récupérer les informations utilisateur via Supabase
         const { data, error: authError } = await supabase.auth.getUser();
-
         if (authError || !data?.user) {
-            console.error("Erreur de récupération de l'utilisateur Supabase :", authError?.message);
+            console.log("Erreur de récupération de l'utilisateur Supabase :", authError?.message);
             return { error: "Utilisateur non connecté ou session invalide." };
         }
 
         const userEmail = data.user.email;
-
         if (!userEmail) {
             console.error("L'utilisateur connecté n'a pas d'email.");
             return { error: "L'email de l'utilisateur est introuvable dans la session Supabase." };
         }
 
-        // Étape 3 : Récupérer les détails utilisateur dans Prisma
         const user = await prisma.user.findUnique({
             where: { email: userEmail },
         });
@@ -104,7 +94,6 @@ export const getUser = async () => {
             return { error: `Aucun utilisateur n'est associé à l'email : ${userEmail}` };
         }
 
-        // Étape 4 : Retourner les détails utilisateur
         return {
             success: "Utilisateur récupéré avec succès",
             user,
