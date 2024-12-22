@@ -10,7 +10,7 @@ interface PageProps {
 }
 
 const ServerPageComp = async ({ searchParams }: PageProps) => {
-    const { clubID } = searchParams;
+    const { clubID } = await searchParams;
 
     if (clubID) {
         // Exécution parallèle des requêtes Prisma
