@@ -158,6 +158,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
     const endDate = new Date(startDate);
     endDate.setMinutes(startDate.getMinutes() + sessions[0].sessionDateDuration_min);
 
+    const classroomSession = sessions.some(session => session.planeID.includes("classroomSession"));
+
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
@@ -165,7 +167,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
                 <SessionHeader sessionStartDate={startDate} />
                 <SessionDate startDate={startDate} endDate={endDate} />
                 <InstructorSelect instructors={availableInstructors} selectedInstructor={instructor} onInstructorChange={setInstructor} />
-                <PlaneSelect planes={availablePlanes} selectedPlane={plane} onPlaneChange={setPlane} />
+                <PlaneSelect planes={availablePlanes} selectedPlane={plane} onPlaneChange={setPlane} classroomSession={classroomSession} />
                 <SubmitButton submitDisabled={submitDisabled} onSubmit={onSubmit} loading={loading} error={error} disabledMessage={disabledMessage} />
             </DialogContent>
         </Dialog>

@@ -35,11 +35,11 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
     const { toast } = useToast()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
-    const [warning, setWarning] = useState("")
     const [isOpenPopover, setIsPopoverOpen] = useState(false)
     const [isOpenCal1, setIsOpenCal1] = useState(false)
     const [isOpenCal2, setIsOpenCal2] = useState(false)
     const [switchRecurrence, setSwitchRecurrence] = useState(false)
+    const [classroomSession, setClassroomSession] = useState(false)
     const [sessionData, setSessionData] = useState<interfaceSessions>({
         date: undefined,
         startHour: "9",
@@ -62,15 +62,17 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
     }, [switchRecurrence, sessionData.date])
 
     useEffect(() => {
+        if (classroomSession) {
+            setSessionData(prev => ({ ...prev, planeId: ["classroomSession"] }))
+        }
+    }, [classroomSession])
+
+    useEffect(() => {
         const startTime = new Date(1999, 0, 0, Number(sessionData.startHour), Number(sessionData.startMinute))
         const endTime = new Date(startTime)
         endTime.setMinutes(endTime.getMinutes() + sessionDurationMin)
         setSessionData(prev => ({ ...prev, endHour: String(endTime.getHours()), endMinute: endTime.getMinutes() === 0 ? "00" : String(endTime.getMinutes()) }))
     }, [sessionData.startHour, sessionData.startMinute])
-
-    useEffect(() => {
-        setWarning(sessionData.planeId.length === 0 ? "Attention, aucun avion n'a été sélectionné" : "")
-    }, [sessionData.planeId])
 
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR))) {
         return null
@@ -206,36 +208,41 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                             </Select>
                         </div>
                     </div>
-                    <div className="grid gap-2">
-                        <Label>Avions</Label>
-                        <div className="flex flex-wrap gap-2">
-                            <Button
-                                variant={allPlanesSelected ? "destructive" : "outline"}
-                                size="sm"
-                                onClick={toggleSelectAllPlanes}
-                            >
-                                {allPlanesSelected ? "Désélectionner tout" : "Sélectionner tout"}
-                            </Button>
-                            {planesProp?.map((plane) => (
-                                <Button
-                                    key={plane.id}
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => onClickPlane(plane.id)}
-                                    className={`${sessionData.planeId.includes(plane.id) ? "bg-green-200 hover:bg-green-200" : "bg-red-200 text-gray-500 hover:bg-red-200 hover:text-gray-500"}`}
-                                >
-                                    {plane.name}
-                                </Button>
-
-                            ))}
-                        </div>
-                        {warning && (
-                            <div className="flex items-center text-warning mt-2">
-                                <IoIosWarning className="mr-2" />
-                                <span>{warning}</span>
-                            </div>
-                        )}
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="recurrence">Session en salle</Label>
+                        <Switch
+                            id="classroomSessions"
+                            checked={classroomSession}
+                            onCheckedChange={setClassroomSession}
+                        />
                     </div>
+                    {!classroomSession && (
+                        <div className="grid gap-2">
+                            <Label>Appareils</Label>
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    variant={allPlanesSelected ? "destructive" : "outline"}
+                                    size="sm"
+                                    onClick={toggleSelectAllPlanes}
+                                >
+                                    {allPlanesSelected ? "Désélectionner tout" : "Sélectionner tout"}
+                                </Button>
+                                {planesProp?.map((plane) => (
+                                    <Button
+                                        key={plane.id}
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onClickPlane(plane.id)}
+                                        className={`${sessionData.planeId.includes(plane.id) ? "bg-green-200 hover:bg-green-200" : "bg-red-200 text-gray-500 hover:bg-red-200 hover:text-gray-500"}`}
+                                    >
+                                        {plane.name}
+                                    </Button>
+
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex items-center justify-between">
                         <Label htmlFor="recurrence">Récurrence hebdomadaire</Label>
                         <Switch

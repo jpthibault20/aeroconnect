@@ -7,22 +7,23 @@ interface PlaneSelectProps {
     planes: planes[];
     selectedPlane: string;
     onPlaneChange: (plane: string) => void;
+    classroomSession: boolean;
 }
 
-const PlaneSelect = ({ planes, selectedPlane, onPlaneChange }: PlaneSelectProps) => {
-
+const PlaneSelect = ({ planes, selectedPlane, onPlaneChange, classroomSession }: PlaneSelectProps) => {
     return (
         <div>
-            <Label>Avion</Label>
+            <Label>Appareils</Label>
             <Select value={selectedPlane} onValueChange={onPlaneChange}>
                 <SelectTrigger>
-                    <SelectValue placeholder="Avions" />
+                    <SelectValue placeholder="Appareilss" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="nothing">Avions</SelectItem>
+                    <SelectItem value="nothing">Appareils</SelectItem>
                     {planes.map(item => (
                         <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
                     ))}
+                    {classroomSession && <SelectItem value="classroomSession">Session théorique</SelectItem>}
                 </SelectContent>
             </Select>
         </div>)
