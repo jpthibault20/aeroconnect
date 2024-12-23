@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/utils/supabase/server'
-import prisma from '@/api/prisma'
 
 export async function login(formData: FormData) {
     const supabase = await createClient()
@@ -22,13 +21,8 @@ export async function login(formData: FormData) {
         redirect('/auth/login?message=Could not authenticate user')
     }
 
-    const userClub = await prisma.user.findFirst({
-        where: { email: data.email },
-        select: { clubID: true },
-    });
-
     revalidatePath('/', 'layout')
-    redirect(`/calendar?clubID=${userClub?.clubID || ''}`);
+    redirect(`/calendar?clubID=`);
 }
 
 export async function signOut() {
