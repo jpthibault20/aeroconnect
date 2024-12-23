@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { DialogContent, DialogTrigger } from "../ui/dialog";
+import { DialogContent, DialogTrigger } from "./ui/dialog";
 import { flight_sessions, planes, User } from "@prisma/client";
 import { Dialog } from "@radix-ui/react-dialog";
 import { useCurrentUser } from "@/app/context/useCurrentUser";

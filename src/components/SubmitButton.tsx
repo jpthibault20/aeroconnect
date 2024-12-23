@@ -1,7 +1,7 @@
 import React from 'react';
-import { Button } from '../ui/button';
+import { Button } from './ui/button';
 import { IoIosWarning } from 'react-icons/io';
-import { Spinner } from '../ui/SpinnerVariants';
+import { Spinner } from './ui/SpinnerVariants';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { userRole } from '@prisma/client';
 

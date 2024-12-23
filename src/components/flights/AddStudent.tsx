@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { FaPlus } from "react-icons/fa6";
@@ -10,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { Spinner } from '../ui/SpinnerVariants';
 import { getFreePlanesUsers } from '@/api/popupCalendar';
 import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
+import { IoIosWarning } from 'react-icons/io';
 
 interface Props {
     session: flight_sessions;
@@ -22,54 +24,42 @@ interface Props {
 const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const [users, setUsers] = useState<User[]>([]);
-    const [student, setStudent] = useState<string>(currentUser?.role !== "ADMIN" && currentUser?.role !== "OWNER" && currentUser?.role !== "INSTRUCTOR" ? currentUser?.id || "" : " ");
-    const [selectedPlane, setSelectedPlane] = useState<string>(" ");
+    const [error, setError] = useState("");
+    const [freeStudents, setFreeStudents] = useState<{ id: string, name: string }[]>([]);
+    const [studentId, setStudentId] = useState<string>("");
+    const [freePlanes, setFreePlanes] = useState<{ id: string, name: string }[]>([]);
+    const [planeId, setPlaneId] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const [planes, setPlanes] = useState<{ id: string; name: string }[]>([]);
 
+    // Récupérer les étudiants et les avions disponibles
     useEffect(() => {
-        if (session?.planeID) {
-            // Filtrer les avions correspondant aux IDs contenus dans session.planeID
-            const updatedPlanes = planesProp.filter(plane =>
-                Array.isArray(session.planeID)
-                    ? session.planeID.includes(plane.id) // Si planeID est un tableau d'IDs
-                    : session.planeID === plane.id     // Si planeID est un ID unique
-            );
-            setPlanes(updatedPlanes); // Met à jour l'état planes
+        const { students, planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp)
+
+        setFreeStudents(students.map(student => ({ id: student.id, name: `${student.lastName} ${student.firstName}` })));
+
+        if (session.planeID.includes("classroomSession")) {
+            setFreePlanes([{ id: "classroomSession", name: "Session théorique" }]);
         }
-    }, [session, planesProp]);
+        else {
+            setFreePlanes(planes.map(plane => ({ id: plane.id, name: plane.name })));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [planesProp, session, sessions, usersProp])
 
+    // Mise à jour de l'avion sélectionné si il n'y a qu'un seul
     useEffect(() => {
-        const fetchPlanesAndUsers = async () => {
-            try {
-                const { students: studentRes, planes: planesRes } = await getFreePlanesUsers(session, sessions, usersProp, planesProp);
+        if (freePlanes.length == 1) {
+            setPlaneId(freePlanes[0].id);
+        }
+    }, [freePlanes])
 
-                // Mettre à jour les états ou utiliser les données
-                setUsers(studentRes || []); // Exemple : mettre à jour les instructeurs disponibles
-                setPlanes(planesRes);
-            } catch (error) {
-                console.error('Error fetching planes and users:', error);
-            }
-        };
-
-        fetchPlanesAndUsers();
-    }, [sessions, session, usersProp, planesProp]);
-
-    if (currentUser?.role === userRole.USER) return null;
-
+    // Gestion de l'ajout de l'étudiant
     const onClickAction = async () => {
         setLoading(true);
 
-        // Détermine l'ID de l'étudiant à ajouter
-        const studentId =
-            currentUser?.role !== "ADMIN" &&
-                currentUser?.role !== "OWNER" &&
-                currentUser?.role !== "INSTRUCTOR"
-                ? currentUser?.id
-                : student;
-
         if (studentId) {
-            const selectedUser = users.find(user => user.id === studentId);
+            const selectedUser = usersProp.find(user => user.id === studentId);
 
             if (selectedUser) {
                 const { firstName, lastName } = selectedUser;
@@ -79,15 +69,17 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         id: studentId,
                         firstName,
                         lastName,
-                        planeId: selectedPlane,
+                        planeId,
                     });
 
                     if (res.error) {
+                        setError(res.error);
                         toast({
                             title: "Oups, une erreur est survenue",
                             description: res.error,
                             duration: 5000,
                         });
+                        setLoading(false);
                     }
 
                     if (res.success) {
@@ -125,27 +117,26 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                         studentID: studentId,  // ID de l'étudiant
                                         studentFirstName: firstName,  // Prénom de l'étudiant
                                         studentLastName: lastName,  // Nom de l'étudiant
-                                        studentPlaneID: selectedPlane,  // ID de l'avion
+                                        studentPlaneID: planeId,  // ID de l'avion
                                     }
                                     : s
                             );
                             return updatedSessions;
                         });
                         // Réinitialiser les champs
-                        setStudent(" ");
-                        setSelectedPlane(" ");
+                        setStudentId(" ");
+                        setPlaneId(" ");
+                        setLoading(false);
                     }
                 } catch (error) {
-                    console.error("Error adding student:", error);
-                } finally {
-                    setLoading(false);
+                    setError("Une erreur est survenue lors de l'ajout de l'étudiant.");
                 }
             } else {
-                console.error("Student not found");
+                setError("Étudiant introuvable");
                 setLoading(false);
             }
         } else {
-            console.error("Invalid student ID");
+            setError("Veuillez sélectionner un étudiant");
             setLoading(false);
         }
     };
@@ -154,13 +145,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     return (
         <Dialog>
             <DialogTrigger >
-                {currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR" ? (
-                    <FaPlus color='green' />
-                ) : (
-                    <div className='bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-lg'>
-                        S&apos;inscrire
-                    </div>
-                )}
+                <FaPlus color='green' />
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -169,35 +154,50 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         Voulez-vous ajouter un élève à ce vol ?
                     </DialogDescription>
                 </DialogHeader>
+
+                {/* Sélection de l'étudiant */}
                 <Select
-                    value={currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR" ? student : currentUser?.id}
-                    onValueChange={(val) => setStudent(val)}
-                    disabled={currentUser?.role !== "ADMIN" && currentUser?.role !== "OWNER" && currentUser?.role !== "INSTRUCTOR"}>
+                    value={studentId}
+                    onValueChange={(val) => setStudentId(val)}
+                    disabled={loading}>
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Élèves" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value=" ">Élèves</SelectItem>
-                        {users.map((item, index) => (
-                            <SelectItem key={index} value={item.id}>
-                                {item.firstName} {item.lastName}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Select value={selectedPlane} onValueChange={(val) => setSelectedPlane(val)} disabled={loading}>
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Avions" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value=" ">Avions</SelectItem>
-                        {planes.map((item, index) => (
+                        {freeStudents.map((item, index) => (
                             <SelectItem key={index} value={item.id}>
                                 {item.name}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
+
+                {/* Sélection de l'avion */}
+                <Select
+                    value={planeId}
+                    onValueChange={(val) => setPlaneId(val)}
+                    disabled={loading}>
+                    <SelectTrigger className="w-full">
+                        <SelectValue placeholder={"Appareils"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value=" ">Appareils</SelectItem>
+                        {freePlanes.map((item, index) => (
+                            <SelectItem key={index} value={item.id}>
+                                {item.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+
+                {error && (
+                    <div className="flex items-center text-destructive mb-4">
+                        <IoIosWarning className="mr-2" />
+                        <span>{error}</span>
+                    </div>
+                )}
+
                 <DialogFooter>
                     <DialogClose disabled={loading}>Cancel</DialogClose>
                     {loading ? (

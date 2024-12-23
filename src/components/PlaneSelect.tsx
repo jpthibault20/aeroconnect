@@ -1,6 +1,6 @@
 import React from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Label } from './ui/label';
 import { planes } from '@prisma/client';
 
 interface PlaneSelectProps {
@@ -16,7 +16,7 @@ const PlaneSelect = ({ planes, selectedPlane, onPlaneChange, classroomSession }:
             <Label>Appareils</Label>
             <Select value={selectedPlane} onValueChange={onPlaneChange}>
                 <SelectTrigger>
-                    <SelectValue placeholder="Appareilss" />
+                    <SelectValue placeholder="Appareils" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="nothing">Appareils</SelectItem>

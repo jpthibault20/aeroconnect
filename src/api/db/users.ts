@@ -105,6 +105,8 @@ export const getUser = async () => {
 };
 
 export const addStudentToSession = async (sessionID: string, student: { id: string, firstName: string, lastName: string, planeId: string }) => {
+    console.log(student)
+    console.log(sessionID)
     if (!sessionID || !student.id || !student.firstName || !student.lastName || !student.planeId) {
         return { error: "Une erreur est survenue (E_001: paramètres invalides)" };
     }
