@@ -22,7 +22,7 @@ export async function updatePassword(formData: FormData) {
     const email = res.data.user?.email
 
     if (!email) {
-        return redirect('/auth/login?message=Une erreur es survenue')
+        return redirect('/auth/login?message=Email manquant')
     }
 
 

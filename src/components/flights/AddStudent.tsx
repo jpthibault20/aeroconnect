@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { FaPlus } from "react-icons/fa6";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { addStudentToSession } from '@/api/db/users';
-import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { flight_sessions, planes, User, userRole } from '@prisma/client';
+import { flight_sessions, planes, User } from '@prisma/client';
 import { Button } from '../ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Spinner } from '../ui/SpinnerVariants';
@@ -22,15 +20,12 @@ interface Props {
 }
 
 const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: Props) => {
-    const { currentUser } = useCurrentUser();
-    const [users, setUsers] = useState<User[]>([]);
     const [error, setError] = useState("");
     const [freeStudents, setFreeStudents] = useState<{ id: string, name: string }[]>([]);
     const [studentId, setStudentId] = useState<string>("");
     const [freePlanes, setFreePlanes] = useState<{ id: string, name: string }[]>([]);
     const [planeId, setPlaneId] = useState<string>("");
     const [loading, setLoading] = useState(false);
-    const [planes, setPlanes] = useState<{ id: string; name: string }[]>([]);
 
     // Récupérer les étudiants et les avions disponibles
     useEffect(() => {
@@ -128,8 +123,9 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         setPlaneId(" ");
                         setLoading(false);
                     }
-                } catch (error) {
-                    setError("Une erreur est survenue lors de l'ajout de l'étudiant.");
+                } catch (err) {
+                    console.error(err);
+                    setError("Une erreur est survenue lors de l'ajout de l'étudiant (E_023: failed to add student)");
                 }
             } else {
                 setError("Étudiant introuvable");

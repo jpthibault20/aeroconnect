@@ -15,7 +15,7 @@ export async function signup(formData: FormData) {
     })
     if (errorAuth) {
         console.log(errorAuth.message)
-        redirect('/auth/login?message=Could not create user')
+        redirect('/auth/login?message=Une erreur est survenue lors de la création du compte, se rapprocher de l\'administrateur (E_009: failed to create auth user)')
     }
 
     try {
@@ -27,7 +27,7 @@ export async function signup(formData: FormData) {
         })
     } catch (error) {
         console.log(error)
-        return redirect('/auth/register?message=Could not create private user')
+        return redirect('/auth/register?message=Une erreur est survenue lors de la création du compte, se rapprocher de l\'administrateur (E_010: failed to create private user)')
     }
 
     revalidatePath('/', 'layout')
