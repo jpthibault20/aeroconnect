@@ -1,7 +1,7 @@
 import React from 'react';
 import AvailableSession from './AvailableSession';
 import BookedSession from './BookedSession';
-import SessionPopup from './SessionPopup';
+import SessionPopup from '../SessionPopup';
 import { flight_sessions, planes, User } from '@prisma/client';
 
 interface Props {

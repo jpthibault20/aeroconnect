@@ -1,7 +1,7 @@
 import { Clock, Plane } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { flight_sessions, planes, User } from '@prisma/client'
-import SessionPopup from '../SessionPopup'
+import SessionPopup from '@/components/SessionPopup'
 import { useEffect, useState } from 'react'
 import { getPlaneName } from '@/api/db/planes'
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
@@ -20,21 +20,17 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
     const [planesString, setPlanesString] = useState("");
 
     useEffect(() => {
-        console.log("student", session.studentPlaneID)
-        console.log("plane", session.planeID)
         if (session.studentPlaneID) {
-            console.log("student plane")
             getPlaneName(session.studentPlaneID).then(res => {
                 if (res && 'name' in res) {
-                    setPlanesString(res.name);
+                    setPlanesString(res.name as string);
                 }
             })
         }
         else if (session.planeID.length === 1) {
-            console.log("one plane")
             getPlaneName(session.planeID[0]).then(res => {
                 if (res && 'name' in res) {
-                    setPlanesString(res.name);
+                    setPlanesString(res.name as string);
                 }
             })
         }

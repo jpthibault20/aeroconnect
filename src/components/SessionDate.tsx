@@ -1,5 +1,5 @@
 import React from 'react';
-import InputComponent from '../InputComponent';
+import InputComponent from './InputComponent';
 import { FaArrowRight } from 'react-icons/fa';
 import { formatDate } from '@/api/date';
 

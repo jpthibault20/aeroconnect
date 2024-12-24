@@ -28,16 +28,18 @@ import { fr } from 'date-fns/locale';
 
 interface props {
     filterAvailable: boolean; ///< Indicates if the filter for available flights is active
-    filterReccurence: boolean; ///< Indicates if the filter for recurring flights is active
+    filterClassroomSessions: boolean; ///< Indicates if the filter for recurring flights is active
+    filterPlanesSessions: boolean; ///< Indicates if the filter for recurring flights is active
     filterDate: Date | null; ///< The selected date for filtering
     myFlights: boolean;
     setFilterAvailable: React.Dispatch<React.SetStateAction<boolean>>; ///< Function to update availability filter state
-    setFilterReccurence: React.Dispatch<React.SetStateAction<boolean>>; ///< Function to update recurrence filter state
+    setFilterClassroomSessions: React.Dispatch<React.SetStateAction<boolean>>; ///< Function to update recurrence filter state
+    setFilterPlanesSessions: React.Dispatch<React.SetStateAction<boolean>>; ///< Function to update recurrence filter state
     setFilterDate: React.Dispatch<React.SetStateAction<Date | null>>; ///< Function to update selected date for filtering
     setMyFlights: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const Filter = ({ filterAvailable, filterReccurence, filterDate, myFlights, setFilterAvailable, setFilterReccurence, setFilterDate, setMyFlights }: props) => {
+const Filter = ({ filterAvailable, filterClassroomSessions, filterPlanesSessions, filterDate, myFlights, setFilterAvailable, setFilterClassroomSessions, setFilterPlanesSessions, setFilterDate, setMyFlights }: props) => {
     const { currentUser } = useCurrentUser();
 
     /**
@@ -70,9 +72,15 @@ const Filter = ({ filterAvailable, filterReccurence, filterDate, myFlights, setF
                     </button>
                 </div>
                 <div className="flex space-x-2 justify-statr items-center border-b border-gray-300 py-2">
-                    <Checkbox checked={filterReccurence} onCheckedChange={(checked) => setFilterReccurence(!!checked)} />
-                    <button onClick={() => setFilterReccurence(!filterReccurence)} className='flex items-center justify-center'>
-                        vols récurrents
+                    <Checkbox checked={filterClassroomSessions} onCheckedChange={(checked) => setFilterClassroomSessions(!!checked)} />
+                    <button onClick={() => setFilterClassroomSessions(!filterClassroomSessions)} className='flex items-center justify-center'>
+                        Session théorique
+                    </button>
+                </div>
+                <div className="flex space-x-2 justify-statr items-center border-b border-gray-300 py-2">
+                    <Checkbox checked={filterPlanesSessions} onCheckedChange={(checked) => setFilterPlanesSessions(!!checked)} />
+                    <button onClick={() => setFilterPlanesSessions(!filterPlanesSessions)} className='flex items-center justify-center'>
+                        Session pratique
                     </button>
                 </div>
                 <div className='flex space-x-2 py-2 items-center'>
