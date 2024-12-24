@@ -64,16 +64,17 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
                 <div>
                     <Select value={plane} onValueChange={(val) => setPlane(val)}>
                         <SelectTrigger className="w-[150px]">
-                            <SelectValue placeholder="Avions" />
+                            <SelectValue placeholder="Appareils" />
                         </SelectTrigger>
                         <SelectContent>
                             {/* Option pour "Tous" les avions */}
-                            <SelectItem value="all">Avions</SelectItem>
+                            <SelectItem value="all">Appareils</SelectItem>
                             {operationalPlanes.map((item, index) => (
                                 <SelectItem key={index} value={item.id}>
                                     {item.name}
                                 </SelectItem>
                             ))}
+                            <SelectItem value="classroomSession">Session théorique</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+import { DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { formatDate } from '@/api/date';
 
 interface SessionHeaderProps {

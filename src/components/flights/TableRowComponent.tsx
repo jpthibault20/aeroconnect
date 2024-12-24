@@ -24,6 +24,8 @@ import { toast } from '@/hooks/use-toast';
 import AddStudent from './AddStudent';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail';
+import { FaArrowRight } from "react-icons/fa";
+import SessionPopup from '../SessionPopup';
 
 
 interface props {
@@ -58,8 +60,10 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
     // Sync individual checkbox state with "select all"
     useEffect(() => {
         if (session.studentPlaneID) {
-            const foundPlane = planesProp.find((p) => p.id === session.studentPlaneID);
-            setPlane(foundPlane); // Met à jour l'état
+            const classroomPlane = { id: "classroomSession", name: "session théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string };
+
+            const foundPlane = planesProp.find((p) => p.id === session.studentPlaneID) || session.studentPlaneID === "classroomSession" && classroomPlane;
+            setPlane(foundPlane as planes); // Met à jour l'état
         }
 
         setIsChecked(false);
@@ -137,10 +141,6 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
         };
         removeSessions();
     }
-
-    useEffect(() => {
-        console.log(loading);
-    }, [loading]);
 
     const removeStudent = (sessionID: string | null) => {
         const removeSessions = async () => {
@@ -221,14 +221,13 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
             <TableCell className='text-center'>
                 {session.sessionDateStart.toLocaleDateString('fr-FR', { day: 'numeric', month: '2-digit', year: 'numeric' })}
             </TableCell>
-            <TableCell className='text-center'>
+            <TableCell className='flex justify-center items-center gap-x-2'>
                 {session.sessionDateStart.toISOString().slice(11, 16)}
-            </TableCell>
-            <TableCell className='text-center'>
+                <FaArrowRight />
                 {finalDate.toISOString().slice(11, 16)}
             </TableCell>
             <TableCell className='text-center'>
-                {session.finalReccurence !== null ? (session.finalReccurence.toLocaleDateString('fr-FR', { day: 'numeric', month: '2-digit', year: 'numeric' })) : 'NON'}
+                {session.planeID.includes("classroomSession") ? "Théorique" : "Pratique"}
             </TableCell>
             <TableCell className='text-center'>
                 {session.pilotLastName.slice(0, 1).toUpperCase()}.{session.pilotFirstName}
@@ -250,9 +249,21 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                             </AlertConfirmDeleted>
                         }
                     </div>
-                ) : (
-                    <AddStudent session={session} setSessions={setSessions} sessions={sessions} planesProp={planesProp} usersProp={usersProp} />
-                )}
+                )
+                    : currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
+                        (
+                            <AddStudent session={session} setSessions={setSessions} sessions={sessions} planesProp={planesProp} usersProp={usersProp} />
+                        )
+                        : currentUser?.role == userRole.PILOT || currentUser?.role == userRole.STUDENT ?
+                            (
+                                <SessionPopup sessions={[session]} setSessions={setSessions} usersProps={usersProp} planesProp={planesProp} >
+                                    <div className='bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-lg'>
+                                        S&apos;inscrire
+                                    </div>
+                                </SessionPopup>
+                            )
+                            : null
+                }
             </TableCell>
             <TableCell className='text-center'>
                 {plane?.name || '...'}

@@ -45,7 +45,7 @@ export const filterPilotePlane = async (
     };
 };
 
-export const getFreePlanesUsers = async (
+export const getFreePlanesUsers = (
     actualSession: flight_sessions,
     sessions: flight_sessions[],
     usersProp: User[],
@@ -66,6 +66,7 @@ export const getFreePlanesUsers = async (
     const usedStudentIDs = sessionsFiltered
         .map(session => session.studentID)
         .filter((id): id is string => id !== null); // Filtrer les null
+
     const usedStudentPlaneIDs = sessionsFiltered
         .map(session => session.studentPlaneID)
         .filter((id): id is string => id !== null); // Filtrer les null
@@ -76,7 +77,7 @@ export const getFreePlanesUsers = async (
     );
 
     // Filtrer les avions disponibles
-    const freePlanes = planesProp.filter(plane => !usedStudentPlaneIDs.includes(plane.id));
+    const freePlanes = planesProp.filter(plane => !usedStudentPlaneIDs.includes(plane.id) && actualSession.planeID.includes(plane.id));
 
     return { students, planes: freePlanes };
 };

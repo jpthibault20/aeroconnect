@@ -19,7 +19,7 @@ export async function login(formData: FormData) {
     const { error } = await supabase.auth.signInWithPassword(data)
 
     if (error) {
-        redirect('/auth/login?message=Could not authenticate user')
+        redirect('/auth/login?message=Informations de connexion incorrectes (E_008: invalid credentials)')
     }
 
     const userClub = await prisma.user.findFirst({

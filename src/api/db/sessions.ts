@@ -46,6 +46,10 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
         return { error: "La date de fin de récurrence doit être après la date de début" };
     }
 
+    if (sessionData.planeId.length == 0) {
+        return { error: "Veuillez sélectionner des appareils ou définir la session comme une session en salle"}
+        }
+
     const baseSessionDateStart = new Date(Date.UTC(
         sessionData.date.getUTCFullYear(),
         sessionData.date.getUTCMonth(),

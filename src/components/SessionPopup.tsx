@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { DialogContent, DialogTrigger } from "../ui/dialog";
+import { DialogContent, DialogTrigger } from "./ui/dialog";
 import { flight_sessions, planes, User } from "@prisma/client";
 import { Dialog } from "@radix-ui/react-dialog";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
@@ -74,16 +74,30 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sessions]);
 
-    // Mise à jour des avions disponibles selon l'instructeur sélectionné
     useEffect(() => {
-        setAvailablePlanes(
-            instructor === "nothing"
-                ? allPlanes
-                : allPlanes.filter(plane =>
-                    sessions.some(session => session.pilotID === instructor && session.planeID.includes(plane.id))
-                )
-        );
+        let updatedPlanes;
+        const classroomPlane = { id: "classroomSession", name: "session théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string };
+
+        if (instructor === "nothing") {
+            updatedPlanes = allPlanes;
+        } else {
+            updatedPlanes = allPlanes.filter(plane =>
+                sessions.some(session => session.pilotID === instructor && session.planeID.includes(plane.id))
+            );
+        }
+
+        // Vérifier si une session avec planeID contient "classroomSession"
+        const hasClassroomSession = sessions.some(session => (session.pilotID === instructor || instructor === "nothing") && session.studentID === null && session.planeID.includes("classroomSession"));
+
+        if (hasClassroomSession || (instructor === "nothing" && hasClassroomSession)) {
+            // Ajouter l'avion "classroomSession" si non présent dans la liste
+            updatedPlanes = [...updatedPlanes, classroomPlane];
+        }
+
+        setAvailablePlanes(updatedPlanes);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [instructor, allPlanes, sessions]);
+
 
     // Mise à jour des instructeurs disponibles selon l'avion sélectionné
     useEffect(() => {
@@ -157,6 +171,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
     const startDate = new Date(sessions[0].sessionDateStart);
     const endDate = new Date(startDate);
     endDate.setMinutes(startDate.getMinutes() + sessions[0].sessionDateDuration_min);
+
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>

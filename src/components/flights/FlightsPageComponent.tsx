@@ -37,7 +37,8 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
     const { currentUser } = useCurrentUser();
     const [sessionChecked, setSessionChecked] = useState<string[]>([]);
     const [filterAvailable, setFilterAvailable] = useState(false);
-    const [filterReccurence, setFilterReccurence] = useState(false);
+    const [filterClassroomSessions, setFilterClassroomSessions] = useState(false);
+    const [filterPlanesSessions, setFilterPlanesSessions] = useState(false);
     const [filterDate, setFilterDate] = useState<Date | null>(null);
     const [myFlights, setMyFlights] = useState(false)
     const [sessions, setSessions] = useState<flight_sessions[]>(sessionsProp);
@@ -59,8 +60,12 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
             }
 
             // Filter by recurrence (for example, if the session has a recurrence)
-            if (filterReccurence) {
-                isValid = isValid && session.finalReccurence !== null;
+            if (filterClassroomSessions) {
+                isValid = isValid && session.planeID.includes("classroomSession");
+            }
+
+            if (filterPlanesSessions) {
+                isValid = isValid && !session.planeID.includes("classroomSession");
             }
 
             // Filter by date (if a filter date is selected)
@@ -74,7 +79,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
 
         setFilteredSessions(filtered); // Update the filtered sessions
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filterAvailable, filterReccurence, filterDate, sessions, myFlights]); // Recalculate filters when any filter changes
+    }, [filterAvailable, filterClassroomSessions, filterDate, sessions, myFlights, filterPlanesSessions]); // Recalculate filters when any filter changes
 
     const removeFlight = (sessionsParams: string[]) => {
         const removeSessions = async () => {
@@ -151,11 +156,13 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
                 </div>
                 <Filter
                     filterAvailable={filterAvailable}
-                    filterReccurence={filterReccurence}
+                    filterClassroomSessions={filterClassroomSessions}
+                    filterPlanesSessions={filterPlanesSessions}
                     filterDate={filterDate}
                     myFlights={myFlights}
                     setFilterAvailable={setFilterAvailable}
-                    setFilterReccurence={setFilterReccurence}
+                    setFilterClassroomSessions={setFilterClassroomSessions}
+                    setFilterPlanesSessions={setFilterPlanesSessions}
                     setFilterDate={setFilterDate}
                     setMyFlights={setMyFlights}
                 />
