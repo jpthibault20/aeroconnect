@@ -1,3 +1,4 @@
+"use server"
 import React, { Suspense } from 'react'
 import ForgotPassword from '../../../components/auth/forgotPassword'
 
