@@ -60,8 +60,10 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
     // Sync individual checkbox state with "select all"
     useEffect(() => {
         if (session.studentPlaneID) {
-            const foundPlane = planesProp.find((p) => p.id === session.studentPlaneID);
-            setPlane(foundPlane); // Met à jour l'état
+            const classroomPlane = { id: "classroomSession", name: "session théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string };
+
+            const foundPlane = planesProp.find((p) => p.id === session.studentPlaneID) || session.studentPlaneID === "classroomSession" && classroomPlane;
+            setPlane(foundPlane as planes); // Met à jour l'état
         }
 
         setIsChecked(false);
