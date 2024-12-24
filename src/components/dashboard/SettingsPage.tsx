@@ -31,7 +31,7 @@ const SettingsPage = ({ club }: Props) => {
         city: club.City || '',
         zipCode: club.ZipCode || '',
         country: club.Country || '',
-        owners: club.OwnerId || [],
+        owners: club.OwnerId || [''],
         classes: [0],
         hourStart: String(club.HoursOn[0]) || '9',
         hourEnd: String(club.HoursOn[-1]) || '19',
@@ -43,32 +43,8 @@ const SettingsPage = ({ club }: Props) => {
         timeDelayUnsubscribeminutes: 0,
     })
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target
-        setConfig(prev => ({ ...prev, [name]: value }))
-    }
-
-    const handleSelectChange = (name: string, value: string) => {
-        setConfig(prev => ({ ...prev, [name]: value }))
-    }
-
-    const handleClassesChange = (className: number) => {
-        setConfig(prev => ({
-            ...prev,
-            classesAcceptees: prev.classes.includes(className)
-                ? prev.classes.filter(c => c !== className)
-                : [...prev.classes, className]
-        }))
-    }
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
-        console.log('Configuration soumise:', config)
-        // Ici, vous pouvez ajouter la logique pour envoyer les données au serveur
-    }
-
     return (
-        <div onSubmit={handleSubmit} className="space-y-8">
+        <div className="space-y-8">
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center text-2xl">
@@ -79,27 +55,27 @@ const SettingsPage = ({ club }: Props) => {
                 <CardContent className="space-y-6">
                     <div>
                         <Label htmlFor="nomClub" className="text-lg">Nom du Club</Label>
-                        <Input id="nomClub" name="nomClub" value={config.clubName} onChange={handleChange} className="mt-1" />
+                        <Input id="nomClub" name="nomClub" value={config.clubName} className="mt-1" />
                     </div>
 
                     <Separator />
                     <div>
                         <div>
                             <Label htmlFor="adresse">Adresse</Label>
-                            <Textarea id="adresse" name="adresse" value={config.adress} onChange={handleChange} className="mt-1" />
+                            <Textarea id="adresse" name="adresse" value={config.adress} className="mt-1" />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <Label htmlFor="ville">Ville</Label>
-                                <Input id="ville" name="ville" value={config.city} onChange={handleChange} className="mt-1" />
+                                <Input id="ville" name="ville" value={config.city} className="mt-1" />
                             </div>
                             <div>
                                 <Label htmlFor="codePostal">Code Postal</Label>
-                                <Input id="codePostal" name="codePostal" value={config.zipCode} onChange={handleChange} className="mt-1" />
+                                <Input id="codePostal" name="codePostal" value={config.zipCode} className="mt-1" />
                             </div>
                             <div>
                                 <Label htmlFor="pays">Pays</Label>
-                                <Input id="pays" name="pays" value={config.country} onChange={handleChange} className="mt-1" />
+                                <Input id="pays" name="pays" value={config.country} className="mt-1" />
                             </div>
                         </div>
                     </div>
@@ -120,8 +96,7 @@ const SettingsPage = ({ club }: Props) => {
                                 <input
                                     type="checkbox"
                                     id={classe}
-                                    checked={config.classes.includes(Number(classe))}
-                                    onChange={() => handleClassesChange(Number(classe))}
+                                    checked={false}
                                     className="rounded border-gray-300 text-primary focus:ring-primary"
                                 />
                                 <Label htmlFor={`classe-${classe}`}>{classe}</Label>
@@ -142,7 +117,7 @@ const SettingsPage = ({ club }: Props) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="heureDebut">Heure de début</Label>
-                            <Select onValueChange={(value) => handleSelectChange('heureDebut', value)}>
+                            <Select >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Sélectionnez l'heure de début" />
                                 </SelectTrigger>
@@ -157,7 +132,7 @@ const SettingsPage = ({ club }: Props) => {
                         </div>
                         <div>
                             <Label htmlFor="heureFin">Heure de fin</Label>
-                            <Select onValueChange={(value) => handleSelectChange('heureFin', value)}>
+                            <Select >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Sélectionnez l'heure de fin" />
                                 </SelectTrigger>
@@ -190,7 +165,6 @@ const SettingsPage = ({ club }: Props) => {
                             <Switch
                                 id="autorisationDesinscription"
                                 checked={config.userCanUnsubscribeSessions}
-                                onCheckedChange={(checked) => handleSelectChange('autorisationDesinscription', checked ? 'oui' : 'non')}
                             />
                         </div>
 
@@ -203,7 +177,6 @@ const SettingsPage = ({ club }: Props) => {
                                         name="delaisMinimumDesinscription"
                                         type="number"
                                         value={config.timeDelayUnsubscribeminutes / 60}
-                                        onChange={handleChange}
                                         className="mt-1"
                                     />
                                 </div>
@@ -225,7 +198,6 @@ const SettingsPage = ({ club }: Props) => {
                                 name="delaisMinimumInscription"
                                 type="number"
                                 value={config.timeDelaySubscribeminutes / 60}
-                                onChange={handleChange}
                                 className="mt-1"
                             />
                         </div>
@@ -235,7 +207,6 @@ const SettingsPage = ({ club }: Props) => {
                             <Switch
                                 id="preInscription"
                                 checked={config.preSubscribe}
-                                onCheckedChange={(checked) => handleSelectChange('preInscription', checked ? 'oui' : 'non')}
                             />
                         </div>
 
@@ -244,7 +215,6 @@ const SettingsPage = ({ club }: Props) => {
                             <Switch
                                 id="userCanSubscribe"
                                 checked={config.userCanSubscribe}
-                                onCheckedChange={(checked) => handleSelectChange('inscriptionCommeAnnulation', checked ? 'oui' : 'non')}
                             />
                         </div>
                     </div>
@@ -304,7 +274,7 @@ const SettingsPage = ({ club }: Props) => {
             </Card>
 
             <CardFooter className="flex justify-start lg:justify-end">
-                <Button onClick={handleSubmit} size="lg">Enregistrer la configuration</Button>
+                <Button size="lg">Enregistrer la configuration</Button>
             </CardFooter>
         </div>
     )
