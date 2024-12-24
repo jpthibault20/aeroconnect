@@ -15,7 +15,8 @@ const InstructorSelect = ({ instructors, selectedInstructor, onInstructorChange 
         if (instructors.length === 1) {
             onInstructorChange(instructors[0].id);
         }
-    }, [instructors, onInstructorChange]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div>

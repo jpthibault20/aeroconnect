@@ -15,7 +15,8 @@ const PlaneSelect = ({ planes, selectedPlane, onPlaneChange, }: PlaneSelectProps
         if (planes.length === 1) {
             onPlaneChange(planes[0].id);
         }
-    }, [planes, onPlaneChange]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div>
