@@ -37,25 +37,26 @@ const NewPassword = () => {
         resolver: zodResolver(updatePasswordSchema),
     });
 
-    const onSubmit = (data: UpdatePasswordSchema) => {
-        setLoading(true);
-
+    const onSubmit = async (data: UpdatePasswordSchema) => {
+        setLoading(true); // Activer le chargement au début
         try {
             const formData = new FormData();
             formData.append('password', data.password);
             formData.append('confirmPassword', data.confirmPassword);
             formData.append('code', code);
 
-            updatePassword(formData);
+            // Appeler la fonction asynchrone et attendre sa résolution
+            await updatePassword(formData);
 
-
-        } catch (error) {
-            console.log(error);
-        } finally {
+            // Réinitialiser le formulaire après une soumission réussie
             reset();
-            setLoading(false);
+        } catch (error) {
+            console.error("Error during password update:", error);
+        } finally {
+            setLoading(false); // Désactiver le chargement après la soumission
         }
     };
+
 
     return (
         <div className="min-h-screen w-full flex flex-col lg:flex-row">
