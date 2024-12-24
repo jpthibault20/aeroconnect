@@ -9,6 +9,7 @@ import { Switch } from '../ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Textarea } from '../ui/textarea'
 import { Button } from '../ui/button'
+import { Club } from '@prisma/client'
 
 const classesULM = [
     "Paramoteur",
@@ -19,25 +20,27 @@ const classesULM = [
     "Hélicoptère ULM"
 ]
 
-const SettingsPage = () => {
+interface Props {
+    club: Club
+}
+
+const SettingsPage = ({ club }: Props) => {
     const [config, setConfig] = useState({
-        nomClub: '',
-        desinscriptionSessions: 'non',
-        delaisDesinscription: '',
-        inscriptionCommeAnnulation: 'non',
-        classesAcceptees: [""],
-        heureDebut: '',
-        heureFin: '',
-        adresse: '',
-        ville: '',
-        codePostal: '',
-        pays: '',
-        presidents: [""],
-        autorisationDesinscription: 'non',
-        delaisMinimumDesinscription: '',
-        preDesinscription: 'non',
-        delaisMinimumInscription: '',
-        preInscription: 'non',
+        clubName: club.Name || '',
+        adress: club.Address || '',
+        city: club.City || '',
+        zipCode: club.ZipCode || '',
+        country: club.Country || '',
+        owners: club.OwnerId || [],
+        classes: [0],
+        hourStart: String(club.HoursOn[0]) || '9',
+        hourEnd: String(club.HoursOn[-1]) || '19',
+        userCanSubscribe: true,
+        preSubscribe: false,
+        timeDelaySubscribeminutes: 0,
+        userCanUnsubscribeSessions: false,
+        preUnsubscribe: false,
+        timeDelayUnsubscribeminutes: 0,
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -49,12 +52,12 @@ const SettingsPage = () => {
         setConfig(prev => ({ ...prev, [name]: value }))
     }
 
-    const handleClassesChange = (className: string) => {
+    const handleClassesChange = (className: number) => {
         setConfig(prev => ({
             ...prev,
-            classesAcceptees: prev.classesAcceptees.includes(className)
-                ? prev.classesAcceptees.filter(c => c !== className)
-                : [...prev.classesAcceptees, className]
+            classesAcceptees: prev.classes.includes(className)
+                ? prev.classes.filter(c => c !== className)
+                : [...prev.classes, className]
         }))
     }
 
@@ -76,27 +79,27 @@ const SettingsPage = () => {
                 <CardContent className="space-y-6">
                     <div>
                         <Label htmlFor="nomClub" className="text-lg">Nom du Club</Label>
-                        <Input id="nomClub" name="nomClub" value={config.nomClub} onChange={handleChange} className="mt-1" />
+                        <Input id="nomClub" name="nomClub" value={config.clubName} onChange={handleChange} className="mt-1" />
                     </div>
 
                     <Separator />
                     <div>
                         <div>
                             <Label htmlFor="adresse">Adresse</Label>
-                            <Textarea id="adresse" name="adresse" value={config.adresse} onChange={handleChange} className="mt-1" />
+                            <Textarea id="adresse" name="adresse" value={config.adress} onChange={handleChange} className="mt-1" />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <Label htmlFor="ville">Ville</Label>
-                                <Input id="ville" name="ville" value={config.ville} onChange={handleChange} className="mt-1" />
+                                <Input id="ville" name="ville" value={config.city} onChange={handleChange} className="mt-1" />
                             </div>
                             <div>
                                 <Label htmlFor="codePostal">Code Postal</Label>
-                                <Input id="codePostal" name="codePostal" value={config.codePostal} onChange={handleChange} className="mt-1" />
+                                <Input id="codePostal" name="codePostal" value={config.zipCode} onChange={handleChange} className="mt-1" />
                             </div>
                             <div>
                                 <Label htmlFor="pays">Pays</Label>
-                                <Input id="pays" name="pays" value={config.pays} onChange={handleChange} className="mt-1" />
+                                <Input id="pays" name="pays" value={config.country} onChange={handleChange} className="mt-1" />
                             </div>
                         </div>
                     </div>
@@ -116,9 +119,9 @@ const SettingsPage = () => {
                             <div key={classe} className="flex items-center space-x-2">
                                 <input
                                     type="checkbox"
-                                    id={`classe-${classe}`}
-                                    checked={config.classesAcceptees.includes(classe)}
-                                    onChange={() => handleClassesChange(classe)}
+                                    id={classe}
+                                    checked={config.classes.includes(Number(classe))}
+                                    onChange={() => handleClassesChange(Number(classe))}
                                     className="rounded border-gray-300 text-primary focus:ring-primary"
                                 />
                                 <Label htmlFor={`classe-${classe}`}>{classe}</Label>
@@ -183,15 +186,15 @@ const SettingsPage = () => {
                         <Label className="text-lg">Paramètres d&apos;Inscription et de Désinscription</Label>
 
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="autorisationDesinscription" className="flex-grow">Autoriser la désinscription</Label>
+                            <Label htmlFor="autorisationDesinscription" className="flex-grow">Autoriser la désinscription des élèves</Label>
                             <Switch
                                 id="autorisationDesinscription"
-                                checked={config.autorisationDesinscription === 'oui'}
+                                checked={config.userCanUnsubscribeSessions}
                                 onCheckedChange={(checked) => handleSelectChange('autorisationDesinscription', checked ? 'oui' : 'non')}
                             />
                         </div>
 
-                        {config.autorisationDesinscription === 'oui' && (
+                        {config.userCanUnsubscribeSessions && (
                             <div className="space-y-4 pl-6 border-l-2 border-primary">
                                 <div>
                                     <Label htmlFor="delaisMinimumDesinscription">Délai minimum pour se désinscrire (en heures)</Label>
@@ -199,7 +202,7 @@ const SettingsPage = () => {
                                         id="delaisMinimumDesinscription"
                                         name="delaisMinimumDesinscription"
                                         type="number"
-                                        value={config.delaisMinimumDesinscription}
+                                        value={config.timeDelayUnsubscribeminutes / 60}
                                         onChange={handleChange}
                                         className="mt-1"
                                     />
@@ -208,8 +211,8 @@ const SettingsPage = () => {
                                     <Label htmlFor="preDesinscription">Activer la pré-désinscription</Label>
                                     <Switch
                                         id="preDesinscription"
-                                        checked={config.preDesinscription === 'oui'}
-                                        onCheckedChange={(checked) => handleSelectChange('preDesinscription', checked ? 'oui' : 'non')}
+                                        checked={config.preUnsubscribe}
+                                        onCheckedChange={(checked) => setConfig(prev => ({ ...prev, preUnsubscribe: checked }))}
                                     />
                                 </div>
                             </div>
@@ -221,7 +224,7 @@ const SettingsPage = () => {
                                 id="delaisMinimumInscription"
                                 name="delaisMinimumInscription"
                                 type="number"
-                                value={config.delaisMinimumInscription}
+                                value={config.timeDelaySubscribeminutes / 60}
                                 onChange={handleChange}
                                 className="mt-1"
                             />
@@ -231,16 +234,16 @@ const SettingsPage = () => {
                             <Label htmlFor="preInscription">Activer la pré-inscription</Label>
                             <Switch
                                 id="preInscription"
-                                checked={config.preInscription === 'oui'}
+                                checked={config.preSubscribe}
                                 onCheckedChange={(checked) => handleSelectChange('preInscription', checked ? 'oui' : 'non')}
                             />
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="inscriptionCommeAnnulation">Inscription comme l&apos;annulation</Label>
+                            <Label htmlFor="userCanSubscribe">userCanSubscribe</Label>
                             <Switch
-                                id="inscriptionCommeAnnulation"
-                                checked={config.inscriptionCommeAnnulation === 'oui'}
+                                id="userCanSubscribe"
+                                checked={config.userCanSubscribe}
                                 onCheckedChange={(checked) => handleSelectChange('inscriptionCommeAnnulation', checked ? 'oui' : 'non')}
                             />
                         </div>
@@ -257,12 +260,12 @@ const SettingsPage = () => {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {config.presidents.map((president, index) => (
+                        {config.owners.map((president, index) => (
                             <div key={index} className="flex items-center space-x-2">
                                 <Select
                                     value={president}
                                     onValueChange={(value) => {
-                                        const newPresidents = [...config.presidents];
+                                        const newPresidents = [...config.owners];
                                         newPresidents[index] = value;
                                         setConfig(prev => ({ ...prev, presidents: newPresidents }));
                                     }}
@@ -281,7 +284,7 @@ const SettingsPage = () => {
                                     variant="destructive"
                                     size="icon"
                                     onClick={() => {
-                                        const newPresidents = config.presidents.filter((_, i) => i !== index);
+                                        const newPresidents = config.owners.filter((_, i) => i !== index);
                                         setConfig(prev => ({ ...prev, presidents: newPresidents }));
                                     }}
                                 >
@@ -291,7 +294,7 @@ const SettingsPage = () => {
                         ))}
                         <Button
                             variant="outline"
-                            onClick={() => setConfig(prev => ({ ...prev, presidents: [...prev.presidents, ''] }))}
+                            onClick={() => setConfig(prev => ({ ...prev, presidents: [...prev.owners, ''] }))}
                             className="w-full"
                         >
                             <Plus className="mr-2 h-4 w-4" /> Ajouter un président

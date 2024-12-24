@@ -6,7 +6,7 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { indexLinkDashboard, navigationLinks } from '@/config/links';
 import { useRouter } from 'next/navigation';
 import InitialLoading from '../InitialLoading';
-import { User } from '@prisma/client';
+import { Club, User } from '@prisma/client';
 import { dashboardProps } from './ServerPageComp';
 import SettingsPage from './SettingsPage';
 import DashboardPage from './DashboardPage';
@@ -18,10 +18,11 @@ interface PageProps {
     HoursByStudent: dashboardProps[],
     HoursByMonth: dashboardProps[],
     UsersRequestedClubID: User[],
+    club: Club
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const PageComponent = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStudent, HoursByMonth, UsersRequestedClubID }: PageProps) => {
+const PageComponent = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStudent, HoursByMonth, UsersRequestedClubID, club }: PageProps) => {
     const [display, setDisplay] = useState<"dashboard" | "settings">("dashboard");
     const { currentUser } = useCurrentUser();
     const router = useRouter();
@@ -45,7 +46,7 @@ const PageComponent = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStuden
 
                 )
                     : display === "settings" ? (
-                        <SettingsPage />
+                        <SettingsPage club={club} />
                     ) : null
             }</main>
         </InitialLoading>

@@ -2,10 +2,12 @@
 
 import { getAllUserRequestedClubID } from '@/api/db/club';
 import { getHoursByInstructor, getHoursByMonth, getHoursByPlane, getHoursByStudent } from '@/api/db/sessions';
+import prisma from '@/api/prisma';
 import PageComponent from '@/components/dashboard/PageComponent';
 import InitialLoading from '@/components/InitialLoading';
 import NoClubID from '@/components/NoClubID';
 import { getFromCache } from '@/lib/cache'; // Import du cache
+import { Club } from '@prisma/client';
 import React from 'react';
 
 export interface dashboardProps {
@@ -28,16 +30,22 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             UsersRequestedClubID,
             HoursByMonth,
             HoursByStudent,
+            club
         ] = await Promise.all([
             getFromCache(`hoursByPlanes:${clubID}`, () => getHoursByPlane(clubID)),
             getFromCache(`HoursByInstructor:${clubID}`, () => getHoursByInstructor(clubID)),
             getFromCache(`UsersRequestedClubID:${clubID}`, () => getAllUserRequestedClubID(clubID)),
             getFromCache(`HoursByMonth:${clubID}`, () => getHoursByMonth(clubID)),
             getFromCache(`HoursByStudent:${clubID}`, () => getHoursByStudent(clubID)),
+            prisma.club.findUnique({
+                where: {
+                    id: clubID
+                }
+            })
         ]);
 
         // Gestion des erreurs pour `UsersRequestedClubID`
-        if ('error' in UsersRequestedClubID) {
+        if ('error' in UsersRequestedClubID || !club) {
             console.error(UsersRequestedClubID.error);
             return (
                 <div className="h-full">
@@ -56,6 +64,7 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
                     HoursByMonth={HoursByMonth}
                     HoursByStudent={HoursByStudent}
                     hoursByPlanes={hoursByPlanes}
+                    club={club}
                 />
             </InitialLoading>
         );
@@ -71,6 +80,7 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
                     HoursByMonth={[]}
                     HoursByStudent={[]}
                     hoursByPlanes={[]}
+                    club={{} as Club}
                 />
             </div>
         );
