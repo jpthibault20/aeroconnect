@@ -9,8 +9,6 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "migrate:prod": "prisma migrate deploy",
-    "postbuild": "npm run migrate:prod",
     "email": "email dev"
   },
   "dependencies": {
