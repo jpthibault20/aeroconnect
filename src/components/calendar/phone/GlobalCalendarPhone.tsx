@@ -6,8 +6,6 @@ import { ChevronLeft, ChevronRight, MoveLeft, MoveRight } from 'lucide-react';
 import { Session } from './Session';
 import Filter from '../Filter';
 import NewSession from '@/components/NewSession';
-import { workingHour } from '@/config/configClub';
-import { useCurrentClub } from '@/app/context/useCurrentClub';
 
 interface Props {
     sessions: flight_sessions[];
@@ -18,7 +16,6 @@ interface Props {
 }
 
 const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: Props) => {
-    const { currentClub } = useCurrentClub();
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -116,7 +113,6 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         return result;
     };
 
-    const clubHours = currentClub?.HoursOn || workingHour;
 
     return (
         <div className=" w-full bg-background mt-6 pb-20">
@@ -170,7 +166,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
             </div>
 
             <div className="justify-between items-center my-4 flex px-8">
-                <NewSession display='phone' setSessions={setSessions} planesProp={planesProp} clubHours={clubHours} />
+                <NewSession display='phone' setSessions={setSessions} planesProp={planesProp} />
                 <Filter
                     sessions={sessions}
                     setSessionsFiltered={setSessionsFiltered}
