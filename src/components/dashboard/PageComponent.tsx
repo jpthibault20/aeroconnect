@@ -18,11 +18,12 @@ interface PageProps {
     HoursByStudent: dashboardProps[],
     HoursByMonth: dashboardProps[],
     UsersRequestedClubID: User[],
-    club: Club
+    club: Club,
+    users: User[],
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const PageComponent = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStudent, HoursByMonth, UsersRequestedClubID, club }: PageProps) => {
+const PageComponent = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStudent, HoursByMonth, UsersRequestedClubID, club, users }: PageProps) => {
     const [display, setDisplay] = useState<"dashboard" | "settings">("dashboard");
     const { currentUser } = useCurrentUser();
     const router = useRouter();
@@ -32,7 +33,7 @@ const PageComponent = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStuden
     }
     return (
         <InitialLoading className="min-h-screen max-h-screen overflow-y-auto bg-gray-100 " clubIDURL={clubID}>
-            <Header clubName="Aeroculb ULM du saulnois" display={display} setDisplay={setDisplay} />
+            <Header clubName={club.Name} display={display} setDisplay={setDisplay} />
             <main className="container mx-auto px-4 py-7">{
                 display === "dashboard" ? (
 
@@ -46,7 +47,7 @@ const PageComponent = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStuden
 
                 )
                     : display === "settings" ? (
-                        <SettingsPage club={club} />
+                        <SettingsPage club={club} users={users} />
                     ) : null
             }</main>
         </InitialLoading>

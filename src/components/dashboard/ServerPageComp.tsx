@@ -30,18 +30,16 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             UsersRequestedClubID,
             HoursByMonth,
             HoursByStudent,
-            club
+            club,
+            uers,
         ] = await Promise.all([
             getFromCache(`hoursByPlanes:${clubID}`, () => getHoursByPlane(clubID)),
             getFromCache(`HoursByInstructor:${clubID}`, () => getHoursByInstructor(clubID)),
             getFromCache(`UsersRequestedClubID:${clubID}`, () => getAllUserRequestedClubID(clubID)),
             getFromCache(`HoursByMonth:${clubID}`, () => getHoursByMonth(clubID)),
             getFromCache(`HoursByStudent:${clubID}`, () => getHoursByStudent(clubID)),
-            prisma.club.findUnique({
-                where: {
-                    id: clubID
-                }
-            })
+            prisma.club.findUnique({ where: { id: clubID } }),
+            prisma.user.findMany({ where: { clubID: clubID } }),
         ]);
 
         // Gestion des erreurs pour `UsersRequestedClubID`
@@ -65,6 +63,7 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
                     HoursByStudent={HoursByStudent}
                     hoursByPlanes={hoursByPlanes}
                     club={club}
+                    users={uers}
                 />
             </InitialLoading>
         );
@@ -81,6 +80,7 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
                     HoursByStudent={[]}
                     hoursByPlanes={[]}
                     club={{} as Club}
+                    users={[]}
                 />
             </div>
         );
