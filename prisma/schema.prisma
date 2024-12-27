@@ -60,8 +60,16 @@ model Club {
   OwnerId            String[]
   DaysOn             String[]
   HoursOn            Int[]
-  SessionDurationMin Int
-  AvailableMinutes   String[]
+  SessionDurationMin Int      @default(60)
+  AvailableMinutes   String[] @default([])
+
+  classes                     Int[]   @default([1, 2, 3, 4, 5, 6])
+  userCanSubscribe            Boolean @default(true)
+  preSubscribe                Boolean @default(false)
+  timeDelaySubscribeminutes   Int     @default(0)
+  userCanUnsubscribe          Boolean @default(true)
+  preUnsubscribe              Boolean @default(false)
+  timeDelayUnsubscribeminutes Int     @default(0)
 }
 
 enum userRole {
