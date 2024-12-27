@@ -40,23 +40,21 @@ const SettingsPage = ({ users }: Props) => {
         city: currentClub?.City || '',
         zipCode: currentClub?.ZipCode || '',
         country: currentClub?.Country || '',
-
         owners: currentClub?.OwnerId || [],
-
         classes: currentClub?.classes || [],
-
         hourStart: String(currentClub?.HoursOn[0]).padStart(2, '0') + ":00",
         hourEnd: String(currentClub?.HoursOn[currentClub?.HoursOn.length - 1]).padStart(2, '0') + ":00",
-
         timeOfSession: currentClub?.SessionDurationMin,
-
         userCanSubscribe: currentClub?.userCanSubscribe,
         preSubscribe: currentClub?.preSubscribe,
         timeDelaySubscribeminutes: currentClub?.timeDelaySubscribeminutes,
-
         userCanUnsubscribe: currentClub?.userCanUnsubscribe,
         preUnsubscribe: currentClub?.preUnsubscribe,
         timeDelayUnsubscribeminutes: currentClub?.timeDelayUnsubscribeminutes,
+        firstNameContact: currentClub?.firstNameContact as string,
+        lastNameContact: currentClub?.lastNameContact as string,
+        mailContact: currentClub?.mailContact as string,
+        phoneContact: currentClub?.phoneContact as string,
     });
 
     // Check Error Classes
@@ -132,7 +130,55 @@ const SettingsPage = ({ users }: Props) => {
                             />
                         </div>
                     </div>
+                    <Separator />
+                    <div className='space-y-3'>
+                        <div className='flex justify-between w-full gap-4'>
+                            <div className='w-full'>
+                                <Label htmlFor="firstNameContact">Prénom du contact</Label>
+                                <Input
+                                    id="firstNameContact"
+                                    name="firstNameContact"
+                                    value={config.firstNameContact}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, firstNameContact: e.target.value }))}
+                                    className="mt-1"
+                                />
+                            </div>
+                            <div className='w-full'>
+                                <Label htmlFor="lastNameContact">Nom du contact</Label>
+                                <Input
+                                    id="lastNameContact"
+                                    name="lastNameContact"
+                                    value={config.lastNameContact}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, lastNameContact: e.target.value }))}
+                                    className="mt-1"
+                                />
+                            </div>
+                        </div>
 
+                        <div className='flex justify-between w-full gap-4'>
+                            <div className='w-full'>
+                                <Label htmlFor="mailContact">Mail du contact</Label>
+                                <Input
+                                    id="mailContact"
+                                    name="mailContact"
+                                    value={config.mailContact}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, mailContact: e.target.value }))}
+                                    className="mt-1"
+                                />
+                            </div>
+                            <div className='w-full'>
+                                <Label htmlFor="phoneContact">Téléphone du contact</Label>
+                                <Input
+                                    id="phoneContact"
+                                    name="phoneContact"
+                                    value={config.phoneContact}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, phoneContact: e.target.value }))}
+                                    className="mt-1"
+                                />
+                            </div>
+                        </div>
+
+                    </div>
                     <Separator />
                     <div>
                         <div>
