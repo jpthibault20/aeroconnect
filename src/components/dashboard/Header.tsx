@@ -1,13 +1,14 @@
+import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { ChartSpline, Settings2 } from "lucide-react";
 import { FC } from "react";
 
 interface HeaderProps {
-  clubName: string;
   display: "dashboard" | "settings";
   setDisplay: (display: "dashboard" | "settings") => void;
 }
 
-const Header: FC<HeaderProps> = ({ clubName, display, setDisplay }) => {
+const Header: FC<HeaderProps> = ({ display, setDisplay }) => {
+  const { currentClub } = useCurrentClub();
   const onClick = () => {
     setDisplay(display === "dashboard" ? "settings" : "dashboard");
   };
@@ -18,7 +19,7 @@ const Header: FC<HeaderProps> = ({ clubName, display, setDisplay }) => {
   return (
     <header className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 lg:p-4">
       {/* Club Name */}
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">{clubName}</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">{currentClub?.Name}</h1>
 
       {/* Toggle Button */}
       <div className="flex border border-gray-300 rounded-full shadow-lg">

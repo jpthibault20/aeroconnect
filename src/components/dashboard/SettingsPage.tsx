@@ -9,7 +9,7 @@ import { Switch } from '../ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Textarea } from '../ui/textarea'
 import { Button } from '../ui/button'
-import { Club, User, userRole } from '@prisma/client'
+import { User, userRole } from '@prisma/client'
 import { IoIosWarning } from 'react-icons/io'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { useCurrentClub } from '@/app/context/useCurrentClub'
@@ -24,11 +24,10 @@ const classesULM = [
 ]
 
 interface Props {
-    club: Club,
     users: User[],
 }
 
-const SettingsPage = ({ club, users }: Props) => {
+const SettingsPage = ({ users }: Props) => {
     const { currentUser } = useCurrentUser();
     const { currentClub } = useCurrentClub();
     const [errorClasses, setErrorClasses] = useState<string | null>(null);
@@ -36,28 +35,28 @@ const SettingsPage = ({ club, users }: Props) => {
     const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
     const [config, setConfig] = useState({
         clubName: currentClub?.Name,
-        clubId: club.id,
-        adress: club.Address || '',
-        city: club.City || '',
-        zipCode: club.ZipCode || '',
-        country: club.Country || '',
+        clubId: currentClub?.id,
+        adress: currentClub?.Address || '',
+        city: currentClub?.City || '',
+        zipCode: currentClub?.ZipCode || '',
+        country: currentClub?.Country || '',
 
-        owners: club.OwnerId,
+        owners: currentClub?.OwnerId || [],
 
-        classes: club.classes,
+        classes: currentClub?.classes || [],
 
-        hourStart: String(club.HoursOn[0]).padStart(2, '0') + ":00",
-        hourEnd: String(club.HoursOn[club.HoursOn.length - 1]).padStart(2, '0') + ":00",
+        hourStart: String(currentClub?.HoursOn[0]).padStart(2, '0') + ":00",
+        hourEnd: String(currentClub?.HoursOn[currentClub?.HoursOn.length - 1]).padStart(2, '0') + ":00",
 
-        timeOfSession: club.SessionDurationMin,
+        timeOfSession: currentClub?.SessionDurationMin,
 
-        userCanSubscribe: club.userCanSubscribe,
-        preSubscribe: club.preSubscribe,
-        timeDelaySubscribeminutes: club.timeDelaySubscribeminutes,
+        userCanSubscribe: currentClub?.userCanSubscribe,
+        preSubscribe: currentClub?.preSubscribe,
+        timeDelaySubscribeminutes: currentClub?.timeDelaySubscribeminutes,
 
-        userCanUnsubscribe: club.userCanUnsubscribe,
-        preUnsubscribe: club.preUnsubscribe,
-        timeDelayUnsubscribeminutes: club.timeDelayUnsubscribeminutes,
+        userCanUnsubscribe: currentClub?.userCanUnsubscribe,
+        preUnsubscribe: currentClub?.preUnsubscribe,
+        timeDelayUnsubscribeminutes: currentClub?.timeDelayUnsubscribeminutes,
     });
 
     // Check Error Classes
