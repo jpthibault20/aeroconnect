@@ -435,7 +435,11 @@ const SettingsPage = ({ users }: Props) => {
                                             setConfig((prev) => ({ ...prev, owners: newPresidents }));
                                         }}
                                     >
-                                        <SelectTrigger className="flex-grow">
+                                        <SelectTrigger
+                                            className="flex-grow"
+                                            disabled={config.owners.includes(currentUser?.id as string)}
+
+                                        >
                                             <SelectValue>
                                                 {selectedUser ? (
                                                     `${selectedUser.firstName} ${selectedUser.lastName}`
