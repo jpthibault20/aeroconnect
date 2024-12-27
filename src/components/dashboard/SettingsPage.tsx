@@ -12,6 +12,7 @@ import { Button } from '../ui/button'
 import { Club, User, userRole } from '@prisma/client'
 import { IoIosWarning } from 'react-icons/io'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
+import { useCurrentClub } from '@/app/context/useCurrentClub'
 
 const classesULM = [
     "Paramoteur",
@@ -29,11 +30,12 @@ interface Props {
 
 const SettingsPage = ({ club, users }: Props) => {
     const { currentUser } = useCurrentUser();
+    const { currentClub } = useCurrentClub();
     const [errorClasses, setErrorClasses] = useState<string | null>(null);
     const [errorHours, setErrorHours] = useState<string | null>(null);
     const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
     const [config, setConfig] = useState({
-        clubName: club.Name,
+        clubName: currentClub?.Name,
         clubId: club.id,
         adress: club.Address || '',
         city: club.City || '',
@@ -82,7 +84,7 @@ const SettingsPage = ({ club, users }: Props) => {
 
     // Check Error General
     useEffect(() => {
-        if (config.clubName.length === 0) {
+        if (config.clubName?.length === 0) {
             setErrorGeneral('Veuillez renseigner le nom du club');
         } else {
             setErrorGeneral(null);

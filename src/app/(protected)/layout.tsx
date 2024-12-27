@@ -7,6 +7,7 @@ import { CurrentUserWrapper } from "../context/useCurrentUser";
 import UpdateContext from "@/components/UpdateContext";
 import Navigation from "@/components/navigation";
 import prisma from "@/api/prisma";
+import { CurrentClubWrapper } from "../context/useCurrentClub";
 
 export default async function ProtectLayout({
     children,
@@ -32,8 +33,10 @@ export default async function ProtectLayout({
     return (
         <div className="h-full">
             <CurrentUserWrapper>
-                <UpdateContext userProp={user} />
-                <Navigation clubsProp={clubs}>{children}</Navigation>
+                <CurrentClubWrapper>
+                    <UpdateContext userProp={user} clubProp={clubs.filter(club => club.id === user.clubID)[0]} />
+                    <Navigation clubsProp={clubs}>{children}</Navigation>
+                </CurrentClubWrapper>
             </CurrentUserWrapper>
         </div>
     );
