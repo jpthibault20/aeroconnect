@@ -33,31 +33,29 @@ const SettingsPage = ({ club, users }: Props) => {
     const [errorHours, setErrorHours] = useState<string | null>(null);
     const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
     const [config, setConfig] = useState({
-        clubName: club.Name || '',
+        clubName: club.Name,
         clubId: club.id,
         adress: club.Address || '',
         city: club.City || '',
         zipCode: club.ZipCode || '',
         country: club.Country || '',
 
-        owners: club.OwnerId || [''],
+        owners: club.OwnerId,
 
-        classes: [] as number[],
+        classes: club.classes,
 
-        hourStart: club.HoursOn?.[0] !== undefined ? String(club.HoursOn[0]).padStart(2, '0') + ":00" : "00:00",
-        hourEnd: club.HoursOn?.[club.HoursOn.length - 1] !== undefined
-            ? String(club.HoursOn[club.HoursOn.length - 1]).padStart(2, '0') + ":00"
-            : "23:00",
+        hourStart: String(club.HoursOn[0]).padStart(2, '0') + ":00",
+        hourEnd: String(club.HoursOn[club.HoursOn.length - 1]).padStart(2, '0') + ":00",
 
-        timeOfSession: 60,
+        timeOfSession: club.SessionDurationMin,
 
-        userCanSubscribe: true,
-        preSubscribe: false,
-        timeDelaySubscribeminutes: 0,
+        userCanSubscribe: club.userCanSubscribe,
+        preSubscribe: club.preSubscribe,
+        timeDelaySubscribeminutes: club.timeDelaySubscribeminutes,
 
-        userCanUnsubscribe: false,
-        preUnsubscribe: false,
-        timeDelayUnsubscribeminutes: 0,
+        userCanUnsubscribe: club.userCanUnsubscribe,
+        preUnsubscribe: club.preUnsubscribe,
+        timeDelayUnsubscribeminutes: club.timeDelayUnsubscribeminutes,
     });
 
     // Check Error Classes
