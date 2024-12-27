@@ -14,7 +14,7 @@ const Page = async ({ searchParams }: PageProps) => {
     return (
         <Suspense fallback={<LoadingPage />}>
             <ServerPage ClubIDprop={clubID} />
-            </Suspense>
+        </Suspense>
     )
 };
 
