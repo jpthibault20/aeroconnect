@@ -26,6 +26,7 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail';
 import { FaArrowRight } from "react-icons/fa";
 import SessionPopup from '../SessionPopup';
+import { useCurrentClub } from '@/app/context/useCurrentClub';
 
 
 interface props {
@@ -36,11 +37,11 @@ interface props {
     isAllChecked: boolean; ///< Indicates if "select all" is checked
     planesProp: planes[];
     usersProp: User[];
-    clubProp: Club;
 }
 
-const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp, usersProp, clubProp }: props) => {
+const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp, usersProp }: props) => {
     const { currentUser } = useCurrentUser();
+    const { currentClub } = useCurrentClub();
     const [isChecked, setIsChecked] = useState(false); // State for individual checkbox
     const [loading, setLoading] = useState(false);
     const [autorisedDeleteStudent, setAutorisedDeleteStudent] = useState(false);
@@ -126,8 +127,8 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                             // Envoi des notifications
                             if (studentEmail) {
                                 Promise.all([
-                                    sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, clubProp),
-                                    sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, clubProp)
+                                    sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, currentClub as Club),
+                                    sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, currentClub as Club)
                                 ])
                             }
                         }
@@ -180,13 +181,13 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                                 student.email,
                                 session.sessionDateStart as Date,
                                 endDate,
-                                clubProp as Club
+                                currentClub as Club
                             ),
                             pilote?.email && sendNotificationSudentRemoveForPilot(
                                 pilote.email,
                                 session.sessionDateStart as Date,
                                 endDate,
-                                clubProp as Club
+                                currentClub as Club
                             ),
                         ]);
                     }

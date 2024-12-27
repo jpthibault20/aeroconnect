@@ -20,6 +20,7 @@ import { FaArrowRightLong } from "react-icons/fa6"
 import { Spinner } from './ui/SpinnerVariants'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'; // Import CSS for the date picker
+import { useCurrentClub } from '@/app/context/useCurrentClub'
 
 
 interface Props {
@@ -27,11 +28,11 @@ interface Props {
     style?: string
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>
     planesProp: planes[]
-    clubHours: number[]
 }
 
-const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHours }) => {
+const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
     const { currentUser } = useCurrentUser()
+    const { currentClub } = useCurrentClub()
     const { toast } = useToast()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
@@ -165,7 +166,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className='h-[40vh] overflow-y-auto'>
-                                    {clubHours.map((h) => (
+                                    {currentClub?.HoursOn.map((h) => (
                                         <SelectItem key={`start-${h}`} value={String(h)}>
                                             {h}
                                         </SelectItem>
@@ -190,7 +191,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className='h-[40vh] overflow-y-auto'>
-                                    {clubHours.map((h) => (
+                                    {currentClub?.HoursOn.map((h) => (
                                         <SelectItem key={`end-${h}`} value={h.toString()}>{h}</SelectItem>
                                     ))}
                                 </SelectContent>
