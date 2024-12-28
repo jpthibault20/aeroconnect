@@ -16,6 +16,7 @@ import { useCurrentClub } from '@/app/context/useCurrentClub'
 import { z } from 'zod'
 import { updateClub } from '@/api/db/club'
 import { Spinner } from '../ui/SpinnerVariants'
+import { toast } from '@/hooks/use-toast'
 
 // Définition du schéma Zod
 const configSchema = z.object({
@@ -121,13 +122,35 @@ const SettingsPage = ({ users }: Props) => {
         return true;
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const res = validateConfig()
         if (res) {
             try {
                 setLoading(true);
-                updateClub(currentClub?.id as string, config)
-                setSubmiError(null)
+                const result = await updateClub(currentClub?.id as string, config)
+                if (result.error) {
+                    setSubmiError(result.error)
+                    console.log(result.error)
+                    toast({
+                        title: "Configuration mise à jour avec succès",
+                        duration: 5000,
+                        style: {
+                            background: '#ab0b0b',
+                            color: '#fff',
+                        },
+                    });
+                }
+                else {
+                    toast({
+                        title: "Configuration mise à jour avec succès",
+                        duration: 5000,
+                        style: {
+                            background: '#0bab15', //ab0b0b
+                            color: '#fff',
+                        },
+                    });
+                    setSubmiError(null)
+                }
             } catch (error) {
                 console.error("Erreur lors de la soumission des données :", error);
                 setSubmiError("Une erreur est survenue lors de la soumission des données.");
@@ -699,8 +722,6 @@ const SettingsPage = ({ users }: Props) => {
                     </div>
                 </CardContent>
             </Card>
-
-
             <CardFooter className="flex justify-start lg:justify-end">
                 <div className='space-y-3'>
                     {submiError &&
@@ -721,7 +742,6 @@ const SettingsPage = ({ users }: Props) => {
                         )}
                     </Button>
                 </div>
-
             </CardFooter>
         </div>
     )
