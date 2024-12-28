@@ -88,6 +88,10 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
                         toast({
                             title: res.success,
                             duration: 5000,
+                            style: {
+                                background: '#0bab15', //rouge : ab0b0b
+                                color: '#fff',
+                            }
                         });
                         setSessionChecked([]);
                         setSessions(sessions.filter(session => !sessionsParams.includes(session.id)));
@@ -97,6 +101,10 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
                             title: "Oups, une erreur est survenue",
                             description: res.error,
                             duration: 5000,
+                            style: {
+                                background: '#ab0b0b', //rouge : ab0b0b
+                                color: '#fff',
+                            }
                         });
                     }
                 } catch (error) {

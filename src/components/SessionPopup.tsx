@@ -126,9 +126,24 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
             setLoading(true);
             const res = await studentRegistration(session, currentUser as User, plane);
             if (res.error) {
+                toast({
+                    title: res.error,
+                    duration: 5000,
+                    style: {
+                        background: '#ab0b0b', //rouge : ab0b0b
+                        color: '#fff',
+                    }
+                });
                 setError(res.error);
             } else if (res.success) {
-                toast({ title: res.success, duration: 3000 });
+                toast({
+                    title: res.success,
+                    duration: 5000,
+                    style: {
+                        background: '#0bab15', //rouge : ab0b0b
+                        color: '#fff',
+                    }
+                });
                 setIsOpen(false);
                 setSessions(prev =>
                     prev.map(s =>

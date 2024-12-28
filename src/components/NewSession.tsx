@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { flight_sessions, planes, userRole } from '@prisma/client'
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/hooks/use-toast"
 import { interfaceSessions, newSession } from '@/api/db/sessions'
 import { sessionDurationMin } from '@/config/configClub'
 import { fr } from "date-fns/locale"
@@ -33,7 +33,6 @@ interface Props {
 const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
     const { currentUser } = useCurrentUser()
     const { currentClub } = useCurrentClub()
-    const { toast } = useToast()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
     const [isOpenPopover, setIsPopoverOpen] = useState(false)
@@ -108,9 +107,24 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                     setSessions((prev) => [...prev, ...res.sessions])
                 }
                 setError("")
-                toast({ title: res.success, duration: 5000 })
+                toast({
+                    title: res.success,
+                    duration: 5000,
+                    style: {
+                        background: '#0bab15', //rouge : ab0b0b
+                        color: '#fff',
+                    },
+                })
                 setIsPopoverOpen(false)
             } else {
+                toast({
+                    title: res.error,
+                    duration: 5000,
+                    style: {
+                        background: '#ab0b0b', //ab0b0b
+                        color: '#fff',
+                    },
+                })
                 setError("Une erreur est survenue (E_002: réponse inattendue du serveur)")
             }
         } catch (error) {

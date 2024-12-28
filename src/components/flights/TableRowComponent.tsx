@@ -97,13 +97,22 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                     const res = await removeSessionsByID(sessionID);
                     if (res.error) {
                         toast({
-                            title: "Oups, une erreur est survenue",
-                            description: res.error,
+                            title: res.error,
+                            duration: 5000,
+                            style: {
+                                background: '#ab0b0b', //rouge : ab0b0b
+                                color: '#fff',
+                            }
                         });
                     }
                     if (res.success) {
                         toast({
                             title: res.success,
+                            duration: 5000,
+                            style: {
+                                background: '#0bab15', //rouge : ab0b0b
+                                color: '#fff',
+                            }
                         });
 
                         //supprimer les sessions de la base de données local
@@ -154,6 +163,11 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                     if (res.success) {
                         toast({
                             title: res.success,
+                            duration: 5000,
+                            style: {
+                                background: '#0bab15', //rouge : ab0b0b
+                                color: '#fff',
+                            }
                         });
 
                         // Mise à jour de la session pour nettoyer les valeurs
@@ -194,8 +208,12 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
 
                     if (res.error) {
                         toast({
-                            title: "Oups, une erreur est survenue",
-                            description: res.error,
+                            title: res.error,
+                            duration: 5000,
+                            style: {
+                                background: '#ab0b0b', //rouge : ab0b0b
+                                color: '#fff',
+                            }
                         });
 
                     }
