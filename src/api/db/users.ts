@@ -104,9 +104,11 @@ export const getUser = async () => {
     }
 };
 
-export const addStudentToSession = async (sessionID: string, student: { id: string, firstName: string, lastName: string, planeId: string }) => {
-    console.log(student)
-    console.log(sessionID)
+export const addStudentToSession = async (sessionID: string, student: { id: string, firstName: string, lastName: string, planeId: string }, timeOffset: number) => {
+
+    const nowDate = new Date();
+    nowDate.setMinutes(nowDate.getMinutes() - timeOffset);
+
     if (!sessionID || !student.id || !student.firstName || !student.lastName || !student.planeId) {
         return { error: "Une erreur est survenue (E_001: paramètres invalides)" };
     }
@@ -140,7 +142,9 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             return { error: "Session introuvable." };
         }
 
-        if (session.sessionDateStart < new Date()) {
+        console.log("session date : ",session.sessionDateStart)
+        console.log("now : ",nowDate)
+        if (session.sessionDateStart < nowDate) {
             return { error: "La date de la session est passée." };
         }
 

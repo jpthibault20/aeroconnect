@@ -65,7 +65,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         firstName,
                         lastName,
                         planeId,
-                    });
+                    }, new Date().getTimezoneOffset() as number);
 
                     if (res.error) {
                         setError(res.error);
@@ -74,7 +74,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                             description: res.error,
                             duration: 5000,
                             style: {
-                                background: '#0bab15', //rouge : ab0b0b
+                                background: '#ab0b0b', //rouge : ab0b0b
                                 color: '#fff',
                             }
                         });
@@ -86,7 +86,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                             title: res.success,
                             duration: 5000,
                             style: {
-                                background: '#ab0b0b', //rouge : ab0b0b
+                                background: '#0bab15', //rouge : ab0b0b
                                 color: '#fff',
                             }
                         });

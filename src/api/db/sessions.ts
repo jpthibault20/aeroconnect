@@ -1,7 +1,7 @@
 "use server";
 
-import { Club, flight_sessions, User } from '@prisma/client';
-import { differenceInHours, isBefore } from 'date-fns';
+import { Club, flight_sessions, User, userRole } from '@prisma/client';
+import { differenceInMinutes, isBefore } from 'date-fns';
 import prisma from '../prisma';
 
 export interface interfaceSessions {
@@ -47,8 +47,8 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
     }
 
     if (sessionData.planeId.length == 0) {
-        return { error: "Veuillez sélectionner des appareils ou définir la session comme une session en salle"}
-        }
+        return { error: "Veuillez sélectionner des appareils ou définir la session comme une session en salle" }
+    }
 
     const baseSessionDateStart = new Date(Date.UTC(
         sessionData.date.getUTCFullYear(),
@@ -199,7 +199,7 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
             },
         });
 
-        
+
 
         return { success: "Les sessions ont été supprimées !" };
     } catch (error) {
@@ -208,20 +208,28 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
     }
 };
 
-export const removeStudentFromSessionID = async (session:flight_sessions) => {
+export const removeStudentFromSessionID = async (session: flight_sessions, timeZoneOffset: number, club: Club, user: User) => {
     try {
         // Validation précoce 
         if (!session || !session.sessionDateStart || !session.studentID || !session.pilotID) {
             return { error: "Session introuvable ou incomplète." };
         }
 
-        const sessionDateUTC = new Date(session.sessionDateStart);
         const nowUTC = new Date();
-        const hoursUntilSession = differenceInHours(sessionDateUTC, nowUTC);
+        nowUTC.setMinutes(nowUTC.getMinutes() - timeZoneOffset);
 
-        if (isBefore(sessionDateUTC, nowUTC) || hoursUntilSession < 3) {
+        const minutesUntilSession = differenceInMinutes(session.sessionDateStart, nowUTC);
+
+        const allowedRoles: userRole[] = [userRole.ADMIN, userRole.INSTRUCTOR, userRole.OWNER];
+
+        if (
+            !allowedRoles.includes(user.role) &&
+            (isBefore(session.sessionDateStart, nowUTC) || minutesUntilSession < club.timeDelayUnsubscribeminutes)
+        ) {
             return { error: "La session ne peut être modifiée que si elle est dans plus de 3 heures." };
         }
+
+
 
         // Mettre à jour la session en une seule requête
         await prisma.flight_sessions.update({
@@ -320,9 +328,9 @@ export const studentRegistration = async (session: flight_sessions, student: Use
         now.setMinutes(now.getMinutes() - localTimeOffset + session.sessionDateDuration_min);
 
         if (sessionDate < now) {
-            return { error: "La date de la session est passée ou trop proche." };
+            return { error: `La date de la session est passée ou trop proche, la session doit être dans ${session.sessionDateDuration_min} minutes.` };
         }
-        
+
 
         if (student.restricted) {
             return { error: "Contacter l'administrateur pour plus d'informations. (E_002: restricted)" };

@@ -159,7 +159,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                 try {
                     const student = usersProp.find(item => item.id === session.studentID)
                     const pilote = usersProp.find(item => item.id === session.pilotID)
-                    const res = await removeStudentFromSessionID(session);
+                    const res = await removeStudentFromSessionID(session, new Date().getTimezoneOffset() as number, currentClub as Club, currentUser as User);
                     if (res.success) {
                         toast({
                             title: res.success,
