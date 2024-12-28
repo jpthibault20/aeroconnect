@@ -280,8 +280,12 @@ export const getSessionPlanes = async (sessionID: string) => {
 };
 
 export const studentRegistration = async (session: flight_sessions, student: User, planeID: string, club: Club, localTimeOffset: number) => {
-    if (!session || !student || !planeID) {
+    if (!session || !student || !planeID || !club) {
         return { error: "Une erreur est survenue (E_00x: paramètres invalides)" };
+    }
+
+    if (club.userCanSubscribe === false) {
+        return { error: "Les inscriptions sont désactivées par le club, se raprocher de l'administrateur du club." };
     }
 
     try {

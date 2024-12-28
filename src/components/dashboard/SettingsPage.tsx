@@ -520,6 +520,7 @@ const SettingsPage = ({ users }: Props) => {
                                     <Switch
                                         id="preInscription"
                                         checked={config.preSubscribe}
+                                        disabled
                                         onCheckedChange={(checked) => setConfig((prev) => ({ ...prev, preSubscribe: checked }))}
                                     />
                                     {errors.preSubscribe &&
@@ -589,6 +590,7 @@ const SettingsPage = ({ users }: Props) => {
                                     <Switch
                                         id="preDesinscription"
                                         checked={config.preUnsubscribe}
+                                        disabled
                                         onCheckedChange={(checked) => setConfig(prev => ({ ...prev, preUnsubscribe: checked }))}
                                     />
                                     {errors.preUnsubscribe &&
