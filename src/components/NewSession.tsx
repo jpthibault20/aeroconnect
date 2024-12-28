@@ -5,7 +5,6 @@ import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { flight_sessions, planes, userRole } from '@prisma/client'
 import { toast } from "@/hooks/use-toast"
 import { interfaceSessions, newSession } from '@/api/db/sessions'
-import { sessionDurationMin } from '@/config/configClub'
 import { fr } from "date-fns/locale"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
@@ -46,7 +45,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         startMinute: "00",
         endHour: "11",
         endMinute: "00",
-        duration: sessionDurationMin,
+        duration: currentClub?.SessionDurationMin || 60,
         endReccurence: undefined,
         planeId: planesProp.map(plane => plane.id)
     })
@@ -70,9 +69,9 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
     useEffect(() => {
         const startTime = new Date(1999, 0, 0, Number(sessionData.startHour), Number(sessionData.startMinute))
         const endTime = new Date(startTime)
-        endTime.setMinutes(endTime.getMinutes() + sessionDurationMin)
+        endTime.setMinutes(endTime.getMinutes() + sessionData.duration)
         setSessionData(prev => ({ ...prev, endHour: String(endTime.getHours()), endMinute: endTime.getMinutes() === 0 ? "00" : String(endTime.getMinutes()) }))
-    }, [sessionData.startHour, sessionData.startMinute])
+    }, [sessionData.duration, sessionData.startHour, sessionData.startMinute])
 
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR))) {
         return null

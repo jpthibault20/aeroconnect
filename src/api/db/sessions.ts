@@ -1,6 +1,6 @@
 "use server";
 
-import { flight_sessions, User } from '@prisma/client';
+import { Club, flight_sessions, User } from '@prisma/client';
 import { differenceInHours, isBefore } from 'date-fns';
 import prisma from '../prisma';
 
@@ -279,7 +279,7 @@ export const getSessionPlanes = async (sessionID: string) => {
     }
 };
 
-export const studentRegistration = async (session: flight_sessions, student: User, planeID: string) => {
+export const studentRegistration = async (session: flight_sessions, student: User, planeID: string, club: Club, localTimeOffset: number) => {
     if (!session || !student || !planeID) {
         return { error: "Une erreur est survenue (E_00x: paramètres invalides)" };
     }
@@ -311,9 +311,14 @@ export const studentRegistration = async (session: flight_sessions, student: Use
             return { error: "Session introuvable ou non accessible." };
         }
 
-        if (session.sessionDateStart < new Date()) {
-            return { error: "La date de la session est passée." };
+        const sessionDate = session.sessionDateStart;
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - localTimeOffset + session.sessionDateDuration_min);
+
+        if (sessionDate < now) {
+            return { error: "La date de la session est passée ou trop proche." };
         }
+        
 
         if (student.restricted) {
             return { error: "Contacter l'administrateur pour plus d'informations. (E_002: restricted)" };
@@ -334,14 +339,14 @@ export const studentRegistration = async (session: flight_sessions, student: Use
         // Étape 2 : Mise à jour rapide de la session
         if (student) {
 
-            await prisma.flight_sessions.update({
-                where: { id: session.id },
-                data: {
-                    studentID: student.id,
-                    studentPlaneID: planeID,
-                    studentFirstName: student.firstName,
-                    studentLastName: student.lastName,
-                }})            
+            // await prisma.flight_sessions.update({
+            //     where: { id: session.id },
+            //     data: {
+            //         studentID: student.id,
+            //         studentPlaneID: planeID,
+            //         studentFirstName: student.firstName,
+            //         studentLastName: student.lastName,
+            //     }})            
         }
 
         // Retour rapide de succès
