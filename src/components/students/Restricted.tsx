@@ -23,17 +23,20 @@ const Restricted = ({ user }: props) => {
                 console.log(error)
                 toast({
                     title: "Oups, une erreur est survenue",
-                    description: "contactez un administrateur pour modifier votre compte",
+                    duration: 5000,
                     style: {
-                        background: 'rgba(239, 68, 68, 0.9)',
-                        color: 'white',
-                    },
-                    duration: 3000,
+                        background: '#ab0b0b', //rouge : ab0b0b
+                        color: '#fff',
+                    }
                 });
             } finally {
                 toast({
                     title: "Utilisateur modifié avec succès",
-                    duration: 3000,
+                    duration: 5000,
+                    style: {
+                        background: '#0bab15', //rouge : ab0b0b
+                        color: '#fff',
+                    }
                 });
             }
         }

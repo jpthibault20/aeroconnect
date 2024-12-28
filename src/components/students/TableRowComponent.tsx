@@ -36,11 +36,11 @@ const TableRowComponent = ({ user, setUsers }: props) => {
         if (user.id === currentUser?.id) {
             toast({
                 title: "Vous ne pouvez pas supprimer votre propre compte",
-                description: "Contactez un administrateur pour supprimer votre compte",
+                duration: 5000,
                 style: {
-                    background: 'rgba(239, 68, 68, 0.9)',
-                    color: 'white',
-                },
+                    background: '#ab0b0b', //rouge : ab0b0b
+                    color: '#fff',
+                }
             });
             return;
         }
@@ -53,18 +53,32 @@ const TableRowComponent = ({ user, setUsers }: props) => {
                 setUsers((prevUsers) => prevUsers.filter((u) => u.id !== user.id));
                 toast({
                     title: "Utilisateur supprimé avec succès",
+                    duration: 5000,
+                    style: {
+                        background: '#0bab15', //rouge : ab0b0b
+                        color: '#fff',
+                    }
                 });
             } else {
                 console.log(res.error);
                 toast({
                     title: "Oups, une erreur est survenue",
+                    duration: 5000,
+                    style: {
+                        background: '#ab0b0b', //rouge : ab0b0b
+                        color: '#fff',
+                    }
                 });
             }
         } catch (error) {
             console.error(error);
             toast({
-                title: "Une erreur s'est produite",
-                description: "Impossible de supprimer l'utilisateur pour le moment",
+                title: "Une erreur s'est produite, impossible de supprimer l'utilisateur pour le moment",
+                duration: 5000,
+                style: {
+                    background: '#ab0b0b', //rouge : ab0b0b
+                    color: '#fff',
+                }
             });
         } finally {
             setLoading(false);

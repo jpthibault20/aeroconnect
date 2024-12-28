@@ -3,9 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { flight_sessions, planes, userRole } from '@prisma/client'
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/hooks/use-toast"
 import { interfaceSessions, newSession } from '@/api/db/sessions'
-import { sessionDurationMin } from '@/config/configClub'
 import { fr } from "date-fns/locale"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
@@ -20,6 +19,7 @@ import { FaArrowRightLong } from "react-icons/fa6"
 import { Spinner } from './ui/SpinnerVariants'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'; // Import CSS for the date picker
+import { useCurrentClub } from '@/app/context/useCurrentClub'
 
 
 interface Props {
@@ -27,12 +27,11 @@ interface Props {
     style?: string
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>
     planesProp: planes[]
-    clubHours: number[]
 }
 
-const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHours }) => {
+const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
     const { currentUser } = useCurrentUser()
-    const { toast } = useToast()
+    const { currentClub } = useCurrentClub()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
     const [isOpenPopover, setIsPopoverOpen] = useState(false)
@@ -46,7 +45,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
         startMinute: "00",
         endHour: "11",
         endMinute: "00",
-        duration: sessionDurationMin,
+        duration: currentClub?.SessionDurationMin || 60,
         endReccurence: undefined,
         planeId: planesProp.map(plane => plane.id)
     })
@@ -70,9 +69,9 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
     useEffect(() => {
         const startTime = new Date(1999, 0, 0, Number(sessionData.startHour), Number(sessionData.startMinute))
         const endTime = new Date(startTime)
-        endTime.setMinutes(endTime.getMinutes() + sessionDurationMin)
+        endTime.setMinutes(endTime.getMinutes() + sessionData.duration)
         setSessionData(prev => ({ ...prev, endHour: String(endTime.getHours()), endMinute: endTime.getMinutes() === 0 ? "00" : String(endTime.getMinutes()) }))
-    }, [sessionData.startHour, sessionData.startMinute])
+    }, [sessionData.duration, sessionData.startHour, sessionData.startMinute])
 
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR))) {
         return null
@@ -107,9 +106,24 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                     setSessions((prev) => [...prev, ...res.sessions])
                 }
                 setError("")
-                toast({ title: res.success, duration: 5000 })
+                toast({
+                    title: res.success,
+                    duration: 5000,
+                    style: {
+                        background: '#0bab15', //rouge : ab0b0b
+                        color: '#fff',
+                    },
+                })
                 setIsPopoverOpen(false)
             } else {
+                toast({
+                    title: res.error,
+                    duration: 5000,
+                    style: {
+                        background: '#ab0b0b', //ab0b0b
+                        color: '#fff',
+                    },
+                })
                 setError("Une erreur est survenue (E_002: réponse inattendue du serveur)")
             }
         } catch (error) {
@@ -165,7 +179,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className='h-[40vh] overflow-y-auto'>
-                                    {clubHours.map((h) => (
+                                    {currentClub?.HoursOn.map((h) => (
                                         <SelectItem key={`start-${h}`} value={String(h)}>
                                             {h}
                                         </SelectItem>
@@ -190,7 +204,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, clubHou
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className='h-[40vh] overflow-y-auto'>
-                                    {clubHours.map((h) => (
+                                    {currentClub?.HoursOn.map((h) => (
                                         <SelectItem key={`end-${h}`} value={h.toString()}>{h}</SelectItem>
                                     ))}
                                 </SelectContent>

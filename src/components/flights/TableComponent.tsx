@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Club, flight_sessions, planes, User, userRole } from '@prisma/client';
+import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import TableRowComponent from './TableRowComponent';
 import { Checkbox } from '../ui/checkbox';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
@@ -12,10 +12,9 @@ interface Props {
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
     usersProp: User[];
-    clubProp: Club;
 }
 
-const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, usersProp, clubProp }: Props) => {
+const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, usersProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const [isAllChecked, setIsAllChecked] = useState(false); // State to manage "select all"
     const [sessionsSorted, setSessionsSorted] = useState<flight_sessions[]>([]); // State for sorted sessions
@@ -99,7 +98,6 @@ const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, 
                                 sessions={sessions}
                                 setSessions={setSessions}
                                 usersProp={usersProp}
-                                clubProp={clubProp}
                             />
                         ))}
                     </TableBody>

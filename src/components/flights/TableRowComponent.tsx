@@ -26,6 +26,7 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail';
 import { FaArrowRight } from "react-icons/fa";
 import SessionPopup from '../SessionPopup';
+import { useCurrentClub } from '@/app/context/useCurrentClub';
 
 
 interface props {
@@ -36,11 +37,11 @@ interface props {
     isAllChecked: boolean; ///< Indicates if "select all" is checked
     planesProp: planes[];
     usersProp: User[];
-    clubProp: Club;
 }
 
-const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp, usersProp, clubProp }: props) => {
+const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp, usersProp }: props) => {
     const { currentUser } = useCurrentUser();
+    const { currentClub } = useCurrentClub();
     const [isChecked, setIsChecked] = useState(false); // State for individual checkbox
     const [loading, setLoading] = useState(false);
     const [autorisedDeleteStudent, setAutorisedDeleteStudent] = useState(false);
@@ -96,13 +97,22 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                     const res = await removeSessionsByID(sessionID);
                     if (res.error) {
                         toast({
-                            title: "Oups, une erreur est survenue",
-                            description: res.error,
+                            title: res.error,
+                            duration: 5000,
+                            style: {
+                                background: '#ab0b0b', //rouge : ab0b0b
+                                color: '#fff',
+                            }
                         });
                     }
                     if (res.success) {
                         toast({
                             title: res.success,
+                            duration: 5000,
+                            style: {
+                                background: '#0bab15', //rouge : ab0b0b
+                                color: '#fff',
+                            }
                         });
 
                         //supprimer les sessions de la base de données local
@@ -126,8 +136,8 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                             // Envoi des notifications
                             if (studentEmail) {
                                 Promise.all([
-                                    sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, clubProp),
-                                    sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, clubProp)
+                                    sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, currentClub as Club),
+                                    sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, currentClub as Club)
                                 ])
                             }
                         }
@@ -149,10 +159,15 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                 try {
                     const student = usersProp.find(item => item.id === session.studentID)
                     const pilote = usersProp.find(item => item.id === session.pilotID)
-                    const res = await removeStudentFromSessionID(session);
+                    const res = await removeStudentFromSessionID(session, new Date().getTimezoneOffset() as number, currentClub as Club, currentUser as User);
                     if (res.success) {
                         toast({
                             title: res.success,
+                            duration: 5000,
+                            style: {
+                                background: '#0bab15', //rouge : ab0b0b
+                                color: '#fff',
+                            }
                         });
 
                         // Mise à jour de la session pour nettoyer les valeurs
@@ -180,21 +195,25 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                                 student.email,
                                 session.sessionDateStart as Date,
                                 endDate,
-                                clubProp as Club
+                                currentClub as Club
                             ),
                             pilote?.email && sendNotificationSudentRemoveForPilot(
                                 pilote.email,
                                 session.sessionDateStart as Date,
                                 endDate,
-                                clubProp as Club
+                                currentClub as Club
                             ),
                         ]);
                     }
 
                     if (res.error) {
                         toast({
-                            title: "Oups, une erreur est survenue",
-                            description: res.error,
+                            title: res.error,
+                            duration: 5000,
+                            style: {
+                                background: '#ab0b0b', //rouge : ab0b0b
+                                color: '#fff',
+                            }
                         });
 
                     }

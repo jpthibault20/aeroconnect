@@ -1,23 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Club, flight_sessions, planes, User } from '@prisma/client';
+import { flight_sessions, planes, User } from '@prisma/client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, MoveLeft, MoveRight } from 'lucide-react';
 import { Session } from './Session';
 import Filter from '../Filter';
 import NewSession from '@/components/NewSession';
-import { workingHour } from '@/config/configClub';
 
 interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
     usersProps: User[]
-    club: Club | null
 
 }
 
-const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps, club }: Props) => {
+const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: Props) => {
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -115,7 +113,6 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps, cl
         return result;
     };
 
-    const clubHours = club?.HoursOn || workingHour;
 
     return (
         <div className=" w-full bg-background mt-6 pb-20">
@@ -169,7 +166,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps, cl
             </div>
 
             <div className="justify-between items-center my-4 flex px-8">
-                <NewSession display='phone' setSessions={setSessions} planesProp={planesProp} clubHours={clubHours} />
+                <NewSession display='phone' setSessions={setSessions} planesProp={planesProp} />
                 <Filter
                     sessions={sessions}
                     setSessionsFiltered={setSessionsFiltered}

@@ -15,39 +15,37 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
     if (ClubIDprop) {
         const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
 
-         // Regrouper les appels à la base de données pour optimiser les performances
-    const [sessions, planes, club, users] = await Promise.all([
-        prisma.flight_sessions.findMany({
-            where: {
-                clubID,
-                sessionDateStart: {
-                    gte: new Date(),
+        // Regrouper les appels à la base de données pour optimiser les performances
+        const [sessions, planes, users] = await Promise.all([
+            prisma.flight_sessions.findMany({
+                where: {
+                    clubID,
+                    sessionDateStart: {
+                        gte: new Date(),
+                    },
                 },
-            },
-        }),
-        prisma.planes.findMany({
-            where: { clubID },
-        }),
-        prisma.club.findUnique({ where: { id: clubID } }),
-        prisma.user.findMany({ where: { clubID } }),
-    ]);
+            }),
+            prisma.planes.findMany({
+                where: { clubID },
+            }),
+            prisma.user.findMany({ where: { clubID } }),
+        ]);
 
-    return (
-        <InitialLoading className="h-full w-full bg-gray-100" clubIDURL={clubID}>
-            <FlightsPageComponent sessionsProp={sessions} planesProp={planes} usersProp={users} clubProp={club} />
-        </InitialLoading>
-    );
-       
+        return (
+            <InitialLoading className="h-full w-full bg-gray-100" clubIDURL={clubID}>
+                <FlightsPageComponent sessionsProp={sessions} planesProp={planes} usersProp={users} />
+            </InitialLoading>
+        );
     }
 
 
- return (
-            <div>
-                <NoClubID />
-                <FlightsPageComponent sessionsProp={[]} planesProp={[]} usersProp={[]} clubProp={null} />
-            </div>
-        );
-   
+    return (
+        <div>
+            <NoClubID />
+            <FlightsPageComponent sessionsProp={[]} planesProp={[]} usersProp={[]} />
+        </div>
+    );
+
 };
 
 export default ServerPageComp;

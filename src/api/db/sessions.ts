@@ -1,8 +1,9 @@
 "use server";
 
-import { flight_sessions, User } from '@prisma/client';
-import { differenceInHours, isBefore } from 'date-fns';
+import { Club, flight_sessions, User, userRole } from '@prisma/client';
+import { differenceInMinutes, isBefore } from 'date-fns';
 import prisma from '../prisma';
+import { convertMinutesToHours } from '../global function/dateServeur';
 
 export interface interfaceSessions {
     date: Date | undefined;
@@ -47,8 +48,8 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
     }
 
     if (sessionData.planeId.length == 0) {
-        return { error: "Veuillez sélectionner des appareils ou définir la session comme une session en salle"}
-        }
+        return { error: "Veuillez sélectionner des appareils ou définir la session comme une session en salle" }
+    }
 
     const baseSessionDateStart = new Date(Date.UTC(
         sessionData.date.getUTCFullYear(),
@@ -199,7 +200,7 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
             },
         });
 
-        
+
 
         return { success: "Les sessions ont été supprimées !" };
     } catch (error) {
@@ -208,20 +209,31 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
     }
 };
 
-export const removeStudentFromSessionID = async (session:flight_sessions) => {
+export const removeStudentFromSessionID = async (session: flight_sessions, timeZoneOffset: number, club: Club, user: User) => {
     try {
         // Validation précoce 
         if (!session || !session.sessionDateStart || !session.studentID || !session.pilotID) {
             return { error: "Session introuvable ou incomplète." };
         }
 
-        const sessionDateUTC = new Date(session.sessionDateStart);
         const nowUTC = new Date();
-        const hoursUntilSession = differenceInHours(sessionDateUTC, nowUTC);
+        nowUTC.setMinutes(nowUTC.getMinutes() - timeZoneOffset);
 
-        if (isBefore(sessionDateUTC, nowUTC) || hoursUntilSession < 3) {
-            return { error: "La session ne peut être modifiée que si elle est dans plus de 3 heures." };
+        const minutesUntilSession = differenceInMinutes(session.sessionDateStart, nowUTC);
+
+        const allowedRoles: userRole[] = [userRole.ADMIN, userRole.INSTRUCTOR, userRole.OWNER];
+
+        if(!allowedRoles.includes(user.role) && !club.userCanUnsubscribe) {
+            return { error: "Les inscriptions sont désactivées par le club, se raprocher de l'administrateur du club." };
         }
+        if (
+            !allowedRoles.includes(user.role) &&
+            (isBefore(session.sessionDateStart, nowUTC) || minutesUntilSession < club.timeDelayUnsubscribeminutes)
+        ) {
+            return { error: `La session ne peut être modifiée que si elle est dans plus de ${convertMinutesToHours(club.timeDelayUnsubscribeminutes)}` };
+        }
+
+
 
         // Mettre à jour la session en une seule requête
         await prisma.flight_sessions.update({
@@ -279,9 +291,13 @@ export const getSessionPlanes = async (sessionID: string) => {
     }
 };
 
-export const studentRegistration = async (session: flight_sessions, student: User, planeID: string) => {
-    if (!session || !student || !planeID) {
+export const studentRegistration = async (session: flight_sessions, student: User, planeID: string, club: Club, localTimeOffset: number) => {
+    if (!session || !student || !planeID || !club) {
         return { error: "Une erreur est survenue (E_00x: paramètres invalides)" };
+    }
+
+    if (club.userCanSubscribe === false) {
+        return { error: "Les inscriptions sont désactivées par le club, se raprocher de l'administrateur du club." };
     }
 
     try {
@@ -311,9 +327,14 @@ export const studentRegistration = async (session: flight_sessions, student: Use
             return { error: "Session introuvable ou non accessible." };
         }
 
-        if (session.sessionDateStart < new Date()) {
-            return { error: "La date de la session est passée." };
+        const sessionDate = session.sessionDateStart;
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - localTimeOffset + session.sessionDateDuration_min);
+
+        if (sessionDate < now) {
+            return { error: `La date de la session est passée ou trop proche, la session doit être dans ${convertMinutesToHours(session.sessionDateDuration_min)}` };
         }
+
 
         if (student.restricted) {
             return { error: "Contacter l'administrateur pour plus d'informations. (E_002: restricted)" };
@@ -334,14 +355,14 @@ export const studentRegistration = async (session: flight_sessions, student: Use
         // Étape 2 : Mise à jour rapide de la session
         if (student) {
 
-            await prisma.flight_sessions.update({
-                where: { id: session.id },
-                data: {
-                    studentID: student.id,
-                    studentPlaneID: planeID,
-                    studentFirstName: student.firstName,
-                    studentLastName: student.lastName,
-                }})            
+            // await prisma.flight_sessions.update({
+            //     where: { id: session.id },
+            //     data: {
+            //         studentID: student.id,
+            //         studentPlaneID: planeID,
+            //         studentFirstName: student.firstName,
+            //         studentLastName: student.lastName,
+            //     }})            
         }
 
         // Retour rapide de succès

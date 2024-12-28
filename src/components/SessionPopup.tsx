@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { DialogContent, DialogTrigger } from "./ui/dialog";
-import { flight_sessions, planes, User } from "@prisma/client";
+import { Club, flight_sessions, planes, User } from "@prisma/client";
 import { Dialog } from "@radix-ui/react-dialog";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import SessionHeader from "./SessionHeader";
@@ -12,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { filterPilotePlane } from "@/api/popupCalendar";
 import { studentRegistration } from "@/api/db/sessions";
 import { sendNotificationBooking, sendStudentNotificationBooking } from "@/lib/mail";
+import { useCurrentClub } from "@/app/context/useCurrentClub";
 
 interface Prop {
     children: React.ReactNode;
@@ -23,6 +24,7 @@ interface Prop {
 
 const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp }: Prop) => {
     const { currentUser } = useCurrentUser();
+    const { currentClub } = useCurrentClub();
 
     const [isOpen, setIsOpen] = useState(false);
     const [error, setError] = useState("");
@@ -124,11 +126,26 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
 
         try {
             setLoading(true);
-            const res = await studentRegistration(session, currentUser as User, plane);
+            const res = await studentRegistration(session, currentUser as User, plane, currentClub as Club, new Date().getTimezoneOffset() as number);
             if (res.error) {
+                toast({
+                    title: res.error,
+                    duration: 5000,
+                    style: {
+                        background: '#ab0b0b', //rouge : ab0b0b
+                        color: '#fff',
+                    }
+                });
                 setError(res.error);
             } else if (res.success) {
-                toast({ title: res.success, duration: 3000 });
+                toast({
+                    title: res.success,
+                    duration: 5000,
+                    style: {
+                        background: '#0bab15', //rouge : ab0b0b
+                        color: '#fff',
+                    }
+                });
                 setIsOpen(false);
                 setSessions(prev =>
                     prev.map(s =>

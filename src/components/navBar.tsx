@@ -2,38 +2,18 @@
 
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { navigationLinks } from '@/config/links'
-import { Club, userRole } from '@prisma/client'
+import { userRole } from '@prisma/client'
 import React from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet'
 import { Button } from './ui/button'
-import { ChevronDown, LogOut, Menu, X } from 'lucide-react'
+import { LogOut, Menu, X } from 'lucide-react'
 import { signOut } from '@/app/auth/login/action'
 import Link from 'next/link'
 import Image from 'next/image'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
-import { updateUserClub } from '@/api/db/users'
-import { useSearchParams } from 'next/navigation'
 
-interface props {
-    clubsProp: Club[]
-}
-const NavBar = ({ clubsProp }: props) => {
+const NavBar = () => {
     const { currentUser } = useCurrentUser()
-    const searchParams = useSearchParams();
-    const clubID = searchParams.get("clubID");
     const [isOpen, setIsOpen] = React.useState(false)
-    const [clubForAdmin, setClubForAdmin] = React.useState<string | null>(clubID);
-
-    const handleClubChange = async (clubID: string) => {
-        setClubForAdmin(clubID);
-
-        if (currentUser?.id) {
-            await updateUserClub(currentUser.id, clubID);
-            window.location.href = `/calendar?clubID=${clubID}`;
-        }
-
-    };
-
 
     const filteredLinks = navigationLinks.filter(link =>
         link.roles.includes(currentUser?.role as userRole)
@@ -64,7 +44,7 @@ const NavBar = ({ clubsProp }: props) => {
                             height={40}
                             className="rounded-full mr-3"
                         />
-                        <div className="">
+                        <div className="w-full">
                             <p className="border-b font-medium text-sm w-fit">
                                 {currentUser?.lastName} {currentUser?.firstName}
                             </p>
@@ -81,50 +61,25 @@ const NavBar = ({ clubsProp }: props) => {
                                 }
                             </p>
                         </div>
-                        {currentUser?.role === userRole.ADMIN &&
-                            <div className='flex flex-1 justify-center items-center'>
-                                <div className='bg-white border-gray-400 rounded-lg px-2 py-1 text-black'>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger className="flex items-center space-x-4">
-                                            <p>
-                                                {clubForAdmin}
-                                            </p>
-                                            <ChevronDown size={20} />
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            {clubsProp.map((club) => {
-                                                return (
-                                                    <DropdownMenuItem onClick={() => handleClubChange(club.id)} key={club.id}>
-                                                        {club.id}
-                                                    </DropdownMenuItem>
-                                                );
-                                            })}
-
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </div>
-
-                        }
                     </div>
                     <nav className="flex flex-col space-y-4">
                         {filteredLinks.map((item) => (
                             <Link
                                 key={item.path}
                                 href={`${item.path}?clubID=${currentUser?.clubID}`}
-                                className="flex items-center space-x-2 px-4 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+                                className="flex items-center space-x-4 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
                                 onClick={() => setIsOpen(false)}
                             >
-                                <item.icon className="h-5 w-5" />
-                                <span className="text-md font-medium">{item.name}</span>
+                                <item.icon className="h-6 w-6" />
+                                <span className="text-lg font-medium">{item.name}</span>
                             </Link>
                         ))}
                         <button
-                            className="flex items-center space-x-2 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
+                            className="flex items-center space-x-4 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
                             onClick={() => signOut()}
                         >
-                            <LogOut className="h-5 w-5" />
-                            <span className="text-md font-medium">Déconnexion</span>
+                            <LogOut className="h-6 w-6" />
+                            <span className="text-lg font-medium">Déconnexion</span>
                         </button>
                     </nav>
                 </SheetContent>

@@ -7,7 +7,6 @@ import PageComponent from '@/components/dashboard/PageComponent';
 import InitialLoading from '@/components/InitialLoading';
 import NoClubID from '@/components/NoClubID';
 import { getFromCache } from '@/lib/cache'; // Import du cache
-import { Club } from '@prisma/client';
 import React from 'react';
 
 export interface dashboardProps {
@@ -30,7 +29,6 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             UsersRequestedClubID,
             HoursByMonth,
             HoursByStudent,
-            club,
             uers,
         ] = await Promise.all([
             getFromCache(`hoursByPlanes:${clubID}`, () => getHoursByPlane(clubID)),
@@ -38,12 +36,11 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             getFromCache(`UsersRequestedClubID:${clubID}`, () => getAllUserRequestedClubID(clubID)),
             getFromCache(`HoursByMonth:${clubID}`, () => getHoursByMonth(clubID)),
             getFromCache(`HoursByStudent:${clubID}`, () => getHoursByStudent(clubID)),
-            prisma.club.findUnique({ where: { id: clubID } }),
             prisma.user.findMany({ where: { clubID: clubID } }),
         ]);
 
         // Gestion des erreurs pour `UsersRequestedClubID`
-        if ('error' in UsersRequestedClubID || !club) {
+        if ('error' in UsersRequestedClubID) {
             console.error(UsersRequestedClubID.error);
             return (
                 <div className="h-full">
@@ -62,7 +59,6 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
                     HoursByMonth={HoursByMonth}
                     HoursByStudent={HoursByStudent}
                     hoursByPlanes={hoursByPlanes}
-                    club={club}
                     users={uers}
                 />
             </InitialLoading>
@@ -79,7 +75,6 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
                     HoursByMonth={[]}
                     HoursByStudent={[]}
                     hoursByPlanes={[]}
-                    club={{} as Club}
                     users={[]}
                 />
             </div>
