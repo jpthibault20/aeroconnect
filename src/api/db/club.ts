@@ -242,8 +242,6 @@ export interface ConfigClub {
 }
 
 export const updateClub = async (clubID: string, data: ConfigClub) => {
-    console.log(data)
-
     // layout of working hours
     const workingHour: number[] = [];
     const startHour = parseInt(data.hourStart.split(":")[0], 10);

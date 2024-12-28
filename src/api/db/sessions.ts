@@ -3,6 +3,7 @@
 import { Club, flight_sessions, User, userRole } from '@prisma/client';
 import { differenceInMinutes, isBefore } from 'date-fns';
 import prisma from '../prisma';
+import { convertMinutesToHours } from '../global function/dateServeur';
 
 export interface interfaceSessions {
     date: Date | undefined;
@@ -229,7 +230,7 @@ export const removeStudentFromSessionID = async (session: flight_sessions, timeZ
             !allowedRoles.includes(user.role) &&
             (isBefore(session.sessionDateStart, nowUTC) || minutesUntilSession < club.timeDelayUnsubscribeminutes)
         ) {
-            return { error: "La session ne peut être modifiée que si elle est dans plus de 3 heures." };
+            return { error: `La session ne peut être modifiée que si elle est dans plus de ${convertMinutesToHours(club.timeDelayUnsubscribeminutes)}` };
         }
 
 
@@ -331,7 +332,7 @@ export const studentRegistration = async (session: flight_sessions, student: Use
         now.setMinutes(now.getMinutes() - localTimeOffset + session.sessionDateDuration_min);
 
         if (sessionDate < now) {
-            return { error: `La date de la session est passée ou trop proche, la session doit être dans ${session.sessionDateDuration_min} minutes.` };
+            return { error: `La date de la session est passée ou trop proche, la session doit être dans ${convertMinutesToHours(session.sessionDateDuration_min)}` };
         }
 
 
