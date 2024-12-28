@@ -21,7 +21,6 @@ Les fonctionnalités listées dans la section "Fonctionnalités principales" ci-
 ## Fonctionnalités principales (en développement)
 
 - **Authentification** Rapiditée, confirmation mail, OAuth
-- **Time Server** quand l'heure est utilisé dans le server envoyer au server via le clien le décalage horaire pour travailler toujours sur la meme heure
 - **Paiment** Ajouter la feature de paiment en utilisant stripe
 - **Location** Ajouter la feature location des avions
 - **React Native** Créer une application mobile avec react Native
@@ -64,6 +63,7 @@ npm install
 
 créer les fichiers suivant : 
 
+.env.local
 ```bash
 WEBSITE_LINK=
 NEXT_PUBLIC_SUPABASE_URL=
@@ -87,7 +87,8 @@ npm run dev
 
 Voici les tâches restantes à accomplir pour finaliser le projet :
 
-- [ ] xxx
+- [ ] **Time Server** quand l'heure est utilisé dans le server envoyer au server via le clien le décalage horaire pour travailler toujours sur la meme heure
+- [ ] **Bug** Bug création session (çh -> 16h) avec reccurence sur une longue durée
 
 ## Contribuer
 
