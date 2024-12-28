@@ -216,3 +216,31 @@ export const getClubAdress = async (clubID: string) => {
         return null;
     }   
 }
+
+export interface ConfigClub {
+    clubName: string; // Nom du club
+    clubId: string; // Identifiant unique du club
+    address: string; // Adresse du club
+    city: string; // Ville du club
+    zipCode: string; // Code postal
+    country: string; // Pays
+    owners: string[]; // Liste des propriétaires (par leurs identifiants ou noms)
+    classes: number[]; // Liste des classes ULM (identifiées par des IDs ou numéros)
+    hourStart: string; // Heure de début au format HH:mm
+    hourEnd: string; // Heure de fin au format HH:mm
+    timeOfSession: number; // Durée de la session en minutes
+    userCanSubscribe: boolean; // Les utilisateurs peuvent s'inscrire
+    preSubscribe: boolean; // Inscription préalable requise
+    timeDelaySubscribeminutes: number; // Délai d'inscription en minutes
+    userCanUnsubscribe: boolean; // Les utilisateurs peuvent se désinscrire
+    preUnsubscribe: boolean; // Désinscription préalable requise
+    timeDelayUnsubscribeminutes: number; // Délai de désinscription en minutes
+    firstNameContact: string; // Prénom de la personne de contact
+    lastNameContact: string; // Nom de la personne de contact
+    mailContact: string; // Adresse e-mail de la personne de contact
+    phoneContact: string; // Numéro de téléphone de la personne de contact
+  }
+  
+export const updateClub = async (clubID: string, data: ConfigClub) => {
+    console.log(data)
+};
