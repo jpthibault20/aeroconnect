@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -98,34 +99,35 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
     const onConfirm = async () => {
         setLoading(true)
         try {
-            const res = await newSession(sessionData, currentUser)
-            if (res?.error) {
-                setError(res.error)
-            } else if (res?.success) {
-                if (res?.sessions && Array.isArray(res.sessions)) {
-                    setSessions((prev) => [...prev, ...res.sessions])
-                }
-                setError("")
-                toast({
-                    title: res.success,
-                    duration: 5000,
-                    style: {
-                        background: '#0bab15', //rouge : ab0b0b
-                        color: '#fff',
-                    },
-                })
-                setIsPopoverOpen(false)
-            } else {
-                toast({
-                    title: res.error,
-                    duration: 5000,
-                    style: {
-                        background: '#ab0b0b', //ab0b0b
-                        color: '#fff',
-                    },
-                })
-                setError("Une erreur est survenue (E_002: réponse inattendue du serveur)")
-            }
+            // const res = await 
+            newSession(sessionData, currentUser)
+            // if (res?.error) {
+            //     setError(res.error)
+            // } else if (res?.success) {
+            //     if (res?.sessions && Array.isArray(res.sessions)) {
+            //         setSessions((prev) => [...prev, ...res.sessions])
+            //     }
+            //     setError("")
+            //     toast({
+            //         title: res.success,
+            //         duration: 5000,
+            //         style: {
+            //             background: '#0bab15', //rouge : ab0b0b
+            //             color: '#fff',
+            //         },
+            //     })
+            //     setIsPopoverOpen(false)
+            // } else {
+            //     toast({
+            //         title: res.error,
+            //         duration: 5000,
+            //         style: {
+            //             background: '#ab0b0b', //ab0b0b
+            //             color: '#fff',
+            //         },
+            //     })
+            //     setError("Une erreur est survenue (E_002: réponse inattendue du serveur)")
+            // }
         } catch (error) {
             console.error("Erreur lors de l'envoi des données :", error)
             setError("Une erreur est survenue lors de l'envoi des données.")
