@@ -136,11 +136,17 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         };
     }
 
-    function getNextWeekStart(date: Date): Date {
-        const result = new Date(date);
-        result.setDate(result.getDate() + (7 - result.getDay() + 1)); // +1 pour commencer le lundi
-        return result;
+    function getNextSameDayOfWeek(date: Date, targetDayOfWeek: number): Date {
+        const nextDate = new Date(date);
+        nextDate.setDate(nextDate.getDate() + 7); // Passe au jour suivant
+
+        while (nextDate.getDay() !== targetDayOfWeek) {
+            nextDate.setDate(nextDate.getDate() + 1);
+        }
+
+        return nextDate;
     }
+
 
     function splitSessions(sessionData: interfaceSessions): interfaceSessions[] {
         const stats = calculateSessionStats(sessionData);
@@ -152,64 +158,49 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         }
 
         if (!sessionData.date || !sessionData.endReccurence) {
-            console.error('Erreur: Dates non définies');
+            console.error("Erreur: Dates non définies");
             throw new Error("Date and endReccurence must be defined to split sessions");
         }
 
         const startDate = new Date(sessionData.date);
         const weeksPerPeriod = Math.floor(maxSessionsPerInterface / stats.numberSessionsPerWeek);
 
-
         const splitSessions: interfaceSessions[] = [];
         let currentStartDate = new Date(startDate);
         let remainingSessions = stats.totalSessions;
-        let periodCounter = 0;
+        const initialDayOfWeek = startDate.getDay(); // Récupère le jour de la semaine initial
 
         while (remainingSessions > 0) {
-            periodCounter++;
-
             // Calculer la fin de la période actuelle
             const periodEndDate = new Date(currentStartDate);
-            periodEndDate.setDate(periodEndDate.getDate() + ((weeksPerPeriod * 7) - 1));
+            periodEndDate.setDate(periodEndDate.getDate() + weeksPerPeriod * 7 - 1);
+
             const finalEndDate = new Date(sessionData.endReccurence);
             const endDateForThisPeriod = periodEndDate < finalEndDate ? periodEndDate : finalEndDate;
 
-
+            // Créer une nouvelle période
             const newPeriod: interfaceSessions = {
                 ...sessionData,
                 date: new Date(currentStartDate),
-                endReccurence: new Date(endDateForThisPeriod)
+                endReccurence: new Date(endDateForThisPeriod),
             };
 
             splitSessions.push(newPeriod);
+
             const currentStats = calculateSessionStats(newPeriod);
             remainingSessions -= currentStats.totalSessions;
 
-
-            // Définir le début de la prochaine période au début de la semaine suivante
-            currentStartDate = getNextWeekStart(endDateForThisPeriod);
+            // Définir le début de la prochaine période
+            currentStartDate = getNextSameDayOfWeek(endDateForThisPeriod, initialDayOfWeek);
 
             if (currentStartDate >= finalEndDate) {
                 break;
             }
         }
 
-
-
         return splitSessions;
     }
 
-    // Fonction utilitaire pour les toasts
-    function showToast(message: string, type: "success" | "error") {
-        toast({
-            title: message,
-            duration: 5000,
-            style: {
-                background: type === "success" ? "#0bab15" : "#ab0b0b",
-                color: "#fff",
-            },
-        });
-    }
 
     const onConfirm = async () => {
         setLoading(true);
@@ -218,52 +209,64 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         console.log(splitSessionsArray);
         setTotalSessions(splitSessionsArray.length);
 
-        let successNewSessions = 0;
-        const errors: string[] = []; // Stocke les erreurs pour les afficher à la fin
-
         try {
+            let successNewSessions = 0;
             for (const session of splitSessionsArray) {
-                try {
-                    const res = await newSession(session, currentUser);
-
-                    if (res?.error) {
-                        errors.push(res.error); // Enregistre l'erreur pour traitement ultérieur
-                    } else if (res?.success) {
-                        if (res?.sessions && Array.isArray(res.sessions)) {
-                            setSessions((prev) => [...prev, ...res.sessions]);
-                        }
-                        successNewSessions++;
-                        setStateLoading((prev) => prev + 1); // Met à jour la progression
-                        console.log("Session créée avec succès");
+                const res = await newSession(session, currentUser);
+                if (res?.error) {
+                    setError(res.error);
+                    toast({
+                        title: res.error,
+                        duration: 5000,
+                        style: {
+                            background: '#ab0b0b', //ab0b0b
+                            color: '#fff',
+                        },
+                    });
+                    setLoading(false);
+                    return;
+                } else if (res?.success) {
+                    if (res?.sessions && Array.isArray(res.sessions)) {
+                        setSessions((prev) => [...prev, ...res.sessions]);
                     }
-                } catch (err) {
-                    console.error("Erreur lors de la création de la session :", err);
-                    errors.push("Une erreur inattendue est survenue.");
+                    setError("");
+                    successNewSessions++;
+                    setStateLoading((prev) => prev + 1);
+                    console.log("Session créée avec succès");
                 }
             }
 
-            // Gestion des succès et erreurs après la boucle
             if (successNewSessions === splitSessionsArray.length) {
-                showToast("Les sessions ont été créées !", "success");
+                toast({
+                    title: "Les sessions ont été créées !",
+                    duration: 5000,
+                    style: {
+                        background: '#0bab15', //rouge : ab0b0b
+                        color: '#fff',
+                    },
+                });
                 setIsPopoverOpen(false);
+                setLoading(false);
             } else {
-                const errorMsg = errors.length
-                    ? `Certaines sessions n'ont pas été créées : ${errors.join(", ")}`
-                    : "Une erreur est survenue lors de la création des sessions.";
-                showToast(errorMsg, "error");
-                setError(errorMsg);
+                toast({
+                    title: "Une erreur est survenue lors de la création des sessions.",
+                    duration: 5000,
+                    style: {
+                        background: '#ab0b0b', //ab0b0b
+                        color: '#fff',
+                    },
+                });
+                setError("Une erreur est survenue lors de la création des sessions.");
+                setLoading(false);
+                return;
             }
+
         } catch (error) {
-            console.error("Erreur globale :", error);
-            setError("Une erreur critique est survenue lors de l'envoi des données.");
-            showToast("Une erreur critique est survenue.", "error");
-        } finally {
-            setLoading(false); // Toujours désactiver le chargement à la fin
+            console.error("Erreur lors de l'envoi des données :", error)
+            setError("Une erreur est survenue lors de l'envoi des données.")
+
         }
-    };
-
-
-
+    }
 
     return (
         <Dialog open={isOpenPopover} onOpenChange={setIsPopoverOpen}>
