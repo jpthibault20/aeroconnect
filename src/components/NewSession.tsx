@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -20,6 +21,8 @@ import { Spinner } from './ui/SpinnerVariants'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'; // Import CSS for the date picker
 import { useCurrentClub } from '@/app/context/useCurrentClub'
+import SessionDate from './SessionDate'
+import { CircularProgress } from "@nextui-org/progress";
 
 
 interface Props {
@@ -27,6 +30,12 @@ interface Props {
     style?: string
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>
     planesProp: planes[]
+}
+
+interface SessionStats {
+    numberOfWeeks: number;
+    numberSessionsPerWeek: number;
+    totalSessions: number;
 }
 
 const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
@@ -39,6 +48,8 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
     const [isOpenCal2, setIsOpenCal2] = useState(false)
     const [switchRecurrence, setSwitchRecurrence] = useState(false)
     const [classroomSession, setClassroomSession] = useState(false)
+    const [stateLoading, setStateLoading] = useState(0)
+    const [totalSessions, setTotalSessions] = useState(0)
     const [sessionData, setSessionData] = useState<interfaceSessions>({
         date: undefined,
         startHour: "9",
@@ -95,48 +106,211 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         }))
     }
 
+    function calculateSessionStats(sessionData: interfaceSessions): SessionStats {
+
+        const sessionDurationMinutes = (parseInt(sessionData.endHour) - parseInt(sessionData.startHour)) * 60 +
+            (parseInt(sessionData.endMinute) - parseInt(sessionData.startMinute));
+
+        const numberSessionsPerWeek = Math.ceil(sessionDurationMinutes / sessionData.duration);
+
+        if (!sessionData.date || !sessionData.endReccurence) {
+            return {
+                numberOfWeeks: 1,
+                numberSessionsPerWeek: numberSessionsPerWeek,
+                totalSessions: numberSessionsPerWeek
+            };
+        }
+
+        const startDate = new Date(sessionData.date);
+        const endDate = new Date(sessionData.endReccurence);
+
+        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const numberOfWeeks = Math.ceil(diffDays / 7) + 1;
+        const totalSessions = numberOfWeeks * numberSessionsPerWeek;
+
+        return {
+            numberOfWeeks,
+            numberSessionsPerWeek,
+            totalSessions
+        };
+    }
+
+    // Fonction utilitaire pour obtenir le début de la semaine suivante
+    function getNextWeekStart(date: Date): Date {
+        const result = new Date(date);
+        result.setDate(result.getDate() + (7 - result.getDay() + 1)); // +1 pour commencer le lundi
+        return result;
+    }
+
+    function splitSessions(sessionData: interfaceSessions): interfaceSessions[] {
+        const stats = calculateSessionStats(sessionData);
+
+        const maxSessionsPerInterface = 20;
+
+        if (stats.totalSessions <= maxSessionsPerInterface) {
+            return [sessionData];
+        }
+
+        if (!sessionData.date || !sessionData.endReccurence) {
+            console.error('Erreur: Dates non définies');
+            throw new Error("Date and endReccurence must be defined to split sessions");
+        }
+
+        const startDate = new Date(sessionData.date);
+        const weeksPerPeriod = Math.floor(maxSessionsPerInterface / stats.numberSessionsPerWeek);
+
+
+        const splitSessions: interfaceSessions[] = [];
+        let currentStartDate = new Date(startDate);
+        let remainingSessions = stats.totalSessions;
+        let periodCounter = 0;
+
+        while (remainingSessions > 0) {
+            periodCounter++;
+
+            // Calculer la fin de la période actuelle
+            const periodEndDate = new Date(currentStartDate);
+            periodEndDate.setDate(periodEndDate.getDate() + ((weeksPerPeriod * 7) - 1));
+            const finalEndDate = new Date(sessionData.endReccurence);
+            const endDateForThisPeriod = periodEndDate < finalEndDate ? periodEndDate : finalEndDate;
+
+
+            const newPeriod: interfaceSessions = {
+                ...sessionData,
+                date: new Date(currentStartDate),
+                endReccurence: new Date(endDateForThisPeriod)
+            };
+
+            splitSessions.push(newPeriod);
+            const currentStats = calculateSessionStats(newPeriod);
+            remainingSessions -= currentStats.totalSessions;
+
+
+            // Définir le début de la prochaine période au début de la semaine suivante
+            currentStartDate = getNextWeekStart(endDateForThisPeriod);
+
+            if (currentStartDate >= finalEndDate) {
+                break;
+            }
+        }
+
+        splitSessions.forEach((period, index) => {
+            const periodStats = calculateSessionStats(period);
+        });
+
+        return splitSessions;
+    }
+
     const onConfirm = async () => {
-        setLoading(true)
+        setLoading(true);
+
+        const splitSessionsArray = splitSessions(sessionData);
+        console.log(splitSessionsArray);
+        setTotalSessions(splitSessionsArray.length);
+
         try {
-            const res = await newSession(sessionData, currentUser)
-            if (res?.error) {
-                setError(res.error)
-            } else if (res?.success) {
-                if (res?.sessions && Array.isArray(res.sessions)) {
-                    setSessions((prev) => [...prev, ...res.sessions])
+            let successNewSessions = 0;
+            for (const session of splitSessionsArray) {
+                const res = await newSession(session, currentUser);
+                if (res?.error) {
+                    setError(res.error);
+                    toast({
+                        title: res.error,
+                        duration: 5000,
+                        style: {
+                            background: '#ab0b0b', //ab0b0b
+                            color: '#fff',
+                        },
+                    });
+                    setLoading(false);
+                    return;
+                } else if (res?.success) {
+                    if (res?.sessions && Array.isArray(res.sessions)) {
+                        setSessions((prev) => [...prev, ...res.sessions]);
+                    }
+                    setError("");
+                    successNewSessions++;
+                    setStateLoading((prev) => prev + 1);
+                    console.log("Session créée avec succès");
                 }
-                setError("")
+            }
+
+            if (successNewSessions === splitSessionsArray.length) {
                 toast({
-                    title: res.success,
+                    title: "Les sessions ont été créées !",
                     duration: 5000,
                     style: {
                         background: '#0bab15', //rouge : ab0b0b
                         color: '#fff',
                     },
-                })
-                setIsPopoverOpen(false)
+                });
+                setIsPopoverOpen(false);
+                setLoading(false);
             } else {
                 toast({
-                    title: res.error,
+                    title: "Une erreur est survenue lors de la création des sessions.",
                     duration: 5000,
                     style: {
                         background: '#ab0b0b', //ab0b0b
                         color: '#fff',
                     },
-                })
-                setError("Une erreur est survenue (E_002: réponse inattendue du serveur)")
+                });
+                setError("Une erreur est survenue lors de la création des sessions.");
+                setLoading(false);
+                return;
             }
+
         } catch (error) {
             console.error("Erreur lors de l'envoi des données :", error)
             setError("Une erreur est survenue lors de l'envoi des données.")
-        } finally {
-            setLoading(false)
+
         }
+
+
+
+        // setLoading(true)
+        // try {
+        //     const res = await newSession(sessionData, currentUser)
+        //     if (res?.error) {
+        //         setError(res.error)
+        //     } else if (res?.success) {
+        //         if (res?.sessions && Array.isArray(res.sessions)) {
+        //             setSessions((prev) => [...prev, ...res.sessions])
+        //         }
+        //         setError("")
+        //         toast({
+        //             title: res.success,
+        //             duration: 5000,
+        //             style: {
+        //                 background: '#0bab15', //rouge : ab0b0b
+        //                 color: '#fff',
+        //             },
+        //         })
+        //         setIsPopoverOpen(false)
+        //     } else {
+        //         toast({
+        //             title: res.error,
+        //             duration: 5000,
+        //             style: {
+        //                 background: '#ab0b0b', //ab0b0b
+        //                 color: '#fff',
+        //             },
+        //         })
+        //         setError("Une erreur est survenue (E_002: réponse inattendue du serveur)")
+        //     }
+        // } catch (error) {
+        //     console.error("Erreur lors de l'envoi des données :", error)
+        //     setError("Une erreur est survenue lors de l'envoi des données.")
+        // } finally {
+        //     setLoading(false)
+        // }
     }
 
     return (
         <Dialog open={isOpenPopover} onOpenChange={setIsPopoverOpen}>
             <DialogTrigger
+                aria-label="Ouvrir le formulaire de nouvelle session"
                 className={`${display === "desktop" ? "bg-[#774BBE] hover:bg-[#3d2365] text-white " : ""} h-full rounded-md px-2 font-medium`}
             >
                 {display === "desktop" ? <p>Nouvelle session</p> : <IoMdAddCircle size={27} color="#774BBE" />}
@@ -235,6 +409,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                             <Label>Appareils</Label>
                             <div className="flex flex-wrap gap-2">
                                 <Button
+                                    aria-label={`${allPlanesSelected ? "Désélectionner" : "Sélectionner"} tous les appareils`}
                                     variant={allPlanesSelected ? "destructive" : "outline"}
                                     size="sm"
                                     onClick={toggleSelectAllPlanes}
@@ -243,6 +418,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                                 </Button>
                                 {planesProp?.map((plane) => (
                                     <Button
+                                        aria-label={`${sessionData.planeId.includes(plane.id) ? "Désélectionner" : "Sélectionner"} l'appareil ${plane.name}`}
                                         key={plane.id}
                                         variant="outline"
                                         size="sm"
@@ -299,14 +475,19 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                 <DialogFooter className='w-full'>
                     <span className='flex flex-row items-center justify-end'>
                         <span>
-                            <Button variant="link" onClick={() => setIsPopoverOpen(false)} className='w-fit text-gray-500' disabled={loading}>
+                            <Button variant="link" aria-label='Annuler' onClick={() => setIsPopoverOpen(false)} className='w-fit text-gray-500' disabled={loading}>
                                 Annuler
                             </Button>
                         </span>
                         <span>
-                            <Button variant="perso" onClick={onConfirm} disabled={loading} className='w-fit'>
+                            <Button variant="perso" onClick={onConfirm} disabled={loading} className='w-fit' aria-label='Enregistrer la session'>
                                 {loading ? (
-                                    <Spinner />
+                                    <CircularProgress
+                                        showValueLabel={true}
+                                        color='secondary'
+                                        size="sm"
+                                        value={100 * stateLoading / totalSessions}
+                                    />
                                 ) : "Enregistrer"}
                             </Button>
                         </span>
