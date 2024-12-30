@@ -88,7 +88,6 @@ npm run dev
 Voici les tâches restantes à accomplir pour finaliser le projet :
 
 - [ ] **Time Server** quand l'heure est utilisé dans le server envoyer au server via le clien le décalage horaire pour travailler toujours sur la meme heure
-- [ ] **Bug** Bug création session (çh -> 16h) avec reccurence sur une longue durée
 
 ## Contribuer
 
