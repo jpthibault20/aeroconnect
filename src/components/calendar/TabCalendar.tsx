@@ -20,6 +20,8 @@ const TabCalendar = ({ date, sessions, setSessions, clubHours, usersProps, plane
     // Récupère les jours de la semaine
     const daysOfWeek = useMemo(() => getDaysOfWeek(date), [date]);
 
+    const hours = clubHours.slice(0, clubHours.length - 1);
+
     const getSessions = (indexX: number, indexY: number) => {
         const hour = clubHours[indexX] !== undefined ? Math.floor(clubHours[indexX]) : 0;
         const minutes = clubHours[indexX] !== undefined ? Math.round((clubHours[indexX] % 1) * 60) : 0;
@@ -63,7 +65,7 @@ const TabCalendar = ({ date, sessions, setSessions, clubHours, usersProps, plane
                 </div>
                 {/* Créneaux horaires */}
                 <div className="table-row-group h-full bg-gray-100">
-                    {clubHours.map((hour, index) => (
+                    {hours.map((hour, index) => (
                         <div key={index} className="table-row">
                             <div className={`table-cell pl-3 text-center font-istok font-semibold text-[#646464] align-middle ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''} w-20`}>
                                 {formatTime(hour)}
