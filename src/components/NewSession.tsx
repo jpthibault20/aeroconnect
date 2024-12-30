@@ -136,7 +136,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         };
     }
 
-    // Fonction utilitaire pour obtenir le début de la semaine suivante
     function getNextWeekStart(date: Date): Date {
         const result = new Date(date);
         result.setDate(result.getDate() + (7 - result.getDay() + 1)); // +1 pour commencer le lundi
@@ -146,7 +145,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
     function splitSessions(sessionData: interfaceSessions): interfaceSessions[] {
         const stats = calculateSessionStats(sessionData);
 
-        const maxSessionsPerInterface = 20;
+        const maxSessionsPerInterface = 10;
 
         if (stats.totalSessions <= maxSessionsPerInterface) {
             return [sessionData];
@@ -195,11 +194,21 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
             }
         }
 
-        splitSessions.forEach((period, index) => {
-            const periodStats = calculateSessionStats(period);
-        });
+
 
         return splitSessions;
+    }
+
+    // Fonction utilitaire pour les toasts
+    function showToast(message: string, type: "success" | "error") {
+        toast({
+            title: message,
+            duration: 5000,
+            style: {
+                background: type === "success" ? "#0bab15" : "#ab0b0b",
+                color: "#fff",
+            },
+        });
     }
 
     const onConfirm = async () => {
@@ -209,103 +218,52 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         console.log(splitSessionsArray);
         setTotalSessions(splitSessionsArray.length);
 
+        let successNewSessions = 0;
+        const errors: string[] = []; // Stocke les erreurs pour les afficher à la fin
+
         try {
-            let successNewSessions = 0;
             for (const session of splitSessionsArray) {
-                const res = await newSession(session, currentUser);
-                if (res?.error) {
-                    setError(res.error);
-                    toast({
-                        title: res.error,
-                        duration: 5000,
-                        style: {
-                            background: '#ab0b0b', //ab0b0b
-                            color: '#fff',
-                        },
-                    });
-                    setLoading(false);
-                    return;
-                } else if (res?.success) {
-                    if (res?.sessions && Array.isArray(res.sessions)) {
-                        setSessions((prev) => [...prev, ...res.sessions]);
+                try {
+                    const res = await newSession(session, currentUser);
+
+                    if (res?.error) {
+                        errors.push(res.error); // Enregistre l'erreur pour traitement ultérieur
+                    } else if (res?.success) {
+                        if (res?.sessions && Array.isArray(res.sessions)) {
+                            setSessions((prev) => [...prev, ...res.sessions]);
+                        }
+                        successNewSessions++;
+                        setStateLoading((prev) => prev + 1); // Met à jour la progression
+                        console.log("Session créée avec succès");
                     }
-                    setError("");
-                    successNewSessions++;
-                    setStateLoading((prev) => prev + 1);
-                    console.log("Session créée avec succès");
+                } catch (err) {
+                    console.error("Erreur lors de la création de la session :", err);
+                    errors.push("Une erreur inattendue est survenue.");
                 }
             }
 
+            // Gestion des succès et erreurs après la boucle
             if (successNewSessions === splitSessionsArray.length) {
-                toast({
-                    title: "Les sessions ont été créées !",
-                    duration: 5000,
-                    style: {
-                        background: '#0bab15', //rouge : ab0b0b
-                        color: '#fff',
-                    },
-                });
+                showToast("Les sessions ont été créées !", "success");
                 setIsPopoverOpen(false);
-                setLoading(false);
             } else {
-                toast({
-                    title: "Une erreur est survenue lors de la création des sessions.",
-                    duration: 5000,
-                    style: {
-                        background: '#ab0b0b', //ab0b0b
-                        color: '#fff',
-                    },
-                });
-                setError("Une erreur est survenue lors de la création des sessions.");
-                setLoading(false);
-                return;
+                const errorMsg = errors.length
+                    ? `Certaines sessions n'ont pas été créées : ${errors.join(", ")}`
+                    : "Une erreur est survenue lors de la création des sessions.";
+                showToast(errorMsg, "error");
+                setError(errorMsg);
             }
-
         } catch (error) {
-            console.error("Erreur lors de l'envoi des données :", error)
-            setError("Une erreur est survenue lors de l'envoi des données.")
-
+            console.error("Erreur globale :", error);
+            setError("Une erreur critique est survenue lors de l'envoi des données.");
+            showToast("Une erreur critique est survenue.", "error");
+        } finally {
+            setLoading(false); // Toujours désactiver le chargement à la fin
         }
+    };
 
 
 
-        // setLoading(true)
-        // try {
-        //     const res = await newSession(sessionData, currentUser)
-        //     if (res?.error) {
-        //         setError(res.error)
-        //     } else if (res?.success) {
-        //         if (res?.sessions && Array.isArray(res.sessions)) {
-        //             setSessions((prev) => [...prev, ...res.sessions])
-        //         }
-        //         setError("")
-        //         toast({
-        //             title: res.success,
-        //             duration: 5000,
-        //             style: {
-        //                 background: '#0bab15', //rouge : ab0b0b
-        //                 color: '#fff',
-        //             },
-        //         })
-        //         setIsPopoverOpen(false)
-        //     } else {
-        //         toast({
-        //             title: res.error,
-        //             duration: 5000,
-        //             style: {
-        //                 background: '#ab0b0b', //ab0b0b
-        //                 color: '#fff',
-        //             },
-        //         })
-        //         setError("Une erreur est survenue (E_002: réponse inattendue du serveur)")
-        //     }
-        // } catch (error) {
-        //     console.error("Erreur lors de l'envoi des données :", error)
-        //     setError("Une erreur est survenue lors de l'envoi des données.")
-        // } finally {
-        //     setLoading(false)
-        // }
-    }
 
     return (
         <Dialog open={isOpenPopover} onOpenChange={setIsPopoverOpen}>
@@ -484,6 +442,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                                 {loading ? (
                                     <CircularProgress
                                         showValueLabel={true}
+                                        aria-label='Chargement des sessions'
                                         color='secondary'
                                         size="sm"
                                         value={100 * stateLoading / totalSessions}
