@@ -6,7 +6,7 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { indexLinkDashboard, navigationLinks } from '@/config/links';
 import { useRouter } from 'next/navigation';
 import InitialLoading from '../InitialLoading';
-import { Club, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { dashboardProps } from './ServerPageComp';
 import SettingsPage from './SettingsPage';
 import DashboardPage from './DashboardPage';
@@ -18,12 +18,11 @@ interface PageProps {
     HoursByStudent: dashboardProps[],
     HoursByMonth: dashboardProps[],
     UsersRequestedClubID: User[],
-    club: Club,
     users: User[],
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const PageComponent = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStudent, HoursByMonth, UsersRequestedClubID, club, users }: PageProps) => {
+const PageComponent = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStudent, HoursByMonth, UsersRequestedClubID, users }: PageProps) => {
     const [display, setDisplay] = useState<"dashboard" | "settings">("dashboard");
     const { currentUser } = useCurrentUser();
     const router = useRouter();
@@ -33,7 +32,7 @@ const PageComponent = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStuden
     }
     return (
         <InitialLoading className="min-h-screen max-h-screen overflow-y-auto bg-gray-100 " clubIDURL={clubID}>
-            <Header clubName={club.Name} display={display} setDisplay={setDisplay} />
+            <Header display={display} setDisplay={setDisplay} />
             <main className="container mx-auto px-4 py-7">{
                 display === "dashboard" ? (
 
@@ -47,7 +46,7 @@ const PageComponent = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStuden
 
                 )
                     : display === "settings" ? (
-                        <SettingsPage club={club} users={users} />
+                        <SettingsPage users={users} />
                     ) : null
             }</main>
         </InitialLoading>

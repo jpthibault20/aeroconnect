@@ -46,6 +46,11 @@ const ProfilePage = () => {
                     setLoading(false);
                     toast({
                         title: "Utilisateur mis à jour avec succès",
+                        duration: 5000,
+                        style: {
+                            background: '#0bab15', //rouge : ab0b0b
+                            color: '#fff',
+                        }
                     });
 
                 }
@@ -54,6 +59,11 @@ const ProfilePage = () => {
                     setLoading(false);
                     toast({
                         title: " Oups, une erreur est survenue",
+                        duration: 5000,
+                        style: {
+                            background: '#ab0b0b', //rouge : ab0b0b
+                            color: '#fff',
+                        }
                     });
                 }
             } catch (error) {

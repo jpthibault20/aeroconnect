@@ -216,3 +216,70 @@ export const getClubAdress = async (clubID: string) => {
         return null;
     }   
 }
+
+export interface ConfigClub {
+    clubName: string; // Nom du club
+    clubId: string; // Identifiant unique du club
+    address: string; // Adresse du club
+    city: string; // Ville du club
+    zipCode: string; // Code postal
+    country: string; // Pays
+    owners: string[]; // Liste des propriétaires (par leurs identifiants ou noms)
+    classes: number[]; // Liste des classes ULM (identifiées par des IDs ou numéros)
+    hourStart: string; // Heure de début au format HH:mm
+    hourEnd: string; // Heure de fin au format HH:mm
+    timeOfSession: number; // Durée de la session en minutes
+    userCanSubscribe: boolean; // Les utilisateurs peuvent s'inscrire
+    preSubscribe: boolean; // Inscription préalable requise
+    timeDelaySubscribeminutes: number; // Délai d'inscription en minutes
+    userCanUnsubscribe: boolean; // Les utilisateurs peuvent se désinscrire
+    preUnsubscribe: boolean; // Désinscription préalable requise
+    timeDelayUnsubscribeminutes: number; // Délai de désinscription en minutes
+    firstNameContact: string; // Prénom de la personne de contact
+    lastNameContact: string; // Nom de la personne de contact
+    mailContact: string; // Adresse e-mail de la personne de contact
+    phoneContact: string; // Numéro de téléphone de la personne de contact
+}
+
+export const updateClub = async (clubID: string, data: ConfigClub) => {
+    // layout of working hours
+    const workingHour: number[] = [];
+    const startHour = parseInt(data.hourStart.split(":")[0], 10);
+    const endHour = parseInt(data.hourEnd.split(":")[0], 10);
+    for (let i = startHour; i <= endHour; i++) {
+        workingHour.push(i);
+    }
+
+    try {
+        await prisma.club.update({
+            where: {
+                id: clubID
+            },
+            data: {
+                Name: data.clubName,
+                Address: data.address,
+                City: data.city,
+                ZipCode: data.zipCode,
+                Country: data.country,
+                OwnerId: data.owners,
+                classes: data.classes,
+                HoursOn: workingHour,
+                SessionDurationMin: data.timeOfSession,
+                userCanSubscribe: data.userCanSubscribe,
+                preSubscribe: data.preSubscribe,
+                timeDelaySubscribeminutes: data.timeDelaySubscribeminutes,
+                userCanUnsubscribe: data.userCanUnsubscribe,
+                preUnsubscribe: data.preUnsubscribe,
+                timeDelayUnsubscribeminutes: data.timeDelayUnsubscribeminutes,
+                firstNameContact: data.firstNameContact,
+                lastNameContact: data.lastNameContact,
+                mailContact: data.mailContact,
+                phoneContact: data.phoneContact,
+            }
+        });
+        return { success: "La configuration a été mise à jour avec succès !" };
+    } catch (error) {
+        console.error("Erreur lors de la mise à jour de la configuration :", error);
+        return { error: "Erreur lors de la mise à jour de la configuration" };
+    }
+};

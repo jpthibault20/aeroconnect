@@ -43,11 +43,21 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                     setPlanes(planes.filter((p) => p.id !== plane.id));
                     toast({
                         title: "Avion supprimé avec succès",
+                        duration: 5000,
+                        style: {
+                            background: '#0bab15', //rouge : ab0b0b
+                            color: '#fff',
+                        }
                     });
                 } else if (res.error) {
                     console.error(res.error);
                     toast({
                         title: "Oups, une erreur est survenue",
+                        duration: 5000,
+                        style: {
+                            background: '#ab0b0b', //rouge : ab0b0b
+                            color: '#fff',
+                        }
                     });
                 }
             } catch (error) {
@@ -73,14 +83,22 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                     );
                     setOperational(!operational);
                     toast({
-                        title: "Avion mis à jour avec succès",
-                        duration: 3000,
-                    });
+                        title: "Avion mis è jour avec succès",
+                        duration: 5000,
+                        style: {
+                            background: '#0bab15', //rouge : ab0b0b
+                            color: '#fff',
+                        }
+                    })
                 } else if (res.error) {
                     console.error(res.error);
                     toast({
                         title: "Oups, une erreur est survenue",
-                        duration: 3000,
+                        duration: 5000,
+                        style: {
+                            background: '#ab0b0b', //rouge : ab0b0b
+                            color: '#fff',
+                        }
                     });
                 }
             } catch (error) {

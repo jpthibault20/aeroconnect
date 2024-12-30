@@ -55,7 +55,14 @@ const NewPlane = ({ setPlanes }: Props) => {
                 setError(res.error);
             } else if (res.success) {
                 setError("");
-                toast({ title: res.success });
+                toast({
+                    title: res.success,
+                    duration: 5000,
+                    style: {
+                        background: '#0bab15', //rouge : ab0b0b
+                        color: '#fff',
+                    }
+                });
                 setIsOpen(false); // Ferme le dialogue si enregistrement réussi
                 setPlanes(res.planes.map(plane => ({ ...plane, operational: true })));
             } else {

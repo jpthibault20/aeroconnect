@@ -13,18 +13,16 @@ import TableComponent from "@/components/flights/TableComponent";
 import Filter from '@/components/flights/Filter';
 import { removeSessionsByID } from '@/api/db/sessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { Club, flight_sessions, planes, User, userRole } from '@prisma/client';
+import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import NewSession from '../NewSession';
 import { Spinner } from '../ui/SpinnerVariants';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { toast } from '@/hooks/use-toast';
-import { workingHour } from '@/config/configClub';
 
 interface Props {
     sessionsProp: flight_sessions[];
     planesProp: planes[];
     usersProp: User[]
-    clubProp: Club | null
 }
 
 /**
@@ -33,7 +31,7 @@ interface Props {
  * 
  * @returns  The rendered component.
  */
-const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }: Props) => {
+const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const [sessionChecked, setSessionChecked] = useState<string[]>([]);
     const [filterAvailable, setFilterAvailable] = useState(false);
@@ -44,7 +42,6 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
     const [sessions, setSessions] = useState<flight_sessions[]>(sessionsProp);
     const [filteredSessions, setFilteredSessions] = useState(sessions); // State for filtered sessions
     const [loading, setLoading] = useState(false);
-    const clubHours = clubProp?.HoursOn || workingHour;
     // Logic for filtering sessions based on selected filters
     useEffect(() => {
         const filtered = sessions.filter(session => {
@@ -91,6 +88,10 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
                         toast({
                             title: res.success,
                             duration: 5000,
+                            style: {
+                                background: '#0bab15', //rouge : ab0b0b
+                                color: '#fff',
+                            }
                         });
                         setSessionChecked([]);
                         setSessions(sessions.filter(session => !sessionsParams.includes(session.id)));
@@ -100,6 +101,10 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
                             title: "Oups, une erreur est survenue",
                             description: res.error,
                             duration: 5000,
+                            style: {
+                                background: '#ab0b0b', //rouge : ab0b0b
+                                color: '#fff',
+                            }
                         });
                     }
                 } catch (error) {
@@ -142,16 +147,14 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
                             </AlertConfirmDeleted>
                         ) : null
                     }
-                    {clubProp ? (
-                        <>
-                            <div className='hidden lg:block h-full'>
-                                <NewSession display={'desktop'} setSessions={setSessions} planesProp={planesProp} clubHours={clubHours} />
-                            </div>
-                            <div className='lg:hidden block'>
-                                <NewSession display={'phone'} setSessions={setSessions} planesProp={planesProp} clubHours={clubHours} />
-                            </div>
-                        </>
-                    ) : null}
+                    <>
+                        <div className='hidden lg:block h-full'>
+                            <NewSession display={'desktop'} setSessions={setSessions} planesProp={planesProp} />
+                        </div>
+                        <div className='lg:hidden block'>
+                            <NewSession display={'phone'} setSessions={setSessions} planesProp={planesProp} />
+                        </div>
+                    </>
 
                 </div>
                 <Filter
@@ -182,7 +185,6 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp, clubProp }:
                     setSessionChecked={setSessionChecked}
                     planesProp={planesProp}
                     usersProp={usersProp}
-                    clubProp={clubProp as Club}
                 />
             )}
         </div>

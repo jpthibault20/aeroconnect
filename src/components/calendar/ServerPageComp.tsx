@@ -15,21 +15,19 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
 
         const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
         // Exécution parallèle des requêtes Prisma
-        const [sessions, planes, club, users] = await Promise.all([
-            prisma.flight_sessions.findMany({ where: { clubID:clubID } }),
+        const [sessions, planes, users] = await Promise.all([
+            prisma.flight_sessions.findMany({ where: { clubID: clubID } }),
             prisma.planes.findMany({ where: { clubID: clubID } }),
-            prisma.club.findUnique({ where: { id: clubID } }),
             prisma.user.findMany({ where: { clubID: clubID } })
         ]);
 
         // Vérification si les données du club sont valides
-        if (club?.HoursOn && sessions) {
+        if (sessions) {
             return (
                 <div className='h-full'>
                     <PageComponent
                         sessionsprops={sessions}
                         planesProp={planes}
-                        club={club}
                         clubIDUrl={clubID}
                         usersProps={users}
                     />
@@ -44,7 +42,6 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             <PageComponent
                 sessionsprops={[]}
                 planesProp={[]}
-                club={null}
                 clubIDUrl={""}
                 usersProps={[]}
             />

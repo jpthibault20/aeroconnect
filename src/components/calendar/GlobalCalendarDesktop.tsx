@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @file GlobalCalendarDesktop.js
  * @brief This component renders the desktop version of the calendar with filters for instructors and planes.
@@ -12,15 +11,15 @@ import DaySelector from './DaySelector';
 import TabCalendar from './TabCalendar';
 import NewSession from "@/components/NewSession"
 import Filter from './Filter';
-import { Club, flight_sessions, planes, User } from '@prisma/client';
+import { flight_sessions, planes, User } from '@prisma/client';
 import { workingHour } from '@/config/configClub';
+import { useCurrentClub } from '@/app/context/useCurrentClub';
 
 interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
     usersProps: User[]
-    club: Club | null
 }
 
 /**
@@ -32,7 +31,8 @@ interface Props {
  * within a desktop-only layout, hidden on mobile devices.
  * 
  */
-const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club, usersProps }: Props) => {
+const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }: Props) => {
+    const { currentClub } = useCurrentClub();
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
 
@@ -56,7 +56,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club, usersP
         setDate(new Date())
     }
 
-    const clubHours = club?.HoursOn || workingHour;
+    const clubHours = currentClub?.HoursOn || workingHour;
 
     // Effect pour récupérer les jours de la semaine
     useEffect(() => {
@@ -99,7 +99,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, club, usersP
                             />
                             <div className='flex space-x-2 px-3 '>
                                 <div>
-                                    <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} clubHours={clubHours} />
+                                    <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} />
                                 </div>
                                 <Filter
                                     sessions={sessions}

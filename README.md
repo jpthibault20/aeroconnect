@@ -1,36 +1,103 @@
-# AeroConnect
- 
-## todo VERSION 1.0
-    - Time for loading multi render
-    - mail : student book session / session deleted with student / student free session
+# Club Calendar Management System
 
+Ce projet est une application de calendrier conçue spécifiquement pour les clubs d'aviation légère et d'ULM. Elle permet une gestion simple et efficace des réservations entre instructeurs et élèves, ainsi que des paiements et de la location d'avions.
 
-- mail
-- Controle Formulaire Modification user
-- delet userb => delet user in auth table
-- check création d'un nouvezu compte
-- 
+## Version actuelle
 
-## todo VERSION 2.0
-    - sessions: stockage dans un usememo
-    - sessions: fetch sessions sur 2 mois puis plus si changement de la date s'affichage
-    - club: page config club
-    - club: inscription : demande de code club => validation par le club en question
-    - all pages: fetch data en arrière plan
+**Version 1.1.x**
 
-## todo VERSION 3.0
-    - add méthode de paiement
-    - add méthode de facturation
+Cette version est une version de développement et ne contient pas encore toutes les fonctionnalités prévues. Les fonctionnalités actuellement implémentées sont :
 
-## Fonctionnalités
+*   Authentification
+*   création des user avec des roles différents
+*   création / gestion / configuration d'un club
+*   inscription / suppresssion a une sessions
+*   Avions du club pour le choix dans une session de formation
+*   Application responsive pour téléphone / tablette / ordinateur
+*   possibilité de restreindre un utilisateurs
 
-- **Gestion des vols**: Permet aux élèves de gérer leurs vols, de voir les vols disponibles et les vols réservés, et de gérer leur profil.
-- **Gestion des avions**: Permet aux élèves de gérer leurs avions, de voir les avions disponibles et les avions réservés, et de gérer leur profil.
-- **Gestion des élèves**: Permet aux élèves de gérer leurs élèves, de voir les élèves disponibles et les élèves réservés, et de gérer leur profil.
-- **Gestion du profil**: Permet aux élèves de gérer leur profil, de voir leur profil, et de modifier leur profil.
+Les fonctionnalités listées dans la section "Fonctionnalités principales" ci-dessous sont prévues pour les versions ultérieures.
 
+## Fonctionnalités principales (en développement)
 
+- **Authentification** Rapiditée, confirmation mail, OAuth
+- **Paiment** Ajouter la feature de paiment en utilisant stripe
+- **Location** Ajouter la feature location des avions
+- **React Native** Créer une application mobile avec react Native
+- **Maintenance** Gérer correctement la maintenance des avions, si un avions passe en maintenance, gerer les élèves deja inscrit, ajouter une date de fin de maintenance
+- **classe** Gérer la classes des avions (classe ULM)
+- **Mail** Possibilité d'envoyer des email a tous les contact ou choix, chat dans le club 
+- **Profile page** Finir la page profile en y ajoutant eds stats, et en la travaillant au niveau UI UX
 
-## Licence
+## Technologies utilisées
 
-AeroConnect est sous licence MIT. Vous pouvez trouver la licence dans le fichier LICENSE.
+- **Next.js** : Framework utilisé pour le développement de l'application.
+- **ESlint** Controle du code
+- **TypeScript** : Langage pour garantir la robustesse du code.
+- **Supabase** : Utilisé pour la gestion des bases de données et l'authentification.
+- **Tailwind CSS** : Framework CSS pour un design moderne et responsive.
+- **ShadcnUI** : Bibliothèque pour des composants UI avancés et réutilisables.
+- **Zod** Controlle des formulaire
+- **Prisma** Interface avec la base de donnée
+- **React icon & lucide react** Icon utiliser dans l'application
+- **Authentification** Rapiditée, confirmation mail, OAuth
+- **ReSend** Envoie des emails
+- **React Email** Mise en page des emails
+- **recharts** Graphiques
+
+## Installation
+
+1. Clonez ce dépôt :
+
+```bash
+git clone https://github.com/jpthibault20/aeroconnect.git
+```	
+
+2. Installez les dépendances :
+
+```bash
+npm install
+```
+
+3. Configurez les variables d'environnement :
+
+créer les fichiers suivant : 
+
+.env.local
+```bash
+WEBSITE_LINK=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
+.env
+```bash
+DATABASE_URL=""
+DIRECT_URL=""
+RESEND_API_KEY=""
+```
+Puis y ajouter vos element de connexions
+
+4. Démarrez le serveur :
+
+```bash
+npm run dev
+```
+
+## TODO
+
+Voici les tâches restantes à accomplir pour finaliser le projet :
+
+- [ ] **Time Server** quand l'heure est utilisé dans le server envoyer au server via le clien le décalage horaire pour travailler toujours sur la meme heure
+
+## Contribuer
+
+La contribution externe n'est pour le moment pas acceptée. 
+
+## License
+
+Ce projet est sous licence MIT.
+
+## Contact
+
+Si vous avez des questions ou des commentaires, n'hésitez pas à me contacter via [mail](mailto:thibault@jp-developpement.com).
+
