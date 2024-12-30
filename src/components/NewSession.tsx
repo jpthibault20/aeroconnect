@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { flight_sessions, planes, userRole } from '@prisma/client'
 import { toast } from "@/hooks/use-toast"
-import { interfaceSessions, newSession } from '@/api/db/sessions'
+import { checkSessionDate, interfaceSessions, newSession } from '@/api/db/sessions'
 import { fr } from "date-fns/locale"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
@@ -204,13 +204,20 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
 
     const onConfirm = async () => {
         setLoading(true);
+        let successNewSessions = 0;
+
+        const res = await checkSessionDate(sessionData, currentUser);
+        if (res?.error) {
+            setError(res.error);
+            setLoading(false);
+            return;
+        }
 
         const splitSessionsArray = splitSessions(sessionData);
         console.log(splitSessionsArray);
         setTotalSessions(splitSessionsArray.length);
 
         try {
-            let successNewSessions = 0;
             for (const session of splitSessionsArray) {
                 const res = await newSession(session, currentUser);
                 if (res?.error) {
