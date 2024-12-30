@@ -104,31 +104,9 @@ export const checkSessionDate = async (sessionData: interfaceSessions, user: Use
 }
 
 export const newSession = async (sessionData: interfaceSessions, user: User) => {
-    // if (!sessionData) {
-    //     return { error: "Une erreur est survenue (E_001: sessionData is undefined)" };
-    // }
-
     if (!sessionData.date) {
         return { error: "La date de la session est obligatoire" };
     }
-
-    // const now = new Date();
-
-    // if (new Date(sessionData.date.getFullYear(), sessionData.date.getMonth(), sessionData.date.getDate(), Number(sessionData.startHour), Number(sessionData.startMinute), 0).getTime() <= new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getUTCHours(), now.getUTCMinutes(), 0).getTime()) {
-    //     return { error: "La date de session doit être dans le futur" };
-    // }
-
-    // const débutTotalMinutes = parseInt(sessionData.startHour) * 60 + parseInt(sessionData.startMinute);
-    // const finTotalMinutes = parseInt(sessionData.endHour) * 60 + parseInt(sessionData.endMinute);
-
-    // if (débutTotalMinutes >= finTotalMinutes) {
-    //     return { error: "L'heure de fin doit être après l'heure de début" };
-    // }
-
-    // const différenceMinutes = finTotalMinutes - débutTotalMinutes;
-    // if (différenceMinutes < sessionData.duration || différenceMinutes % sessionData.duration !== 0) {
-    //     return { error: `La durée de la session doit être supérieure à ${sessionData.duration} minutes et un multiple de ${sessionData.duration} minutes` };
-    // }
 
     const baseSessionDateStart = new Date(Date.UTC(
         sessionData.date.getUTCFullYear(),
@@ -139,73 +117,73 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
         0
     ));
 
-    const sessionsToCreate: Date[] = [];
     const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
-    const dateEndSession = new Date(Date.UTC(
-        baseSessionDateStart.getUTCFullYear(),
-        baseSessionDateStart.getUTCMonth(),
-        baseSessionDateStart.getUTCDate(),
-        Number(sessionData.endHour),
-        Number(sessionData.endMinute),
-        0
-    ));
+    const sessionDurationMs = sessionData.duration * 60 * 1000; // Convertir la durée en ms
+    const sessionsToCreate: { sessionDateStart: Date; sessionDateDuration_min: number }[] = [];
 
     if (sessionData.endReccurence) {
-        sessionData.endReccurence.setUTCDate(sessionData.endReccurence.getUTCDate() + 1);
-        for (let current = baseSessionDateStart; current <= sessionData.endReccurence; current = new Date(current.getTime() + oneWeekInMs)) {
-            const sartCurrent = new Date(current.getTime());
-            const endCurrent = new Date(current.getTime());
-            endCurrent.setUTCHours(Number(sessionData.endHour), Number(sessionData.endMinute), 0);
+        // Préparer la date de fin récurrence
+        const endReccurence = new Date(sessionData.endReccurence);
+        endReccurence.setUTCDate(endReccurence.getUTCDate() + 1);
 
-            while (sartCurrent.getTime() < endCurrent.getTime()) {
-                sessionsToCreate.push(new Date(sartCurrent));
-                sartCurrent.setUTCMinutes(sartCurrent.getUTCMinutes() + sessionData.duration);
+        for (let current = baseSessionDateStart; current <= endReccurence; current = new Date(current.getTime() + oneWeekInMs)) {
+            const startTime = current.getTime();
+            const endTime = new Date(current).setUTCHours(Number(sessionData.endHour), Number(sessionData.endMinute), 0);
+
+            for (let currentTime = startTime; currentTime < endTime; currentTime += sessionDurationMs) {
+                sessionsToCreate.push({
+                    sessionDateStart: new Date(currentTime),
+                    sessionDateDuration_min: sessionData.duration,
+                });
             }
         }
     } else {
-        while (baseSessionDateStart.getTime() < dateEndSession.getTime()) {
-            sessionsToCreate.push(new Date(baseSessionDateStart));
-            baseSessionDateStart.setUTCMinutes(baseSessionDateStart.getUTCMinutes() + sessionData.duration);
+        // Calculer la date de fin pour une session unique
+        const dateEndSession = new Date(Date.UTC(
+            baseSessionDateStart.getUTCFullYear(),
+            baseSessionDateStart.getUTCMonth(),
+            baseSessionDateStart.getUTCDate(),
+            Number(sessionData.endHour),
+            Number(sessionData.endMinute),
+            0
+        ));
+
+        for (let currentTime = baseSessionDateStart.getTime(); currentTime < dateEndSession.getTime(); currentTime += sessionDurationMs) {
+            sessionsToCreate.push({
+                sessionDateStart: new Date(currentTime),
+                sessionDateDuration_min: sessionData.duration,
+            });
         }
     }
 
-    // // Vérifier les conflits pour chaque session à créer avec une seule requête
-    // const existingSessions = await prisma.flight_sessions.findMany({
-    //     where: {
-    //         clubID: user.clubID as string,
-    //         pilotID: user.id,
-    //         sessionDateStart: { in: sessionsToCreate },
-    //     }
-    // });
-
-
-    // if (existingSessions.length > 0) {
-    //     return { error: "Une session existe déjà avec cette configuration pour l'une des dates." };
-    // }
-
-    // Envoi des sessions à la base de données avec Prisma en une seule transaction
     try {
-        const createdSessions = await prisma.$transaction(
-            sessionsToCreate.map(sessionDateStart =>
-                prisma.flight_sessions.create({
-                    data: {
-                        clubID: user.clubID as string,
-                        sessionDateStart,
-                        sessionDateDuration_min: sessionData.duration,
-                        finalReccurence: sessionData.endReccurence,
-                        pilotID: user.id,
-                        pilotFirstName: user.firstName,
-                        pilotLastName: user.lastName,
-                        studentID: null,
-                        studentFirstName: null,
-                        studentLastName: null,
-                        student_type: null,
-                        planeID: sessionData.planeId,
-                    }
-                })
-            )
-        );
-
+        // Batch Prisma transactions for better performance
+        const batchSize = 100; // Par exemple, limiter à 100 insertions par batch
+        const createdSessions = [];
+        for (let i = 0; i < sessionsToCreate.length; i += batchSize) {
+            const batch = sessionsToCreate.slice(i, i + batchSize);
+            const result = await prisma.$transaction(
+                batch.map(session =>
+                    prisma.flight_sessions.create({
+                        data: {
+                            clubID: user.clubID as string,
+                            sessionDateStart: session.sessionDateStart,
+                            sessionDateDuration_min: session.sessionDateDuration_min,
+                            finalReccurence: sessionData.endReccurence,
+                            pilotID: user.id,
+                            pilotFirstName: user.firstName,
+                            pilotLastName: user.lastName,
+                            studentID: null,
+                            studentFirstName: null,
+                            studentLastName: null,
+                            student_type: null,
+                            planeID: sessionData.planeId,
+                        }
+                    })
+                )
+            );
+            createdSessions.push(...result);
+        }
 
         return { success: "Les sessions ont été créées !", sessions: createdSessions };
     } catch (error) {
@@ -213,6 +191,8 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
         return { error: "Erreur lors de la création des sessions de vol" };
     }
 };
+
+
 
 export const getAllSessions = async (clubID: string, monthSelected: Date) => {
 
