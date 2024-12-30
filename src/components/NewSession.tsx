@@ -204,7 +204,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
 
     const onConfirm = async () => {
         setLoading(true);
-        let successNewSessions = 0;
 
         const res = await checkSessionDate(sessionData, currentUser);
         if (res?.error) {
@@ -214,7 +213,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         }
 
         const splitSessionsArray = splitSessions(sessionData);
-        console.log(splitSessionsArray);
         setTotalSessions(splitSessionsArray.length);
 
         try {
@@ -232,18 +230,15 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                     });
                     setLoading(false);
                     return;
-                } else if (res?.success) {
-                    if (res?.sessions && Array.isArray(res.sessions)) {
-                        setSessions((prev) => [...prev, ...res.sessions]);
-                    }
+                } else if (res?.sessions && Array.isArray(res.sessions)) {
+                    setSessions((prev) => [...prev, ...res.sessions]);
                     setError("");
-                    successNewSessions++;
                     setStateLoading((prev) => prev + 1);
                     console.log("Session créée avec succès");
                 }
             }
 
-            if (successNewSessions === splitSessionsArray.length) {
+            if (stateLoading === splitSessionsArray.length) {
                 toast({
                     title: "Les sessions ont été créées !",
                     duration: 5000,
