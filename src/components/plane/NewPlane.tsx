@@ -66,7 +66,7 @@ const NewPlane = ({ setPlanes }: Props) => {
                     }
                 });
                 setIsOpen(false); // Ferme le dialogue si enregistrement réussi
-                setPlanes(res.planes.map(plane => ({ ...plane, operational: true, classes: [1, 2, 3, 4, 5, 6] })));
+                setPlanes(res.planes.map(plane => ({ ...plane, operational: true, classes: 3 })));
             } else {
                 setError("Une erreur est survenue (E_002: res.error is undefined)");
             }

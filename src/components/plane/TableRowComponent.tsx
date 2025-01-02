@@ -13,7 +13,7 @@
  * @returns {JSX.Element} The rendered table row component.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { planes, userRole } from '@prisma/client';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
@@ -23,6 +23,7 @@ import { Switch } from '../ui/switch';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import UpdatePlanes from './UpdatePlanes';
 import { Button } from '../ui/button';
+import { clearCache } from '@/lib/cache';
 
 interface Props {
     plane: planes; // Utiliser le type Plane ici
@@ -35,6 +36,10 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
     const [loading, setLoading] = useState(false);
     const [operational, setOperational] = useState(plane.operational);
     const [showPopup, setShowPopup] = useState(false);
+
+    useEffect(() => {
+        setOperational(plane.operational)
+    }, [plane])
 
     const onClickDeletePlane = () => {
         const removePlane = async () => {
@@ -85,6 +90,7 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                         )
                     );
                     setOperational(!operational);
+                    clearCache(`planes:${plane.clubID}`)
                     toast({
                         title: "Avion mis è jour avec succès",
                         duration: 5000,
@@ -141,6 +147,7 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                                     setShowPopup={setShowPopup}
                                     plane={plane}
                                     setPlanes={setPlanes}
+                                    planes={planes}
                                 >
                                     <Button className='px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg w-fit'>
                                         Modifier
