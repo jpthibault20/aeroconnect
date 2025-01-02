@@ -22,6 +22,7 @@ interface NewPlaneProps {
     name: string;
     immatriculation: string;
     clubID: string;
+    classes?: number[];
 }
 interface Props {
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
@@ -36,6 +37,7 @@ const NewPlane = ({ setPlanes }: Props) => {
         name: "",
         immatriculation: "",
         clubID: currentUser?.clubID ?? "",
+        classes: [1, 2, 3, 4, 5, 6]
     });
 
     const onSubmit = async () => {
@@ -64,7 +66,7 @@ const NewPlane = ({ setPlanes }: Props) => {
                     }
                 });
                 setIsOpen(false); // Ferme le dialogue si enregistrement réussi
-                setPlanes(res.planes.map(plane => ({ ...plane, operational: true })));
+                setPlanes(res.planes.map(plane => ({ ...plane, operational: true, classes: [1, 2, 3, 4, 5, 6] })));
             } else {
                 setError("Une erreur est survenue (E_002: res.error is undefined)");
             }

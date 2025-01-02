@@ -41,6 +41,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
         restricted: user.restricted || false,
         country: user.country || null,
         clubIDRequest: user.clubIDRequest || null,
+        classes: user.classes || [1, 2, 3, 4, 5, 6],
     })
 
     useEffect(() => {
