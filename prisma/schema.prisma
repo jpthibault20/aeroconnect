@@ -50,7 +50,7 @@ model planes {
   name            String
   immatriculation String
   operational     Boolean @default(true)
-  classes         Int[]   @default([])
+  classes         Int     @default(3)
 }
 
 model Club {
