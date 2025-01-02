@@ -22,7 +22,7 @@ model User {
   adress        String?
   city          String?
   clubIDRequest String?
-  classes       Int[]    @default([1, 2, 3, 4, 5, 6])
+  classes       Int[]    @default([])
 }
 
 model flight_sessions {
@@ -41,7 +41,7 @@ model flight_sessions {
   finalReccurence         DateTime?   @db.Timestamptz(6)
   planeID                 String[]
   studentPlaneID          String?
-  classes                 Int[]       @default([1, 2, 3, 4, 5, 6])
+  classes                 Int[]       @default([])
 }
 
 model planes {
@@ -50,7 +50,7 @@ model planes {
   name            String
   immatriculation String
   operational     Boolean @default(true)
-  classes         Int[]   @default([1, 2, 3, 4, 5, 6])
+  classes         Int[]   @default([])
 }
 
 model Club {
