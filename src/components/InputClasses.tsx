@@ -66,6 +66,7 @@ const AircraftClassSelector = ({ disabled, classes, setClasses }: Props) => {
                                 {aircraftClass?.label}
                                 <button
                                     disabled={disabled}
+                                    type="button"
                                     onClick={() => removeSelected(classId)}
                                     className="hover:bg-black/5 rounded-full p-0.5"
                                 >
@@ -94,10 +95,11 @@ const AircraftClassSelector = ({ disabled, classes, setClasses }: Props) => {
                                     return (
                                         <button
                                             key={aircraftClass.id}
+                                            type="button"
                                             disabled={disabled}
                                             onClick={() => handleClassToggle(aircraftClass.id)}
-                                            className={`flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors ${isSelected ? "bg-gray-50" : ""
-                                                } cursor-pointer`}
+                                            className={`flex flex-1 items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors ${isSelected ? "bg-gray-50" : ""
+                                                } cursor-pointer justify-between w-full`}
                                         >
                                             <div
                                                 className={`w-10 h-10 rounded-full flex items-center justify-center ${aircraftClass.color}`}
