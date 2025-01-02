@@ -21,6 +21,8 @@ import { deletePlane, updateOperationalByID } from '@/api/db/planes';
 import { toast } from '@/hooks/use-toast';
 import { Switch } from '../ui/switch';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
+import UpdatePlanes from './UpdatePlanes';
+import { Button } from '../ui/button';
 
 interface Props {
     plane: planes; // Utiliser le type Plane ici
@@ -32,6 +34,7 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
     const { currentUser } = useCurrentUser()
     const [loading, setLoading] = useState(false);
     const [operational, setOperational] = useState(plane.operational);
+    const [showPopup, setShowPopup] = useState(false);
 
     const onClickDeletePlane = () => {
         const removePlane = async () => {
@@ -132,7 +135,17 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                                     <p>{operational ? "Opérationnel" : "En maintenance"}</p>
                                 </div>
                             </TableCell>
-                            <TableCell className="flex flex-col items-center space-y-3 justify-center xl:block xl:space-x-5">
+                            <TableCell className="flex-col items-center justify-center space-y-3">
+                                <UpdatePlanes
+                                    showPopup={showPopup}
+                                    setShowPopup={setShowPopup}
+                                    plane={plane}
+                                    setPlanes={setPlanes}
+                                >
+                                    <Button className='px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg w-fit'>
+                                        Modifier
+                                    </Button>
+                                </UpdatePlanes>
                                 <AlertConfirmDeleted
                                     title="Êtes-vous sûr de vouloir supprimer cet avion ?"
                                     description={"Cet avion sera supprimé définitivement."}
