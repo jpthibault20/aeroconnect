@@ -1,7 +1,7 @@
 "use server";
 import { ClubFormValues } from "@/components/NewClub";
-import { minutes } from "@/config/configClub";
-import { dayFr } from "@/config/date";
+import { defaultMinutes } from "@/config/config";
+import { dayFr } from "@/config/config";
 import { sendNotificationRequestClub } from "@/lib/mail";
 import { userRole } from "@prisma/client";
 import prisma from "../prisma";
@@ -75,7 +75,7 @@ export const createClub = async (data: ClubFormValues, userID: string) => {
                 DaysOn: dayFr, // Remplacez `dayFr` par la logique réelle si nécessaire
                 HoursOn: allWorkingHour,
                 SessionDurationMin: data.sessionDuration,
-                AvailableMinutes: minutes, // Remplacez `minutes` par la logique réelle si nécessaire
+                AvailableMinutes: defaultMinutes, // Remplacez `minutes` par la logique réelle si nécessaire
             },
         });
         return { success: "Club créé avec succès !" };

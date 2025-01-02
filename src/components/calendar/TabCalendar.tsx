@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useMemo, useState } from 'react';
-import { dayFr } from '@/config/date';
+import { dayFr } from '@/config/config';
 import { formatTime, getDaysOfWeek, getSessionsFromDate } from '@/api/date';
 import { flight_sessions, planes, User } from '@prisma/client';
 import Session from './Session';
