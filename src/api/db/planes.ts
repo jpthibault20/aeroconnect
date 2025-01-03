@@ -3,13 +3,7 @@
 import { planes } from "@prisma/client";
 import prisma from "../prisma";
 
-interface AddPlane {
-    name: string,
-    immatriculation: string,
-    clubID: string | null
-}
-
-export const createPlane = async (dataPlane: AddPlane) => {
+export const createPlane = async (dataPlane: planes) => {
     if (!dataPlane.name || !dataPlane.immatriculation || !dataPlane.clubID) {
         return { error: 'Missing required fields' };
     }
@@ -38,6 +32,7 @@ export const createPlane = async (dataPlane: AddPlane) => {
                 clubID: dataPlane.clubID,
                 name: dataPlane.name,
                 immatriculation: dataPlane.immatriculation,
+                classes: dataPlane.classes,
             },
         });
         prisma.$disconnect();

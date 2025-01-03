@@ -17,13 +17,9 @@ import { createPlane } from '@/api/db/planes';
 import { toast } from '@/hooks/use-toast';
 import { IoIosWarning } from 'react-icons/io';
 import { planes } from '@prisma/client';
+import { DropDownClasse } from './DropDownClasse';
 
-interface NewPlaneProps {
-    name: string;
-    immatriculation: string;
-    clubID: string;
-    classes?: number[];
-}
+
 interface Props {
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
 }
@@ -33,11 +29,13 @@ const NewPlane = ({ setPlanes }: Props) => {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [plane, setPlane] = useState<NewPlaneProps>({
+    const [plane, setPlane] = useState<planes>({
+        id:"",
         name: "",
         immatriculation: "",
         clubID: currentUser?.clubID ?? "",
-        classes: [1, 2, 3, 4, 5, 6]
+        classes: 3,
+        operational: true
     });
 
     const onSubmit = async () => {
@@ -50,7 +48,7 @@ const NewPlane = ({ setPlanes }: Props) => {
             setLoading(true);
 
             // Mettre à jour l'ID du club
-            const planeData = { ...plane, clubID: currentUser.clubID };
+            const planeData = { ...plane, clubID: currentUser.clubID as string };
             const res = await createPlane(planeData);
 
             if (res.error) {
@@ -113,6 +111,13 @@ const NewPlane = ({ setPlanes }: Props) => {
                         disabled={loading}
                         value={plane.immatriculation}
                         onChange={(e) => setPlane((prev) => ({ ...prev, immatriculation: e.target.value }))}
+                    />
+                </div>
+
+                <div>
+                    <DropDownClasse 
+                        planeProp={plane} 
+                        setPlaneProp={setPlane} 
                     />
                 </div>
 
