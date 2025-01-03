@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -7,22 +6,18 @@ import { flight_sessions, planes, userRole } from '@prisma/client'
 import { toast } from "@/hooks/use-toast"
 import { checkSessionDate, interfaceSessions, newSession } from '@/api/db/sessions'
 import { fr } from "date-fns/locale"
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from "@/components/ui/switch"
 import { Label } from '@/components/ui/label'
-
 import { IoMdAddCircle } from "react-icons/io"
 import { IoIosWarning } from "react-icons/io"
 import { FaArrowRightLong } from "react-icons/fa6"
-import { Spinner } from './ui/SpinnerVariants'
 import DatePicker from 'react-datepicker'
-import 'react-datepicker/dist/react-datepicker.css'; // Import CSS for the date picker
+import 'react-datepicker/dist/react-datepicker.css'
 import { useCurrentClub } from '@/app/context/useCurrentClub'
-import SessionDate from './SessionDate'
-import { CircularProgress } from "@nextui-org/progress";
+import { CircularProgress } from "@nextui-org/progress"
 
 
 interface Props {
@@ -147,7 +142,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         return nextDate;
     }
 
-
     function splitSessions(sessionData: interfaceSessions): interfaceSessions[] {
         const stats = calculateSessionStats(sessionData);
 
@@ -200,7 +194,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
 
         return splitSessions;
     }
-
 
     const onConfirm = async () => {
         setLoading(true);
