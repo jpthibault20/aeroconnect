@@ -222,6 +222,9 @@ export const updatePlane = async (plane: planes) => {
     if (!plane.id) {
         return { error: 'Missing planeID' };
     }
+    if (!plane.name && !plane.immatriculation && !plane.operational && !plane.classes) {
+        return { error: 'Missing plane data' };
+    }
     try {
         await prisma.planes.update({
             where: {

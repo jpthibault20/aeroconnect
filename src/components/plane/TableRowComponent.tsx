@@ -24,6 +24,7 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 import UpdatePlanes from './UpdatePlanes';
 import { Button } from '../ui/button';
 import { clearCache } from '@/lib/cache';
+import { aircraftClasses } from '@/config/config';
 
 interface Props {
     plane: planes; // Utiliser le type Plane ici
@@ -123,6 +124,7 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
         <TableRow className="text-center">
             <TableCell>{plane.name}</TableCell>
             <TableCell>{plane.immatriculation}</TableCell>
+            <TableCell>{aircraftClasses.find(c => c.id === plane.classes)?.label || "Classe ULM"}</TableCell>
             {currentUser?.role == userRole.STUDENT || currentUser?.role == userRole.PILOT || currentUser?.role == userRole.INSTRUCTOR ?
                 (<>
                     <TableCell>

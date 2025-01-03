@@ -19,6 +19,7 @@ const TableComponent = ({ planes, setPlanes }: props) => {
                     <TableRow className='font-semibold text-lg'>
                         <TableHead className='text-black text-center'>Nom</TableHead>
                         <TableHead className='text-black text-center'>Immatriculation</TableHead>
+                        <TableHead className='text-black text-center'>Classe</TableHead>
                         {currentUser?.role == userRole.OWNER || currentUser?.role == userRole.ADMIN ?
                             (<>
                                 <TableHead className='text-black text-center'>État</TableHead>

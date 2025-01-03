@@ -7,13 +7,12 @@ import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { Spinner } from '../ui/SpinnerVariants'
 import { Switch } from '../ui/switch'
-import { Check, ChevronDown, X } from 'lucide-react'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
-import { aircraftClasses } from '@/config/config'
+import { Check, X } from 'lucide-react'
 import { IoIosWarning } from 'react-icons/io'
 import { updatePlane } from '@/api/db/planes'
 import { toast } from '@/hooks/use-toast';
 import { clearCache } from '@/lib/cache'
+import { DropDownClasse } from './DropDownClasse'
 
 
 interface props {
@@ -127,26 +126,10 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlanes, pla
                                 </div>
                             </div>
                             <div className='grid items-center gap-2'>
-                                <Label>
-                                    Classe de l&apos;avion
-                                </Label>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger className='w-full flex justify-between shadow-sm border-gray-200 border rounded-md px-2 py-2'>
-                                        {aircraftClasses.find(c => c.id === planeState.classes)?.label || "Classe ULM"}
-                                        <ChevronDown />
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        {aircraftClasses.map((aircraftClass) => (
-                                            <DropdownMenuItem
-                                                key={aircraftClass.id}
-                                                onClick={() => setPlaneState((prev) => ({ ...prev, classes: aircraftClass.id }))}
-                                                className='flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors'
-                                            >
-                                                {aircraftClass.label}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                            <DropDownClasse 
+                                planeProp={planeState}
+                                setPlaneProp={setPlaneState}
+                            />
                             </div>
                         </div>
                         {error && (
