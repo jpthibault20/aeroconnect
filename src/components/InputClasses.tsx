@@ -61,7 +61,8 @@ const AircraftClassSelector = ({ disabled, classes, setClasses }: Props) => {
                         return (
                             <div
                                 key={classId}
-                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm ${aircraftClass?.color}  ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
+                                style={{ backgroundColor: aircraftClass?.color }}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm  ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
                             >
                                 {aircraftClass?.label}
                                 <button
@@ -102,7 +103,8 @@ const AircraftClassSelector = ({ disabled, classes, setClasses }: Props) => {
                                                 } cursor-pointer justify-between w-full`}
                                         >
                                             <div
-                                                className={`w-10 h-10 rounded-full flex items-center justify-center ${aircraftClass.color}`}
+                                                style={{ backgroundColor: aircraftClass?.color }}
+                                                className={`w-10 h-10 rounded-full flex items-center justify-center`}
                                             >
                                                 <BiSolidPlaneAlt size={18} />
                                             </div>
