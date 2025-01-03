@@ -1,5 +1,5 @@
 import { planes } from '@prisma/client'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { ScrollArea } from '../ui/scroll-area'
 import { Label } from '../ui/label'
@@ -29,10 +29,6 @@ interface props {
 const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setPlanes, planes }: props) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-
-    useEffect(() => {
-        console.log(plane)
-    }, [plane])
 
     const onClickUpdatePlane = async () => {
         setLoading(true);
