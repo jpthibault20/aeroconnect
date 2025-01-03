@@ -42,12 +42,6 @@ export const createPlane = async (dataPlane: planes) => {
             where: {
                 clubID: dataPlane.clubID,
             },
-            select: {
-                id: true,
-                name: true,
-                immatriculation: true,
-                clubID: true,
-            },
         });
         prisma.$disconnect();
 

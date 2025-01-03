@@ -37,19 +37,20 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
     const [loading, setLoading] = useState(false);
     const [operational, setOperational] = useState(plane.operational);
     const [showPopup, setShowPopup] = useState(false);
+    const [planeState, setPlaneState] = useState<planes>(plane);
 
     useEffect(() => {
-        setOperational(plane.operational)
-    }, [plane])
+        setOperational(planeState.operational)
+    }, [planeState])
 
     const onClickDeletePlane = () => {
         const removePlane = async () => {
             setLoading(true);
             try {
-                const res = await deletePlane(plane.id);
+                const res = await deletePlane(planeState.id);
                 if (res.success) {
                     // Mise à jour des données locales après suppression
-                    setPlanes(planes.filter((p) => p.id !== plane.id));
+                    setPlanes(planes.filter((p) => p.id !== planeState.id));
                     toast({
                         title: "Avion supprimé avec succès",
                         duration: 5000,
@@ -82,16 +83,17 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
         const updatePlane = async () => {
             setLoading(true);
             try {
-                const res = await updateOperationalByID(plane.id, !operational);
+                const res = await updateOperationalByID(planeState.id, !operational);
                 if (res.success) {
                     // Mise à jour des données locales après modification
                     setPlanes(
                         planes.map((p) =>
-                            p.id === plane.id ? { ...p, operational: !operational } : p
+                            p.id === planeState.id ? { ...p, operational: !operational } : p
                         )
                     );
+                    setPlaneState((prev) => ({ ...prev, operational: !planeState.operational }));
                     setOperational(!operational);
-                    clearCache(`planes:${plane.clubID}`)
+                    clearCache(`planes:${planeState.clubID}`)
                     toast({
                         title: "Avion mis è jour avec succès",
                         duration: 5000,
@@ -122,9 +124,9 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
 
     return (
         <TableRow className="text-center">
-            <TableCell>{plane.name}</TableCell>
-            <TableCell>{plane.immatriculation}</TableCell>
-            <TableCell>{aircraftClasses.find(c => c.id === plane.classes)?.label || "Classe ULM"}</TableCell>
+            <TableCell>{planeState.name}</TableCell>
+            <TableCell>{planeState.immatriculation}</TableCell>
+            <TableCell>{aircraftClasses.find(c => c.id === planeState.classes)?.label || "Classe ULM"}</TableCell>
             {currentUser?.role == userRole.STUDENT || currentUser?.role == userRole.PILOT || currentUser?.role == userRole.INSTRUCTOR ?
                 (<>
                     <TableCell>
@@ -147,7 +149,7 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                                 <UpdatePlanes
                                     showPopup={showPopup}
                                     setShowPopup={setShowPopup}
-                                    plane={plane}
+                                    plane={planeState}
                                     setPlanes={setPlanes}
                                     planes={planes}
                                 >

@@ -30,12 +30,12 @@ const NewPlane = ({ setPlanes }: Props) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [plane, setPlane] = useState<planes>({
-        id:"",
+        id:"", // never used
         name: "",
         immatriculation: "",
         clubID: currentUser?.clubID ?? "",
         classes: 3,
-        operational: true
+        operational: true // never used
     });
 
     const onSubmit = async () => {
@@ -64,7 +64,7 @@ const NewPlane = ({ setPlanes }: Props) => {
                     }
                 });
                 setIsOpen(false); // Ferme le dialogue si enregistrement réussi
-                setPlanes(res.planes.map(plane => ({ ...plane, operational: true, classes: 3 })));
+                setPlanes(res.planes);
             } else {
                 setError("Une erreur est survenue (E_002: res.error is undefined)");
             }
