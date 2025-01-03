@@ -74,7 +74,7 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                         </DialogDescription>
                     </DialogHeader>
                     <ScrollArea className='' >
-                        <div className='space-y-3'>
+                        <div className='space-y-3 px-1'>
 
                             {/* Nom et Immatriculation */}
                             <div className='grid grid-cols-2 gap-4 py-2'>
