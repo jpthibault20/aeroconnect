@@ -13,7 +13,7 @@
  * @returns {JSX.Element} The rendered table row component.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { planes, userRole } from '@prisma/client';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
@@ -35,13 +35,10 @@ interface Props {
 const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
     const { currentUser } = useCurrentUser()
     const [loading, setLoading] = useState(false);
-    const [operational, setOperational] = useState(plane.operational);
     const [showPopup, setShowPopup] = useState(false);
     const [planeState, setPlaneState] = useState<planes>(plane);
 
-    useEffect(() => {
-        setOperational(planeState.operational)
-    }, [planeState])
+
 
     const onClickDeletePlane = () => {
         const removePlane = async () => {
@@ -83,16 +80,15 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
         const updatePlane = async () => {
             setLoading(true);
             try {
-                const res = await updateOperationalByID(planeState.id, !operational);
+                const res = await updateOperationalByID(planeState.id, !planeState.operational);
                 if (res.success) {
                     // Mise à jour des données locales après modification
                     setPlanes(
                         planes.map((p) =>
-                            p.id === planeState.id ? { ...p, operational: !operational } : p
+                            p.id === planeState.id ? { ...p, operational: !planeState.operational } : p
                         )
                     );
                     setPlaneState((prev) => ({ ...prev, operational: !planeState.operational }));
-                    setOperational(!operational);
                     clearCache(`planes:${planeState.clubID}`)
                     toast({
                         title: "Avion mis è jour avec succès",
@@ -120,6 +116,7 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
             }
         };
         updatePlane();
+        console.log(planeState)
     };
 
     return (
@@ -131,8 +128,8 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                 (<>
                     <TableCell>
                         <div>
-                            <Switch checked={operational} onCheckedChange={onChangeRestricted} disabled />
-                            <p>{operational ? "Opérationnel" : "En maintenance"}</p>
+                            <Switch checked={planeState.operational} onCheckedChange={onChangeRestricted} disabled />
+                            <p>{planeState.operational ? "Opérationnel" : "En maintenance"}</p>
                         </div>
                     </TableCell>
                 </>
@@ -141,8 +138,8 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                         <>
                             <TableCell>
                                 <div>
-                                    <Switch checked={operational} onCheckedChange={onChangeRestricted} />
-                                    <p>{operational ? "Opérationnel" : "En maintenance"}</p>
+                                    <Switch checked={planeState.operational} onCheckedChange={onChangeRestricted} />
+                                    <p>{planeState.operational ? "Opérationnel" : "En maintenance"}</p>
                                 </div>
                             </TableCell>
                             <TableCell className="flex-col items-center justify-center space-y-3">
@@ -150,6 +147,7 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                                     showPopup={showPopup}
                                     setShowPopup={setShowPopup}
                                     plane={planeState}
+                                    setPlane={setPlaneState}
                                     setPlanes={setPlanes}
                                     planes={planes}
                                 >

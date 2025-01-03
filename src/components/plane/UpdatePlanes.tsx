@@ -1,5 +1,5 @@
 import { planes } from '@prisma/client'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { ScrollArea } from '../ui/scroll-area'
 import { Label } from '../ui/label'
@@ -20,21 +20,25 @@ interface props {
     showPopup: boolean
     setShowPopup: React.Dispatch<React.SetStateAction<boolean>>
     plane: planes
+    setPlane: React.Dispatch<React.SetStateAction<planes>>
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>
     planes: planes[]
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlanes, planes }: props) => {
-    const [planeState, setPlaneState] = useState<planes>(plane);
+const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setPlanes, planes }: props) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    useEffect(() => {
+        console.log(plane)
+    }, [plane])
+
     const onClickUpdatePlane = async () => {
         setLoading(true);
-        console.log(planeState)
+        console.log(plane)
         try {
-            const res = await updatePlane(planeState);
+            const res = await updatePlane(plane);
             if (res.error) {
                 setError(res.error);
             } else if (res.success) {
@@ -48,9 +52,9 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlanes, pla
                     }
                 });
                 setPlanes(planes.map(p =>
-                    p.id === planeState.id ? { ...p, ...planeState } : p
+                    p.id === plane.id ? { ...p, ...plane } : p
                 ));
-                clearCache(`planes:${planeState.clubID}`)
+                clearCache(`planes:${plane.clubID}`)
                 setShowPopup(false);
             }
         } catch (error) {
@@ -84,9 +88,9 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlanes, pla
                                     </Label>
                                     <Input
                                         id='name'
-                                        value={planeState.name}
+                                        value={plane.name}
                                         disabled={loading}
-                                        onChange={(e) => setPlaneState((prev) => ({ ...prev, name: e.target.value }))}
+                                        onChange={(e) => setPlane((prev) => ({ ...prev, name: e.target.value }))}
                                     />
                                 </div>
                                 <div className='grid items-center gap-2'>
@@ -95,9 +99,9 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlanes, pla
                                     </Label>
                                     <Input
                                         id='immatriculation'
-                                        value={planeState.immatriculation}
+                                        value={plane.immatriculation}
                                         disabled={loading}
-                                        onChange={(e) => setPlaneState((prev) => ({ ...prev, immatriculation: e.target.value }))}
+                                        onChange={(e) => setPlane((prev) => ({ ...prev, immatriculation: e.target.value }))}
                                     />
                                 </div>
                             </div>
@@ -113,23 +117,23 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlanes, pla
                                     <div className='flex items-center justify-center gap-3 mt-1'>
                                         <X color='red' size={20} />
                                         <Switch
-                                            checked={planeState.operational}
-                                            onCheckedChange={(checked) => setPlaneState((prev) => ({ ...prev, operational: checked }))}
+                                            checked={plane.operational}
+                                            onCheckedChange={(checked) => setPlane((prev) => ({ ...prev, operational: checked }))}
                                             disabled={loading}
                                             id='operational'
                                         />
                                         <Check color='green' size={20} />
                                     </div>
-                                    <span className='text-sm text-gray-500'>
-                                        {planeState.operational ? "En fonctionnement" : "En maintenance"}
+                                    <span className='text-sm text-gray-500 w-full flex justify-center items-center'>
+                                        {plane.operational ? "En fonctionnement" : "Maintenance"}
                                     </span>
                                 </div>
                             </div>
                             <div className='grid items-center gap-2'>
-                            <DropDownClasse 
-                                planeProp={planeState}
-                                setPlaneProp={setPlaneState}
-                            />
+                                <DropDownClasse
+                                    planeProp={plane}
+                                    setPlaneProp={setPlane}
+                                />
                             </div>
                         </div>
                         {error && (
