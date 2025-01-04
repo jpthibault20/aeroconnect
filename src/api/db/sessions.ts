@@ -414,14 +414,14 @@ export const studentRegistration = async (session: flight_sessions, student: Use
         // Étape 2 : Mise à jour rapide de la session
         if (student) {
 
-            // await prisma.flight_sessions.update({
-            //     where: { id: session.id },
-            //     data: {
-            //         studentID: student.id,
-            //         studentPlaneID: planeID,
-            //         studentFirstName: student.firstName,
-            //         studentLastName: student.lastName,
-            //     }})            
+            await prisma.flight_sessions.update({
+                where: { id: session.id },
+                data: {
+                    studentID: student.id,
+                    studentPlaneID: planeID,
+                    studentFirstName: student.firstName,
+                    studentLastName: student.lastName,
+                }})            
         }
 
         // Retour rapide de succès
