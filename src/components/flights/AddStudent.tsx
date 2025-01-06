@@ -26,30 +26,116 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     const [freePlanes, setFreePlanes] = useState<{ id: string, name: string }[]>([]);
     const [planeId, setPlaneId] = useState<string>("");
     const [loading, setLoading] = useState(false);
+    const [warningStudent, setWarningStudent] = useState("");
+    const [warningPlane, setWarningPlane] = useState("");
 
-    // Récupérer les étudiants et les avions disponibles
-    useEffect(() => {
-        const { students, planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp)
-
-        setFreeStudents(students.map(student => ({ id: student.id, name: `${student.lastName} ${student.firstName}` })));
-
-        if (session.planeID.includes("classroomSession")) {
-            setFreePlanes([{ id: "classroomSession", name: "Session théorique" }]);
+    // Filtrer les étudiants en fonction de l'avion sélectionné
+    const filterStudentsByPlane = (planeId: string) => {
+        const { students } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
+        if (!planeId || planeId === " " || planeId === "classroomSession") {
+            return students.map(student => ({
+                id: student.id,
+                name: `${student.lastName} ${student.firstName}`
+            }));
         }
-        else {
-            setFreePlanes(planes.map(plane => ({ id: plane.id, name: plane.name })));
+
+        const selectedPlane = planesProp.find(plane => plane.id === planeId);
+        if (!selectedPlane) return [];
+
+        return students.filter(student => {
+            const userClasses = student.classes || [];
+            return userClasses.includes(selectedPlane.classes);
+        }).map(student => ({
+            id: student.id,
+            name: `${student.lastName} ${student.firstName}`
+        }));
+    };
+
+    // Filtrer les avions en fonction de l'étudiant sélectionné
+    const filterPlanesByStudent = (studentId: string) => {
+        if (session.planeID.includes("classroomSession")) {
+            return [{ id: "classroomSession", name: "Session théorique" }];
+        }
+
+        const { planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
+        if (!studentId || studentId === " ") {
+            return planes.map(plane => ({ id: plane.id, name: plane.name }));
+        }
+
+        const selectedStudent = usersProp.find(user => user.id === studentId);
+        if (!selectedStudent) return [];
+
+        const userClasses = selectedStudent.classes || [];
+        return planes.filter(plane =>
+            userClasses.includes(plane.classes)
+        ).map(plane => ({
+            id: plane.id,
+            name: plane.name
+        }));
+    };
+
+    // Mise à jour des listes lors de la sélection
+    useEffect(() => {
+        if (planeId && planeId !== " ") {
+            setFreeStudents(filterStudentsByPlane(planeId));
+        } else if (studentId && studentId !== " ") {
+            setFreePlanes(filterPlanesByStudent(studentId));
+        } else {
+            const { students, planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
+            setFreeStudents(students.map(student => ({
+                id: student.id,
+                name: `${student.lastName} ${student.firstName}`
+            })));
+
+            if (session.planeID.includes("classroomSession")) {
+                setFreePlanes([{ id: "classroomSession", name: "Session théorique" }]);
+            } else {
+                setFreePlanes(planes.map(plane => ({ id: plane.id, name: plane.name })));
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [planesProp, session, sessions, usersProp])
+    }, [planeId, studentId, session, sessions, usersProp, planesProp]);
 
     // Mise à jour de l'avion sélectionné si il n'y a qu'un seul
     useEffect(() => {
-        if (freePlanes.length == 1) {
+        if (freePlanes.length === 1) {
             setPlaneId(freePlanes[0].id);
         }
-    }, [freePlanes])
+    }, [freePlanes]);
 
-    // Gestion de l'ajout de l'étudiant
+    useEffect(() => {
+        if (freeStudents.length === 0) {
+            setWarningStudent("l'étudiant n'est pas autorisé pour cet classe d'avion");
+        } else {
+            setWarningStudent("");
+        }
+    }, [freeStudents]);
+
+    useEffect(() => {
+        if (freePlanes.length === 0) {
+            setWarningPlane("Aucun avion n'est disponible pour cette d'étudiant");
+        } else {
+            setWarningPlane("");
+        }
+    }, [freePlanes]);
+
+    // Handler pour la sélection d'un étudiant
+    const handleStudentChange = (value: string) => {
+        setStudentId(value);
+        if (value === " ") {
+            setPlaneId(" ");
+        }
+    };
+
+    // Handler pour la sélection d'un avion
+    const handlePlaneChange = (value: string) => {
+        setPlaneId(value);
+        if (value === " ") {
+            setStudentId(" ");
+        }
+    };
+
+    // Reste du code inchangé pour onClickAction...
     const onClickAction = async () => {
         setLoading(true);
 
@@ -74,7 +160,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                             description: res.error,
                             duration: 5000,
                             style: {
-                                background: '#ab0b0b', //rouge : ab0b0b
+                                background: '#ab0b0b',
                                 color: '#fff',
                             }
                         });
@@ -86,7 +172,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                             title: res.success,
                             duration: 5000,
                             style: {
-                                background: '#0bab15', //rouge : ab0b0b
+                                background: '#0bab15',
                                 color: '#fff',
                             }
                         });
@@ -111,22 +197,20 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                             ),
                         ]);
 
-                        // Mettre à jour la session avec les informations de l'étudiant et l'avion
                         setSessions(prevSessions => {
                             const updatedSessions = prevSessions.map(s =>
                                 s.id === session.id
                                     ? {
                                         ...s,
-                                        studentID: studentId,  // ID de l'étudiant
-                                        studentFirstName: firstName,  // Prénom de l'étudiant
-                                        studentLastName: lastName,  // Nom de l'étudiant
-                                        studentPlaneID: planeId,  // ID de l'avion
+                                        studentID: studentId,
+                                        studentFirstName: firstName,
+                                        studentLastName: lastName,
+                                        studentPlaneID: planeId,
                                     }
                                     : s
                             );
                             return updatedSessions;
                         });
-                        // Réinitialiser les champs
                         setStudentId(" ");
                         setPlaneId(" ");
                         setLoading(false);
@@ -145,10 +229,9 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         }
     };
 
-
     return (
         <Dialog>
-            <DialogTrigger >
+            <DialogTrigger>
                 <FaPlus color='green' />
             </DialogTrigger>
             <DialogContent>
@@ -159,10 +242,9 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                     </DialogDescription>
                 </DialogHeader>
 
-                {/* Sélection de l'étudiant */}
                 <Select
                     value={studentId}
-                    onValueChange={(val) => setStudentId(val)}
+                    onValueChange={handleStudentChange}
                     disabled={loading}>
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Élèves" />
@@ -177,13 +259,12 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                     </SelectContent>
                 </Select>
 
-                {/* Sélection de l'avion */}
                 <Select
                     value={planeId}
-                    onValueChange={(val) => setPlaneId(val)}
+                    onValueChange={handlePlaneChange}
                     disabled={loading}>
                     <SelectTrigger className="w-full">
-                        <SelectValue placeholder={"Appareils"} />
+                        <SelectValue placeholder="Appareils" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value=" ">Appareils</SelectItem>
@@ -194,6 +275,16 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         ))}
                     </SelectContent>
                 </Select>
+
+                {warningPlane && <div className="flex items-center text-orange-500 mb-4">
+                    <IoIosWarning className="mr-2" size={30} />
+                    <span>{warningPlane}</span>
+                </div>}
+
+                {warningStudent && <div className="flex items-center text-orange-500 mb-4">
+                    <IoIosWarning className="mr-2 " size={30} />
+                    <span>{warningStudent}</span>
+                </div>}
 
                 {error && (
                     <div className="flex items-center text-destructive mb-4">

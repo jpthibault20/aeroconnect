@@ -212,6 +212,7 @@ export const updateUser = async (user: User) => {
                 role: user.role,
                 restricted: user.restricted,
                 country: user.country,
+                classes: user.classes,
             }
         });
         prisma.$disconnect();

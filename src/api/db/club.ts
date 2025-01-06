@@ -1,7 +1,7 @@
 "use server";
 import { ClubFormValues } from "@/components/NewClub";
-import { minutes } from "@/config/configClub";
-import { dayFr } from "@/config/date";
+import { defaultMinutes } from "@/config/config";
+import { dayFr } from "@/config/config";
 import { sendNotificationRequestClub } from "@/lib/mail";
 import { userRole } from "@prisma/client";
 import prisma from "../prisma";
@@ -28,7 +28,7 @@ export const getAllClubs = async () => {
         return [];
     } finally {
         // Assurez-vous que Prisma se déconnecte correctement
-        
+
     }
 };
 
@@ -44,10 +44,10 @@ export const getClub = async (clubID: string) => {
         return club;
     } catch (error) {
         console.error("Erreur lors de la récupération des clubs :", error);
-        return ;
+        return;
     } finally {
         // Assurez-vous que Prisma se déconnecte correctement
-        
+
     }
 };
 
@@ -75,7 +75,7 @@ export const createClub = async (data: ClubFormValues, userID: string) => {
                 DaysOn: dayFr, // Remplacez `dayFr` par la logique réelle si nécessaire
                 HoursOn: allWorkingHour,
                 SessionDurationMin: data.sessionDuration,
-                AvailableMinutes: minutes, // Remplacez `minutes` par la logique réelle si nécessaire
+                AvailableMinutes: defaultMinutes, // Remplacez `minutes` par la logique réelle si nécessaire
             },
         });
         return { success: "Club créé avec succès !" };
@@ -93,7 +93,7 @@ export const createClub = async (data: ClubFormValues, userID: string) => {
                 role: userRole.OWNER
             }
         });
-        
+
     }
 };
 
@@ -121,8 +121,7 @@ export const requestClubID = async (clubID: string, userID: string) => {
     }
 }
 
-
-export const getAllUserRequestedClubID = async(clubID: string) => {
+export const getAllUserRequestedClubID = async (clubID: string) => {
     try {
         const user = await prisma.user.findMany({
             where: {
@@ -164,7 +163,7 @@ export const acceptMembershipRequest = async (userID: string, clubID: string | n
         }
 
         // Envoi de l'email en tâche de fond
-        await  sendNotificationRequestClub(user.email as string, club.id)
+        await sendNotificationRequestClub(user.email as string, club.id)
 
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch (error) {
@@ -172,8 +171,6 @@ export const acceptMembershipRequest = async (userID: string, clubID: string | n
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 };
-
-
 
 export const rejectMembershipRequest = async (userID: string) => {
     if (!userID) {
@@ -214,7 +211,7 @@ export const getClubAdress = async (clubID: string) => {
     } catch (error) {
         console.error('Error fetching club adress:', error);
         return null;
-    }   
+    }
 }
 
 export interface ConfigClub {
@@ -251,32 +248,50 @@ export const updateClub = async (clubID: string, data: ConfigClub) => {
     }
 
     try {
-        await prisma.club.update({
-            where: {
-                id: clubID
-            },
+        // Mise à jour du club
+const updateClub = prisma.club.update({
+    where: {
+        id: clubID,
+    },
+    data: {
+        Name: data.clubName,
+        Address: data.address,
+        City: data.city,
+        ZipCode: data.zipCode,
+        Country: data.country,
+        OwnerId: data.owners,
+        classes: data.classes,
+        HoursOn: workingHour,
+        SessionDurationMin: data.timeOfSession,
+        userCanSubscribe: data.userCanSubscribe,
+        preSubscribe: data.preSubscribe,
+        timeDelaySubscribeminutes: data.timeDelaySubscribeminutes,
+        userCanUnsubscribe: data.userCanUnsubscribe,
+        preUnsubscribe: data.preUnsubscribe,
+        timeDelayUnsubscribeminutes: data.timeDelayUnsubscribeminutes,
+        firstNameContact: data.firstNameContact,
+        lastNameContact: data.lastNameContact,
+        mailContact: data.mailContact,
+        phoneContact: data.phoneContact,
+    },
+});
+
+// Mise à jour des utilisateurs (owners)
+const updateOwners = Promise.all(
+    data.owners.map((ownerId: string) =>
+        prisma.user.update({
+            where: { id: ownerId },
             data: {
-                Name: data.clubName,
-                Address: data.address,
-                City: data.city,
-                ZipCode: data.zipCode,
-                Country: data.country,
-                OwnerId: data.owners,
                 classes: data.classes,
-                HoursOn: workingHour,
-                SessionDurationMin: data.timeOfSession,
-                userCanSubscribe: data.userCanSubscribe,
-                preSubscribe: data.preSubscribe,
-                timeDelaySubscribeminutes: data.timeDelaySubscribeminutes,
-                userCanUnsubscribe: data.userCanUnsubscribe,
-                preUnsubscribe: data.preUnsubscribe,
-                timeDelayUnsubscribeminutes: data.timeDelayUnsubscribeminutes,
-                firstNameContact: data.firstNameContact,
-                lastNameContact: data.lastNameContact,
-                mailContact: data.mailContact,
-                phoneContact: data.phoneContact,
-            }
-        });
+            },
+        })
+    )
+);
+
+// Lancer les deux requêtes en parallèle
+await Promise.all([updateClub, updateOwners]);
+
+
         return { success: "La configuration a été mise à jour avec succès !" };
     } catch (error) {
         console.error("Erreur lors de la mise à jour de la configuration :", error);

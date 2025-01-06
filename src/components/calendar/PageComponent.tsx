@@ -5,6 +5,7 @@ import GlobalCalendarDesktop from '@/components/calendar/GlobalCalendarDesktop';
 import GlobalCalendarPhone from '@/components/calendar/phone/GlobalCalendarPhone';
 import InitialLoading from '@/components/InitialLoading';
 import { flight_sessions, planes, User } from '@prisma/client';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 /**
  * Hook personnalisé pour détecter si l'écran est de taille mobile ou desktop.
@@ -39,11 +40,14 @@ interface props {
 
 const PageComponent = ({ sessionsprops, planesProp, clubIDUrl, usersProps }: props) => {
     const isMobile = useScreenSize();
+    const { currentUser } = useCurrentUser();
     const [sessions, setSessions] = useState<flight_sessions[]>([]);
 
     useEffect(() => {
-        setSessions(sessionsprops);
-    }, [sessionsprops]);
+        setSessions(sessionsprops.filter((s) => currentUser?.classes.some(cls => s.classes.includes(cls))));
+    }, [currentUser?.classes, sessionsprops]);
+
+    console.log(planesProp.filter((p) => currentUser?.classes.includes(p.classes)))
 
     // Rendu conditionnel en fonction de la taille de l'écran
     return (
@@ -52,14 +56,14 @@ const PageComponent = ({ sessionsprops, planesProp, clubIDUrl, usersProps }: pro
                 <GlobalCalendarDesktop
                     sessions={sessions}
                     setSessions={setSessions}
-                    planesProp={planesProp}
+                    planesProp={planesProp.filter((p) => currentUser?.classes.includes(p.classes))}
                     usersProps={usersProps}
                 />
             ) : (
                 <GlobalCalendarPhone
                     sessions={sessions}
                     setSessions={setSessions}
-                    planesProp={planesProp}
+                    planesProp={planesProp.filter((p) => currentUser?.classes.includes(p.classes))}
                     usersProps={usersProps}
                 />
             )}

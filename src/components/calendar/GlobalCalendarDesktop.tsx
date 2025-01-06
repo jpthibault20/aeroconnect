@@ -6,13 +6,13 @@
  * It is optimized for larger screens (hidden on smaller screens) and provides a smooth user experience for scheduling sessions.
  */
 import React, { useEffect, useState } from 'react'
-import { monthFr } from '@/config/date';
+import { monthFr } from '@/config/config';
 import DaySelector from './DaySelector';
 import TabCalendar from './TabCalendar';
 import NewSession from "@/components/NewSession"
 import Filter from './Filter';
 import { flight_sessions, planes, User } from '@prisma/client';
-import { workingHour } from '@/config/configClub';
+import { defaultHours } from '@/config/config';
 import { useCurrentClub } from '@/app/context/useCurrentClub';
 
 interface Props {
@@ -56,7 +56,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
         setDate(new Date())
     }
 
-    const clubHours = currentClub?.HoursOn || workingHour;
+    const clubHours = currentClub?.HoursOn || defaultHours;
 
     // Effect pour récupérer les jours de la semaine
     useEffect(() => {
