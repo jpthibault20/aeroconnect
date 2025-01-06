@@ -78,7 +78,9 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
 
     useEffect(() => {
         let updatedPlanes;
+
         const classroomPlane = { id: "classroomSession", name: "session théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3 };
+
 
         if (instructor === "nothing") {
             updatedPlanes = allPlanes;
