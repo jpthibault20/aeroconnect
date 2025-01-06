@@ -18,6 +18,7 @@ import { toast } from '@/hooks/use-toast';
 import { IoIosWarning } from 'react-icons/io';
 import { planes } from '@prisma/client';
 import { DropDownClasse } from './DropDownClasse';
+import { clearCache } from '@/lib/cache';
 
 
 interface Props {
@@ -30,7 +31,7 @@ const NewPlane = ({ setPlanes }: Props) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [plane, setPlane] = useState<planes>({
-        id:"", // never used
+        id: "", // never used
         name: "",
         immatriculation: "",
         clubID: currentUser?.clubID ?? "",
@@ -65,6 +66,7 @@ const NewPlane = ({ setPlanes }: Props) => {
                 });
                 setIsOpen(false); // Ferme le dialogue si enregistrement réussi
                 setPlanes(res.planes);
+                clearCache(`planes:${currentUser.clubID}`)
             } else {
                 setError("Une erreur est survenue (E_002: res.error is undefined)");
             }
@@ -115,9 +117,9 @@ const NewPlane = ({ setPlanes }: Props) => {
                 </div>
 
                 <div>
-                    <DropDownClasse 
-                        planeProp={plane} 
-                        setPlaneProp={setPlane} 
+                    <DropDownClasse
+                        planeProp={plane}
+                        setPlaneProp={setPlane}
                     />
                 </div>
 
