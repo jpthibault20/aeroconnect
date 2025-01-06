@@ -48,6 +48,7 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                 if (res.success) {
                     // Mise à jour des données locales après suppression
                     setPlanes(planes.filter((p) => p.id !== planeState.id));
+                    clearCache(`planes:${planeState.clubID}`)
                     toast({
                         title: "Avion supprimé avec succès",
                         duration: 5000,
