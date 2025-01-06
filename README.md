@@ -4,7 +4,10 @@ Ce projet est une application de calendrier conçue spécifiquement pour les clu
 
 ## Version actuelle
 
-**Version 1.1.x**
+**Version 1.2.x**
+ *  ajout en plus de la version précédent les 6 classes ulm avec des restriction, autorisation et gestion en fonction de celle ci
+
+**Version 1.1.x (old version since 06/01/2025)** 
 
 Cette version est une version de développement et ne contient pas encore toutes les fonctionnalités prévues. Les fonctionnalités actuellement implémentées sont :
 
@@ -88,7 +91,6 @@ npm run dev
 Voici les tâches restantes à accomplir pour finaliser le projet :
 
 - [ ] **Time Server** quand l'heure est utilisé dans le server envoyer au server via le clien le décalage horaire pour travailler toujours sur la meme heure
-- [ ] **Classes** dans toutes les partie ou il faut choisir une classe (user pour owner, planes, ...) le choix des classes dépend de la config club
 
 ## Contribuer
 
