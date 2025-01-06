@@ -26,6 +26,8 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     const [freePlanes, setFreePlanes] = useState<{ id: string, name: string }[]>([]);
     const [planeId, setPlaneId] = useState<string>("");
     const [loading, setLoading] = useState(false);
+    const [warningStudent, setWarningStudent] = useState("");
+    const [warningPlane, setWarningPlane] = useState("");
 
     // Filtrer les étudiants en fonction de l'avion sélectionné
     const filterStudentsByPlane = (planeId: string) => {
@@ -98,6 +100,22 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     useEffect(() => {
         if (freePlanes.length === 1) {
             setPlaneId(freePlanes[0].id);
+        }
+    }, [freePlanes]);
+
+    useEffect(() => {
+        if (freeStudents.length === 0) {
+            setWarningStudent("l'étudiant n'est pas autorisé pour cet classe d'avion");
+        } else {
+            setWarningStudent("");
+        }
+    }, [freeStudents]);
+
+    useEffect(() => {
+        if (freePlanes.length === 0) {
+            setWarningPlane("Aucun avion n'est disponible pour cette d'étudiant");
+        } else {
+            setWarningPlane("");
         }
     }, [freePlanes]);
 
@@ -257,6 +275,16 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         ))}
                     </SelectContent>
                 </Select>
+
+                {warningPlane && <div className="flex items-center text-orange-500 mb-4">
+                    <IoIosWarning className="mr-2" size={30} />
+                    <span>{warningPlane}</span>
+                </div>}
+
+                {warningStudent && <div className="flex items-center text-orange-500 mb-4">
+                    <IoIosWarning className="mr-2 " size={30} />
+                    <span>{warningStudent}</span>
+                </div>}
 
                 {error && (
                     <div className="flex items-center text-destructive mb-4">
