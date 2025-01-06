@@ -88,6 +88,7 @@ npm run dev
 Voici les tâches restantes à accomplir pour finaliser le projet :
 
 - [ ] **Time Server** quand l'heure est utilisé dans le server envoyer au server via le clien le décalage horaire pour travailler toujours sur la meme heure
+- [ ] **Classes** dans toutes les partie ou il faut choisir une classe (user pour owner, planes, ...) le choix des classes dépend de la config club
 
 ## Contribuer
 

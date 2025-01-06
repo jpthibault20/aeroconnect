@@ -20,8 +20,14 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
     const availablePilots = new Set<string>();
 
     availableSessions.forEach(session => {
-        session.planeID.forEach(plane => availablePlanes.add(plane));
-        availablePilots.add(session.pilotFirstName);
+        session.planeID.forEach((plane) => {
+            const foundPlane = planesProp.find(p => p.id === plane);
+            if (foundPlane) {
+                availablePlanes.add(foundPlane.id);
+            } else if (plane === "classroomSession") {
+                availablePlanes.add("classroomSession");
+            }
+        }); availablePilots.add(session.pilotFirstName);
     });
 
     const endSessionDate = new Date(

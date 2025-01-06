@@ -53,8 +53,10 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         endMinute: "00",
         duration: currentClub?.SessionDurationMin || 60,
         endReccurence: undefined,
-        planeId: planesProp.map(plane => plane.id)
-    })
+        planeId: planesProp.map(plane => plane.id), // Tous les IDs des avions
+        classes: Array.from(new Set(planesProp.map(plane => plane.classes))) // Classes uniques
+    });
+
 
     useEffect(() => {
         if (!switchRecurrence) setSessionData(prev => ({ ...prev, endReccurence: undefined }))
@@ -68,8 +70,12 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
 
     useEffect(() => {
         if (classroomSession) {
-            setSessionData(prev => ({ ...prev, planeId: ["classroomSession"] }))
+            setSessionData(prev => ({ ...prev, planeId: ["classroomSession"], classes: [1, 2, 3, 4, 5, 6] }))
         }
+        else {
+            setSessionData(prev => ({ ...prev, planeId: planesProp.map(plane => plane.id), classes: Array.from(new Set(planesProp.map(plane => plane.classes))) }))
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [classroomSession])
 
     useEffect(() => {
@@ -85,14 +91,38 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
 
     const allPlanesSelected = planesProp?.length === sessionData.planeId.length
 
-    const onClickPlane = (plane: string) => {
-        setSessionData(prev => ({
-            ...prev,
-            planeId: prev.planeId.includes(plane)
-                ? prev.planeId.filter(p => p !== plane)
-                : [...prev.planeId, plane]
-        }))
-    }
+    const onClickPlane = (plane: planes) => {
+        setSessionData(prev => {
+            // Vérifier si l'ID de l'avion est déjà dans planeId
+            const isPlaneSelected = prev.planeId.includes(plane.id);
+
+            // Mettre à jour planeId
+            const updatedPlaneId = isPlaneSelected
+                ? prev.planeId.filter(p => p !== plane.id) // Supprimer l'ID
+                : [...prev.planeId, plane.id]; // Ajouter l'ID
+
+            // Mettre à jour classes
+            let updatedClasses;
+            if (isPlaneSelected) {
+                // Supprimer la classe associée si elle n'est plus utilisée par un autre avion
+                const remainingPlaneClasses = updatedPlaneId.map(
+                    id => planesProp.find(p => p.id === id)?.classes
+                );
+                updatedClasses = Array.from(new Set(remainingPlaneClasses));
+            } else {
+                // Ajouter la classe, en s'assurant qu'elle est unique
+                updatedClasses = Array.from(
+                    new Set([...prev.classes, plane.classes])
+                );
+            }
+
+            return {
+                ...prev,
+                planeId: updatedPlaneId,
+                classes: updatedClasses as number[],
+            };
+        });
+    };
 
     const toggleSelectAllPlanes = () => {
         setSessionData(prev => ({
@@ -382,7 +412,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                                         key={plane.id}
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => onClickPlane(plane.id)}
+                                        onClick={() => onClickPlane(plane)}
                                         className={`${sessionData.planeId.includes(plane.id) ? "bg-green-200 hover:bg-green-200" : "bg-red-200 text-gray-500 hover:bg-red-200 hover:text-gray-500"}`}
                                     >
                                         {plane.name}

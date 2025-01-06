@@ -14,6 +14,7 @@ export interface interfaceSessions {
     duration: number;
     endReccurence: Date | undefined;
     planeId: string[];
+    classes: number[];
 }
 
 export const checkSessionDate = async (sessionData: interfaceSessions, user: User) => {
@@ -158,7 +159,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
 
     try {
         // Batch Prisma transactions for better performance
-        const batchSize = 100; // Par exemple, limiter à 100 insertions par batch
+        const batchSize = 100; 
         const createdSessions = [];
         for (let i = 0; i < sessionsToCreate.length; i += batchSize) {
             const batch = sessionsToCreate.slice(i, i + batchSize);
@@ -178,6 +179,7 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
                             studentLastName: null,
                             student_type: null,
                             planeID: sessionData.planeId,
+                            classes: sessionData.classes,
                         }
                     })
                 )
