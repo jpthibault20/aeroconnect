@@ -1,14 +1,9 @@
 "use server";
 
+import { planes } from "@prisma/client";
 import prisma from "../prisma";
 
-interface AddPlane {
-    name: string,
-    immatriculation: string,
-    clubID: string | null
-}
-
-export const createPlane = async (dataPlane: AddPlane) => {
+export const createPlane = async (dataPlane: planes) => {
     if (!dataPlane.name || !dataPlane.immatriculation || !dataPlane.clubID) {
         return { error: 'Missing required fields' };
     }
@@ -37,6 +32,7 @@ export const createPlane = async (dataPlane: AddPlane) => {
                 clubID: dataPlane.clubID,
                 name: dataPlane.name,
                 immatriculation: dataPlane.immatriculation,
+                classes: dataPlane.classes,
             },
         });
         prisma.$disconnect();
@@ -45,12 +41,6 @@ export const createPlane = async (dataPlane: AddPlane) => {
         const planes = await prisma.planes.findMany({
             where: {
                 clubID: dataPlane.clubID,
-            },
-            select: {
-                id: true,
-                name: true,
-                immatriculation: true,
-                clubID: true,
             },
         });
         prisma.$disconnect();
@@ -83,21 +73,6 @@ export const getPlanes = async (clubID: string) => {
         console.error('Error getting planes:', error);
         return [];
     }
-};
-
-export const getPlaneById = async (Id: string[]) => {
-    if (!Id) {
-        return { error: 'Missing Id' };
-    }
-    const planes = await prisma.planes.findMany({
-        where: {
-            id: {
-                in: Id
-            }
-        }
-    });
-    prisma.$disconnect();
-    return planes;
 };
 
 export const deletePlane = async (planeID: string) => {
@@ -145,7 +120,7 @@ export const updateOperationalByID = async (planeID: string, operational: boolea
                 operational: operational
             }
         });
-        prisma.$disconnect();
+        prisma.$disconnect();        
 
         return { success: 'Plane updated successfully' };
     } catch (error) {
@@ -231,3 +206,33 @@ export async function getPlaneName(planeID: string) {
         await prisma.$disconnect();
     }
 }
+
+export const updatePlane = async (plane: planes) => {
+    if (!plane.id) {
+        return { error: 'Missing planeID' };
+    }
+    if (!plane.name && !plane.immatriculation && !plane.operational && !plane.classes) {
+        return { error: 'Missing plane data' };
+    }
+    try {
+        await prisma.planes.update({
+            where: {
+                id: plane.id
+            },
+            data: {
+                name: plane.name,
+                immatriculation: plane.immatriculation,
+                operational: plane.operational,
+                classes: plane.classes,
+            }
+        });
+        prisma.$disconnect();
+
+        return { success: 'Plane updated successfully' };
+    } catch (error) {
+        console.error('Error updating plane:', error);
+        return {
+            error: 'Plane update failed',
+        };
+    }
+};

@@ -35,9 +35,10 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
             })
         }
         else {
-            setPlanesString(session.planeID.length + " avions");
+            const planes = session.planeID.includes("classromSession") ? 1 : (session.planeID.filter(planeID => PlaneProps.find(p => p.id === planeID)?.id).length);
+            setPlanesString(planes + " avions");
         }
-    }, [session.planeID, session.studentPlaneID])
+    }, [PlaneProps, session.planeID, session.studentPlaneID])
 
     const endSessionDate = new Date(
         session.sessionDateStart.getFullYear(),

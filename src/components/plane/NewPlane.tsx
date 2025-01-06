@@ -17,12 +17,10 @@ import { createPlane } from '@/api/db/planes';
 import { toast } from '@/hooks/use-toast';
 import { IoIosWarning } from 'react-icons/io';
 import { planes } from '@prisma/client';
+import { DropDownClasse } from './DropDownClasse';
+import { clearCache } from '@/lib/cache';
 
-interface NewPlaneProps {
-    name: string;
-    immatriculation: string;
-    clubID: string;
-}
+
 interface Props {
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
 }
@@ -32,10 +30,13 @@ const NewPlane = ({ setPlanes }: Props) => {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [plane, setPlane] = useState<NewPlaneProps>({
+    const [plane, setPlane] = useState<planes>({
+        id: "", // never used
         name: "",
         immatriculation: "",
         clubID: currentUser?.clubID ?? "",
+        classes: 3,
+        operational: true // never used
     });
 
     const onSubmit = async () => {
@@ -48,7 +49,7 @@ const NewPlane = ({ setPlanes }: Props) => {
             setLoading(true);
 
             // Mettre à jour l'ID du club
-            const planeData = { ...plane, clubID: currentUser.clubID };
+            const planeData = { ...plane, clubID: currentUser.clubID as string };
             const res = await createPlane(planeData);
 
             if (res.error) {
@@ -64,7 +65,8 @@ const NewPlane = ({ setPlanes }: Props) => {
                     }
                 });
                 setIsOpen(false); // Ferme le dialogue si enregistrement réussi
-                setPlanes(res.planes.map(plane => ({ ...plane, operational: true })));
+                setPlanes(res.planes);
+                clearCache(`planes:${currentUser.clubID}`)
             } else {
                 setError("Une erreur est survenue (E_002: res.error is undefined)");
             }
@@ -111,6 +113,13 @@ const NewPlane = ({ setPlanes }: Props) => {
                         disabled={loading}
                         value={plane.immatriculation}
                         onChange={(e) => setPlane((prev) => ({ ...prev, immatriculation: e.target.value }))}
+                    />
+                </div>
+
+                <div>
+                    <DropDownClasse
+                        planeProp={plane}
+                        setPlaneProp={setPlane}
                     />
                 </div>
 

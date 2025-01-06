@@ -1,6 +1,6 @@
 "use server"
 import prisma from "@/api/prisma";
-import { senderMailAdress } from "@/config/mail";
+import { senderMailAdress } from "@/config/config";
 import AcceptedToClub from "@/emails/AcceptedToClub";
 import MagicLinkEmail from "@/emails/MagicLink";
 import NotificationBookingPilote from "@/emails/NotificationBookingPilote";

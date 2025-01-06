@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { User, userRole } from '@prisma/client';
@@ -11,11 +11,12 @@ import { Input } from '../ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { signOut } from '@/app/auth/login/action';
 import { Spinner } from '../ui/SpinnerVariants';
+import InputClasses from '../InputClasses';
 
 const ProfilePage = () => {
     const [loading, setLoading] = useState(false);
     const { currentUser } = useCurrentUser();
-
+    const [classes, setClasses] = useState<number[]>(currentUser?.classes || []);
     const [profile, setProfile] = useState<User>(currentUser || {
         firstName: '',
         lastName: '',
@@ -30,7 +31,13 @@ const ProfilePage = () => {
         restricted: false,
         clubIDRequest: '',
         id: '',
+        classes: [],
     })
+
+    useEffect(() => {
+        setProfile({ ...profile, classes })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [classes])
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setProfile({ ...profile, [e.target.name]: e.target.value })
@@ -98,7 +105,7 @@ const ProfilePage = () => {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email</Label>
-                            <Input id="email" name="email" type="email" value={profile.email || ""} onChange={handleChange} required />
+                            <Input id="email" name="email" type="email" value={profile.email || ""} onChange={handleChange} required disabled />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="phone">Téléphone</Label>
@@ -122,6 +129,13 @@ const ProfilePage = () => {
                             <Label htmlFor="country">Pays</Label>
                             <Input id="country" name="country" value={profile.country || ""} onChange={handleChange} />
                         </div>
+                        <div>
+                            <InputClasses
+                                disabled={loading || currentUser?.role !== userRole.OWNER && currentUser?.role !== userRole.ADMIN}
+                                classes={classes}
+                                setClasses={setClasses}
+                            />
+                        </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
                         <Button type="submit">
@@ -131,7 +145,7 @@ const ProfilePage = () => {
                                 'Enregistrer'
                             )}
                         </Button>
-                        <Button variant="outline" disabled={loading} onClick={handleLogout}>Déconnexion</Button>
+                        <Button variant="outline" type='button' disabled={loading} onClick={handleLogout}>Déconnexion</Button>
                     </CardFooter>
                 </form>
             </Card>
