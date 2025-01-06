@@ -14,6 +14,7 @@ import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { Spinner } from '../ui/SpinnerVariants'
 import InputClasses from '../InputClasses'
 import { ScrollArea } from '../ui/scroll-area'
+import { clearCache } from '@/lib/cache'
 
 
 
@@ -67,6 +68,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
 
                     setShowPopup(false);
                     setLoading(false);
+                    clearCache(`users:${userState.clubID}`)
                     toast({
                         title: "Utilisateur mis à jour avec succès",
                         duration: 5000,

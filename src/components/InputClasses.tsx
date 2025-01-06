@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Label } from "./ui/label"
 import { BiSolidPlaneAlt } from "react-icons/bi";
 import { aircraftClasses } from "@/config/config"
+import { useCurrentClub } from "@/app/context/useCurrentClub"
 
 interface Props {
     disabled: boolean
@@ -15,7 +16,13 @@ interface Props {
 
 const AircraftClassSelector = ({ disabled, classes, setClasses }: Props) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const { currentClub } = useCurrentClub();
+    const [classesList, setClassesList] = useState(aircraftClasses.filter(c => currentClub?.classes.includes(c.id)));
     const dropdownRef = useRef<HTMLDivElement>(null); // Typage explicite
+
+    useEffect(() => {
+        setClassesList(aircraftClasses.filter(c => currentClub?.classes.includes(c.id)))
+    }, [currentClub])
 
     // Fermer le dropdown si on clique à l'extérieur
     const handleClickOutside = (event: MouseEvent) => {
@@ -57,7 +64,7 @@ const AircraftClassSelector = ({ disabled, classes, setClasses }: Props) => {
                 {/* Section des classes sélectionnées */}
                 <div className="flex flex-wrap gap-2">
                     {classes.map((classId) => {
-                        const aircraftClass = aircraftClasses.find((c) => c.id === classId);
+                        const aircraftClass = classesList.find((c) => c.id === classId);
                         return (
                             <div
                                 key={classId}
@@ -90,8 +97,8 @@ const AircraftClassSelector = ({ disabled, classes, setClasses }: Props) => {
                     </button>
                     {isDropdownOpen && (
                         <div className="absolute bottom-full right-0 mt-2 w-64 bg-white border border-gray-300 rounded-md shadow-lg z-10">
-                            <ScrollArea className="p-4 space-y-1 h-[400px]">
-                                {aircraftClasses.map((aircraftClass) => {
+                            <ScrollArea className="p-4 space-y-1 h-fit">
+                                {classesList.map((aircraftClass) => {
                                     const isSelected = classes.includes(aircraftClass.id);
                                     return (
                                         <button
