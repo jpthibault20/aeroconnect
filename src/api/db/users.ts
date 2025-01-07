@@ -177,14 +177,20 @@ export const deleteUser = async (studentID: string) => {
         return { error: "Une erreur est survenue (E_001: studentID is undefined)" };
     }
     try {
-        await prisma.user.delete({
+        await prisma.user.update({
             where: {
                 id: studentID
+            },
+            data: {
+                clubID: null,
+                restricted: false,
+                classes: [],
+                role: userRole.USER
             }
         });
         prisma.$disconnect();
         console.log('User deleted successfully');
-        return { success: "L'utilisateur a été supprimé avec succès !" };
+        return { success: "L'utilisateur a été supprimé de votre club avec succès !" };
     } catch (error) {
         console.error('Error deleting user:', error);
         return { error: "Erreur lors de la suppression de l'utilisateur" };
