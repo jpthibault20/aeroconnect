@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -26,16 +26,21 @@ interface Props {
 const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, confirmAction, loading, style }: Props) => {
     const [isOpen, setIsOpen] = useState(false);
 
+    // Surveille les changements de l'état loading
+    useEffect(() => {
+        // Si loading passe de true à false, ferme la popup
+        if (loading === false) {
+            setIsOpen(false);
+        }
+    }, [loading]);
+
     const handleConfirm = () => {
         confirmAction(); // Exécute l'action de confirmation
     };
 
-    // Ouvre le dialogue lorsqu'on reçoit le trigger pour le faire
     const handleTriggerClick = () => {
         setIsOpen(true); // Ouvre le dialogue
     };
-
-
 
     return (
         <AlertDialog open={isOpen}>
@@ -51,7 +56,7 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
                     <AlertDialogCancel onClick={() => setIsOpen(false)} disabled={loading}>{cancel}</AlertDialogCancel>
                     {loading ? (
                         <div className="flex justify-center items-center">
-                            <Spinner /> {/* Affiche un spinner pendant le chargement */}
+                            <Spinner />
                         </div>
                     ) : (
                         <AlertDialogAction
