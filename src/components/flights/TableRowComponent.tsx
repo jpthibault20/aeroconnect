@@ -16,24 +16,20 @@
 import React, { useState, useEffect } from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { Checkbox } from '../ui/checkbox';
-import { Club, flight_sessions, planes, User, userRole } from '@prisma/client';
-import { IoMdClose } from 'react-icons/io';
-import AlertConfirmDeleted from '../AlertConfirmDeleted';
-import { removeSessionsByID, removeStudentFromSessionID } from '@/api/db/sessions';
-import { toast } from '@/hooks/use-toast';
+import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import AddStudent from './AddStudent';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail';
 import { FaArrowRight } from "react-icons/fa";
 import SessionPopup from '../SessionPopup';
-import { useCurrentClub } from '@/app/context/useCurrentClub';
+import RemoveStudent from '../RemoveStudent';
+import DeleteFlightSession from '../DeleteFlightSession';
 
 
 interface props {
     session: flight_sessions;  ///< The flight session object
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
-    setSessionChecked: React.Dispatch<React.SetStateAction<string[]>>; ///< Function to update selected session IDs
+    setSessionChecked: React.Dispatch<React.SetStateAction<flight_sessions[]>>; ///< Function to update selected session IDs
     isAllChecked: boolean; ///< Indicates if "select all" is checked
     planesProp: planes[];
     usersProp: User[];
@@ -41,9 +37,7 @@ interface props {
 
 const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, isAllChecked, planesProp, usersProp }: props) => {
     const { currentUser } = useCurrentUser();
-    const { currentClub } = useCurrentClub();
     const [isChecked, setIsChecked] = useState(false); // State for individual checkbox
-    const [loading, setLoading] = useState(false);
     const [autorisedDeleteStudent, setAutorisedDeleteStudent] = useState(false);
     const [plane, setPlane] = useState<planes | undefined>();
 
@@ -81,153 +75,16 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
         setIsChecked(checked);
         setSessionChecked((prev) => {
             if (checked) {
-                return [...prev, sessionId]; // Add session ID if checked
+                const session = sessions.find(s => s.id === sessionId);
+                if (session) {
+                    return [...prev, session]; // Add session if checked and found
+                }
+                return prev; // No changes if session is not found
             } else {
-                return prev.filter(id => id !== sessionId); // Remove session ID if unchecked
+                return prev.filter(s => s.id !== sessionId); // Remove session if unchecked
             }
         });
     };
-
-    // Remove flights from session
-    const removeFlight = (sessionID: string[]) => {
-        const removeSessions = async () => {
-            if (sessions.length > 0) {
-                setLoading(true);
-                try {
-                    const res = await removeSessionsByID(sessionID);
-                    if (res.error) {
-                        toast({
-                            title: res.error,
-                            duration: 5000,
-                            style: {
-                                background: '#ab0b0b', //rouge : ab0b0b
-                                color: '#fff',
-                            }
-                        });
-                    }
-                    if (res.success) {
-                        toast({
-                            title: res.success,
-                            duration: 5000,
-                            style: {
-                                background: '#0bab15', //rouge : ab0b0b
-                                color: '#fff',
-                            }
-                        });
-
-                        //supprimer les sessions de la base de données local
-                        setSessions(prevSessions => {
-                            const updatedSessions = prevSessions.filter(session => !sessionID.includes(session.id));
-                            return updatedSessions;
-                        });
-
-                        const pilotes = usersProp.filter((items) => items.role === userRole.PILOT || items.role === userRole.OWNER || items.role === userRole.ADMIN);
-                        const students = usersProp.filter((items) => items.role === userRole.STUDENT || items.role === userRole.PILOT);
-                        const piloteMap = new Map(pilotes.map((pilot) => [pilot.id, pilot.email]));
-                        const studentMap = new Map(students.map((student) => [student.id, student.email]));
-                        const sessionstype = sessions.filter((session) => sessionID.includes(session.id));
-
-                        for (const session of sessionstype) {
-                            const studentEmail = studentMap.get(session.studentID || '');
-                            const piloteEmail = piloteMap.get(session.pilotID || '');
-                            const endDate = new Date(session.sessionDateStart);
-                            endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
-
-                            // Envoi des notifications
-                            if (studentEmail) {
-                                Promise.all([
-                                    sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, currentClub as Club),
-                                    sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, currentClub as Club)
-                                ])
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.log(error);
-                } finally {
-                    setLoading(false);
-                }
-            }
-        };
-        removeSessions();
-    }
-
-    const removeStudent = (sessionID: string | null) => {
-        const removeSessions = async () => {
-            if (sessionID) {
-                setLoading(true);
-                try {
-                    const student = usersProp.find(item => item.id === session.studentID)
-                    const pilote = usersProp.find(item => item.id === session.pilotID)
-                    const res = await removeStudentFromSessionID(session, new Date().getTimezoneOffset() as number, currentClub as Club, currentUser as User);
-                    if (res.success) {
-                        toast({
-                            title: res.success,
-                            duration: 5000,
-                            style: {
-                                background: '#0bab15', //rouge : ab0b0b
-                                color: '#fff',
-                            }
-                        });
-
-                        // Mise à jour de la session pour nettoyer les valeurs
-                        setSessions(prevSessions => {
-                            const updatedSessions = prevSessions.map(s =>
-                                s.id === sessionID
-                                    ? {
-                                        ...s,
-                                        studentID: null,             // Réinitialisation de l'ID étudiant
-                                        studentFirstName: "",        // Réinitialisation du prénom
-                                        studentLastName: "",         // Réinitialisation du nom
-                                        studentPlaneID: null,        // Réinitialisation de l'ID de l'avion
-                                    }
-                                    : s
-                            );
-                            return updatedSessions;
-                        });
-                        setPlane(undefined);
-
-                        const endDate = new Date(session.sessionDateStart);
-                        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
-
-                        Promise.all([
-                            student?.email && sendNotificationRemoveAppointment(
-                                student.email,
-                                session.sessionDateStart as Date,
-                                endDate,
-                                currentClub as Club
-                            ),
-                            pilote?.email && sendNotificationSudentRemoveForPilot(
-                                pilote.email,
-                                session.sessionDateStart as Date,
-                                endDate,
-                                currentClub as Club
-                            ),
-                        ]);
-                    }
-
-                    if (res.error) {
-                        toast({
-                            title: res.error,
-                            duration: 5000,
-                            style: {
-                                background: '#ab0b0b', //rouge : ab0b0b
-                                color: '#fff',
-                            }
-                        });
-
-                    }
-                } catch (error) {
-                    console.log(error);
-                } finally {
-                    setLoading(false);
-                }
-            }
-        };
-
-        removeSessions();
-    };
-
 
     return (
         <TableRow className='font-istok'>
@@ -256,16 +113,11 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                     <div className='flex items-center justify-center space-x-1.5'>
                         <p>{session.studentLastName.slice(0, 1).toUpperCase()}.{session.studentFirstName}</p>
                         {autorisedDeleteStudent &&
-                            <AlertConfirmDeleted
-                                title="Etes vous sur de vouloir Désinscrire l'élève ?"
-                                description={`vous allez désinscrire ${session.studentFirstName} ${session.studentLastName} de ce vol.`}
-                                cancel='Annuler'
-                                confirm='Supprimer'
-                                confirmAction={() => removeStudent(session.id)}
-                                loading={loading}
-                            >
-                                <IoMdClose color='red' size={20} />
-                            </AlertConfirmDeleted>
+                            <RemoveStudent
+                                session={session}
+                                setSessions={setSessions}
+                                usersProp={usersProp}
+                            />
                         }
                     </div>
                 )
@@ -290,19 +142,12 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
             <TableCell className='h-full w-full justify-center items-center flex'>
                 {currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
                     (
-                        <AlertConfirmDeleted
-                            title='Etes vous sur de vouloir supprimer ce vol ?'
-                            description={'Ce vol sera supprimé définitivement'}
-                            style='flex h-full w-full justify-center items-center'
-                            cancel='Annuler'
-                            confirm='Supprimer'
-                            confirmAction={() => removeFlight([session.id])}
-                            loading={loading}
-                        >
+
+                        <DeleteFlightSession description={`Ce vol sera supprimé définitivement`} sessions={[session]} setSessions={setSessions} usersProp={usersProp}>
                             <div className='px-2 py-1 bg-red-600 text-white rounded-lg'>
                                 Supprimer
                             </div>
-                        </AlertConfirmDeleted>
+                        </DeleteFlightSession>
                     ) : null
                 }
             </TableCell>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { DialogContent, DialogTrigger } from "./ui/dialog";
-import { Club, flight_sessions, planes, User } from "@prisma/client";
+import { Club, flight_sessions, planes, User, userRole } from "@prisma/client";
 import { Dialog } from "@radix-ui/react-dialog";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import SessionHeader from "./SessionHeader";
@@ -16,6 +16,8 @@ import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { Plane } from "lucide-react";
 import { PiStudent } from "react-icons/pi";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
+import SessionPopupUpdate from "./SessionPopupUpdate";
+import { Button } from "./ui/button";
 
 interface Prop {
     children: React.ReactNode;
@@ -43,6 +45,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     const [availableInstructors, setAvailableInstructors] = useState<User[]>([]);
     const [allPlanes, setAllPlanes] = useState<planes[]>([]);
     const [availablePlanes, setAvailablePlanes] = useState<planes[]>([]);
+
+    const [updateSessionsDisabled, setUpdateSessionsDisabled] = useState(false);
 
     // Charger les pilotes et avions disponibles
     useEffect(() => {
@@ -202,13 +206,26 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
             <DialogContent>
                 <SessionHeader sessionStartDate={startDate} />
                 <SessionDate startDate={startDate} endDate={endDate} />
-                {noSessions ? (
-                    <div className={`grid gap-2 ${sessions.length === 1
-                        ? "grid-cols-1 justify-center items-center"
-                        : sessions.length === 2
-                            ? "grid-cols-2 justify-center items-center"
-                            : "grid-cols-3 justify-center items-center"
-                        }`}>
+
+                {updateSessionsDisabled ? (
+                    <SessionPopupUpdate
+                        sessions={sessions}
+                        setSessions={setSessions}
+                        usersProps={usersProps}
+                        planesProp={planesProp}
+                        updateSessionsDisabled={updateSessionsDisabled}
+                        setUpdateSessionsDisabled={setUpdateSessionsDisabled}
+                    />
+                ) : noSessions ? (
+                    // Sessions Booked
+                    <div
+                        className={`grid gap-2 ${sessions.length === 1
+                            ? "grid-cols-1 justify-center items-center"
+                            : sessions.length === 2
+                                ? "grid-cols-2 justify-center items-center"
+                                : "grid-cols-3 justify-center items-center"
+                            }`}
+                    >
                         {sessions.map((s, index) => (
                             <div
                                 key={index}
@@ -248,15 +265,52 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 </div>
                             </div>
                         ))}
+                        <Button
+                            variant="link"
+                            onClick={() => setUpdateSessionsDisabled(!updateSessionsDisabled)}
+                            className="flex w-full justify-start items-center"
+                        >
+                            {currentUser?.role === userRole.ADMIN ||
+                                currentUser?.role === userRole.OWNER
+                                ? "Modifier une sessions"
+                                : "Modifier ma session"}
+                        </Button>
                     </div>
-
                 ) : (
+                    // Sessions Available
                     <>
-                        <InstructorSelect instructors={availableInstructors} selectedInstructor={instructor} onInstructorChange={setInstructor} />
-                        <PlaneSelect planes={availablePlanes} selectedPlane={plane} onPlaneChange={setPlane} />
-                        <SubmitButton submitDisabled={submitDisabled} onSubmit={onSubmit} loading={loading} error={error} disabledMessage={disabledMessage} />
+                        <InstructorSelect
+                            instructors={availableInstructors}
+                            selectedInstructor={instructor}
+                            onInstructorChange={setInstructor}
+                        />
+                        <PlaneSelect
+                            planes={availablePlanes}
+                            selectedPlane={plane}
+                            onPlaneChange={setPlane}
+                        />
+                        <Button
+                            variant="link"
+                            onClick={() => setUpdateSessionsDisabled(!updateSessionsDisabled)}
+                            className="flex w-full justify-start items-center"
+                        >
+                            {currentUser?.role === userRole.ADMIN ||
+                                currentUser?.role === userRole.OWNER
+                                ? "Modifier une sessions"
+                                : "Modifier ma session"}
+                        </Button>
+                        <SubmitButton
+                            submitDisabled={submitDisabled}
+                            onSubmit={onSubmit}
+                            loading={loading}
+                            error={error}
+                            disabledMessage={disabledMessage}
+                        />
                     </>
                 )}
+
+
+
             </DialogContent>
         </Dialog>
     );

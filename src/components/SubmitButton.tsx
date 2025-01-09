@@ -22,7 +22,7 @@ const SubmitButton = ({ submitDisabled, onSubmit, loading, error, disabledMessag
     }
 
     return (
-        <div className="mt-4">
+        <div className="">
             {submitDisabled && (
                 <div className="flex justify-start gap-2 items-center text-red-500">
                     <IoIosWarning size={16} />
