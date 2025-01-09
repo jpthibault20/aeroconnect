@@ -47,7 +47,6 @@ const PageComponent = ({ sessionsprops, planesProp, clubIDUrl, usersProps }: pro
         setSessions(sessionsprops.filter((s) => currentUser?.classes.some(cls => s.classes.includes(cls))));
     }, [currentUser?.classes, sessionsprops]);
 
-    console.log(planesProp.filter((p) => currentUser?.classes.includes(p.classes)))
 
     // Rendu conditionnel en fonction de la taille de l'écran
     return (
