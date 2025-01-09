@@ -275,7 +275,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                         )
                         : currentUser?.role == userRole.PILOT || currentUser?.role == userRole.STUDENT ?
                             (
-                                <SessionPopup sessions={[session]} setSessions={setSessions} usersProps={usersProp} planesProp={planesProp} >
+                                <SessionPopup sessions={[session]} setSessions={setSessions} usersProps={usersProp} planesProp={planesProp} noSessions={session.studentID ? true : false} >
                                     <div className='bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-lg'>
                                         S&apos;inscrire
                                     </div>
