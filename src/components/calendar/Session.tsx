@@ -1,8 +1,8 @@
-import React from 'react';
-import AvailableSession from './AvailableSession';
-import BookedSession from './BookedSession';
+import React, { useEffect, useState } from 'react';
 import SessionPopup from '../SessionPopup';
 import { flight_sessions, planes, User } from '@prisma/client';
+import { Clock, Plane } from 'lucide-react';
+import { LiaChalkboardTeacherSolid } from 'react-icons/lia';
 
 interface Props {
     sessions: flight_sessions[];
@@ -12,6 +12,9 @@ interface Props {
 }
 
 const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
+    const [planesString, setPlanesString] = useState("");
+    const [instructorString, setInstructorString] = useState("");
+
     // Sépare les sessions réservées et disponibles
     const availableSessions = sessions.filter(session => session.studentID === null);
     const bookedSessions = sessions.filter(session => session.studentID !== null);
@@ -30,6 +33,8 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
         }); availablePilots.add(session.pilotFirstName);
     });
 
+    const noSessions = availableSessions.length === 0 ? true : false;
+
     const endSessionDate = new Date(
         sessions[0].sessionDateStart.getFullYear(),
         sessions[0].sessionDateStart.getMonth(),
@@ -39,40 +44,84 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
         0
     );
 
-    if ([...bookedSessions, ...availableSessions].length === 0) return null;
+    // regroupe for planes
+    useEffect(() => {
+        const allPlanes = [
+            ...new Set([...bookedSessions, ...availableSessions].flatMap(session => session.planeID))
+        ];
 
+        if (allPlanes.length === 1) {
+            setPlanesString(allPlanes[0] === "classroomSession" ? "Théorique" : planesProp.find(p => p.id === allPlanes[0])?.name as string)
+        }
+        else if (allPlanes.length > 1) {
+            setPlanesString(allPlanes.length + " avions");
+        }
+        else {
+            setPlanesString("0 avion");
+        }
+    }, [availableSessions, bookedSessions, planesProp])
+
+    // regroupe for instructor
+    useEffect(() => {
+        const uniquePilots = Array.from(
+            new Map(
+                [...bookedSessions, ...availableSessions].map((session) => [
+                    session.pilotID, // Utiliser pilotID comme clé
+                    {
+                        id: session.pilotID,
+                        firstname: session.pilotFirstName,
+                        lastname: session.pilotLastName,
+                    },
+                ])
+            ).values()
+        );
+
+        if (uniquePilots.length === 0) {
+            setInstructorString("0 instructeur");
+        } else if (uniquePilots.length === 1) {
+            setInstructorString(uniquePilots[0].lastname.slice(0, 1).toUpperCase() + uniquePilots[0].firstname)
+        } else {
+            setInstructorString(uniquePilots.length + " Instructeurs")
+        }
+    }, [availableSessions, bookedSessions])
+
+    if ([...bookedSessions, ...availableSessions].length === 0) return null;
 
     return (
         <SessionPopup sessions={[...bookedSessions, ...availableSessions]} setSessions={setSessions} usersProps={usersProps} planesProp={planesProp}>
-            <div
-                className={`p-1 rounded-md flex flex-col h-full w-full ${availableSessions.length === 0 ? 'bg-purple-100 opacity-70 text-purple-800' : 'bg-green-200 text-green-800'}`}
-            >
-                <div className='w-full items-end'>
-                    <p className="text-xs text-end">
+            <div className={`rounded-md p-1 ${noSessions ? "bg-purple-100 opacity-50" : "bg-green-200"}`}>
+                <div className='flex w-full items-center justify-end'>
+                    <Clock className="w-4 h-4 mr-1" />
+                    <span className='text-xs'>
                         {sessions[0].sessionDateStart.getUTCHours().toString().padStart(2, '0')}:
                         {sessions[0].sessionDateStart.getUTCMinutes().toString().padStart(2, '0')} -
                         {endSessionDate.getUTCHours().toString().padStart(2, '0')}:
                         {endSessionDate.getUTCMinutes().toString().padStart(2, '0')}
-                    </p>
+                    </span>
                 </div>
 
-                <div className='w-full h-full flex items-center'>
-                    {availableSessions.length === 0 ? (
-                        <div>
-                            <BookedSession sessions={bookedSessions} />
-                            {planesProp.find(plane => plane.id === sessions[0].planeID[0])?.name}
-                        </div>
+                {noSessions && (
+                    <div className='flex items-center justify-center'>
+                        COMPLET
+                    </div>
+                )}
 
-                    ) : (
-                        <AvailableSession
-                            availablePlanes={Array.from(availablePlanes)}
-                            availablePilots={Array.from(availablePilots)}
-                        />
-                    )}
+                <div className='flex items-center '>
+                    <Plane className="w-4 h-4 mr-1" />
+                    <span className='text-xs'>
+                        {planesString}
+                    </span>
+                </div>
+
+                <div className='flex items-center'>
+                    <LiaChalkboardTeacherSolid className='w-4 h-4 mr-1' />
+                    <span className='text-xs'>
+                        {instructorString}
+                    </span>
                 </div>
             </div>
         </SessionPopup>
-    );
+    )
 };
 
 export default Session;
