@@ -88,7 +88,7 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
     if ([...bookedSessions, ...availableSessions].length === 0) return null;
 
     return (
-        <SessionPopup sessions={[...bookedSessions, ...availableSessions]} setSessions={setSessions} usersProps={usersProps} planesProp={planesProp}>
+        <SessionPopup sessions={[...bookedSessions, ...availableSessions]} noSessions={noSessions} setSessions={setSessions} usersProps={usersProps} planesProp={planesProp}>
             <div className={`rounded-md p-1 ${noSessions ? "bg-purple-100 opacity-50" : "bg-green-200"}`}>
                 <div className='flex w-full items-center justify-end'>
                     <Clock className="w-4 h-4 mr-1" />
@@ -99,12 +99,6 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
                         {endSessionDate.getUTCMinutes().toString().padStart(2, '0')}
                     </span>
                 </div>
-
-                {noSessions && (
-                    <div className='flex items-center justify-center'>
-                        COMPLET
-                    </div>
-                )}
 
                 <div className='flex items-center '>
                     <Plane className="w-4 h-4 mr-1" />
