@@ -186,7 +186,7 @@ export const getAllPlanesOperational = async (clubID: string) => {
 
 export async function getPlaneName(planeID: string) {
     if (planeID === "classroomSession") {
-        return { name: "Session théorique" };
+        return { name: "Théorique" };
     }
     try {
         const planes = await prisma.planes.findUnique({
