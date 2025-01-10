@@ -8,6 +8,7 @@ Ce projet est une application de calendrier conçue spécifiquement pour les clu
  *  ajout en plus de la version précédent les 6 classes ulm avec des restriction, autorisation et gestion en fonction de celle ci
  *  correction bug lors de la suppression d'un element avec AlertConfirmDeleted
  *  Suppression d'un user => supression de l'utilisateur dans le club mais pas de la DB
+ *  Amélioration de la page calendar avec un nouveau design et une possibilité de gérer les évènements directement depuis le calendrier
 
 **Version 1.1.x (old version since 06/01/2025)** 
 
