@@ -33,13 +33,19 @@ const SubmitButton = ({ submitDisabled, onSubmit, loading, error, disabledMessag
                 </div>
             )}
             <div className='flex flex-row space-x-1 mt-1'>
-                <Button
-                    // variant="link"
-                    onClick={() => setUpdateSessionsDisabled(!updateSessionsDisabled)}
-                    className="flex w-fit justify-start items-center bg-blue-700"
-                >
-                    <MdModeEdit size={20} />
-                </Button>
+                {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER || currentUser?.role === userRole.INSTRUCTOR ?
+                    (
+                        <Button
+                            // variant="link"
+                            onClick={() => setUpdateSessionsDisabled(!updateSessionsDisabled)}
+                            className="flex w-fit justify-start items-center bg-blue-700"
+                        >
+                            <MdModeEdit size={20} />
+                        </Button>
+                    )
+                    : null
+                }
+
                 <Button className="w-full" disabled={submitDisabled} onClick={onSubmit}>
                     {loading ? <Spinner className='text-white' /> : 'Valider la réservation'}
                 </Button>

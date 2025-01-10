@@ -25,7 +25,6 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp, upd
 
     return (
         <div>
-            gg
             <div className={`grid gap-2 ${sessions.length === 1
                 ? "grid-cols-1 justify-center items-center"
                 : sessions.length === 2
