@@ -77,7 +77,7 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
 
     return (
         <SessionPopup sessions={[...bookedSessions, ...availableSessions]} noSessions={noSessions} setSessions={setSessions} usersProps={usersProps} planesProp={planesProp}>
-            <div className={`rounded-md p-1 ${noSessions ? "bg-purple-100 opacity-50" : "bg-green-200"}`}>
+            <div className={`rounded-md p-1 shadow-sm  ${noSessions ? "bg-purple-100 opacity-50" : "bg-[#d8fde5]"}`}>
                 <div className='flex w-full items-center justify-end'>
                     <Clock className="w-4 h-4 mr-1" />
                     <span className='text-xs'>
