@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from "@/components/ui/switch"
 import { Label } from '@/components/ui/label'
-import { IoMdAddCircle } from "react-icons/io"
+import { FaPlus } from "react-icons/fa6";
 import { IoIosWarning } from "react-icons/io"
 import { FaArrowRightLong } from "react-icons/fa6"
 import DatePicker from 'react-datepicker'
@@ -301,9 +301,15 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         <Dialog open={isOpenPopover} onOpenChange={setIsPopoverOpen}>
             <DialogTrigger
                 aria-label="Ouvrir le formulaire de nouvelle session"
-                className={`${display === "desktop" ? "bg-[#774BBE] hover:bg-[#3d2365] text-white " : ""} h-full rounded-md px-2 font-medium`}
+                className={`bg-[#774BBE] hover:bg-[#3d2365] text-white h-full rounded-md px-2 font-medium w-fit`}
             >
-                {display === "desktop" ? <p>Nouvelle session</p> : <IoMdAddCircle size={27} color="#774BBE" />}
+                {display === "desktop" ?
+                    <p>Nouvelle session</p>
+                    :
+                    <div className='mx-2 my-1'>
+                        <FaPlus size={18} color="white" />
+                    </div>
+                }
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] lg:max-w-[600px]">
                 <DialogHeader>

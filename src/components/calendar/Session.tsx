@@ -47,7 +47,7 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
     // regroupe for planes
     useEffect(() => {
         const allPlanes = [
-            ...new Set([...bookedSessions, ...availableSessions].flatMap(session => session.planeID))
+            ...new Set([...availableSessions].flatMap(session => session.planeID))
         ];
 
         if (allPlanes.length === 1) {
@@ -63,25 +63,13 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
 
     // regroupe for instructor
     useEffect(() => {
-        const uniquePilots = Array.from(
-            new Map(
-                [...bookedSessions, ...availableSessions].map((session) => [
-                    session.pilotID, // Utiliser pilotID comme clé
-                    {
-                        id: session.pilotID,
-                        firstname: session.pilotFirstName,
-                        lastname: session.pilotLastName,
-                    },
-                ])
-            ).values()
-        );
 
-        if (uniquePilots.length === 0) {
+        if (availableSessions.length === 0) {
             setInstructorString("0 instructeur");
-        } else if (uniquePilots.length === 1) {
-            setInstructorString(uniquePilots[0].lastname.slice(0, 1).toUpperCase() + uniquePilots[0].firstname)
+        } else if (availableSessions.length === 1) {
+            setInstructorString(availableSessions[0].pilotLastName.slice(0, 1).toUpperCase() + availableSessions[0].pilotFirstName)
         } else {
-            setInstructorString(uniquePilots.length + " Instructeurs")
+            setInstructorString(availableSessions.length + " Instructeurs")
         }
     }, [availableSessions, bookedSessions])
 
@@ -89,7 +77,7 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
 
     return (
         <SessionPopup sessions={[...bookedSessions, ...availableSessions]} noSessions={noSessions} setSessions={setSessions} usersProps={usersProps} planesProp={planesProp}>
-            <div className={`rounded-md p-1 ${noSessions ? "bg-purple-100 opacity-50" : "bg-green-200"}`}>
+            <div className={`rounded-md p-1 shadow-sm  ${noSessions ? "bg-purple-100 opacity-50" : "bg-green-200"}`}>
                 <div className='flex w-full items-center justify-end'>
                     <Clock className="w-4 h-4 mr-1" />
                     <span className='text-xs'>
