@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { DialogContent, DialogTrigger } from "./ui/dialog";
-import { Club, flight_sessions, planes, User, userRole } from "@prisma/client";
+import { Club, flight_sessions, planes, User } from "@prisma/client";
 import { Dialog } from "@radix-ui/react-dialog";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import SessionHeader from "./SessionHeader";
@@ -18,6 +18,7 @@ import { PiStudent } from "react-icons/pi";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import SessionPopupUpdate from "./SessionPopupUpdate";
 import { Button } from "./ui/button";
+import { MdModeEdit } from "react-icons/md";
 
 interface Prop {
     children: React.ReactNode;
@@ -266,14 +267,11 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                             </div>
                         ))}
                         <Button
-                            variant="link"
+                            // variant="link"
                             onClick={() => setUpdateSessionsDisabled(!updateSessionsDisabled)}
-                            className="flex w-full justify-start items-center"
+                            className="flex w-fit justify-start items-center bg-blue-700"
                         >
-                            {currentUser?.role === userRole.ADMIN ||
-                                currentUser?.role === userRole.OWNER
-                                ? "Modifier une sessions"
-                                : "Modifier ma session"}
+                            <MdModeEdit size={20} />
                         </Button>
                     </div>
                 ) : (
@@ -289,22 +287,14 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                             selectedPlane={plane}
                             onPlaneChange={setPlane}
                         />
-                        <Button
-                            variant="link"
-                            onClick={() => setUpdateSessionsDisabled(!updateSessionsDisabled)}
-                            className="flex w-full justify-start items-center"
-                        >
-                            {currentUser?.role === userRole.ADMIN ||
-                                currentUser?.role === userRole.OWNER
-                                ? "Modifier une sessions"
-                                : "Modifier ma session"}
-                        </Button>
                         <SubmitButton
                             submitDisabled={submitDisabled}
                             onSubmit={onSubmit}
                             loading={loading}
                             error={error}
                             disabledMessage={disabledMessage}
+                            setUpdateSessionsDisabled={setUpdateSessionsDisabled}
+                            updateSessionsDisabled={updateSessionsDisabled}
                         />
                     </>
                 )}

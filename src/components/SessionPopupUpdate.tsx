@@ -110,11 +110,11 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp, upd
             </div>
 
 
-            <div className='w-full flex justify-end space-x-1'>
+            <div className='w-full flex justify-end space-x-1 mt-3'>
                 <Button onClick={() => setUpdateSessionsDisabled(!updateSessionsDisabled)} variant="link">
                     Retour
                 </Button>
-                <Button>
+                <Button onClick={() => setUpdateSessionsDisabled(!updateSessionsDisabled)}>
                     Valider
                 </Button>
             </div>
