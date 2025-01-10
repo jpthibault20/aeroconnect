@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 
 interface Props {
     sessions: flight_sessions[];  ///< Array of flight session objects
-    setSessionChecked: React.Dispatch<React.SetStateAction<string[]>>; ///< Function to update selected session IDs
+    setSessionChecked: React.Dispatch<React.SetStateAction<flight_sessions[]>>; ///< Function to update selected session IDs
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
     usersProp: User[];
@@ -47,8 +47,7 @@ const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, 
     const handleSelectAll = (checked: boolean) => {
         setIsAllChecked(checked);
         if (checked) {
-            const allIds = currentSessions.map(session => session.id); // Only select visible session IDs
-            setSessionChecked(allIds);
+            setSessionChecked(currentSessions);
         } else {
             setSessionChecked([]);
         }

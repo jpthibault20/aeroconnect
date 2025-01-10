@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
-import { FaPlus } from "react-icons/fa6";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { addStudentToSession } from '@/api/db/users';
 import { flight_sessions, planes, User } from '@prisma/client';
@@ -9,7 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { Spinner } from '../ui/SpinnerVariants';
 import { getFreePlanesUsers } from '@/api/popupCalendar';
 import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
-import { IoIosWarning } from 'react-icons/io';
+import { IoIosWarning, IoMdPersonAdd } from 'react-icons/io';
 
 interface Props {
     session: flight_sessions;
@@ -232,7 +231,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     return (
         <Dialog>
             <DialogTrigger>
-                <FaPlus color='green' />
+                <IoMdPersonAdd color='green' />
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>

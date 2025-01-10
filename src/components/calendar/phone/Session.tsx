@@ -50,10 +50,10 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
     );
 
     return (
-        <SessionPopup sessions={[session]} setSessions={setSessions} usersProps={userProps} planesProp={PlaneProps}>
+        <SessionPopup sessions={[session]} setSessions={setSessions} noSessions={session.studentID ? true : false} usersProps={userProps} planesProp={PlaneProps}>
             <div className={cn(
-                "p-2 rounded-md mb-3 gap-3",
-                session.studentID ? "bg-gray-100 text-gray-500 grid grid-cols-3" : "bg-green-100 grid grid-cols-2"
+                "p-2 rounded-md mb-3 gap-3 shadow-sm",
+                session.studentID ? "bg-purple-100 text-gray-500 grid grid-cols-3" : "bg-[#d8fde5] grid grid-cols-2"
             )}>
                 <div className='flex flex-col items-start justify-center'>
                     <span className='flex justify-center items-center'>

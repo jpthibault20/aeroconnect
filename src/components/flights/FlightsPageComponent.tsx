@@ -11,13 +11,10 @@
 import React, { useEffect, useState } from 'react';
 import TableComponent from "@/components/flights/TableComponent";
 import Filter from '@/components/flights/Filter';
-import { removeSessionsByID } from '@/api/db/sessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import NewSession from '../NewSession';
-import { Spinner } from '../ui/SpinnerVariants';
-import AlertConfirmDeleted from '../AlertConfirmDeleted';
-import { toast } from '@/hooks/use-toast';
+import DeleteFlightSession from '../DeleteFlightSession';
 
 interface Props {
     sessionsProp: flight_sessions[];
@@ -33,7 +30,7 @@ interface Props {
  */
 const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) => {
     const { currentUser } = useCurrentUser();
-    const [sessionChecked, setSessionChecked] = useState<string[]>([]);
+    const [sessionChecked, setSessionChecked] = useState<flight_sessions[]>([]);
     const [filterAvailable, setFilterAvailable] = useState(false);
     const [filterClassroomSessions, setFilterClassroomSessions] = useState(false);
     const [filterPlanesSessions, setFilterPlanesSessions] = useState(false);
@@ -41,7 +38,6 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
     const [myFlights, setMyFlights] = useState(false)
     const [sessions, setSessions] = useState<flight_sessions[]>(sessionsProp);
     const [filteredSessions, setFilteredSessions] = useState(sessions); // State for filtered sessions
-    const [loading, setLoading] = useState(false);
     // Logic for filtering sessions based on selected filters
     useEffect(() => {
         const filtered = sessions.filter(session => {
@@ -78,45 +74,45 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filterAvailable, filterClassroomSessions, filterDate, sessions, myFlights, filterPlanesSessions]); // Recalculate filters when any filter changes
 
-    const removeFlight = (sessionsParams: string[]) => {
-        const removeSessions = async () => {
-            if (sessionsParams.length > 0) {
-                setLoading(true);
-                try {
-                    const res = await removeSessionsByID(sessionsParams);
-                    if (res.success) {
-                        toast({
-                            title: res.success,
-                            duration: 5000,
-                            style: {
-                                background: '#0bab15', //rouge : ab0b0b
-                                color: '#fff',
-                            }
-                        });
-                        setSessionChecked([]);
-                        setSessions(sessions.filter(session => !sessionsParams.includes(session.id)));
-                    }
-                    if (res.error) {
-                        toast({
-                            title: "Oups, une erreur est survenue",
-                            description: res.error,
-                            duration: 5000,
-                            style: {
-                                background: '#ab0b0b', //rouge : ab0b0b
-                                color: '#fff',
-                            }
-                        });
-                    }
-                } catch (error) {
-                    console.log(error);
-                } finally {
-                    setLoading(false);
-                }
-            }
-        };
+    // const removeFlight = (sessionsParams: string[]) => {
+    //     const removeSessions = async () => {
+    //         if (sessionsParams.length > 0) {
+    //             setLoading(true);
+    //             try {
+    //                 const res = await removeSessionsByID(sessionsParams);
+    //                 if (res.success) {
+    //                     toast({
+    //                         title: res.success,
+    //                         duration: 5000,
+    //                         style: {
+    //                             background: '#0bab15', //rouge : ab0b0b
+    //                             color: '#fff',
+    //                         }
+    //                     });
+    //                     setSessionChecked([]);
+    //                     setSessions(sessions.filter(session => !sessionsParams.includes(session.id)));
+    //                 }
+    //                 if (res.error) {
+    //                     toast({
+    //                         title: "Oups, une erreur est survenue",
+    //                         description: res.error,
+    //                         duration: 5000,
+    //                         style: {
+    //                             background: '#ab0b0b', //rouge : ab0b0b
+    //                             color: '#fff',
+    //                         }
+    //                     });
+    //                 }
+    //             } catch (error) {
+    //                 console.log(error);
+    //             } finally {
+    //                 setLoading(false);
+    //             }
+    //         }
+    //     };
 
-        removeSessions();
-    }
+    //     removeSessions();
+    // }
 
     const isValidDate = (date: unknown): boolean => {
         return date instanceof Date && !isNaN(date.getTime());
@@ -133,18 +129,23 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
 
                     {currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
                         (
-                            <AlertConfirmDeleted
-                                title="Etes vous sur de vouloir supprimer ces vols ?"
-                                description={sessionChecked.length > 1 ? `${sessionChecked.length} vols seront supprimés.` : sessionChecked.length === 1 ? `1 vol sera supprimé.` : `Aucun vol n'a été sélectionné.`}
-                                cancel='Annuler'
-                                confirm='Supprimer'
-                                confirmAction={() => removeFlight(sessionChecked)}
-                                loading={loading}
-                            >
+                            <DeleteFlightSession description={`Ce vol sera supprimé définitivement`} sessions={sessionChecked} setSessions={setSessions} usersProp={usersProp}>
                                 <div className='px-2 py-1 bg-red-600 text-white rounded-lg'>
                                     Supprimer
                                 </div>
-                            </AlertConfirmDeleted>
+                            </DeleteFlightSession>
+                            // <AlertConfirmDeleted
+                            //     title="Etes vous sur de vouloir supprimer ces vols ?"
+                            //     description={sessionChecked.length > 1 ? `${sessionChecked.length} vols seront supprimés.` : sessionChecked.length === 1 ? `1 vol sera supprimé.` : `Aucun vol n'a été sélectionné.`}
+                            //     cancel='Annuler'
+                            //     confirm='Supprimer'
+                            //     confirmAction={() => removeFlight(sessionChecked)}
+                            //     loading={loading}
+                            // >
+                            //     <div className='px-2 py-1 bg-red-600 text-white rounded-lg'>
+                            //         Supprimer
+                            //     </div>
+                            // </AlertConfirmDeleted>
                         ) : null
                     }
                     <>
@@ -171,22 +172,15 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
                 />
             </div>
             {/* Use filtered sessions in the table */}
-            {loading ? (
-                <div className='justify-center items-center'>
-                    <Spinner />
-                    <p className='text-center'>
-                        Chargement ...
-                    </p>
-                </div>
-            ) : (
-                <TableComponent
-                    sessions={filteredSessions} // Pass filtered sessions here
-                    setSessions={setSessions}
-                    setSessionChecked={setSessionChecked}
-                    planesProp={planesProp}
-                    usersProp={usersProp}
-                />
-            )}
+
+            <TableComponent
+                sessions={filteredSessions} // Pass filtered sessions here
+                setSessions={setSessions}
+                setSessionChecked={setSessionChecked}
+                planesProp={planesProp}
+                usersProp={usersProp}
+            />
+
         </div>
     );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { DialogContent, DialogTrigger } from "./ui/dialog";
-import { Club, flight_sessions, planes, User } from "@prisma/client";
+import { Club, flight_sessions, planes, User, userRole } from "@prisma/client";
 import { Dialog } from "@radix-ui/react-dialog";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import SessionHeader from "./SessionHeader";
@@ -13,16 +13,23 @@ import { filterPilotePlane } from "@/api/popupCalendar";
 import { studentRegistration } from "@/api/db/sessions";
 import { sendNotificationBooking, sendStudentNotificationBooking } from "@/lib/mail";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
+import { Plane } from "lucide-react";
+import { PiStudent } from "react-icons/pi";
+import { LiaChalkboardTeacherSolid } from "react-icons/lia";
+import SessionPopupUpdate from "./SessionPopupUpdate";
+import { Button } from "./ui/button";
+import { MdModeEdit } from "react-icons/md";
 
 interface Prop {
     children: React.ReactNode;
     sessions: flight_sessions[];
+    noSessions: boolean;
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     usersProps: User[]
     planesProp: planes[]
 }
 
-const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp }: Prop) => {
+const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp, noSessions }: Prop) => {
     const { currentUser } = useCurrentUser();
     const { currentClub } = useCurrentClub();
 
@@ -39,6 +46,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
     const [availableInstructors, setAvailableInstructors] = useState<User[]>([]);
     const [allPlanes, setAllPlanes] = useState<planes[]>([]);
     const [availablePlanes, setAvailablePlanes] = useState<planes[]>([]);
+
+    const [updateSessionsDisabled, setUpdateSessionsDisabled] = useState(false);
 
     // Charger les pilotes et avions disponibles
     useEffect(() => {
@@ -79,7 +88,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
     useEffect(() => {
         let updatedPlanes;
 
-        const classroomPlane = { id: "classroomSession", name: "session théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3 };
+        const classroomPlane = { id: "classroomSession", name: "Théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3 };
 
 
         if (instructor === "nothing") {
@@ -198,9 +207,105 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp 
             <DialogContent>
                 <SessionHeader sessionStartDate={startDate} />
                 <SessionDate startDate={startDate} endDate={endDate} />
-                <InstructorSelect instructors={availableInstructors} selectedInstructor={instructor} onInstructorChange={setInstructor} />
-                <PlaneSelect planes={availablePlanes} selectedPlane={plane} onPlaneChange={setPlane} />
-                <SubmitButton submitDisabled={submitDisabled} onSubmit={onSubmit} loading={loading} error={error} disabledMessage={disabledMessage} />
+
+                {updateSessionsDisabled ? (
+                    <SessionPopupUpdate
+                        sessions={sessions}
+                        setSessions={setSessions}
+                        usersProps={usersProps}
+                        planesProp={planesProp}
+                        updateSessionsDisabled={updateSessionsDisabled}
+                        setUpdateSessionsDisabled={setUpdateSessionsDisabled}
+                    />
+                ) : noSessions ? (
+                    // Sessions Booked
+                    <div
+                        className={`grid gap-2 ${sessions.length === 1
+                            ? "grid-cols-1 justify-center items-center"
+                            : sessions.length === 2
+                                ? "grid-cols-2 justify-center items-center"
+                                : "grid-cols-3 justify-center items-center"
+                            }`}
+                    >
+                        {sessions.map((s, index) => (
+                            <div
+                                key={index}
+                                className="flex flex-col items-center justify-center border rounded-md p-4 text-center"
+                            >
+                                {/* Pilote */}
+                                <div className="flex items-center space-x-2">
+                                    <LiaChalkboardTeacherSolid />
+                                    <p>
+                                        {s.pilotLastName.slice(0, 1).toUpperCase() +
+                                            "." +
+                                            s.pilotFirstName}
+                                    </p>
+                                </div>
+
+                                {/* Étudiant */}
+                                <div className="flex items-center space-x-2">
+                                    <PiStudent />
+                                    <p>
+                                        {usersProps
+                                            .find((user) => user.id === s.studentID)
+                                            ?.lastName?.slice(0, 1)
+                                            .toUpperCase() +
+                                            "." +
+                                            usersProps.find((user) => user.id === s.studentID)?.firstName}
+                                    </p>
+                                </div>
+
+                                {/* Avion */}
+                                <div className="flex items-center space-x-2">
+                                    <Plane className="w-4 h-4" />
+                                    <p>
+                                        {s.studentPlaneID === "classroomSession"
+                                            ? "Théorique"
+                                            : planesProp.find((plane) => plane.id === s.studentPlaneID)?.name}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                        {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER || currentUser?.role === userRole.INSTRUCTOR ?
+                            (
+                                <Button
+                                    // variant="link"
+                                    onClick={() => setUpdateSessionsDisabled(!updateSessionsDisabled)}
+                                    className="flex w-fit justify-start items-center bg-blue-700"
+                                >
+                                    <MdModeEdit size={20} />
+                                </Button>
+                            )
+                            : null
+                        }
+                    </div>
+                ) : (
+                    // Sessions Available
+                    <>
+                        <InstructorSelect
+                            instructors={availableInstructors}
+                            selectedInstructor={instructor}
+                            onInstructorChange={setInstructor}
+                        />
+                        <PlaneSelect
+                            planes={availablePlanes}
+                            selectedPlane={plane}
+                            onPlaneChange={setPlane}
+                        />
+                        <SubmitButton
+                            submitDisabled={submitDisabled}
+                            onSubmit={onSubmit}
+                            loading={loading}
+                            error={error}
+                            disabledMessage={disabledMessage}
+                            setUpdateSessionsDisabled={setUpdateSessionsDisabled}
+                            updateSessionsDisabled={updateSessionsDisabled}
+                        />
+                    </>
+                )}
+
+
+
             </DialogContent>
         </Dialog>
     );
