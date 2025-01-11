@@ -1,4 +1,3 @@
-import { env } from "process";
 
 // Liste des classes possibles
 export const aircraftClasses = [
@@ -50,6 +49,3 @@ export const defaultHours = [
 // Liste des mois et jours
 export const monthFr = [ "Janvier", "Fevrier", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
 export const dayFr = [ "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
-
-// Adresse de l'envoi du mail
-export const senderMailAdress = env.SENDER_EMAIL
