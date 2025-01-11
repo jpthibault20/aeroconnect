@@ -1,6 +1,5 @@
 "use server"
 import prisma from "@/api/prisma";
-import { senderMailAdress } from "@/config/config";
 import AcceptedToClub from "@/emails/AcceptedToClub";
 import MagicLinkEmail from "@/emails/MagicLink";
 import NotificationBookingPilote from "@/emails/NotificationBookingPilote";
@@ -13,6 +12,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const domain = process.env.NEXT_PUBLIC_APP_URL;
+const senderMailAdress = process.env.SENDER_EMAIL as string;
 
 const formattedDate = (date: Date) => {
   const formatedDateString = date.toISOString();
