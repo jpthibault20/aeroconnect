@@ -1,3 +1,4 @@
+import { env } from "process";
 
 // Liste des classes possibles
 export const aircraftClasses = [
@@ -51,4 +52,4 @@ export const monthFr = [ "Janvier", "Fevrier", "Mars", "Avril", "Mai", "Juin", "
 export const dayFr = [ "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
 
 // Adresse de l'envoi du mail
-export const senderMailAdress = "stephane@vol-evasion.fr"
+export const senderMailAdress = env.SENDER_EMAIL
