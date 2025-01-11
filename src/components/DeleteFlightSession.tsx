@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog'
 import { Spinner } from './ui/SpinnerVariants'
-import { Club, flight_sessions, User, userRole } from '@prisma/client'
+import { Club, flight_sessions, User } from '@prisma/client'
 import { removeSessionsByID } from '@/api/db/sessions'
 import { toast } from '@/hooks/use-toast';
 import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail'
@@ -18,7 +18,6 @@ interface Props {
 
 const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, description }: Props) => {
     const { currentClub } = useCurrentClub()
-
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -56,6 +55,25 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
                         });
                     }
                     if (res.success) {
+
+
+                        for (const session of sessions) {
+                            if (session.studentID) {
+                                const student = usersProp.find(item => item.id === session.studentID)
+                                const pilote = usersProp.find(item => item.id === session.pilotID)
+
+                                const endDate = new Date(session.sessionDateStart);
+                                endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+
+                                Promise.all([
+                                    sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date, currentClub as Club),
+                                    sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date, currentClub as Club),
+                                ])
+                                    .catch((error) => {
+                                        console.log(error);
+                                    });
+                            }
+                        }
                         toast({
                             title: res.success,
                             duration: 5000,
@@ -70,27 +88,6 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
                             const updatedSessions = prevSessions.filter(session => !sessionID.includes(session.id));
                             return updatedSessions;
                         });
-
-                        const pilotes = usersProp.filter((items) => items.role === userRole.PILOT || items.role === userRole.OWNER || items.role === userRole.ADMIN);
-                        const students = usersProp.filter((items) => items.role === userRole.STUDENT || items.role === userRole.PILOT);
-                        const piloteMap = new Map(pilotes.map((pilot) => [pilot.id, pilot.email]));
-                        const studentMap = new Map(students.map((student) => [student.id, student.email]));
-                        const sessionstype = sessions.filter((session) => sessionID.includes(session.id));
-
-                        for (const session of sessionstype) {
-                            const studentEmail = studentMap.get(session.studentID || '');
-                            const piloteEmail = piloteMap.get(session.pilotID || '');
-                            const endDate = new Date(session.sessionDateStart);
-                            endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
-
-                            // Envoi des notifications
-                            if (studentEmail) {
-                                Promise.all([
-                                    sendNotificationRemoveAppointment(studentEmail, session.sessionDateStart, endDate, currentClub as Club),
-                                    sendNotificationSudentRemoveForPilot(piloteEmail as string, session.sessionDateStart as Date, endDate as Date, currentClub as Club)
-                                ])
-                            }
-                        }
                     }
                 } catch (error) {
                     console.log(error);
