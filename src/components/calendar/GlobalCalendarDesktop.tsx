@@ -14,6 +14,7 @@ import Filter from './Filter';
 import { flight_sessions, planes, User } from '@prisma/client';
 import { defaultHours } from '@/config/config';
 import { useCurrentClub } from '@/app/context/useCurrentClub';
+import DeleteManySessions from '../DeleteManySessions';
 
 interface Props {
     sessions: flight_sessions[];
@@ -98,6 +99,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
                                 onClickToday={onClickToday}
                             />
                             <div className='flex space-x-2 px-3 '>
+                                <DeleteManySessions />
                                 <div>
                                     <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} />
                                 </div>

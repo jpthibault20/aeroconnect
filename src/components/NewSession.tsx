@@ -305,13 +305,13 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                 className='h-full flex items-center justify-center'
             >
                 {display === "desktop" ? (
-                    <div className='bg-[#774BBE] text-white flex items-center justify-center gap-2 px-2 py-2 rounded-xl shadow-md hover:bg-[#6538a5] cursor-pointer transition'>
+                    <div className='bg-[#774BBE] text-white flex items-center justify-center gap-2 px-2 h-full rounded-lg shadow-md hover:bg-[#6538a5] cursor-pointer transition'>
                         <PlusIcon />
                         <p>Nouvelle session</p>
                     </div>
                 )
                     :
-                    <div className='bg-[#774BBE] text-white flex h-full items-center justify-center px-3 rounded-xl shadow-md hover:bg-[#6538a5] cursor-pointer transition'>
+                    <div className='bg-[#774BBE] text-white flex h-full items-center justify-center px-3 py-2 rounded-lg shadow-lg hover:bg-[#6538a5] cursor-pointer transition'>
                         <FaPlus />
                     </div>
                 }

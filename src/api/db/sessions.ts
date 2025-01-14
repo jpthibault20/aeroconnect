@@ -194,8 +194,6 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
     }
 };
 
-
-
 export const getAllSessions = async (clubID: string, monthSelected: Date) => {
 
     try {

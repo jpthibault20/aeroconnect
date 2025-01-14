@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, MoveLeft, MoveRight } from 'lucide-react';
 import { Session } from './Session';
 import Filter from '../Filter';
 import NewSession from '@/components/NewSession';
+import DeleteManySessions from '@/components/DeleteManySessions';
 
 interface Props {
     sessions: flight_sessions[];
@@ -166,7 +167,11 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
             </div>
 
             <div className="justify-between items-center my-4 flex px-8">
-                <NewSession display='phone' setSessions={setSessions} planesProp={planesProp} />
+                <div className='flex h-full space-x-2'>
+                    <DeleteManySessions />
+                    <NewSession display='phone' setSessions={setSessions} planesProp={planesProp} />
+                </div>
+
                 <Filter
                     sessions={sessions}
                     setSessionsFiltered={setSessionsFiltered}
