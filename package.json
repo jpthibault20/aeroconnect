@@ -15,6 +15,10 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
+    "@nextui-org/button": "^2.2.9",
+    "@nextui-org/date-picker": "^2.3.9",
+    "@nextui-org/dropdown": "^2.3.9",
+    "@nextui-org/popover": "^2.3.9",
     "@nextui-org/progress": "^2.2.5",
     "@nextui-org/system": "^2.4.5",
     "@nextui-org/theme": "^2.4.4",

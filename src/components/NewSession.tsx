@@ -18,6 +18,7 @@ import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useCurrentClub } from '@/app/context/useCurrentClub'
 import { CircularProgress } from "@nextui-org/progress"
+import { PlusIcon } from 'lucide-react'
 
 
 interface Props {
@@ -301,13 +302,17 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         <Dialog open={isOpenPopover} onOpenChange={setIsPopoverOpen}>
             <DialogTrigger
                 aria-label="Ouvrir le formulaire de nouvelle session"
-                className={`bg-[#774BBE] hover:bg-[#3d2365] text-white h-full rounded-md px-2 font-medium w-fit`}
+                className='h-full flex items-center justify-center'
             >
-                {display === "desktop" ?
-                    <p>Nouvelle session</p>
+                {display === "desktop" ? (
+                    <div className='bg-[#774BBE] text-white flex items-center justify-center gap-2 px-2 py-2 rounded-xl shadow-md hover:bg-[#6538a5] cursor-pointer transition'>
+                        <PlusIcon />
+                        <p>Nouvelle session</p>
+                    </div>
+                )
                     :
-                    <div className='mx-2 my-1'>
-                        <FaPlus size={18} color="white" />
+                    <div className='bg-[#774BBE] text-white flex h-full items-center justify-center px-3 rounded-xl shadow-md hover:bg-[#6538a5] cursor-pointer transition'>
+                        <FaPlus />
                     </div>
                 }
             </DialogTrigger>

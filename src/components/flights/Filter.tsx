@@ -1,103 +1,253 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @file Filter.tsx
  * @brief A React component for filtering flight sessions.
  * 
  * This component provides options to filter flight sessions based on availability, recurrence, and a specific date.
  * It uses a popover interface to present the filtering options to the user.
- * 
- * @param {Object} props - Component props.
- * @param {boolean} props.filterAvailable - Indicates if the filter for available flights is active.
- * @param {boolean} props.filterReccurence - Indicates if the filter for recurring flights is active.
- * @param {Date | null} props.filterDate - The selected date for filtering.
- * @param {React.Dispatch<React.SetStateAction<boolean>>} props.setFilterAvailable - Function to set the availability filter state.
- * @param {React.Dispatch<React.SetStateAction<boolean>>} props.setFilterReccurence - Function to set the recurrence filter state.
- * @param {React.Dispatch<React.SetStateAction<Date | null>>} props.setFilterDate - Function to set the selected date for filtering.
- * 
- * @returns {JSX.Element} The rendered filter component.
  */
 
-import React from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import React, { useEffect } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
-import { LuSettings2 } from "react-icons/lu";
-import DatePicker from 'react-datepicker'; // Import the date picker component
-import 'react-datepicker/dist/react-datepicker.css'; // Import CSS for the date picker
+import 'react-datepicker/dist/react-datepicker.css';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { userRole } from '@prisma/client';
+import { planes, User, userRole } from '@prisma/client';
 import { fr } from 'date-fns/locale';
+import { CiFilter } from "react-icons/ci";
+import { ChevronDown } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@nextui-org/popover";
+import { Button, ButtonGroup } from "@nextui-org/button";
+import { Label } from '@radix-ui/react-label';
+import { DatePicker } from "@nextui-org/date-picker";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownSection, DropdownItem } from "@nextui-org/dropdown";
+import { DateValue } from "@internationalized/date";
+import { StatusType } from './FlightsPageComponent';
+import { ScrollArea } from "@/components/ui/scroll-area"
 
-interface props {
-    filterAvailable: boolean; ///< Indicates if the filter for available flights is active
-    filterClassroomSessions: boolean; ///< Indicates if the filter for recurring flights is active
-    filterPlanesSessions: boolean; ///< Indicates if the filter for recurring flights is active
-    filterDate: Date | null; ///< The selected date for filtering
-    myFlights: boolean;
-    setFilterAvailable: React.Dispatch<React.SetStateAction<boolean>>; ///< Function to update availability filter state
-    setFilterClassroomSessions: React.Dispatch<React.SetStateAction<boolean>>; ///< Function to update recurrence filter state
-    setFilterPlanesSessions: React.Dispatch<React.SetStateAction<boolean>>; ///< Function to update recurrence filter state
-    setFilterDate: React.Dispatch<React.SetStateAction<Date | null>>; ///< Function to update selected date for filtering
-    setMyFlights: React.Dispatch<React.SetStateAction<boolean>>;
+
+interface Props {
+    selectedPlane: string;
+    setFilterDate: React.Dispatch<React.SetStateAction<DateValue | null>>;
+    setSelectedPlane: React.Dispatch<React.SetStateAction<string>>;
+    usersProp: User[];
+    planesProp: planes[];
+    status: StatusType;
+    setStatus: React.Dispatch<React.SetStateAction<StatusType>>;
+    selectedInstructor: string;
+    setSelectedInstructor: React.Dispatch<React.SetStateAction<string>>;
+    selectedStudents: string;
+    setSelectedStudents: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const Filter = ({ filterAvailable, filterClassroomSessions, filterPlanesSessions, filterDate, myFlights, setFilterAvailable, setFilterClassroomSessions, setFilterPlanesSessions, setFilterDate, setMyFlights }: props) => {
+const Filter = ({
+    selectedPlane,
+    setSelectedPlane,
+    setFilterDate,
+    usersProp,
+    planesProp,
+    status,
+    setStatus,
+    selectedInstructor,
+    setSelectedInstructor,
+    selectedStudents,
+    setSelectedStudents,
+}: Props) => {
     const { currentUser } = useCurrentUser();
 
-    /**
-     * Handles date changes from the date picker.
-     *
-     * @param {Date | null} date - The selected date or null.
-     */
-    const handleDateChange = (date: Date | null) => {
-        setFilterDate(date); // Updates the date state in the parent component
-    };
-
     return (
-        <Popover>
-            <PopoverTrigger className='bg-[#774BBE] rounded-full flex items-center justify-center p-2 hover:bg-[#3d2365]'>
-                <LuSettings2 size={20} color='white' />
+        <Popover placement="bottom-end">
+            <PopoverTrigger>
+                <Button aria-label="Open filters">
+                    <CiFilter size={20} />
+                    Filter
+                </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80">
-                {currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER ? (
-                    <div className="flex space-x-2 justify-start items-center border-b border-gray-300 py-2">
-                        <Checkbox checked={myFlights} onCheckedChange={(checked) => setMyFlights(!!checked)} />
-                        <button onClick={() => setMyFlights(!myFlights)} className='flex items-center justify-center'>
-                            Mes vols
-                        </button>
-                    </div>
-                ) : null}
-                <div className="flex space-x-2 justify-start items-center border-b border-gray-300 py-2">
-                    <Checkbox checked={filterAvailable} onCheckedChange={(checked) => setFilterAvailable(!!checked)} />
-                    <button onClick={() => setFilterAvailable(!filterAvailable)} className='flex items-center justify-center'>
-                        Vols disponible
-                    </button>
-                </div>
-                <div className="flex space-x-2 justify-statr items-center border-b border-gray-300 py-2">
-                    <Checkbox checked={filterClassroomSessions} onCheckedChange={(checked) => setFilterClassroomSessions(!!checked)} />
-                    <button onClick={() => setFilterClassroomSessions(!filterClassroomSessions)} className='flex items-center justify-center'>
-                        Session théorique
-                    </button>
-                </div>
-                <div className="flex space-x-2 justify-statr items-center border-b border-gray-300 py-2">
-                    <Checkbox checked={filterPlanesSessions} onCheckedChange={(checked) => setFilterPlanesSessions(!!checked)} />
-                    <button onClick={() => setFilterPlanesSessions(!filterPlanesSessions)} className='flex items-center justify-center'>
-                        Session pratique
-                    </button>
-                </div>
-                <div className='flex space-x-2 py-2 items-center'>
-                    {/* Date picker for filtering */}
-                    <DatePicker
-                        showIcon
-                        selected={filterDate}
-                        onChange={handleDateChange}
-                        dateFormat="dd/MM/yyyy"
-                        placeholderText="Choisir une date"
-                        className="w-full p-2 text-base border border-gray-300 rounded-md"
-                        todayButton="Aujourd'hui"
-                        isClearable
-                        readOnly
-                        locale={fr}
-                    />
-                </div>
+            <PopoverContent className="w-fit">
+                <ScrollArea className="h-[300px] md:h-fit w-fit" >
+                    {/* Filter by date */}
+                    {currentUser?.role === userRole.ADMIN ||
+                        currentUser?.role === userRole.OWNER ||
+                        currentUser?.role === userRole.INSTRUCTOR ||
+                        currentUser?.role === userRole.STUDENT ||
+                        currentUser?.role === userRole.PILOT ? (
+                        <div className="flex flex-col border-b px-1 py-4 w-full space-y-2">
+                            <Label id="date-label" className="font-semibold">
+                                Date
+                            </Label>
+                            <DatePicker
+                                className="max-w-[284px]"
+                                aria-labelledby="date-label"
+                                aria-label="Select a date"
+                                onChange={setFilterDate}
+                            />
+                            <div className="flex w-full justify-end">
+                                <button onClick={() => setFilterDate(null)} className="text-xs">
+                                    Toutes les dates
+                                </button>
+                            </div>
+                        </div>
+                    ) : null
+                    }
+
+                    {/* Filter by status */}
+                    {currentUser?.role === userRole.ADMIN ||
+                        currentUser?.role === userRole.OWNER ||
+                        currentUser?.role === userRole.INSTRUCTOR ? (
+                        <div className="flex flex-col border-b px-1 py-2 w-full space-y-2">
+                            <Label id="status-label" className="font-semibold">
+                                Statut de la session
+                            </Label>
+                            <Dropdown placement="bottom">
+                                <DropdownTrigger>
+                                    <Button
+                                        variant="light"
+                                        className="flex justify-between items-center border border-gray-200 shadow-md"
+                                        aria-labelledby="status-label"
+                                    >
+                                        {status === "al"
+                                            ? "Etat de la session"
+                                            : status === "available" ? "Disponible" : "Complète"}
+                                        <ChevronDown />
+                                    </Button>
+                                </DropdownTrigger>
+                                <DropdownMenu
+                                    aria-label="Filtrer les sessions par statut"
+                                    selectionMode="single"
+                                    onAction={(key) => setStatus(key as StatusType)}
+                                >
+                                    <DropdownItem key="al" textValue="al">Toutes les sessions</DropdownItem>
+                                    <DropdownItem key="available" textValue="Disponible">Disponible</DropdownItem>
+                                    <DropdownItem key="unavailable" textValue="full">Complète</DropdownItem>
+                                </DropdownMenu>
+                            </Dropdown>
+                        </div>
+                    ) : null
+                    }
+
+                    {/* Filter by plane */}
+                    {currentUser?.role === userRole.ADMIN ||
+                        currentUser?.role === userRole.OWNER ||
+                        currentUser?.role === userRole.INSTRUCTOR ||
+                        currentUser?.role === userRole.STUDENT ||
+                        currentUser?.role === userRole.PILOT ? (
+                        <div className="flex flex-col border-b px-1 py-4 w-full space-y-2">
+                            <Label id="plane-label" className="font-semibold">
+                                Avions
+                            </Label>
+                            <Dropdown placement="bottom">
+                                <DropdownTrigger>
+                                    <Button
+                                        variant="light"
+                                        className="flex justify-between items-center border border-gray-200 shadow-md"
+                                        aria-labelledby="plane-label"
+                                    >
+                                        {selectedPlane === "al" ? "Tous les avions" : selectedPlane === "classroomSession" ? "Théorique" : selectedPlane ? planesProp.find((plane) => plane.id === selectedPlane)?.name : "Appareils"}
+                                        <ChevronDown />
+                                    </Button>
+                                </DropdownTrigger>
+                                <DropdownMenu
+                                    aria-label="Filtrer les sessions par avion"
+                                    selectionMode="single"
+                                    onAction={(key) => setSelectedPlane(key as string)}
+                                >
+                                    <>
+                                        <DropdownItem key="al" textValue="al">Tous les appareils</DropdownItem>
+                                        <DropdownItem key="classroomSession" textValue="classroomSession">Théorique</DropdownItem>
+                                        {planesProp.map((plane) => (
+                                            <DropdownItem key={plane.id} textValue={plane.name}>{plane.name}</DropdownItem>
+                                        ))}
+                                    </>
+                                </DropdownMenu>
+                            </Dropdown>
+                        </div>
+                    ) : null
+                    }
+
+                    {/* Filter by instructor */}
+                    {currentUser?.role === userRole.ADMIN ||
+                        currentUser?.role === userRole.OWNER ||
+                        currentUser?.role === userRole.STUDENT ||
+                        currentUser?.role === userRole.PILOT ? (
+                        <div className="flex flex-col px-1 py-4 w-full space-y-2">
+                            <Label id="instructor-label" className="font-semibold">
+                                Instructeurs
+                            </Label>
+                            <Dropdown placement="bottom">
+                                <DropdownTrigger>
+                                    <Button
+                                        variant="light"
+                                        className="flex justify-between items-center border border-gray-200 shadow-md"
+                                        aria-labelledby="instructor-label"
+                                    >
+                                        {selectedInstructor === "al" ? "Tous les instructeurs" : selectedInstructor ? usersProp.find((user) => user.id === selectedInstructor)?.lastName.toUpperCase().slice(0, 1) + "." + usersProp.find((user) => user.id === selectedInstructor)?.firstName : "Instructeur"}
+                                        <ChevronDown />
+                                    </Button>
+                                </DropdownTrigger>
+                                <DropdownMenu
+                                    aria-label="Filtrer les sessions par instructeur"
+                                    selectionMode="single"
+                                    onAction={(key) => setSelectedInstructor(key as string)}
+                                >
+                                    <>
+                                        <DropdownItem key="al" textValue="al">Tous les instructeurs</DropdownItem>
+                                        {usersProp.map((user) => {
+                                            if (user.role === userRole.INSTRUCTOR) {
+                                                return (
+                                                    <DropdownItem key={user.id} textValue={user.id}>
+                                                        {user.lastName.toUpperCase().slice(0, 1)}.{user.firstName}
+                                                    </DropdownItem>
+                                                );
+                                            }
+                                        })}
+                                    </>
+                                </DropdownMenu>
+                            </Dropdown>
+                        </div>
+                    ) : null
+                    }
+
+                    {/* Filter by students */}
+                    {currentUser?.role === userRole.ADMIN ||
+                        currentUser?.role === userRole.OWNER ||
+                        currentUser?.role === userRole.INSTRUCTOR ? (
+                        <div className="flex flex-col px-1 py-4 w-full space-y-2">
+                            <Label id="instructor-label" className="font-semibold">
+                                Elèves
+                            </Label>
+                            <Dropdown placement="bottom">
+                                <DropdownTrigger>
+                                    <Button
+                                        variant="light"
+                                        className="flex justify-between items-center border border-gray-200 shadow-md"
+                                        aria-labelledby="instructor-label"
+                                    >
+                                        {selectedStudents === "al" ? "Tous les élèves" : selectedStudents ? usersProp.find((user) => user.id === selectedStudents)?.lastName.toUpperCase().slice(0, 1) + "." + usersProp.find((user) => user.id === selectedStudents)?.firstName : "Elèves"}
+                                        <ChevronDown />
+                                    </Button>
+                                </DropdownTrigger>
+                                <DropdownMenu
+                                    aria-label="Filtrer les sessions par instructeur"
+                                    selectionMode="single"
+                                    onAction={(key) => setSelectedStudents(key as string)}
+                                >
+                                    <>
+                                        <DropdownItem key="al" textValue="al">Tous les instructeurs</DropdownItem>
+                                        {usersProp.map((user) => {
+                                            if (user.role === userRole.STUDENT) {
+                                                return (
+                                                    <DropdownItem key={user.id} textValue={user.id}>
+                                                        {user.lastName.toUpperCase().slice(0, 1)}.{user.firstName}
+                                                    </DropdownItem>
+                                                );
+                                            }
+                                        })}
+                                    </>
+                                </DropdownMenu>
+                            </Dropdown>
+                        </div>
+                    ) : null
+                    }
+                </ScrollArea>
             </PopoverContent>
         </Popover>
     );
