@@ -99,7 +99,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
                                 onClickToday={onClickToday}
                             />
                             <div className='flex space-x-2 px-3 '>
-                                <DeleteManySessions />
+                                <DeleteManySessions usersProps={usersProps} sessionsProps={sessions} setSessions={setSessions} />
                                 <div>
                                     <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} />
                                 </div>

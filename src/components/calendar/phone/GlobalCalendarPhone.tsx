@@ -168,7 +168,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
 
             <div className="justify-between items-center my-4 flex px-8">
                 <div className='flex h-full space-x-2'>
-                    <DeleteManySessions />
+                    <DeleteManySessions usersProps={usersProps} sessionsProps={sessions} setSessions={setSessions} />
                     <NewSession display='phone' setSessions={setSessions} planesProp={planesProp} />
                 </div>
 

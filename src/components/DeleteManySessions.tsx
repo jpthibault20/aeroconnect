@@ -1,63 +1,106 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@nextui-org/modal";
 import React, { useEffect, useState } from 'react'
 import { RiDeleteBin5Fill } from "react-icons/ri";
 import { Button } from "./ui/button";
 import { DatePicker, DateRangePicker } from "@nextui-org/date-picker";
-import { DateValue, getLocalTimeZone, parseAbsoluteToLocal } from "@internationalized/date";
+import { DateValue, getLocalTimeZone } from "@internationalized/date";
 import type { RangeValue } from "@react-types/shared";
 import { Label } from "./ui/label";
-import { CheckboxGroup, Checkbox } from "@nextui-org/checkbox";
 import { IoIosWarning } from "react-icons/io";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
-import { userRole } from "@prisma/client";
+import { Club, flight_sessions, User, userRole } from "@prisma/client";
+import { Select, SelectItem } from "@nextui-org/select";
 import { removeSessionsByID } from "@/api/db/sessions";
-import { findSessions } from "@/api/client/sessions";
+import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from "@/lib/mail";
+import { useCurrentClub } from "@/app/context/useCurrentClub";
+import { toast } from "@/hooks/use-toast";
 
-const DeleteManySessions = () => {
+
+interface Prop {
+    usersProps: User[];
+    sessionsProps: flight_sessions[];
+    setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
+}
+
+const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) => {
     const { currentUser } = useCurrentUser()
+    const { currentClub } = useCurrentClub()
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
-    let [date, setDate] = useState<RangeValue<DateValue> | null>();
-    const [groupSelected, setGroupSelected] = useState(["oneTime"]);
-    const [endDelete, setEndDelete] = useState<DateValue | null>();
-    const [error, setError] = useState("")
+    const [date, setDate] = useState<RangeValue<DateValue> | null>();
+    const [piloteID, setPiloteID] = useState<string | undefined>(currentUser?.id);
+    const [error, setError] = useState("");
+    const [sessionsToDelete, setSessionsToDelete] = useState<flight_sessions[]>([]);
 
     useEffect(() => {
-        if (groupSelected.length > 1) {
-            // Garde uniquement le dernier élément ajouté
-            setGroupSelected([groupSelected[groupSelected.length - 1]]);
-        }
-    }, [groupSelected]);
+        if (!date?.start || !date?.end || !piloteID) return;
+
+        const sessions = sessionsProps.filter((session) => {
+            if (piloteID !== session.pilotID) {
+                return false;
+            }
+
+            const sessionDate = new Date(session.sessionDateStart);
+            const startDate = date.start.toDate(getLocalTimeZone());
+            const endDate = date.end.toDate(getLocalTimeZone());
+
+            return sessionDate > startDate && sessionDate <= endDate;
+        });
+
+        setSessionsToDelete(sessions);
+    }, [date?.end, date?.start, piloteID, sessionsProps]);
 
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR))) {
         return null
     }
 
-    const onValidate = (onClose: () => void) => {
+    const onValidate = async (onClose: () => void) => {
         console.log("onValidate");
 
-        const findParams: findSessions = {
-            clubID: currentUser?.clubID as string,
-            piloteID: currentUser?.id as string,
-            reccurence: groupSelected,
-            startDelete: date?.start.toDate(getLocalTimeZone()) as Date,
-            endDelete: date?.end.toDate(getLocalTimeZone()) as Date,
-            endReccurence: endDelete?.toDate(getLocalTimeZone()),
-        };
+        const sessionsIDs = sessionsToDelete.map(session => session.id);
+        const res = await removeSessionsByID(sessionsIDs);
 
-
-        // Fermer la modal après validation
-        // onClose(); // Exécution correcte de onClose
-
-        // removeSessionsByID();
-        const res = findSessions(findParams);
-        if (res?.error) {
+        if (res.error) {
             setError(res.error);
+            return;
         }
-        else {
-            setError("");
+
+        for (const session of sessionsToDelete) {
+            if (session.studentID) {
+                const student = usersProps.find(item => item.id === session.studentID)
+                const pilote = usersProps.find(item => item.id === session.pilotID)
+
+                const endDate = new Date(session.sessionDateStart);
+                endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+
+                Promise.all([
+                    sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date, currentClub as Club),
+                    sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date, currentClub as Club),
+                ])
+                    .catch((error) => {
+                        console.log(error);
+                    });
+            }
         }
+        toast({
+            title: res.success,
+            duration: 5000,
+            style: {
+                background: '#0bab15', //rouge : ab0b0b
+                color: '#fff',
+            }
+        });
+
+        setSessions((prev) => prev.filter(session => !sessionsIDs.includes(session.id)));
+        setSessionsToDelete([]);
+        onClose();
     };
+
+    const backToPage = (onClose: () => void) => {
+        setError("");
+        onClose();
+    }
 
 
     return (
@@ -76,7 +119,7 @@ const DeleteManySessions = () => {
                         <>
                             <ModalHeader className="flex flex-col">
                                 <h1>Suppression de plusieurs sessions</h1>
-                                <p className="font-normal text-gray-600 text-sm">Configuration de la suppression</p>
+                                <p className="font-normal text-gray-600 text-sm">Configuration des sessions à suppression</p>
                             </ModalHeader>
 
                             <ModalBody>
@@ -97,44 +140,35 @@ const DeleteManySessions = () => {
                                     />
                                 </div>
 
-                                {/* Choix de la récurrence */}
-                                <div>
-                                    <Label>Récurrence de la suppression</Label>
-                                    <CheckboxGroup
-                                        color="secondary"
-                                        orientation="horizontal"
-                                        value={groupSelected}
-                                        isRequired
-                                        onChange={setGroupSelected}
-                                        aria-label="Choisir la récurrence de la suppression"
-                                    >
-                                        <Checkbox value="oneTime" aria-label="Suppression unique">Suppression Unique</Checkbox>
-                                        <Checkbox value="Weekly" aria-label="Suppression hebdomadaire">Toutes les semaines</Checkbox>
-                                        <Checkbox value="Monthly" aria-label="Suppression mensuelle">Tous les mois</Checkbox>
-                                    </CheckboxGroup>
-                                </div>
-
-                                {/* Fin de la récurrence */}
-                                {groupSelected.includes("Weekly") || groupSelected.includes("Monthly") ? (
-                                    <div>
-                                        <Label>Fin de la récurrence</Label>
-                                        <DatePicker
-                                            className="w-full"
-                                            value={endDelete}
-                                            onChange={setEndDelete}
-                                            aria-label="Sélectionner la date de fin de la récurrence"
-                                        />
-                                    </div>
-                                ) : null}
-
-                                {/* Résumé */}
-                                <div>
-                                    <Label>Résumé</Label>
-                                    <div className="flex flex-row w-full text-sm rounded-lg p-2">
-                                        <p>Suppression de tous les vols de la session suivante</p>
-                                    </div>
-                                </div>
-
+                                {currentUser.role === userRole.ADMIN || currentUser.role === userRole.OWNER ?
+                                    (
+                                        <div>
+                                            <Label>Instructeur</Label>
+                                            <Select
+                                                label="Instructeurs"
+                                                selectedKeys={piloteID ? [piloteID] : []}
+                                                onSelectionChange={(value) => setPiloteID(Array.from(value)[0]?.toString())}
+                                            >
+                                                {usersProps.map((user) => {
+                                                    if (user.role === userRole.INSTRUCTOR ||
+                                                        user.role === userRole.ADMIN ||
+                                                        user.role === userRole.OWNER) {
+                                                        const displayText = `${user.lastName.toUpperCase().slice(0, 1)}.${user.firstName}`;
+                                                        return (
+                                                            <SelectItem
+                                                                key={user.id}
+                                                                value={user.id}
+                                                                textValue={displayText} // Ajout de textValue pour l'accessibilité
+                                                            >
+                                                                {displayText}
+                                                            </SelectItem>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })}
+                                            </Select>
+                                        </div>
+                                    ) : null}
                                 {/* Message d'erreur */}
                                 {error && (
                                     <div className="flex items-center text-destructive mb-4" aria-live="assertive">
@@ -149,18 +183,19 @@ const DeleteManySessions = () => {
                                 <Button
                                     color="danger"
                                     variant="link"
-                                    onClick={onClose}
+                                    onClick={() => backToPage(onClose)}
                                     aria-label="Fermer la fenêtre de suppression"
                                 >
                                     Fermer
                                 </Button>
 
                                 <Button
-                                    color="primary"
+                                    className="bg-red-700"
                                     onClick={() => onValidate(onClose)}
                                     aria-label="Valider la suppression"
+                                    disabled={sessionsToDelete.length === 0 || !date}
                                 >
-                                    Action
+                                    {sessionsToDelete.length > 0 ? `Supprimer ${sessionsToDelete.length} session${sessionsToDelete.length > 1 ? 's' : ''}` : 'Action'}
                                 </Button>
                             </ModalFooter>
                         </>
