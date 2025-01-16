@@ -388,7 +388,7 @@ export const studentRegistration = async (session: flight_sessions, student: Use
 
         const sessionDate = session.sessionDateStart;
         const now = new Date();
-        now.setMinutes(now.getMinutes() - localTimeOffset + session.sessionDateDuration_min);
+        now.setMinutes(now.getMinutes() - localTimeOffset + club.timeDelaySubscribeminutes);
 
         if (sessionDate < now) {
             return { error: `La date de la session est passée ou trop proche, la session doit être dans ${convertMinutesToHours(session.sessionDateDuration_min)}` };
