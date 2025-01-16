@@ -128,7 +128,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <h2 className="text-lg font-semibold">
+                    <h2 className="text-lg font-semibold w-[150px] text-center">
                         {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
                     </h2>
                     <Button

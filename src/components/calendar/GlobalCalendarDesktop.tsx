@@ -86,7 +86,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
             <div className="flex flex-col h-full overflow-y-auto">
                 <div className="w-full flex items-center my-6">
                     {/* Displays the current month and year at the top of the calendar. */}
-                    <p className="text-5xl font-istok pl-3">
+                    <p className="text-5xl font-istok pl-3 w-[400px]">
                         {monthFr[date.getMonth()]}, {date.getFullYear()}
                     </p>
                     <div className='flex-1'>
