@@ -16,6 +16,7 @@ import { User, userRole } from '@prisma/client';
 import { ChevronDown } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { acceptMembershipRequest } from '@/api/db/club';
+import { clearCache } from '@/lib/cache';
 
 interface Props {
     membershipRequests: User[];
