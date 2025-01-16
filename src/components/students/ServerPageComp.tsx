@@ -15,7 +15,6 @@ import React from 'react';
 import NoClubID from '@/components/NoClubID';
 import prisma from '@/api/prisma';
 import { getFromCache } from '@/lib/cache';
-import { userRole } from '@prisma/client';
 
 interface PageProps {
     ClubIDprop: string | string[] | undefined;
@@ -30,7 +29,6 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             return prisma.user.findMany({
                 where: {
                     clubID,
-                    role: userRole.USER || userRole.STUDENT || userRole.PILOT
                 },
             });
         };
