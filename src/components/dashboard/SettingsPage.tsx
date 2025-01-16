@@ -501,7 +501,7 @@ const SettingsPage = ({ users }: Props) => {
                     <div className='space-y-1'>
                         <Label className="text-lg">Configuration inscription</Label>
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="autorisationDesinscription" className="flex-grow">Autoriser l&apos;inscriptiondes élèves</Label>
+                            <Label htmlFor="autorisationDesinscription" className="flex-grow">Autoriser l&apos;inscription des élèves</Label>
                             <Switch
                                 id="autorisationInscription"
                                 checked={config.userCanSubscribe}
@@ -532,7 +532,7 @@ const SettingsPage = ({ users }: Props) => {
                                     }
                                 </div>
                                 <div>
-                                    <Label htmlFor="delaisMinimuminscription">Délai minimum entre la séance et l&apos;inscription (en minutes)</Label>
+                                    <Label htmlFor="delaisMinimuminscription">Délai minimum pour s&apos;inscrire (en minutes)</Label>
                                     <Input
                                         id="delaisMinimumInscription"
                                         name="delaisMinimumInscription"
@@ -561,7 +561,7 @@ const SettingsPage = ({ users }: Props) => {
 
                         ) : (
                             <div className="flex justify-start gap-2 items-center text-orange-500 mt-6">
-                                <span>Attention, dans cette configuration, les élèves ne pourront pas s&apos;inscrire au dufférentes sessions</span>
+                                <span>Attention, dans cette configuration, les élèves ne pourront pas s&apos;inscrire a une session</span>
                             </div>
                         )}
                     </div>
@@ -603,7 +603,7 @@ const SettingsPage = ({ users }: Props) => {
                                 </div>
                                 <div>
                                     <Label htmlFor="delaisMinimumDesinscription">
-                                        Délai minimum entre la séance et la désinscription (en minutes)
+                                        Délai minimum pour se désinscrire (en minutes)
                                     </Label>
                                     <Input
                                         id="delaisMinimumDesinscription"
@@ -632,7 +632,7 @@ const SettingsPage = ({ users }: Props) => {
                             </div>
                         ) : (
                             <div className="flex justify-start gap-2 items-center text-orange-500 mt-6">
-                                <span>Attention, dans cette configuration, les élèves ne pourront pas se désinscrire au différentes sessions</span>
+                                <span>Attention, dans cette configuration, les élèves ne pourront pas se désinscrire de leurs sessions</span>
                             </div>
                         )}
                     </div>
@@ -753,7 +753,7 @@ const SettingsPage = ({ users }: Props) => {
                         className="h-10 w-10 rounded-full shadow-lg bg-[#774BBE] fixed bottom-4 right-20 z-50 lg:hidden"
                     >
                         {loading ? <Spinner className="h-6 w-6" /> : <FaSave className="h-4 w-4" />}
-                        <span className="sr-only">Save configuration</span>
+                        <span className="sr-only">Enregistrer</span>
                     </Button>
 
                 </div>
