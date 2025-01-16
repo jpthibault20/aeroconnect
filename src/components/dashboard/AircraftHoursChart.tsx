@@ -12,7 +12,7 @@ const AircraftHoursChart = ({ hoursByPlanes }: Props) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Heures par avion</CardTitle>
+        <CardTitle>Réservations par avion</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>

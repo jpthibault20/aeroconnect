@@ -12,7 +12,7 @@ const InstructorHoursChart = ({ HoursByInstructor }: Props) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Heures par instructeur</CardTitle>
+        <CardTitle>Réservations par instructeur</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
