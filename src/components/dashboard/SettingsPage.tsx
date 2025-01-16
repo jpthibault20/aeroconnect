@@ -17,6 +17,7 @@ import { z } from 'zod'
 import { updateClub } from '@/api/db/club'
 import { Spinner } from '../ui/SpinnerVariants'
 import { toast } from '@/hooks/use-toast'
+import { FaSave } from "react-icons/fa";
 
 // Définition du schéma Zod
 const configSchema = z.object({
@@ -743,6 +744,18 @@ const SettingsPage = ({ users }: Props) => {
                             'Enregistrer la configuration'
                         )}
                     </Button>
+
+
+                    <Button
+                        size="icon"
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        className="h-10 w-10 rounded-full shadow-lg bg-[#774BBE] fixed bottom-4 right-20 z-50 lg:hidden"
+                    >
+                        {loading ? <Spinner className="h-6 w-6" /> : <FaSave className="h-4 w-4" />}
+                        <span className="sr-only">Save configuration</span>
+                    </Button>
+
                 </div>
             </CardFooter>
         </div>
