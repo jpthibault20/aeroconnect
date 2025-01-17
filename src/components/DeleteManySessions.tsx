@@ -16,6 +16,7 @@ import { removeSessionsByID } from "@/api/db/sessions";
 import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from "@/lib/mail";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { toast } from "@/hooks/use-toast";
+import { Spinner } from "./ui/SpinnerVariants";
 
 
 interface Prop {
@@ -30,8 +31,9 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const [date, setDate] = useState<RangeValue<DateValue> | null>();
     const [piloteID, setPiloteID] = useState<string | undefined>(currentUser?.id);
-    const [error, setError] = useState("");
+    const [error, setError] = useState<string | null>(null);
     const [sessionsToDelete, setSessionsToDelete] = useState<flight_sessions[]>([]);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (!date?.start || !date?.end || !piloteID) return;
@@ -51,50 +53,74 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
         setSessionsToDelete(sessions);
     }, [date?.end, date?.start, piloteID, sessionsProps]);
 
-    if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR))) {
+    if (currentUser?.role.includes(userRole.USER) || currentUser?.role.includes(userRole.STUDENT) || currentUser?.role.includes(userRole.PILOT)) {
         return null
     }
 
     const onValidate = async (onClose: () => void) => {
-        console.log("onValidate");
+        try {
+            setLoading(true);
+            setError(null); // Réinitialiser les erreurs
 
-        const sessionsIDs = sessionsToDelete.map(session => session.id);
-        const res = await removeSessionsByID(sessionsIDs);
-
-        if (res.error) {
-            setError(res.error);
-            return;
-        }
-
-        for (const session of sessionsToDelete) {
-            if (session.studentID) {
-                const student = usersProps.find(item => item.id === session.studentID)
-                const pilote = usersProps.find(item => item.id === session.pilotID)
-
-                const endDate = new Date(session.sessionDateStart);
-                endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
-
-                Promise.all([
-                    sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date, currentClub as Club),
-                    sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date, currentClub as Club),
-                ])
-                    .catch((error) => {
-                        console.log(error);
-                    });
+            // Vérifier si une session est dans le passé
+            const invalidSession = sessionsToDelete.find(session => session.sessionDateStart < new Date());
+            if (invalidSession) {
+                setError("La date de fin de la session doit être dans le futur");
+                setLoading(false);
+                return;
             }
-        }
-        toast({
-            title: res.success,
-            duration: 5000,
-            style: {
-                background: '#0bab15', //rouge : ab0b0b
-                color: '#fff',
-            }
-        });
 
-        setSessions((prev) => prev.filter(session => !sessionsIDs.includes(session.id)));
-        setSessionsToDelete([]);
-        onClose();
+            // Suppression des sessions
+            const sessionsIDs = sessionsToDelete.map(session => session.id);
+            const res = await removeSessionsByID(sessionsIDs);
+
+            if (res.error) {
+                setError(res.error);
+                setLoading(false);
+                return;
+            }
+
+            // Notifications aux étudiants et pilotes
+            for (const session of sessionsToDelete) {
+                if (session.studentID) {
+                    const student = usersProps.find(item => item.id === session.studentID);
+                    const pilot = usersProps.find(item => item.id === session.pilotID);
+
+                    const endDate = new Date(session.sessionDateStart);
+                    endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+
+                    try {
+                        Promise.all([
+                            sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart, endDate, currentClub as Club),
+                            sendNotificationSudentRemoveForPilot(pilot?.email as string, session.sessionDateStart, endDate, currentClub as Club),
+                        ]);
+                    } catch (notificationError) {
+                        console.error("Erreur lors de l'envoi des notifications :", notificationError);
+                    }
+                }
+            }
+
+            // Toast de succès
+            toast({
+                title: res.success || "Sessions supprimées avec succès",
+                duration: 5000,
+                style: {
+                    background: '#0bab15',
+                    color: '#fff',
+                }
+            });
+
+            // Mise à jour des sessions
+            setSessions(prev => prev.filter(session => !sessionsIDs.includes(session.id)));
+            setSessionsToDelete([]);
+            onClose();
+
+        } catch (error) {
+            console.error("Erreur lors de la validation :", error);
+            setError("Une erreur est survenue. Veuillez réessayer.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const backToPage = (onClose: () => void) => {
@@ -140,7 +166,7 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                                     />
                                 </div>
 
-                                {currentUser.role === userRole.ADMIN || currentUser.role === userRole.OWNER ?
+                                {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER ?
                                     (
                                         <div>
                                             <Label>Instructeur</Label>
@@ -193,10 +219,17 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                                     className="bg-red-700"
                                     onClick={() => onValidate(onClose)}
                                     aria-label="Valider la suppression"
-                                    disabled={sessionsToDelete.length === 0 || !date}
+                                    disabled={sessionsToDelete.length === 0 || !date || loading}
                                 >
-                                    {sessionsToDelete.length > 0 ? `Supprimer ${sessionsToDelete.length} session${sessionsToDelete.length > 1 ? 's' : ''}` : 'Action'}
+                                    {loading ? (
+                                        <Spinner />
+                                    ) : sessionsToDelete.length > 0 ? (
+                                        `Supprimer ${sessionsToDelete.length} session${sessionsToDelete.length > 1 ? 's' : ''}`
+                                    ) : (
+                                        'Action'
+                                    )}
                                 </Button>
+
                             </ModalFooter>
                         </>
                     )}
