@@ -103,7 +103,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
 
                     {sessionChecked.length > 0 && (currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER) ?
                         (
-                            <DeleteFlightSession description={`Ce vol sera supprimé définitivement`} sessions={sessionChecked} setSessions={setSessions} usersProp={usersProp}>
+                            <DeleteFlightSession description={`${sessionChecked.length} vols vont être supprimé définitivement`} sessions={sessionChecked} setSessions={setSessions} usersProp={usersProp}>
                                 <div className='px-2 py-1 bg-red-600 text-white rounded-lg'>
                                     Supprimer
                                 </div>
