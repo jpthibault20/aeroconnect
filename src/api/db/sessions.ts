@@ -45,7 +45,7 @@ export const checkSessionDate = async (sessionData: interfaceSessions, user: Use
     }
 
     if (sessionData.planeId.length == 0) {
-        return { error: "Veuillez sélectionner des appareils ou définir la session comme une session en salle" }
+        return { error: "Veuillez sélectionner des appareils ou définir la session comme une session théorique" }
     }
 
     const baseSessionDateStart = new Date(Date.UTC(

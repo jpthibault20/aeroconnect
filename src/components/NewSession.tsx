@@ -69,15 +69,15 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         }
     }, [switchRecurrence, sessionData.date])
 
-    useEffect(() => {
-        if (classroomSession) {
-            setSessionData(prev => ({ ...prev, planeId: ["classroomSession"], classes: [1, 2, 3, 4, 5, 6] }))
-        }
-        else {
-            setSessionData(prev => ({ ...prev, planeId: planesProp.map(plane => plane.id), classes: Array.from(new Set(planesProp.map(plane => plane.classes))) }))
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [classroomSession])
+    // useEffect(() => {
+    //     if (classroomSession) {
+    //         setSessionData(prev => ({ ...prev, planeId: [...prev.planeId, "classroomSession"], classes: [1, 2, 3, 4, 5, 6] }))
+    //     }
+    //     // else {
+    //     //     setSessionData(prev => ({ ...prev, planeId: planesProp.map(plane => plane.id), classes: Array.from(new Set(planesProp.map(plane => plane.classes))) }))
+    //     // }
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [classroomSession])
 
     useEffect(() => {
         const startTime = new Date(1999, 0, 0, Number(sessionData.startHour), Number(sessionData.startMinute))
@@ -229,6 +229,10 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
     const onConfirm = async () => {
         setLoading(true);
         let successNewSessions = 0;
+
+        if (classroomSession) {
+            sessionData.planeId.push("classroomSession");
+        }
 
         const res = await checkSessionDate(sessionData, currentUser);
         if (res?.error) {
@@ -405,34 +409,34 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                             onCheckedChange={setClassroomSession}
                         />
                     </div>
-                    {!classroomSession && (
-                        <div className="grid gap-2">
-                            <Label>Appareils</Label>
-                            <div className="flex flex-wrap gap-2">
-                                <Button
-                                    aria-label={`${allPlanesSelected ? "Désélectionner" : "Sélectionner"} tous les appareils`}
-                                    variant={allPlanesSelected ? "destructive" : "outline"}
-                                    size="sm"
-                                    onClick={toggleSelectAllPlanes}
-                                >
-                                    {allPlanesSelected ? "Désélectionner tout" : "Sélectionner tout"}
-                                </Button>
-                                {planesProp?.map((plane) => (
-                                    <Button
-                                        aria-label={`${sessionData.planeId.includes(plane.id) ? "Désélectionner" : "Sélectionner"} l'appareil ${plane.name}`}
-                                        key={plane.id}
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => onClickPlane(plane)}
-                                        className={`${sessionData.planeId.includes(plane.id) ? "bg-green-200 hover:bg-green-200" : "bg-red-200 text-gray-500 hover:bg-red-200 hover:text-gray-500"}`}
-                                    >
-                                        {plane.name}
-                                    </Button>
 
-                                ))}
-                            </div>
+                    <div className="grid gap-2">
+                        <Label>Appareils</Label>
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                aria-label={`${allPlanesSelected ? "Désélectionner" : "Sélectionner"} tous les appareils`}
+                                variant={allPlanesSelected ? "destructive" : "outline"}
+                                size="sm"
+                                onClick={toggleSelectAllPlanes}
+                            >
+                                {allPlanesSelected ? "Désélectionner tout" : "Sélectionner tout"}
+                            </Button>
+                            {planesProp?.map((plane) => (
+                                <Button
+                                    aria-label={`${sessionData.planeId.includes(plane.id) ? "Désélectionner" : "Sélectionner"} l'appareil ${plane.name}`}
+                                    key={plane.id}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onClickPlane(plane)}
+                                    className={`${sessionData.planeId.includes(plane.id) ? "bg-green-200 hover:bg-green-200" : "bg-red-200 text-gray-500 hover:bg-red-200 hover:text-gray-500"}`}
+                                >
+                                    {plane.name}
+                                </Button>
+
+                            ))}
                         </div>
-                    )}
+                    </div>
+
 
                     <div className="flex items-center justify-between">
                         <Label htmlFor="recurrence">Récurrence hebdomadaire</Label>
