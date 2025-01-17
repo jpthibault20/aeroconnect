@@ -391,7 +391,7 @@ export const studentRegistration = async (session: flight_sessions, student: Use
         now.setMinutes(now.getMinutes() - localTimeOffset + club.timeDelaySubscribeminutes);
 
         if (sessionDate < now) {
-            return { error: `La date de la session est passée ou trop proche, la session doit être dans ${convertMinutesToHours(session.sessionDateDuration_min)}` };
+            return { error: `La session doit être dans minimum ${convertMinutesToHours(club.timeDelaySubscribeminutes)}. contacter l'instructeur pour vous inscrire` };
         }
 
 
