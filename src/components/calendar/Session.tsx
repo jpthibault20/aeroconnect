@@ -67,7 +67,7 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
         if (availableSessions.length === 0) {
             setInstructorString("0 instructeur");
         } else if (availableSessions.length === 1) {
-            setInstructorString(availableSessions[0].pilotLastName.slice(0, 1).toUpperCase() + availableSessions[0].pilotFirstName)
+            setInstructorString(availableSessions[0].pilotLastName.slice(0, 1).toUpperCase() + "." + availableSessions[0].pilotFirstName)
         } else {
             setInstructorString(availableSessions.length + " Instructeurs")
         }
