@@ -54,7 +54,12 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
             setPlanesString(allPlanes[0] === "classroomSession" ? "Théorique" : planesProp.find(p => p.id === allPlanes[0])?.name as string)
         }
         else if (allPlanes.length > 1) {
-            setPlanesString(allPlanes.length + " avions");
+            const planes = planesProp
+            let planesNumber = planes.filter((p) => allPlanes.includes(p.id)).length
+            if (allPlanes.includes("classroomSession"))
+                planesNumber++;
+
+            setPlanesString(planesNumber + " avions");
         }
         else {
             setPlanesString("0 avion");

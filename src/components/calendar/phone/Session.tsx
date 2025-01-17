@@ -35,8 +35,12 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
             })
         }
         else {
-            const planes = session.planeID.includes("classromSession") ? 1 : (session.planeID.filter(planeID => PlaneProps.find(p => p.id === planeID)?.id).length);
-            setPlanesString(planes + " avions");
+            const planes = PlaneProps
+            let planesNumber = planes.filter((p) => session.planeID.includes(p.id)).length;
+            if (session.planeID.includes("classroomSession"))
+                planesNumber++;
+
+            setPlanesString(planesNumber + " avions");
         }
     }, [PlaneProps, session.planeID, session.studentPlaneID])
 
