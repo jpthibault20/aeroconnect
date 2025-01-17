@@ -199,6 +199,11 @@ const Filter = ({
                                                 );
                                             }
                                         })}
+                                        {["ADMIN", "OWNER"].includes(currentUser?.role as userRole) && (
+                                            <DropdownItem key={currentUser.id} textValue={currentUser.id}>
+                                                {currentUser.lastName.toUpperCase().slice(0, 1)}.{currentUser.firstName}
+                                            </DropdownItem>
+                                        )}
                                     </>
                                 </DropdownMenu>
                             </Dropdown>
@@ -233,7 +238,7 @@ const Filter = ({
                                     <>
                                         <DropdownItem key="al" textValue="al">Tous les instructeurs</DropdownItem>
                                         {usersProp.map((user) => {
-                                            if (user.role === userRole.STUDENT) {
+                                            if (["STUDENT", "PILOT"].includes(user.role as userRole)) {
                                                 return (
                                                     <DropdownItem key={user.id} textValue={user.id}>
                                                         {user.lastName.toUpperCase().slice(0, 1)}.{user.firstName}

@@ -87,8 +87,14 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
             })));
 
             if (session.planeID.includes("classroomSession")) {
-                setFreePlanes([{ id: "classroomSession", name: "Session théorique" }]);
+                // Si on a une session en salle, on commence par ajouter tous les avions normaux
+                setFreePlanes([
+                    ...planes.map(plane => ({ id: plane.id, name: plane.name })),
+                    // Puis on ajoute l'option de session théorique
+                    { id: "classroomSession", name: "Session théorique" }
+                ]);
             } else {
+                // Si pas de session en salle, on n'affiche que les avions normaux
                 setFreePlanes(planes.map(plane => ({ id: plane.id, name: plane.name })));
             }
         }

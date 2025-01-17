@@ -54,10 +54,9 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         endMinute: "00",
         duration: currentClub?.SessionDurationMin || 60,
         endReccurence: undefined,
-        planeId: planesProp.map(plane => plane.id), // Tous les IDs des avions
-        classes: Array.from(new Set(planesProp.map(plane => plane.classes))) // Classes uniques
+        planeId: planesProp.map(plane => plane.id),
+        classes: Array.from(new Set(planesProp.map(plane => plane.classes)))
     });
-
 
     useEffect(() => {
         if (!switchRecurrence) setSessionData(prev => ({ ...prev, endReccurence: undefined }))
@@ -68,6 +67,29 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
             setSessionData(prev => ({ ...prev, endReccurence: dateEnd }))
         }
     }, [switchRecurrence, sessionData.date])
+
+    useEffect(() => {
+        setSessionData(prev => {
+            // Récupérer toutes les classes uniques des avions sélectionnés
+            const planeClasses = Array.from(
+                new Set(
+                    prev.planeId
+                        .map(id => planesProp.find(p => p.id === id)?.classes)
+                        .filter(Boolean)
+                )
+            );
+
+            // Si mode salle, ajouter toutes les classes (1-6)
+            const allClasses = classroomSession
+                ? Array.from(new Set([...planeClasses, 1, 2, 3, 4, 5, 6]))
+                : planeClasses;
+
+            return {
+                ...prev,
+                classes: allClasses as number[]
+            };
+        });
+    }, [classroomSession, planesProp]);
 
     // useEffect(() => {
     //     if (classroomSession) {
@@ -86,44 +108,14 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         setSessionData(prev => ({ ...prev, endHour: String(endTime.getHours()), endMinute: endTime.getMinutes() === 0 ? "00" : String(endTime.getMinutes()) }))
     }, [sessionData.duration, sessionData.startHour, sessionData.startMinute])
 
+
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR))) {
         return null
     }
 
     const allPlanesSelected = planesProp?.length === sessionData.planeId.length
 
-    const onClickPlane = (plane: planes) => {
-        setSessionData(prev => {
-            // Vérifier si l'ID de l'avion est déjà dans planeId
-            const isPlaneSelected = prev.planeId.includes(plane.id);
 
-            // Mettre à jour planeId
-            const updatedPlaneId = isPlaneSelected
-                ? prev.planeId.filter(p => p !== plane.id) // Supprimer l'ID
-                : [...prev.planeId, plane.id]; // Ajouter l'ID
-
-            // Mettre à jour classes
-            let updatedClasses;
-            if (isPlaneSelected) {
-                // Supprimer la classe associée si elle n'est plus utilisée par un autre avion
-                const remainingPlaneClasses = updatedPlaneId.map(
-                    id => planesProp.find(p => p.id === id)?.classes
-                );
-                updatedClasses = Array.from(new Set(remainingPlaneClasses));
-            } else {
-                // Ajouter la classe, en s'assurant qu'elle est unique
-                updatedClasses = Array.from(
-                    new Set([...prev.classes, plane.classes])
-                );
-            }
-
-            return {
-                ...prev,
-                planeId: updatedPlaneId,
-                classes: updatedClasses as number[],
-            };
-        });
-    };
 
     const toggleSelectAllPlanes = () => {
         setSessionData(prev => ({
@@ -226,47 +218,87 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         return splitSessions;
     }
 
+    const onClickPlane = (plane: planes) => {
+        setSessionData(prev => {
+            const isPlaneSelected = prev.planeId.includes(plane.id);
+            const updatedPlaneId = isPlaneSelected
+                ? prev.planeId.filter(p => p !== plane.id)
+                : [...prev.planeId, plane.id];
+
+            // Récupérer les classes des avions sélectionnés
+            const planeClasses = Array.from(
+                new Set(
+                    updatedPlaneId
+                        .map(id => planesProp.find(p => p.id === id)?.classes)
+                        .filter(Boolean)
+                )
+            );
+
+            // Si mode salle, garder toutes les classes (1-6)
+            const updatedClasses = classroomSession
+                ? Array.from(new Set([...planeClasses, 1, 2, 3, 4, 5, 6]))
+                : planeClasses;
+
+            return {
+                ...prev,
+                planeId: updatedPlaneId,
+                classes: updatedClasses as number[],
+            };
+        });
+    };
+
     const onConfirm = async () => {
         setLoading(true);
         let successNewSessions = 0;
 
-        if (classroomSession) {
-            sessionData.planeId.push("classroomSession");
-        }
-
-        const res = await checkSessionDate(sessionData, currentUser);
-        if (res?.error) {
-            setError(res.error);
+        if (!sessionData.date) {
+            setError("Veuillez sélectionner une date");
             setLoading(false);
             return;
         }
 
-        const splitSessionsArray = splitSessions(sessionData);
-        setTotalSessions(splitSessionsArray.length);
+        // Valider qu'il y a soit des avions sélectionnés soit une session en salle
+        if (!classroomSession && sessionData.planeId.length === 0) {
+            setError("Veuillez sélectionner au moins un avion");
+            setLoading(false);
+            return;
+        }
 
         try {
+            // Préparer les données de session
+            const finalSessionData = {
+                ...sessionData,
+                planeId: classroomSession
+                    ? [...sessionData.planeId, "classroomSession"]
+                    : sessionData.planeId
+            };
+
+            const res = await checkSessionDate(finalSessionData, currentUser);
+            if (res?.error) {
+                setError(res.error);
+                setLoading(false);
+                return;
+            }
+
+            const splitSessionsArray = splitSessions(finalSessionData);
+            setTotalSessions(splitSessionsArray.length);
+
             for (const session of splitSessionsArray) {
-                const res = await newSession(session, currentUser);
-                if (res?.error) {
-                    setError(res.error);
+                const result = await newSession(session, currentUser);
+                if (result?.error) {
                     toast({
-                        title: res.error,
+                        title: result.error,
                         duration: 5000,
-                        style: {
-                            background: '#ab0b0b', //ab0b0b
-                            color: '#fff',
-                        },
+                        style: { background: '#ab0b0b', color: '#fff' },
                     });
                     setLoading(false);
                     return;
-                } else if (res?.success) {
-                    if (res?.sessions && Array.isArray(res.sessions)) {
-                        setSessions((prev) => [...prev, ...res.sessions]);
-                    }
-                    setError("");
+                }
+
+                if (result?.success && result?.sessions) {
+                    setSessions(prev => [...prev, ...result.sessions]);
                     successNewSessions++;
-                    setStateLoading((prev) => prev + 1);
-                    console.log("Session créée avec succès");
+                    setStateLoading(prev => prev + 1);
                 }
             }
 
@@ -274,33 +306,17 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                 toast({
                     title: "Les sessions ont été créées !",
                     duration: 5000,
-                    style: {
-                        background: '#0bab15', //rouge : ab0b0b
-                        color: '#fff',
-                    },
+                    style: { background: '#0bab15', color: '#fff' },
                 });
                 setIsPopoverOpen(false);
-                setLoading(false);
-            } else {
-                toast({
-                    title: "Une erreur est survenue lors de la création des sessions.",
-                    duration: 5000,
-                    style: {
-                        background: '#ab0b0b', //ab0b0b
-                        color: '#fff',
-                    },
-                });
-                setError("Une erreur est survenue lors de la création des sessions.");
-                setLoading(false);
-                return;
             }
-
         } catch (error) {
-            console.error("Erreur lors de l'envoi des données :", error)
-            setError("Une erreur est survenue lors de l'envoi des données.")
-
+            console.error("Erreur lors de l'envoi des données :", error);
+            setError("Une erreur est survenue lors de l'envoi des données.");
+        } finally {
+            setLoading(false);
         }
-    }
+    };
 
     return (
         <Dialog open={isOpenPopover} onOpenChange={setIsPopoverOpen}>

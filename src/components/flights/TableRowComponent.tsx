@@ -102,9 +102,16 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                 <FaArrowRight />
                 {finalDate.toISOString().slice(11, 16)}
             </TableCell>
-            <TableCell className='text-center'>
-                {session.planeID.includes("classroomSession") ? "Théorique" : "Pratique"}
+            <TableCell className="text-center">
+                {session.planeID.length === 1 && session.planeID[0] === "classroomSession" ? (
+                    "Théorique"
+                ) : session.planeID.includes("classroomSession") ? (
+                    "Pratique / Théorique"
+                ) : (
+                    "Pratique"
+                )}
             </TableCell>
+
             <TableCell className='text-center'>
                 {session.pilotLastName.slice(0, 1).toUpperCase()}.{session.pilotFirstName}
             </TableCell>

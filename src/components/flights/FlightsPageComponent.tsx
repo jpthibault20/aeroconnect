@@ -52,6 +52,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
         }
     });;
     const [filteredSessions, setFilteredSessions] = useState(sessions)
+
     const planes = planesProp.filter((p) => currentUser?.classes.includes(p.classes))
 
 
