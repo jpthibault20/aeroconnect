@@ -361,7 +361,7 @@ export const studentRegistration = async (session: flight_sessions, student: Use
 
     try {
         // Étape 1 : Charger les données critiques
-        const [conflictingSessions] = await Promise.all([
+        const [conflictingSessions, plane] = await Promise.all([
             prisma.flight_sessions.findMany({
                 where: {
                     OR: [
@@ -375,11 +375,18 @@ export const studentRegistration = async (session: flight_sessions, student: Use
                     sessionDateStart: true,
                 },
             }),
+            prisma.planes.findUnique({
+                where: { id: planeID },
+            })
         ]);
 
         // Vérifications critiques
         if (!student) {
             return { error: "Élève introuvable." };
+        }
+
+        if (plane?.operational) {
+            return { error: "Le avion est désactivé par l'administrateur du club." };
         }
 
         if (!session || session.clubID !== student.clubID) {
