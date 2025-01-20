@@ -87,8 +87,14 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
             })));
 
             if (session.planeID.includes("classroomSession")) {
-                setFreePlanes([{ id: "classroomSession", name: "Session théorique" }]);
+                // Si on a une session en salle, on commence par ajouter tous les avions normaux
+                setFreePlanes([
+                    ...planes.map(plane => ({ id: plane.id, name: plane.name })),
+                    // Puis on ajoute l'option de session théorique
+                    { id: "classroomSession", name: "Session théorique" }
+                ]);
             } else {
+                // Si pas de session en salle, on n'affiche que les avions normaux
                 setFreePlanes(planes.map(plane => ({ id: plane.id, name: plane.name })));
             }
         }
@@ -179,6 +185,8 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         const endDate = new Date(session.sessionDateStart);
                         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
                         const instructor = usersProp.find((user) => user.id === session.pilotID);
+                        const planeName = planeId === "classroomSession" ? "Théorique" : planesProp.find((p) => p.id === planeId)?.name;
+
                         Promise.all([
                             sendNotificationBooking(
                                 instructor?.email || "",
@@ -186,13 +194,15 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                 selectedUser.lastName,
                                 session.sessionDateStart,
                                 endDate,
-                                session.clubID
+                                session.clubID,
+                                planeName as string
                             ),
                             sendStudentNotificationBooking(
                                 selectedUser.email || "",
                                 session.sessionDateStart,
                                 endDate,
-                                session.clubID
+                                session.clubID,
+                                planeName as string
                             ),
                         ]);
 

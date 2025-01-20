@@ -6,6 +6,8 @@ import { ChevronLeft, ChevronRight, MoveLeft, MoveRight } from 'lucide-react';
 import { Session } from './Session';
 import Filter from '../Filter';
 import NewSession from '@/components/NewSession';
+import DeleteManySessions from '@/components/DeleteManySessions';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface Props {
     sessions: flight_sessions[];
@@ -16,6 +18,7 @@ interface Props {
 }
 
 const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: Props) => {
+    const { currentUser } = useCurrentUser()
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -127,7 +130,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <h2 className="text-lg font-semibold">
+                    <h2 className="text-lg font-semibold w-[150px] text-center">
                         {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
                     </h2>
                     <Button
@@ -166,13 +169,21 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
             </div>
 
             <div className="justify-between items-center my-4 flex px-8">
-                <NewSession display='phone' setSessions={setSessions} planesProp={planesProp} />
+                <div className='flex h-full space-x-2'>
+                    <DeleteManySessions usersProps={usersProps} sessionsProps={sessions} setSessions={setSessions} />
+                    <NewSession
+                        display='phone'
+                        setSessions={setSessions}
+                        planesProp={planesProp.filter((p) => currentUser?.classes.includes(p.classes))}
+                    />
+                </div>
+
                 <Filter
                     sessions={sessions}
                     setSessionsFiltered={setSessionsFiltered}
                     display='phone'
                     usersProps={usersProps}
-                    planesProp={planesProp}
+                    planesProp={planesProp.filter((p) => currentUser?.classes.includes(p.classes))}
                 />
             </div>
 
@@ -226,7 +237,12 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
             <div className="mt-4 px-8">
                 <h3 className="text-lg font-semibold mb-2"></h3>
                 {getSessionsForDate(selectedDate).map((session, index) => (
-                    <Session key={index} PlaneProps={planesProp} session={session} setSessions={setSessions} userProps={usersProps} />
+                    <Session
+                        key={index}
+                        PlaneProps={planesProp}
+                        session={session}
+                        setSessions={setSessions}
+                        userProps={usersProps} />
                 ))}
             </div>
         </div>

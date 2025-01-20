@@ -11,7 +11,7 @@ const MonthlyHoursChart = ({ HoursByMonth }: Props) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Heures de vol par mois</CardTitle>
+        <CardTitle>Réservations de vol par mois</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>

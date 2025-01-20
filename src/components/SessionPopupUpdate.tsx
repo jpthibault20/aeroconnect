@@ -1,6 +1,5 @@
 import { flight_sessions, planes, User, userRole } from '@prisma/client'
 import React from 'react'
-import { Button } from './ui/button'
 import { Plane } from 'lucide-react'
 import { PiStudent } from 'react-icons/pi'
 import { LiaChalkboardTeacherSolid } from 'react-icons/lia'
@@ -15,11 +14,9 @@ interface Prop {
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>
     usersProps: User[]
     planesProp: planes[]
-    updateSessionsDisabled: boolean
-    setUpdateSessionsDisabled: React.Dispatch<React.SetStateAction<boolean>>
 }
 
-const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp, updateSessionsDisabled, setUpdateSessionsDisabled }: Prop) => {
+const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: Prop) => {
     const { currentUser } = useCurrentUser()
 
 
@@ -106,16 +103,6 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp, upd
 
                     </div>
                 ))}
-            </div>
-
-
-            <div className='w-full flex justify-end space-x-1 mt-3'>
-                <Button onClick={() => setUpdateSessionsDisabled(!updateSessionsDisabled)} variant="link">
-                    Retour
-                </Button>
-                <Button onClick={() => setUpdateSessionsDisabled(!updateSessionsDisabled)}>
-                    Valider
-                </Button>
             </div>
         </div>
     )

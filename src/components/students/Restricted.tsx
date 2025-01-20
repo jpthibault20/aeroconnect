@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Switch } from '../ui/switch'
 import { User } from '@prisma/client';
 import { blockUser } from '@/api/db/users';
 import { toast } from '@/hooks/use-toast';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { clearCache } from '@/lib/cache';
 
 interface props {
     user: User;
@@ -10,15 +12,16 @@ interface props {
 
 const Restricted = ({ user }: props) => {
     const [blocked, setBlocked] = useState(user.restricted)
-
-    useEffect(() => {
-        blockUser(user.id, blocked)
-    }, [blocked, user])
+    const { currentUser } = useCurrentUser()
 
     const onChangeRestricted = () => {
         const blockUserAction = async () => {
             try {
-                setBlocked(!blocked)
+                const res = await blockUser(user.id, !blocked)
+                if (res.success) {
+                    setBlocked(!blocked)
+                    clearCache(`users:${user.clubID}`)
+                }
             } catch (error) {
                 console.log(error)
                 toast({
@@ -45,7 +48,11 @@ const Restricted = ({ user }: props) => {
 
     return (
         <div>
-            <Switch checked={blocked} onCheckedChange={onChangeRestricted} />
+            <Switch
+                checked={blocked}
+                onCheckedChange={onChangeRestricted}
+                disabled={["ADMIN", "OWNER"].includes(currentUser?.role as string) ? false : ["ADMIN", "OWNER", "INSTRUCTOR"].includes(user.role as string)}
+            />
             <p>
                 {blocked ? 'Oui' : 'Non'}
             </p>

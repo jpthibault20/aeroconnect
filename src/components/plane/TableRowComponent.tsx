@@ -129,8 +129,8 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                 (<>
                     <TableCell>
                         <div>
-                            <Switch checked={planeState.operational} onCheckedChange={onChangeRestricted} disabled />
-                            <p>{planeState.operational ? "Opérationnel" : "En maintenance"}</p>
+                            <Switch checked={!planeState.operational} onCheckedChange={onChangeRestricted} disabled />
+                            <p>{planeState.operational ? "Opérationnel" : "Bloqué"}</p>
                         </div>
                     </TableCell>
                 </>
@@ -139,8 +139,8 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                         <>
                             <TableCell>
                                 <div>
-                                    <Switch checked={planeState.operational} onCheckedChange={onChangeRestricted} />
-                                    <p>{planeState.operational ? "Opérationnel" : "En maintenance"}</p>
+                                    <Switch checked={!planeState.operational} onCheckedChange={onChangeRestricted} />
+                                    <p>{planeState.operational ? "Opérationnel" : "Bloqué"}</p>
                                 </div>
                             </TableCell>
                             <TableCell className="flex-col items-center justify-center space-y-3">

@@ -136,7 +136,7 @@ export const getAllUserRequestedClubID = async (clubID: string) => {
     }
 }
 
-export const acceptMembershipRequest = async (userID: string, clubID: string | null) => {
+export const acceptMembershipRequest = async (userID: string, clubID: string | null, role: userRole, classes: number[]) => {
     if (!userID) {
         return { error: "Une erreur est survenue (E_001: userID is undefined)" };
     }
@@ -148,9 +148,18 @@ export const acceptMembershipRequest = async (userID: string, clubID: string | n
         // Mise à jour utilisateur et récupération club en parallèle
         const [user, club] = await Promise.all([
             prisma.user.update({
-                where: { id: userID },
-                data: { clubIDRequest: null, clubID: clubID },
-                select: { email: true }, // Récupérer uniquement ce qui est nécessaire
+                where: { 
+                    id: userID 
+                },
+                data: { 
+                    clubIDRequest: null, 
+                    clubID: clubID,
+                    role: role,
+                    classes: classes
+                },
+                select: { 
+                    email: true 
+                }
             }),
             prisma.club.findUnique({
                 where: { id: clubID },

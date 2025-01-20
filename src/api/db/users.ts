@@ -115,7 +115,7 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
 
     try {
         // Étape 1 : Charger les données critiques
-        const [session, studentDetails] = await Promise.all([
+        const [session, studentDetails, plane] = await Promise.all([
             prisma.flight_sessions.findUnique({
                 where: { id: sessionID },
                 select: {
@@ -135,11 +135,18 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
                     email: true,
                 },
             }),
+            prisma.planes.findUnique({
+                where: { id: student.planeId },
+            })
         ]);
 
         // Vérifications critiques
         if (!session) {
             return { error: "Session introuvable." };
+        }
+
+        if (student.planeId != "classroomSession" && !plane?.operational) {
+            return { error: "L'avion est désactivé par l'administrateur du club." };
         }
 
         console.log("session date : ",session.sessionDateStart)

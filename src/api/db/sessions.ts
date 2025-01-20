@@ -45,7 +45,7 @@ export const checkSessionDate = async (sessionData: interfaceSessions, user: Use
     }
 
     if (sessionData.planeId.length == 0) {
-        return { error: "Veuillez sélectionner des appareils ou définir la session comme une session en salle" }
+        return { error: "Veuillez sélectionner des appareils ou définir la session comme une session théorique" }
     }
 
     const baseSessionDateStart = new Date(Date.UTC(
@@ -193,8 +193,6 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
         return { error: "Erreur lors de la création des sessions de vol" };
     }
 };
-
-
 
 export const getAllSessions = async (clubID: string, monthSelected: Date) => {
 
@@ -363,7 +361,7 @@ export const studentRegistration = async (session: flight_sessions, student: Use
 
     try {
         // Étape 1 : Charger les données critiques
-        const [conflictingSessions] = await Promise.all([
+        const [conflictingSessions, plane] = await Promise.all([
             prisma.flight_sessions.findMany({
                 where: {
                     OR: [
@@ -377,11 +375,18 @@ export const studentRegistration = async (session: flight_sessions, student: Use
                     sessionDateStart: true,
                 },
             }),
+            prisma.planes.findUnique({
+                where: { id: planeID },
+            })
         ]);
 
         // Vérifications critiques
         if (!student) {
             return { error: "Élève introuvable." };
+        }
+
+        if (planeID != "classroomSession" && !plane?.operational) {
+            return { error: "L'avion est désactivé par l'administrateur du club." };
         }
 
         if (!session || session.clubID !== student.clubID) {
@@ -390,10 +395,10 @@ export const studentRegistration = async (session: flight_sessions, student: Use
 
         const sessionDate = session.sessionDateStart;
         const now = new Date();
-        now.setMinutes(now.getMinutes() - localTimeOffset + session.sessionDateDuration_min);
+        now.setMinutes(now.getMinutes() - localTimeOffset + club.timeDelaySubscribeminutes);
 
         if (sessionDate < now) {
-            return { error: `La date de la session est passée ou trop proche, la session doit être dans ${convertMinutesToHours(session.sessionDateDuration_min)}` };
+            return { error: `La session doit être dans minimum ${convertMinutesToHours(club.timeDelaySubscribeminutes)}. contacter l'instructeur pour vous inscrire` };
         }
 
 

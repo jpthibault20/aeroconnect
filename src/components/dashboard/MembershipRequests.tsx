@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { User } from '@prisma/client'
 import { acceptMembershipRequest, rejectMembershipRequest } from '@/api/db/club'
+import AcceptMemberInClub from './AcceptMemberInClub'
 
 interface MembershipRequestsProps {
   UsersRequestedClubID: User[];
@@ -13,10 +15,7 @@ const MembershipRequests = ({ UsersRequestedClubID }: MembershipRequestsProps) =
   const [membershipRequests, setMembershipRequests] = useState<User[]>(UsersRequestedClubID);
 
 
-  const onClickAccept = (user: User) => {
-    acceptMembershipRequest(user.id, user.clubIDRequest);
-    setMembershipRequests(membershipRequests.filter(req => req.id !== user.id));
-  };
+
 
   const onClickReject = (user: User) => {
     rejectMembershipRequest(user.id);
@@ -47,15 +46,8 @@ const MembershipRequests = ({ UsersRequestedClubID }: MembershipRequestsProps) =
                 <TableCell>{request.firstName}</TableCell>
                 <TableCell>{request.phone}</TableCell>
                 <TableCell>{request.email}</TableCell>
-                {/* <TableCell>{request.requestDate}</TableCell> */}
                 <TableCell>
-                  <Button
-                    variant="outline"
-                    className="mr-2 bg-green-100 text-green-600 hover:bg-green-600 hover:text-black"
-                    onClick={() => onClickAccept(request)}
-                  >
-                    Accepter
-                  </Button>
+                  <AcceptMemberInClub membershipRequests={membershipRequests} setMembershipRequests={setMembershipRequests} userRequest={request} />
 
                   <Button
                     variant="outline"

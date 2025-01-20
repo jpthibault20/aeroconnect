@@ -1,10 +1,9 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import TableRowComponent from './TableRowComponent';
 import { Checkbox } from '../ui/checkbox';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { Button } from '../ui/button';
 
 interface Props {
     sessions: flight_sessions[];  ///< Array of flight session objects
@@ -18,9 +17,6 @@ const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, 
     const { currentUser } = useCurrentUser();
     const [isAllChecked, setIsAllChecked] = useState(false); // State to manage "select all"
     const [sessionsSorted, setSessionsSorted] = useState<flight_sessions[]>([]); // State for sorted sessions
-    const [currentPage, setCurrentPage] = useState(1); // State for pagination
-    const itemsPerPage = 10; // Number of sessions per page
-
     // Effect to sort sessions chronologically
     useEffect(() => {
         const sortedSessions = [...sessions].sort((a, b) => {
@@ -33,33 +29,14 @@ const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, 
         setIsAllChecked(false); // Reset "select all"
     }, [sessions]);
 
-    // Calculate the sessions to display on the current page
-    const currentSessions = useMemo(() => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        return sessionsSorted.slice(startIndex, endIndex);
-    }, [sessionsSorted, currentPage]);
-
-    // Calculate total pages
-    const totalPages = useMemo(() => Math.ceil(sessionsSorted.length / itemsPerPage), [sessionsSorted.length]);
-
     // Handle "select all" checkbox
     const handleSelectAll = (checked: boolean) => {
         setIsAllChecked(checked);
         if (checked) {
-            setSessionChecked(currentSessions);
+            setSessionChecked(sessionsSorted);
         } else {
             setSessionChecked([]);
         }
-    };
-
-    // Pagination handlers
-    const handleNextPage = () => {
-        if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
-    };
-
-    const handlePrevPage = () => {
-        if (currentPage > 1) setCurrentPage(prev => prev - 1);
     };
 
     return (
@@ -87,7 +64,7 @@ const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, 
                     </TableHeader>
 
                     <TableBody>
-                        {currentSessions.map((session,) => (
+                        {sessionsSorted.map((session,) => (
                             <TableRowComponent
                                 key={session.id}
                                 session={session}
@@ -104,26 +81,7 @@ const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, 
 
 
             </div>
-            {/* Pagination controls */}
-            <div className="flex justify-between items-center mt-4">
-                <Button
-                    onClick={handlePrevPage}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 bg-white text-black rounded hover:bg-gray-300 disabled:bg-gray-100"
-                >
-                    Précédent
-                </Button>
-                <span>
-                    Page {currentPage} sur {totalPages}
-                </span>
-                <Button
-                    onClick={handleNextPage}
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2 bg-white text-black rounded hover:bg-gray-300 disabled:bg-gray-100"
-                >
-                    Suivant
-                </Button>
-            </div>
+
         </div>
 
     );

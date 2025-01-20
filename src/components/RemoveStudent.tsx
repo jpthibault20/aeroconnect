@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog'
 import { Spinner } from './ui/SpinnerVariants'
 import { toast } from '@/hooks/use-toast';
 import { Club, flight_sessions, User } from '@prisma/client';
@@ -8,6 +7,8 @@ import { removeStudentFromSessionID } from '@/api/db/sessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { useCurrentClub } from '@/app/context/useCurrentClub';
 import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Button } from './ui/button';
 
 interface Props {
     session: flight_sessions;
@@ -114,32 +115,32 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
 
 
     return (
-        <AlertDialog open={isOpen}>
-            <AlertDialogTrigger onClick={() => setIsOpen(true)}>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger onClick={() => setIsOpen(true)}>
                 <IoPersonRemove color='red' />
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Supprimer l&apos;élève</AlertDialogTitle>
-                    <AlertDialogDescription>Voulez-vous supprimer l&apos;élève de ce vol ?</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setIsOpen(false)} disabled={loading}>Annuler</AlertDialogCancel>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Supprimer l&apos;élève</DialogTitle>
+                    <DialogDescription>Voulez-vous supprimer l&apos;élève de ce vol ?</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button onClick={() => setIsOpen(false)} disabled={loading}>Annuler</Button>
                     {loading ? (
                         <div className="flex justify-center items-center">
                             <Spinner />
                         </div>
                     ) : (
-                        <AlertDialogAction
+                        <Button
                             className="bg-red-700 hover:bg-red-800 text-white"
                             onClick={() => removeStudent(session.id)}
                         >
                             Supprimer
-                        </AlertDialogAction>
+                        </Button>
                     )}
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     )
 }
 

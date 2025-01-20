@@ -88,6 +88,7 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
                             const updatedSessions = prevSessions.filter(session => !sessionID.includes(session.id));
                             return updatedSessions;
                         });
+                        setIsOpen(false);
                     }
                 } catch (error) {
                     console.log(error);

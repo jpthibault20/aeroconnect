@@ -4,6 +4,9 @@ Ce projet est une application de calendrier conçue spécifiquement pour les clu
 
 ## Version actuelle
 
+**Version 1.3.x**
+ *  Corréction de tous les bugs connue afin d'arrivé à une permière version stable et commercialisable 
+
 **Version 1.2.x**
  *  ajout en plus de la version précédent les 6 classes ulm avec des restriction, autorisation et gestion en fonction de celle ci
  *  correction bug lors de la suppression d'un element avec AlertConfirmDeleted

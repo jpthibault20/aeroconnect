@@ -111,7 +111,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                         Modifiez les informations du profil de l&apos;utilisateur
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className='h-[500px]' >
+                <ScrollArea className='h-[500px]' type='always'>
                     <div className='space-y-3 max-h-[60vh] md:max-h-none overflow-y-auto md:overflow-visible'>
                         {/* Nom et Prénom */}
                         <div className="grid grid-cols-2 gap-4 py-2">

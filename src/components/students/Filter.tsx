@@ -18,7 +18,6 @@ const Filter = ({ roleFilter, handle }: Props) => {
                     <Button className="px-4 py-2 rounded-md transition-colors text-gray-500" variant="outline">
                         {roleFilter === 'all' && 'Filtre'}
                         {roleFilter === 'OWNER' && 'Président'}
-                        {roleFilter === 'ADMIN' && 'Admin'}
                         {roleFilter === 'INSTRUCTOR' && 'Instructeur'}
                         {roleFilter === 'PILOT' && 'Pilote'}
                         {roleFilter === 'STUDENT' && 'Élève'}
@@ -38,12 +37,6 @@ const Filter = ({ roleFilter, handle }: Props) => {
                         onCheckedChange={() => handle('OWNER')}
                     >
                         Président
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                        checked={roleFilter === 'ADMIN'}
-                        onCheckedChange={() => handle('ADMIN')}
-                    >
-                        Admin
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                         checked={roleFilter === 'INSTRUCTOR'}

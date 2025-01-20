@@ -33,7 +33,7 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
         ] = await Promise.all([
             getFromCache(`hoursByPlanes:${clubID}`, () => getHoursByPlane(clubID)),
             getFromCache(`HoursByInstructor:${clubID}`, () => getHoursByInstructor(clubID)),
-            getFromCache(`UsersRequestedClubID:${clubID}`, () => getAllUserRequestedClubID(clubID)),
+            getAllUserRequestedClubID(clubID),
             getFromCache(`HoursByMonth:${clubID}`, () => getHoursByMonth(clubID)),
             getFromCache(`HoursByStudent:${clubID}`, () => getHoursByStudent(clubID)),
             prisma.user.findMany({ where: { clubID: clubID } }),

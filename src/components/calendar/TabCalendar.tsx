@@ -4,6 +4,7 @@ import { dayFr } from '@/config/config';
 import { formatTime, getDaysOfWeek, getSessionsFromDate } from '@/api/date';
 import { flight_sessions, planes, User } from '@prisma/client';
 import Session from './Session';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface Props {
     className?: string;
@@ -17,6 +18,7 @@ interface Props {
 
 const TabCalendar = ({ date, sessions, setSessions, clubHours, usersProps, planesProp }: Props) => {
     const [year, setYear] = useState(date.getFullYear());
+
     // Récupère les jours de la semaine
     const daysOfWeek = useMemo(() => getDaysOfWeek(date), [date]);
 

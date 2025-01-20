@@ -14,6 +14,8 @@ import Filter from './Filter';
 import { flight_sessions, planes, User } from '@prisma/client';
 import { defaultHours } from '@/config/config';
 import { useCurrentClub } from '@/app/context/useCurrentClub';
+import DeleteManySessions from '../DeleteManySessions';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface Props {
     sessions: flight_sessions[];
@@ -32,9 +34,12 @@ interface Props {
  * 
  */
 const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }: Props) => {
+    const { currentUser } = useCurrentUser()
     const { currentClub } = useCurrentClub();
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
+    const filterdPlanes = planesProp.filter((p) => currentUser?.classes.includes(p.classes))
+
 
     const onClickNextweek = () => {
         setDate(prevDate => {
@@ -85,7 +90,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
             <div className="flex flex-col h-full overflow-y-auto">
                 <div className="w-full flex items-center my-6">
                     {/* Displays the current month and year at the top of the calendar. */}
-                    <p className="text-5xl font-istok pl-3">
+                    <p className="text-5xl font-istok pl-3 w-[400px]">
                         {monthFr[date.getMonth()]}, {date.getFullYear()}
                     </p>
                     <div className='flex-1'>
@@ -98,15 +103,19 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
                                 onClickToday={onClickToday}
                             />
                             <div className='flex space-x-2 px-3 '>
+                                <DeleteManySessions usersProps={usersProps} sessionsProps={sessions} setSessions={setSessions} />
                                 <div>
-                                    <NewSession display='desktop' setSessions={setSessions} planesProp={planesProp} />
+                                    <NewSession
+                                        display='desktop'
+                                        setSessions={setSessions}
+                                        planesProp={filterdPlanes} />
                                 </div>
                                 <Filter
                                     sessions={sessions}
                                     setSessionsFiltered={setSessionsFiltered}
                                     display='desktop'
                                     usersProps={usersProps}
-                                    planesProp={planesProp}
+                                    planesProp={filterdPlanes}
                                 />
                             </div>
                         </div>

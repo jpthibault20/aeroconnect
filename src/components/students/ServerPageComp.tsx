@@ -27,7 +27,9 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
 
         const fetchUsers = async () => {
             return prisma.user.findMany({
-                where: { clubID },
+                where: {
+                    clubID,
+                },
             });
         };
         const users = await getFromCache(`users:${clubID}`, fetchUsers);

@@ -11,7 +11,7 @@ const StudentHoursChart = ({ HoursByStudent }: Props) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Heures de vol par élèves</CardTitle>
+        <CardTitle>Réservations de vol par élèves</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>

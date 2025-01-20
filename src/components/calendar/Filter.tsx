@@ -16,7 +16,6 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
     const [plane, setPlane] = useState("all") // Stocke l'ID de l'avion sélectionné
     const [instructor, setInstructor] = useState("all") // Stocke l'ID de l'instructeur sélectionné
 
-    const operationalPlanes = planesProp.filter((plane) => plane.operational);
     const instructors = usersProps.filter((instructor) => instructor.role === userRole.INSTRUCTOR || instructor.role === userRole.OWNER);
 
 
@@ -69,7 +68,7 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
                         <SelectContent>
                             {/* Option pour "Tous" les avions */}
                             <SelectItem value="all">Appareils</SelectItem>
-                            {operationalPlanes.map((item, index) => (
+                            {planesProp.map((item, index) => (
                                 <SelectItem key={index} value={item.id}>
                                     {item.name}
                                 </SelectItem>
@@ -124,11 +123,12 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
                                         <SelectContent>
                                             {/* Option pour "Tous" les avions */}
                                             <SelectItem value="all">Avions</SelectItem>
-                                            {operationalPlanes.map((item, index) => (
+                                            {planesProp.map((item, index) => (
                                                 <SelectItem key={index} value={item.id}>
                                                     {item.name}
                                                 </SelectItem>
                                             ))}
+                                            <SelectItem value="classroomSession">Session théorique</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
