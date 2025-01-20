@@ -3,6 +3,7 @@ import SessionPopup from '../SessionPopup';
 import { flight_sessions, planes, User } from '@prisma/client';
 import { Clock, Plane } from 'lucide-react';
 import { LiaChalkboardTeacherSolid } from 'react-icons/lia';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface Props {
     sessions: flight_sessions[];
@@ -14,6 +15,9 @@ interface Props {
 const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
     const [planesString, setPlanesString] = useState("");
     const [instructorString, setInstructorString] = useState("");
+    const { currentUser } = useCurrentUser()
+    const filterdPlanes = planesProp.filter((p) => currentUser?.classes.includes(p.classes))
+
 
     // Sépare les sessions réservées et disponibles
     const availableSessions = sessions.filter(session => session.studentID === null);
@@ -24,7 +28,7 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
 
     availableSessions.forEach(session => {
         session.planeID.forEach((plane) => {
-            const foundPlane = planesProp.find(p => p.id === plane);
+            const foundPlane = filterdPlanes.find(p => p.id === plane);
             if (foundPlane) {
                 availablePlanes.add(foundPlane.id);
             } else if (plane === "classroomSession") {
@@ -51,10 +55,10 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
         ];
 
         if (allPlanes.length === 1) {
-            setPlanesString(allPlanes[0] === "classroomSession" ? "Théorique" : planesProp.find(p => p.id === allPlanes[0])?.name as string)
+            setPlanesString(allPlanes[0] === "classroomSession" ? "Théorique" : filterdPlanes.find(p => p.id === allPlanes[0])?.name as string)
         }
         else if (allPlanes.length > 1) {
-            const planes = planesProp
+            const planes = filterdPlanes
             let planesNumber = planes.filter((p) => allPlanes.includes(p.id)).length
             if (allPlanes.includes("classroomSession"))
                 planesNumber++;
@@ -64,7 +68,7 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
         else {
             setPlanesString("0 avion");
         }
-    }, [availableSessions, bookedSessions, planesProp])
+    }, [availableSessions, bookedSessions, filterdPlanes])
 
     // regroupe for instructor
     useEffect(() => {

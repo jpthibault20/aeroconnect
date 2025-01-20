@@ -55,14 +55,14 @@ const PageComponent = ({ sessionsprops, planesProp, clubIDUrl, usersProps }: pro
                 <GlobalCalendarDesktop
                     sessions={sessions}
                     setSessions={setSessions}
-                    planesProp={planesProp.filter((p) => currentUser?.classes.includes(p.classes))}
+                    planesProp={planesProp}
                     usersProps={usersProps}
                 />
             ) : (
                 <GlobalCalendarPhone
                     sessions={sessions}
                     setSessions={setSessions}
-                    planesProp={planesProp.filter((p) => currentUser?.classes.includes(p.classes))}
+                    planesProp={planesProp}
                     usersProps={usersProps}
                 />
             )}

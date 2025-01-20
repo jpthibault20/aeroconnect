@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { getPlaneName } from '@/api/db/planes'
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import { PiStudent } from "react-icons/pi";
+import { useCurrentUser } from '@/app/context/useCurrentUser'
 
 
 
@@ -18,6 +19,9 @@ interface SessionProps {
 
 export function Session({ session, setSessions, PlaneProps, userProps }: SessionProps) {
     const [planesString, setPlanesString] = useState("");
+    const { currentUser } = useCurrentUser()
+    const filterdPlanes = PlaneProps.filter((p) => currentUser?.classes.includes(p.classes))
+
 
     useEffect(() => {
         if (session.studentPlaneID) {
@@ -35,14 +39,14 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
             })
         }
         else {
-            const planes = PlaneProps
+            const planes = filterdPlanes
             let planesNumber = planes.filter((p) => session.planeID.includes(p.id)).length;
             if (session.planeID.includes("classroomSession"))
                 planesNumber++;
 
             setPlanesString(planesNumber + " avions");
         }
-    }, [PlaneProps, session.planeID, session.studentPlaneID])
+    }, [filterdPlanes, session.planeID, session.studentPlaneID])
 
     const endSessionDate = new Date(
         session.sessionDateStart.getFullYear(),

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { DialogContent, DialogTrigger } from "./ui/dialog";
-import { Club, flight_sessions, planes, User, userRole } from "@prisma/client";
+import { Club, flight_sessions, planes, User } from "@prisma/client";
 import { Dialog } from "@radix-ui/react-dialog";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import SessionHeader from "./SessionHeader";
@@ -17,8 +17,6 @@ import { Plane } from "lucide-react";
 import { PiStudent } from "react-icons/pi";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import SessionPopupUpdate from "./SessionPopupUpdate";
-import { Button } from "./ui/button";
-import { MdModeEdit } from "react-icons/md";
 
 interface Prop {
     children: React.ReactNode;
@@ -47,7 +45,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     const [allPlanes, setAllPlanes] = useState<planes[]>([]);
     const [availablePlanes, setAvailablePlanes] = useState<planes[]>([]);
 
-    const [updateSessionsDisabled, setUpdateSessionsDisabled] = useState(false);
+    const filterdPlanes = planesProp.filter((p) => currentUser?.classes.includes(p.classes))
+
 
     // Charger les pilotes et avions disponibles
     useEffect(() => {
@@ -55,7 +54,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
         const loadPilotsAndPlanes = async () => {
             try {
-                const { pilotes, planes } = await filterPilotePlane(sessions, usersProps, planesProp);
+                const { pilotes, planes } = await filterPilotePlane(sessions, usersProps, filterdPlanes);
                 setAllInstructors(pilotes);
                 setAllPlanes(planes);
                 setAvailableInstructors(pilotes);
@@ -208,14 +207,12 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 <SessionHeader sessionStartDate={startDate} />
                 <SessionDate startDate={startDate} endDate={endDate} />
 
-                {updateSessionsDisabled ? (
+                {["ADMIN", "OWNER", "INSTRUCTOR"].includes(currentUser?.role as string) ? (
                     <SessionPopupUpdate
                         sessions={sessions}
                         setSessions={setSessions}
                         usersProps={usersProps}
-                        planesProp={planesProp}
-                        updateSessionsDisabled={updateSessionsDisabled}
-                        setUpdateSessionsDisabled={setUpdateSessionsDisabled}
+                        planesProp={filterdPlanes}
                     />
                 ) : noSessions ? (
                     // Sessions Booked
@@ -266,18 +263,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 </div>
                             </div>
                         ))}
-                        {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER || currentUser?.role === userRole.INSTRUCTOR ?
-                            (
-                                <Button
-                                    // variant="link"
-                                    onClick={() => setUpdateSessionsDisabled(!updateSessionsDisabled)}
-                                    className="flex w-fit justify-start items-center bg-blue-700"
-                                >
-                                    <MdModeEdit size={20} />
-                                </Button>
-                            )
-                            : null
-                        }
                     </div>
                 ) : (
                     // Sessions Available
@@ -298,8 +283,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                             loading={loading}
                             error={error}
                             disabledMessage={disabledMessage}
-                            setUpdateSessionsDisabled={setUpdateSessionsDisabled}
-                            updateSessionsDisabled={updateSessionsDisabled}
                         />
                     </>
                 )}
