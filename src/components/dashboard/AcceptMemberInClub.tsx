@@ -68,8 +68,10 @@ const AcceptMemberInClub = ({ membershipRequests, setMembershipRequests, userReq
                 <ModalContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader className="flex flex-col gap-1">
-                                Définissons les paramètres de ce nouveau membre
+                            <ModalHeader className="flex flex-col gap-1 text-center">
+                                Définissons les paramètres de
+                                <br />
+                                {userRequest.lastName.toUpperCase() + " " + userRequest.firstName}
                             </ModalHeader>
                             <ModalBody>
                                 <div className="space-y-4">

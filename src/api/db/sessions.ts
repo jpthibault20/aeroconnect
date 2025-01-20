@@ -385,8 +385,8 @@ export const studentRegistration = async (session: flight_sessions, student: Use
             return { error: "Élève introuvable." };
         }
 
-        if (plane?.operational) {
-            return { error: "Le avion est désactivé par l'administrateur du club." };
+        if (planeID != "classroomSession" && !plane?.operational) {
+            return { error: "L'avion est désactivé par l'administrateur du club." };
         }
 
         if (!session || session.clubID !== student.clubID) {
