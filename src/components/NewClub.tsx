@@ -286,14 +286,26 @@ const NewClub = ({ setNewClub }: Props) => {
 
                 {errorOTP && <p className="text-red-500 text-sm">{errorOTP}</p>}
 
-                <Button
-                    variant="perso"
-                    type="button"
-                    onClick={onSubmitOTP}
-                    className=""
-                >
-                    Valider
-                </Button>
+                <div className="flex justify-end space-x-4">
+                    <Button
+                        variant="ghost"
+                        type="button"
+                        onClick={() => setNewClub(false)}
+                        className="text-gray-500"
+                    >
+                        Retour
+                    </Button>
+                    <Button
+                        variant="perso"
+                        type="button"
+                        onClick={onSubmitOTP}
+                        className=""
+                    >
+                        Valider
+                    </Button>
+                </div>
+
+
 
             </div>
         )
