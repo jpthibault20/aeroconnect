@@ -185,6 +185,8 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         const endDate = new Date(session.sessionDateStart);
                         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
                         const instructor = usersProp.find((user) => user.id === session.pilotID);
+                        const planeName = planeId === "classroomSession" ? "Théorique" : planesProp.find((p) => p.id === planeId)?.name;
+
                         Promise.all([
                             sendNotificationBooking(
                                 instructor?.email || "",
@@ -192,13 +194,15 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                 selectedUser.lastName,
                                 session.sessionDateStart,
                                 endDate,
-                                session.clubID
+                                session.clubID,
+                                planeName as string
                             ),
                             sendStudentNotificationBooking(
                                 selectedUser.email || "",
                                 session.sessionDateStart,
                                 endDate,
-                                session.clubID
+                                session.clubID,
+                                planeName as string
                             ),
                         ]);
 

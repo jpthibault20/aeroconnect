@@ -13,9 +13,10 @@ interface NotificationBookingPiloteProps {
     endDate: string
     clubName: string | null;
     clubAdress: clubAdressType;
+    planeName: string
 }
 
-export const NotificationBookingPilote = ({ startDate, endDate, name, firstName, clubName, clubAdress }: NotificationBookingPiloteProps) => (
+export const NotificationBookingPilote = ({ startDate, endDate, name, firstName, clubName, clubAdress, planeName }: NotificationBookingPiloteProps) => (
     <Tailwind
         config={{
             theme: {
@@ -32,10 +33,13 @@ export const NotificationBookingPilote = ({ startDate, endDate, name, firstName,
         <EmailTemplate preview={"Une nouvelle heure réservé"} clubName={clubName} clubAdress={clubAdress}>
             <Section className="my-6">
                 <Text className="text-lg leading-6">
-                    {firstName} {name} s&apos;est inscrit à une nouvelle heure de vol :
+                    {firstName} {name.toUpperCase()} s&apos;est inscrit à une nouvelle session de vol le
                 </Text>
                 <Text className="text-lg leading-6">
                     {startDate} ➡️ {endDate}
+                </Text>
+                <Text className="text-lg leading-6">
+                    avec l&apos;option : {planeName}
                 </Text>
             </Section>
         </EmailTemplate>

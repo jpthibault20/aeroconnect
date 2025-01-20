@@ -168,6 +168,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 const endDate = new Date(session!.sessionDateStart);
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
                 const instructorFull = usersProps.find(user => user.id === session.pilotID);
+                const planeName = plane === "classroomSession" ? "Théorique" : planesProp.find((p) => p.id === plane)?.name;
+
                 Promise.all([
                     sendNotificationBooking(
                         instructorFull?.email || "",
@@ -175,13 +177,17 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                         currentUser?.lastName || "",
                         session!.sessionDateStart,
                         endDate,
-                        session?.clubID as string
+                        session?.clubID as string,
+                        planeName as string
+
                     ),
                     sendStudentNotificationBooking(
                         currentUser?.email || "",
                         session!.sessionDateStart,
                         endDate,
-                        session?.clubID as string
+                        session?.clubID as string,
+                        planeName as string
+
                     ),
                 ]);
             }

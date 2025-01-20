@@ -62,7 +62,7 @@ export const sendVerificationEmail = async (email: string, token: string, clubID
   });
 };
 
-export const sendNotificationBooking = async (email: string, studentFirstname: string, studentLastname: string, startDate: Date, endDate: Date, clubID: string) => {
+export const sendNotificationBooking = async (email: string, studentFirstname: string, studentLastname: string, startDate: Date, endDate: Date, clubID: string, planeName: string) => {
   const formatedStartDate = formattedDate(startDate)
   const formatedEndDate = formattedDate(endDate)
   const clubData = await getClubData(clubID);
@@ -77,11 +77,19 @@ export const sendNotificationBooking = async (email: string, studentFirstname: s
     from: senderMailAdress,
     to: email,
     subject: "Un élève s'est inscrit un vol",
-    react: NotificationBookingPilote({ startDate: formatedStartDate, endDate: formatedEndDate, name: studentLastname, firstName: studentFirstname, clubName: name, clubAdress: adress as clubAdressType })
+    react: NotificationBookingPilote({ 
+      startDate: formatedStartDate,  
+      endDate: formatedEndDate, 
+      name: studentLastname, 
+      firstName: studentFirstname, 
+      clubName: name, 
+      clubAdress: adress as clubAdressType ,
+      planeName
+    })
   });
 }
 
-export const sendStudentNotificationBooking = async (email: string, startDate: Date, endDate: Date, clubID: string) => {
+export const sendStudentNotificationBooking = async (email: string, startDate: Date, endDate: Date, clubID: string, planeName: string) => {
   const formatedStartDate = formattedDate(startDate)
   const formatedEndDate = formattedDate(endDate)
   const clubData = await getClubData(clubID);
@@ -96,7 +104,13 @@ export const sendStudentNotificationBooking = async (email: string, startDate: D
     from: senderMailAdress,
     to: email,
     subject: "Confirmation de votre inscription a un vol",
-    react: NotificationBookingStudent({ startDate: formatedStartDate, endDate: formatedEndDate, clubName: name, clubAdress: adress as clubAdressType })
+    react: NotificationBookingStudent({ 
+      startDate: formatedStartDate, 
+      endDate: formatedEndDate, 
+      clubName: name, clubAdress: 
+      adress as clubAdressType,
+      planeName
+    })
   });
 }
 
