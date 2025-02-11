@@ -32,6 +32,7 @@ const ProfilePage = () => {
         clubIDRequest: '',
         id: '',
         classes: [],
+        canSubscribeWithoutPlan: false,
     })
 
     useEffect(() => {
