@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
 import { planes } from '@prisma/client';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface PlaneSelectProps {
     planes: planes[];
@@ -10,6 +11,7 @@ interface PlaneSelectProps {
 }
 
 const PlaneSelect = ({ planes, selectedPlane, onPlaneChange, }: PlaneSelectProps) => {
+    const { currentUser } = useCurrentUser();
     useEffect(() => {
         // Si un seul avion est disponible, le sélectionner par défaut
         if (planes.length === 1) {
@@ -35,7 +37,11 @@ const PlaneSelect = ({ planes, selectedPlane, onPlaneChange, }: PlaneSelectProps
                             {item.name}
                         </SelectItem>
                     ))}
-                    {/* Ajout de l'option "Session théorique" si classroomSession est activé */}
+                    {currentUser?.canSubscribeWithoutPlan && (
+                        <SelectItem value="noPlane">
+                            Sans avion
+                        </SelectItem>
+                    )}
                 </SelectContent>
             </Select>
         </div>
