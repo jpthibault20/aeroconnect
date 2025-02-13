@@ -226,10 +226,10 @@ export const updateUser = async (user: User) => {
                 restricted: user.restricted,
                 country: user.country,
                 classes: user.classes,
+                canSubscribeWithoutPlan: user.canSubscribeWithoutPlan,
             }
         });
         prisma.$disconnect();
-        console.log('User updated successfully');
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch (error) {
         console.error('Error updating user:', error);

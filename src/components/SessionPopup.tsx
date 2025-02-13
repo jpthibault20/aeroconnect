@@ -84,11 +84,11 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sessions]);
 
+    // Mise à jour des avions disponibles selon l'instructeur sélectionné
     useEffect(() => {
         let updatedPlanes;
 
         const classroomPlane = { id: "classroomSession", name: "Théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3 };
-
 
         if (instructor === "nothing") {
             updatedPlanes = allPlanes;
@@ -114,7 +114,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     // Mise à jour des instructeurs disponibles selon l'avion sélectionné
     useEffect(() => {
         setAvailableInstructors(
-            plane === "nothing"
+            plane === "nothing" || plane === "noPlane"
                 ? allInstructors
                 : allInstructors.filter(instructor =>
                     sessions.some(session => session.planeID.includes(plane) && session.pilotID === instructor.id)
@@ -126,8 +126,11 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
     const onSubmit = async () => {
         const session = sessions.find(
-            session => session.pilotID === instructor && session.planeID.includes(plane)
+            session =>
+                session.pilotID === instructor &&
+                (plane === "noPlane" || session.planeID.includes(plane))
         );
+        
 
         if (!session) {
             setError("Une erreur est survenue (E_002: informations undefined)");

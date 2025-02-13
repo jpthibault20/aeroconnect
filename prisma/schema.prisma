@@ -23,6 +23,7 @@ model User {
   city          String?
   clubIDRequest String?
   classes       Int[]    @default([])
+  canSubscribeWithoutPlan Boolean @default(false)
 }
 
 model flight_sessions {

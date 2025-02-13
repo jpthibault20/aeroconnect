@@ -190,6 +190,23 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                             </div>
                         </div>
 
+                        {/* User can suscribe without plane */}
+                        <div className="grid items-center gap-2">
+                            <Label htmlFor="restricted">Utilisateur autonome</Label>
+                            <div className='flex items-center gap-2 border border-gray-300 rounded-xl p-2'>
+                                <p className='text-gray-500'>Cette utilisateur peux s&apos;inscrire sans choisir d&apos;avion</p>
+                                <div className='flex items-center gap-2'>
+                                    <ImCross color='red' />
+                                    <Switch
+                                        checked={userState.canSubscribeWithoutPlan}
+                                        onCheckedChange={(checked) => onChangeUserState('canSubscribeWithoutPlan', checked)}
+                                        disabled={loading || !autorisedModifyRole}
+                                    />
+                                    <FaCheck color='green' />
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Rôle et clubID */}
                         <div className="grid grid-cols-2 gap-4 py-2">
                             <div className="grid items-center gap-2">
@@ -239,12 +256,13 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                         <div className="grid items-center gap-2">
                             <Label htmlFor="restricted">Restreindre l&apos;utilisateur</Label>
                             <div className='flex items-center gap-2 border border-gray-300 rounded-xl p-2'>
-                                <p className='text-gray-500'>Un utilisateur restreint ne peut que visualiser les sessions </p>
+                                <p className='text-gray-500'>Cette utilisateur restreint ne peut que visualiser les sessions </p>
                                 <div className='flex items-center gap-2'>
                                     <ImCross color='red' />
                                     <Switch
                                         checked={userState.restricted}
                                         onCheckedChange={(checked) => onChangeUserState('restricted', checked)}
+                                        disabled={loading || !autorisedModifyRole}
                                     />
                                     <FaCheck color='green' />
                                 </div>
