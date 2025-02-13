@@ -2,10 +2,12 @@
 
 Ce projet est une application de calendrier conçue spécifiquement pour les clubs d'aviation légère et d'ULM. Elle permet une gestion simple et efficace des réservations entre instructeurs et élèves, ainsi que des paiements et de la location d'avions.
 
-## Version actuelle
+## Version actuelle 1.3.1
 
 **Version 1.3.x**
  *  Corréction de tous les bugs connue afin d'arrivé à une permière version stable et commercialisable 
+  * Ajout feature d'inscription sans avion ainsi que la configuration des utilisateurs pour avoir acces a cette feature
+
 
 **Version 1.2.x**
  *  ajout en plus de la version précédent les 6 classes ulm avec des restriction, autorisation et gestion en fonction de celle ci
