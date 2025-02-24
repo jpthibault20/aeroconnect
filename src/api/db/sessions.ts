@@ -6,6 +6,7 @@ import prisma from '../prisma';
 import { convertMinutesToHours } from '../global function/dateServeur';
 
 export interface interfaceSessions {
+    instructorId: string;
     date: Date | undefined;
     startHour: string;
     startMinute: string;

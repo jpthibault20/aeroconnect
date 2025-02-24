@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
-import { flight_sessions, planes, userRole } from '@prisma/client'
+import { flight_sessions, planes, User, userRole } from '@prisma/client'
 import { toast } from "@/hooks/use-toast"
 import { checkSessionDate, interfaceSessions, newSession } from '@/api/db/sessions'
 import { fr } from "date-fns/locale"
@@ -26,6 +26,7 @@ interface Props {
     style?: string
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>
     planesProp: planes[]
+    usersProps: User[]
 }
 
 interface SessionStats {
@@ -34,7 +35,7 @@ interface SessionStats {
     totalSessions: number;
 }
 
-const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
+const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersProps }) => {
     const { currentUser } = useCurrentUser()
     const { currentClub } = useCurrentClub()
     const [loading, setLoading] = useState(false)
@@ -46,7 +47,9 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
     const [classroomSession, setClassroomSession] = useState(false)
     const [stateLoading, setStateLoading] = useState(0)
     const [totalSessions, setTotalSessions] = useState(0)
+    const [instructors, setInstructors] = useState<User[]>([])
     const [sessionData, setSessionData] = useState<interfaceSessions>({
+        instructorId: currentUser?.id as string,
         date: undefined,
         startHour: "9",
         startMinute: "00",
@@ -57,6 +60,18 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
         planeId: planesProp.map(plane => plane.id),
         classes: Array.from(new Set(planesProp.map(plane => plane.classes)))
     });
+
+    useEffect(() => {
+        if (currentUser?.role === userRole.ADMIN){
+            setInstructors(usersProps.filter(user => user.role === userRole.INSTRUCTOR || user.role === userRole.OWNER || user.role === userRole.ADMIN))
+        }
+        else if (currentUser?.role === userRole.OWNER){
+            setInstructors(usersProps.filter(user => user.role === userRole.INSTRUCTOR || user.role === userRole.OWNER))
+        }
+        else{
+            setInstructors(usersProps.filter(user => user.id === currentUser?.id))
+        }
+    },[currentUser?.id, currentUser?.role, usersProps])
 
     useEffect(() => {
         if (!switchRecurrence) setSessionData(prev => ({ ...prev, endReccurence: undefined }))
@@ -90,16 +105,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
             };
         });
     }, [classroomSession, planesProp]);
-
-    // useEffect(() => {
-    //     if (classroomSession) {
-    //         setSessionData(prev => ({ ...prev, planeId: [...prev.planeId, "classroomSession"], classes: [1, 2, 3, 4, 5, 6] }))
-    //     }
-    //     // else {
-    //     //     setSessionData(prev => ({ ...prev, planeId: planesProp.map(plane => plane.id), classes: Array.from(new Set(planesProp.map(plane => plane.classes))) }))
-    //     // }
-    //     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, [classroomSession])
 
     useEffect(() => {
         const startTime = new Date(1999, 0, 0, Number(sessionData.startHour), Number(sessionData.startMinute))
@@ -342,6 +347,26 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp }) => {
                     <DialogDescription>Configuration de la nouvelle session</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                    {/* Instructor */}
+                    <div className='grid gap-2'>
+                        <Label htmlFor="instructor">Instructeur</Label>
+                        <Select 
+                            value={sessionData.instructorId} 
+                            onValueChange={(val) => setSessionData(prev => ({ ...prev, instructorId: val }))}
+                            disabled={currentUser?.role !== (userRole.ADMIN || userRole.OWNER)}
+                        >
+                            <SelectTrigger className="">
+                                <SelectValue placeholder="Instructeurs" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {instructors.map((item, index) => (
+                                    <SelectItem key={index} value={item.id}>
+                                        {item.firstName} {item.lastName}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                     {/* Date */}
                     <div className="grid gap-2">
                         <Label htmlFor="date">Date</Label>
