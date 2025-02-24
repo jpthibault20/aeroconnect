@@ -277,8 +277,9 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                     ? [...sessionData.planeId, "classroomSession"]
                     : sessionData.planeId
             };
+            const instructor = usersProps.find(user => user.id === sessionData.instructorId); // with this method, we can't fetch instructor in serveur function
 
-            const res = await checkSessionDate(finalSessionData, currentUser);
+            const res = await checkSessionDate(finalSessionData, instructor);
             if (res?.error) {
                 setError(res.error);
                 setLoading(false);
@@ -289,7 +290,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
             setTotalSessions(splitSessionsArray.length);
 
             for (const session of splitSessionsArray) {
-                const instructor = usersProps.find(user => user.id === session.instructorId); // with this method, we can't fetch instructor in serveur function
                 const result = await newSession(session, instructor);
                 if (result?.error) {
                     toast({
