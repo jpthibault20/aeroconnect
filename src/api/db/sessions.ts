@@ -18,9 +18,13 @@ export interface interfaceSessions {
     classes: number[];
 }
 
-export const checkSessionDate = async (sessionData: interfaceSessions, user: User) => {
+export const checkSessionDate = async (sessionData: interfaceSessions, user: User | undefined) => {
     if (!sessionData.date) {
         return { error: "La date de la session est obligatoire" };
+    }
+
+    if (!user) {
+        return { error: "L'instructeur est obligatoire" };
     }
 
     const now = new Date();
