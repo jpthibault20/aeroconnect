@@ -289,7 +289,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
             setTotalSessions(splitSessionsArray.length);
 
             for (const session of splitSessionsArray) {
-                const result = await newSession(session, currentUser);
+                const result = await newSession(session, usersProps.find(user => user.id === session.instructorId));
                 if (result?.error) {
                     toast({
                         title: result.error,
