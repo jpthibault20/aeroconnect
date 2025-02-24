@@ -289,7 +289,8 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
             setTotalSessions(splitSessionsArray.length);
 
             for (const session of splitSessionsArray) {
-                const result = await newSession(session, usersProps.find(user => user.id === session.instructorId));
+                const instructor = usersProps.find(user => user.id === session.instructorId); // with this method, we can't fetch instructor in serveur function
+                const result = await newSession(session, instructor);
                 if (result?.error) {
                     toast({
                         title: result.error,
@@ -353,7 +354,12 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                         <Select 
                             value={sessionData.instructorId} 
                             onValueChange={(val) => setSessionData(prev => ({ ...prev, instructorId: val }))}
-                            disabled={currentUser?.role !== (userRole.ADMIN || userRole.OWNER)}
+                            disabled={
+                                currentUser?.role === userRole.USER ||
+                                currentUser?.role === userRole.PILOT ||
+                                currentUser?.role === userRole.INSTRUCTOR ||
+                                currentUser?.role === userRole.STUDENT
+                            }
                         >
                             <SelectTrigger className="">
                                 <SelectValue placeholder="Instructeurs" />
