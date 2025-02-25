@@ -175,6 +175,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
                         display='phone'
                         setSessions={setSessions}
                         planesProp={planesProp.filter((p) => currentUser?.classes.includes(p.classes))}
+                        usersProps={usersProps}
                     />
                 </div>
 
