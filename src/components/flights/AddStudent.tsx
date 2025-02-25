@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { addStudentToSession } from '@/api/db/users';
+import { addStudentToSession, InvitedStudent } from '@/api/db/users';
 import { flight_sessions, planes, User } from '@prisma/client';
 import { Button } from '../ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -9,6 +9,7 @@ import { Spinner } from '../ui/SpinnerVariants';
 import { getFreePlanesUsers } from '@/api/popupCalendar';
 import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
 import { IoIosWarning, IoMdPersonAdd } from 'react-icons/io';
+import InvitedForm from './InvitedForm';
 
 interface Props {
     session: flight_sessions;
@@ -27,6 +28,12 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     const [loading, setLoading] = useState(false);
     const [warningStudent, setWarningStudent] = useState("");
     const [warningPlane, setWarningPlane] = useState("");
+    const [invitedStudent, setInvitedStudent] = useState<InvitedStudent>({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: ""
+    });
 
     // Filtrer les étudiants en fonction de l'avion sélectionné
     const filterStudentsByPlane = (planeId: string) => {
@@ -247,7 +254,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                 <DialogHeader>
                     <DialogTitle>Ajouter un élève</DialogTitle>
                     <DialogDescription>
-                        Voulez-vous ajouter un élève à ce vol ?
+                        Choisissez l&apos;élève et l&apos;avion que vous souhaitez ajouter à la session
                     </DialogDescription>
                 </DialogHeader>
 
@@ -265,8 +272,21 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                 {item.name}
                             </SelectItem>
                         ))}
+                        <SelectItem value={"invited"}>
+                            invité
+                        </SelectItem>
                     </SelectContent>
                 </Select>
+
+                {/* only for invited */}
+                {studentId === "invited" && (
+                    <div>
+                        <InvitedForm 
+                            invitedStudent={invitedStudent}
+                            setInvitedStudent={setInvitedStudent}
+                        />
+                    </div>
+                )}
 
                 <Select
                     value={planeId}

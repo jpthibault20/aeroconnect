@@ -4,6 +4,13 @@ import { userRole } from '@prisma/client'
 import { User } from '@prisma/client'
 import prisma from '../prisma';
 
+export interface InvitedStudent{
+    firstName: string,
+    lastName: string,
+    email: string,
+    phone: string,
+}
+
 interface UserMin {
     firstName: string,
     lastName: string,
