@@ -117,10 +117,20 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
                 <div className='flex w-full justify-end space-x-2'>
                     <>
                         <div className='hidden lg:block h-full'>
-                            <NewSession display={'desktop'} setSessions={setSessions} planesProp={planes} />
+                            <NewSession 
+                                display={'desktop'} 
+                                setSessions={setSessions} 
+                                planesProp={planes} 
+                                usersProps={usersProp}
+                            />
                         </div>
                         <div className='lg:hidden block h-full'>
-                            <NewSession display={'phone'} setSessions={setSessions} planesProp={planes} />
+                            <NewSession 
+                                display={'phone'} 
+                                setSessions={setSessions} 
+                                planesProp={planes} 
+                                usersProps={usersProp}
+                            />
                         </div>
                     </>
                     <Filter
