@@ -6,6 +6,7 @@ import prisma from '../prisma';
 import { convertMinutesToHours } from '../global function/dateServeur';
 
 export interface interfaceSessions {
+    instructorId: string;
     date: Date | undefined;
     startHour: string;
     startMinute: string;
@@ -17,9 +18,13 @@ export interface interfaceSessions {
     classes: number[];
 }
 
-export const checkSessionDate = async (sessionData: interfaceSessions, user: User) => {
+export const checkSessionDate = async (sessionData: interfaceSessions, user: User | undefined) => {
     if (!sessionData.date) {
         return { error: "La date de la session est obligatoire" };
+    }
+
+    if (!user) {
+        return { error: "L'instructeur est obligatoire" };
     }
 
     const now = new Date();
@@ -104,9 +109,13 @@ export const checkSessionDate = async (sessionData: interfaceSessions, user: Use
 
 }
 
-export const newSession = async (sessionData: interfaceSessions, user: User) => {
+export const newSession = async (sessionData: interfaceSessions, instructor: User | undefined) => {
     if (!sessionData.date) {
         return { error: "La date de la session est obligatoire" };
+    }
+
+    if (!instructor) {
+        return { error: "L'instructeur est obligatoire" };
     }
 
     const baseSessionDateStart = new Date(Date.UTC(
@@ -167,13 +176,13 @@ export const newSession = async (sessionData: interfaceSessions, user: User) => 
                 batch.map(session =>
                     prisma.flight_sessions.create({
                         data: {
-                            clubID: user.clubID as string,
+                            clubID: instructor.clubID as string,
                             sessionDateStart: session.sessionDateStart,
                             sessionDateDuration_min: session.sessionDateDuration_min,
                             finalReccurence: sessionData.endReccurence,
-                            pilotID: user.id,
-                            pilotFirstName: user.firstName,
-                            pilotLastName: user.lastName,
+                            pilotID: instructor.id,
+                            pilotFirstName: instructor.firstName,
+                            pilotLastName: instructor.lastName,
                             studentID: null,
                             studentFirstName: null,
                             studentLastName: null,

@@ -108,7 +108,9 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
                                     <NewSession
                                         display='desktop'
                                         setSessions={setSessions}
-                                        planesProp={filterdPlanes} />
+                                        planesProp={filterdPlanes}
+                                        usersProps={usersProps}
+                                />
                                 </div>
                                 <Filter
                                     sessions={sessions}
