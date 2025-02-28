@@ -59,25 +59,29 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
     // Filtrer les avions en fonction de l'étudiant sélectionné
     const filterPlanesByStudent = (studentId: string) => {
-        if (session.planeID.includes("classroomSession")) {
-            return [{ id: "classroomSession", name: "Session théorique" }];
-        }
+        if (!studentId) return [];
 
         const { planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
-        if (!studentId || studentId === " ") {
-            return planes.map(plane => ({ id: plane.id, name: plane.name }));
+        let planesRes: { id: string, name: string }[] = [];
+
+        if (studentId === "invited") {
+            planesRes = planes.map(plane => ({ id: plane.id, name: plane.name }));
+        }
+        else if (studentId) {
+            for (const plane of planes) {
+                const userClasses = usersProp.find(user => user.id === studentId)?.classes || [];
+                if (userClasses.includes(plane.classes)) {
+                    planesRes.push({ id: plane.id, name: plane.name });
+
+                }
+            }
         }
 
-        const selectedStudent = usersProp.find(user => user.id === studentId);
-        if (!selectedStudent) return [];
+        if (session.planeID.includes("classroomSession")) {
+            planesRes.push({ id: "classroomSession", name: "Session théorique" });
+        }
 
-        const userClasses = selectedStudent.classes || [];
-        return planes.filter(plane =>
-            userClasses.includes(plane.classes)
-        ).map(plane => ({
-            id: plane.id,
-            name: plane.name
-        }));
+        return planesRes;
     };
 
     // Mise à jour des listes lors de la sélection
@@ -164,10 +168,10 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                 try {
                     const res = await addStudentToSession(session.id, {
                         id: studentId,
-                        firstName : studentId === 'invited' ? invitedStudent.firstName : selectedUser?.firstName as string,
-                        lastName : studentId === 'invited' ? invitedStudent.lastName : selectedUser?.lastName as string,
+                        firstName: studentId === 'invited' ? invitedStudent.firstName : selectedUser?.firstName as string,
+                        lastName: studentId === 'invited' ? invitedStudent.lastName : selectedUser?.lastName as string,
                         planeId,
-                        email :studentId === 'invited' ? invitedStudent.email : usersProp.find(user => user.id === studentId)?.email as string,
+                        email: studentId === 'invited' ? invitedStudent.email : usersProp.find(user => user.id === studentId)?.email as string,
                         phone: studentId === 'invited' ? invitedStudent.phone : usersProp.find(user => user.id === studentId)?.phone as string,
                     }, new Date().getTimezoneOffset() as number);
 
@@ -287,7 +291,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                 {/* only for invited */}
                 {studentId === "invited" && (
                     <div>
-                        <InvitedForm 
+                        <InvitedForm
                             invitedStudent={invitedStudent}
                             setInvitedStudent={setInvitedStudent}
                         />
