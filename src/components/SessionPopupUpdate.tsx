@@ -50,11 +50,9 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                 <PiStudent />
                                 <p>
                                     {s.studentID ? (
-                                        usersProps.find((user) => user.id === s.studentID)
-                                            ?.lastName?.slice(0, 1)
-                                            .toUpperCase() +
-                                        "." +
-                                        usersProps.find((user) => user.id === s.studentID)?.firstName
+                                        s.studentLastName?.slice(0, 1).toUpperCase() 
+                                        + "." +
+                                        s.studentFirstName
                                     ) : (
                                         "..."
                                     )}

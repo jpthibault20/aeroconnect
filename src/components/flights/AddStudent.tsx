@@ -154,15 +154,21 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         if (studentId) {
             const selectedUser = usersProp.find(user => user.id === studentId);
 
-            if (selectedUser) {
-                const { firstName, lastName } = selectedUser;
+            if (selectedUser || studentId === 'invited') {
+
+                console.log(
+                    session.id,
+                    invitedStudent
+                )
 
                 try {
                     const res = await addStudentToSession(session.id, {
                         id: studentId,
-                        firstName,
-                        lastName,
+                        firstName : studentId === 'invited' ? invitedStudent.firstName : selectedUser?.firstName as string,
+                        lastName : studentId === 'invited' ? invitedStudent.lastName : selectedUser?.lastName as string,
                         planeId,
+                        email :studentId === 'invited' ? invitedStudent.email : usersProp.find(user => user.id === studentId)?.email as string,
+                        phone: studentId === 'invited' ? invitedStudent.phone : usersProp.find(user => user.id === studentId)?.phone as string,
                     }, new Date().getTimezoneOffset() as number);
 
                     if (res.error) {
@@ -197,15 +203,15 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         Promise.all([
                             sendNotificationBooking(
                                 instructor?.email || "",
-                                selectedUser.firstName,
-                                selectedUser.lastName,
+                                studentId === 'invited' ? invitedStudent.firstName : selectedUser?.firstName as string,
+                                studentId === 'invited' ? invitedStudent.lastName : selectedUser?.lastName as string,
                                 session.sessionDateStart,
                                 endDate,
                                 session.clubID,
                                 planeName as string
                             ),
                             sendStudentNotificationBooking(
-                                selectedUser.email || "",
+                                studentId === 'invited' ? invitedStudent.email : selectedUser?.email as string,
                                 session.sessionDateStart,
                                 endDate,
                                 session.clubID,
@@ -219,8 +225,8 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                     ? {
                                         ...s,
                                         studentID: studentId,
-                                        studentFirstName: firstName,
-                                        studentLastName: lastName,
+                                        studentFirstName: studentId === 'invited' ? invitedStudent.firstName : selectedUser?.firstName as string,
+                                        studentLastName: studentId === 'invited' ? invitedStudent.lastName : selectedUser?.lastName as string,
                                         studentPlaneID: planeId,
                                     }
                                     : s
