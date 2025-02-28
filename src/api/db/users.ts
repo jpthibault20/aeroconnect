@@ -113,18 +113,18 @@ export const getUser = async () => {
 
 
 export const addStudentToSession = async (sessionID: string, student: { id: string, firstName: string, lastName: string, planeId: string, email: string, phone: string }, timeOffset: number) => {
-    console.log(
-        sessionID,
-        student.id,
-        student.firstName,
-        student.lastName,
-        student.planeId,
-        student.email,
-        student.phone,
-        timeOffset
-    )
-    return { success: "test" }
-    
+    // console.log(
+    //     sessionID,
+    //     student.id,
+    //     student.firstName,
+    //     student.lastName,
+    //     student.planeId,
+    //     student.email,
+    //     student.phone,
+    //     timeOffset
+    // )
+    // return { success: "test" }
+
     const nowDate = new Date();
     nowDate.setMinutes(nowDate.getMinutes() - timeOffset);
 
@@ -174,8 +174,8 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
                 studentFirstName: student.firstName,
                 studentLastName: student.lastName,
                 studentPlaneID: student.planeId,
-                // studentEmail: student.email,
-                // studentPhone: student.phone,
+                studentEmail: student.email,
+                studentPhone: student.phone,
             },
         });
 
