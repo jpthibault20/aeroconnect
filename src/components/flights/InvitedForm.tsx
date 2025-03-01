@@ -10,7 +10,7 @@ interface Props {
 
 const InvitedForm = ({ invitedStudent, setInvitedStudent }: Props) => {
     return (
-        <div className='space-y-3'>
+        <div className='space-y-2 border-t border-b border-gray-300 p-4'>
             <div className='flex items-center justify-between'>
                 <div
                     className="items-center"
@@ -36,7 +36,7 @@ const InvitedForm = ({ invitedStudent, setInvitedStudent }: Props) => {
                 </div>
             </div>
             <div
-                className="flex items-center space-x-2"
+                className="items-center"
             >
                 <Label>Email</Label>
                 <Input
@@ -47,7 +47,7 @@ const InvitedForm = ({ invitedStudent, setInvitedStudent }: Props) => {
                 />
             </div>
             <div
-                className="flex items-center space-x-2"
+                className="items-center"
             >
                 <Label>Téléphone</Label>
                 <Input
