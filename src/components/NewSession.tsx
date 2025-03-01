@@ -528,12 +528,12 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                 )}
 
                 <div className='grid gap-2'>
-                    <Label>Commentaires</Label>
+                    <Label>Ajouter une note</Label>
                     <Textarea
                         value={sessionData.comment}
                         onChange={(e) => setSessionData(prev => ({ ...prev, comment: e.target.value }))}
                         className="w-full p-2 text-base border border-gray-300 rounded-md"
-                        placeholder="Commentaires sera ajoutés a toutes les sessions créées"
+                        placeholder="La note sera ajoutés a toutes les sessions créées"
                     />
                 </div>
                 <DialogFooter className='w-full'>
