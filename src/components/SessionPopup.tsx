@@ -13,10 +13,13 @@ import { filterPilotePlane } from "@/api/popupCalendar";
 import { studentRegistration } from "@/api/db/sessions";
 import { sendNotificationBooking, sendStudentNotificationBooking } from "@/lib/mail";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
-import { Plane } from "lucide-react";
+import { MessageSquareMore, Plane } from "lucide-react";
 import { PiStudent } from "react-icons/pi";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import SessionPopupUpdate from "./SessionPopupUpdate";
+import { Textarea } from "./ui/textarea";
+import { Label } from "./ui/label";
+import ShowCommentSession from "./ShowCommentSession";
 
 interface Prop {
     children: React.ReactNode;
@@ -44,8 +47,27 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     const [availableInstructors, setAvailableInstructors] = useState<User[]>([]);
     const [allPlanes, setAllPlanes] = useState<planes[]>([]);
     const [availablePlanes, setAvailablePlanes] = useState<planes[]>([]);
+    const [session, setSession] = useState<flight_sessions>();
+    const [studentComment, setStudentComment] = useState("");
 
     const filterdPlanes = planesProp.filter((p) => currentUser?.classes.includes(p.classes))
+
+    useEffect(() => {
+        if (sessions.length === 1) {
+            setSession(sessions[0]);
+            return;
+        }
+
+        setSession(sessions.find(
+            session =>
+                session.pilotID === instructor &&
+                (plane === "noPlane" || session.planeID.includes(plane))
+        ));
+
+        setStudentComment(session?.studentComment || "");
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sessions, instructor, plane]);
 
 
     // Charger les pilotes et avions disponibles
@@ -125,13 +147,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
 
     const onSubmit = async () => {
-        const session = sessions.find(
-            session =>
-                session.pilotID === instructor &&
-                (plane === "noPlane" || session.planeID.includes(plane))
-        );
-        
-
         if (!session) {
             setError("Une erreur est survenue (E_002: informations undefined)");
             return;
@@ -139,6 +154,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
         try {
             setLoading(true);
+            // @TODO: add studentComment
             const res = await studentRegistration(session, currentUser as User, plane, currentClub as Club, new Date().getTimezoneOffset() as number);
             if (res.error) {
                 toast({
@@ -163,7 +179,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 setSessions(prev =>
                     prev.map(s =>
                         s.id === session.id
-                            ? { ...s, studentID: currentUser!.id, studentFirstName: currentUser!.firstName, studentLastName: currentUser!.lastName, studentPlaneID: plane }
+                            ? { ...s, studentID: currentUser!.id, studentFirstName: currentUser!.firstName, studentLastName: currentUser!.lastName, studentPlaneID: plane, studentComment }
                             : s
                     )
                 );
@@ -268,6 +284,20 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                             : planesProp.find((plane) => plane.id === s.studentPlaneID)?.name}
                                     </p>
                                 </div>
+
+                                {/* comment */}
+                                <ShowCommentSession
+                                session={s}
+                                setSessions={setSessions}
+                            >
+                                <div className='flex items-center space-x-2'>
+                                    <MessageSquareMore className='w-4 h-4' />
+                                    {/* @TODO: add number note (1 or 2) */}
+                                    <p>
+                                        x note
+                                    </p>
+                                </div>
+                            </ShowCommentSession>
                             </div>
                         ))}
                     </div>
@@ -284,6 +314,37 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                             selectedPlane={plane}
                             onPlaneChange={setPlane}
                         />
+
+                        {/* note section */}
+                        <div>
+                            {/* instructor note */}
+                            {(session && session.pilotComment) && (
+                                <div>
+                                    <Label>
+                                        Note de l&apos;instructeur
+                                    </Label>
+                                    <Textarea
+                                        value={session.pilotComment || "..."}
+                                        disabled
+                                    />
+                                </div>
+                            )}
+
+                            {/* student note */}
+                            {session && (
+                                <div>
+                                    <Label>
+                                        Votres note
+                                    </Label>
+                                    <Textarea
+                                        value={studentComment}
+                                        onChange={(e) => setStudentComment(e.target.value)}
+                                    />
+                                </div>
+                            )}
+
+                        </div>
+
                         <SubmitButton
                             submitDisabled={submitDisabled}
                             onSubmit={onSubmit}

@@ -70,15 +70,16 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                 </p>
                             </div>
 
-                            {/* Commentaire */}
+                            {/* Commment */}
                             <ShowCommentSession
                                 session={s}
                                 setSessions={setSessions}
                             >
                                 <div className='flex items-center space-x-2'>
                                     <MessageSquareMore className='w-4 h-4' />
+                                    {/* @TODO: add number note (1 or 2) */}
                                     <p>
-                                        1 note
+                                        x note
                                     </p>
                                 </div>
                             </ShowCommentSession>
