@@ -310,6 +310,8 @@ export const removeStudentFromSessionID = async (session: flight_sessions, timeZ
                 studentID: null,
                 studentFirstName: null,
                 studentLastName: null,
+                studentEmail: null,
+                studentPhone: null,
                 student_type: null,
                 studentPlaneID: null,
             }

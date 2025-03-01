@@ -252,12 +252,10 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 <div className="flex items-center space-x-2">
                                     <PiStudent />
                                     <p>
-                                        {usersProps
-                                            .find((user) => user.id === s.studentID)
-                                            ?.lastName?.slice(0, 1)
+                                        {s.studentLastName?.slice(0, 1)
                                             .toUpperCase() +
                                             "." +
-                                            usersProps.find((user) => user.id === s.studentID)?.firstName}
+                                            s.studentLastName}
                                     </p>
                                 </div>
 

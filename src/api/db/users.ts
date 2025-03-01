@@ -4,6 +4,13 @@ import { userRole } from '@prisma/client'
 import { User } from '@prisma/client'
 import prisma from '../prisma';
 
+export interface InvitedStudent {
+    firstName: string,
+    lastName: string,
+    email: string,
+    phone: string,
+}
+
 interface UserMin {
     firstName: string,
     lastName: string,
@@ -104,18 +111,19 @@ export const getUser = async () => {
     }
 };
 
-export const addStudentToSession = async (sessionID: string, student: { id: string, firstName: string, lastName: string, planeId: string }, timeOffset: number) => {
+
+export const addStudentToSession = async (sessionID: string, student: { id: string, firstName: string, lastName: string, planeId: string, email: string, phone: string }, timeOffset: number) => {
 
     const nowDate = new Date();
     nowDate.setMinutes(nowDate.getMinutes() - timeOffset);
 
-    if (!sessionID || !student.id || !student.firstName || !student.lastName || !student.planeId) {
+    if (!sessionID || !student.id || !student.firstName || !student.lastName || !student.planeId || !student.email || !student.phone) {
         return { error: "Une erreur est survenue (E_001: paramètres invalides)" };
     }
 
     try {
         // Étape 1 : Charger les données critiques
-        const [session, studentDetails, plane] = await Promise.all([
+        const [session, plane] = await Promise.all([
             prisma.flight_sessions.findUnique({
                 where: { id: sessionID },
                 select: {
@@ -124,15 +132,6 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
                     sessionDateStart: true,
                     sessionDateDuration_min: true,
                     clubID: true,
-                },
-            }),
-            prisma.user.findUnique({
-                where: { id: student.id },
-                select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                    email: true,
                 },
             }),
             prisma.planes.findUnique({
@@ -149,14 +148,11 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             return { error: "L'avion est désactivé par l'administrateur du club." };
         }
 
-        console.log("session date : ",session.sessionDateStart)
-        console.log("now : ",nowDate)
+        console.log("session date : ", session.sessionDateStart)
+        console.log("now : ", nowDate)
+
         if (session.sessionDateStart < nowDate) {
             return { error: "La date de la session est passée." };
-        }
-
-        if (studentDetails === null) {
-            return { error: "Détails de l'étudiant introuvables." };
         }
 
         // Étape 2 : Mise à jour rapide de la session
@@ -167,6 +163,8 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
                 studentFirstName: student.firstName,
                 studentLastName: student.lastName,
                 studentPlaneID: student.planeId,
+                studentEmail: student.email,
+                studentPhone: student.phone,
             },
         });
 
