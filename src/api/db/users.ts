@@ -113,17 +113,6 @@ export const getUser = async () => {
 
 
 export const addStudentToSession = async (sessionID: string, student: { id: string, firstName: string, lastName: string, planeId: string, email: string, phone: string }, timeOffset: number) => {
-    // console.log(
-    //     sessionID,
-    //     student.id,
-    //     student.firstName,
-    //     student.lastName,
-    //     student.planeId,
-    //     student.email,
-    //     student.phone,
-    //     timeOffset
-    // )
-    // return { success: "test" }
 
     const nowDate = new Date();
     nowDate.setMinutes(nowDate.getMinutes() - timeOffset);
