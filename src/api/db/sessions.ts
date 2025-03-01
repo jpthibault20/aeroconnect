@@ -16,6 +16,7 @@ export interface interfaceSessions {
     endReccurence: Date | undefined;
     planeId: string[];
     classes: number[];
+    comment: string;
 }
 
 export const checkSessionDate = async (sessionData: interfaceSessions, user: User | undefined) => {
@@ -183,6 +184,7 @@ export const newSession = async (sessionData: interfaceSessions, instructor: Use
                             pilotID: instructor.id,
                             pilotFirstName: instructor.firstName,
                             pilotLastName: instructor.lastName,
+                            pilotComment: sessionData.comment,
                             studentID: null,
                             studentFirstName: null,
                             studentLastName: null,

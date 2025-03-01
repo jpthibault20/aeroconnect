@@ -19,6 +19,7 @@ import 'react-datepicker/dist/react-datepicker.css'
 import { useCurrentClub } from '@/app/context/useCurrentClub'
 import { CircularProgress } from "@nextui-org/progress"
 import { PlusIcon } from 'lucide-react'
+import { Textarea } from './ui/textarea'
 
 
 interface Props {
@@ -58,7 +59,8 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         duration: currentClub?.SessionDurationMin || 60,
         endReccurence: undefined,
         planeId: planesProp.map(plane => plane.id),
-        classes: Array.from(new Set(planesProp.map(plane => plane.classes)))
+        classes: Array.from(new Set(planesProp.map(plane => plane.classes))),
+        comment: ""
     });
 
     useEffect(() => {
@@ -524,6 +526,16 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                         <span>{error}</span>
                     </div>
                 )}
+
+                <div className='grid gap-2'>
+                    <Label>Commentaires</Label>
+                    <Textarea
+                        value={sessionData.comment}
+                        onChange={(e) => setSessionData(prev => ({ ...prev, comment: e.target.value }))}
+                        className="w-full p-2 text-base border border-gray-300 rounded-md"
+                        placeholder="Commentaires sera ajoutés a toutes les sessions créées"
+                    />
+                </div>
                 <DialogFooter className='w-full'>
                     <span className='flex flex-row items-center justify-end'>
                         <span>
