@@ -62,7 +62,7 @@ export const sendVerificationEmail = async (email: string, token: string, clubID
   });
 };
 
-export const sendNotificationBooking = async (email: string, studentFirstname: string, studentLastname: string, startDate: Date, endDate: Date, clubID: string, planeName: string) => {
+export const sendNotificationBooking = async (email: string, studentFirstname: string, studentLastname: string, startDate: Date, endDate: Date, clubID: string, planeName: string, pilotComment: string, studentComment: string) => {
   const formatedStartDate = formattedDate(startDate)
   const formatedEndDate = formattedDate(endDate)
   const clubData = await getClubData(clubID);
@@ -84,12 +84,14 @@ export const sendNotificationBooking = async (email: string, studentFirstname: s
       firstName: studentFirstname, 
       clubName: name, 
       clubAdress: adress as clubAdressType ,
-      planeName
+      planeName,
+      pilotComment: pilotComment as string,
+      studentComment: studentComment as string
     })
   });
 }
 
-export const sendStudentNotificationBooking = async (email: string, startDate: Date, endDate: Date, clubID: string, planeName: string) => {
+export const sendStudentNotificationBooking = async (email: string, startDate: Date, endDate: Date, clubID: string, planeName: string, pilotComment: string, studentComment: string) => {
   const formatedStartDate = formattedDate(startDate)
   const formatedEndDate = formattedDate(endDate)
   const clubData = await getClubData(clubID);
@@ -109,7 +111,9 @@ export const sendStudentNotificationBooking = async (email: string, startDate: D
       endDate: formatedEndDate, 
       clubName: name, clubAdress: 
       adress as clubAdressType,
-      planeName
+      planeName,
+      pilotComment: pilotComment as string,
+      studentComment: studentComment as string
     })
   });
 }

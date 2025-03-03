@@ -186,7 +186,10 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 const endDate = new Date(session!.sessionDateStart);
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
                 const instructorFull = usersProps.find(user => user.id === session.pilotID);
-                const planeName = plane === "classroomSession" ? "Théorique" : planesProp.find((p) => p.id === plane)?.name;
+                const planeName = plane === "classroomSession" ? "Théorique" : 
+                                            plane == "noPlane" ? "Son avion personnel" :
+                                            planesProp.find((p) => p.id === plane)?.name;
+                const pilotComment = session.pilotComment as string;
 
                 Promise.all([
                     sendNotificationBooking(
@@ -196,7 +199,9 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                         session!.sessionDateStart,
                         endDate,
                         session?.clubID as string,
-                        planeName as string
+                        planeName as string,
+                        pilotComment as string,
+                        studentComment as string
 
                     ),
                     sendStudentNotificationBooking(
@@ -204,7 +209,9 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                         session!.sessionDateStart,
                         endDate,
                         session?.clubID as string,
-                        planeName as string
+                        planeName as string,
+                        pilotComment as string,
+                        studentComment as string
 
                     ),
                 ]);
