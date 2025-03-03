@@ -292,7 +292,10 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                     <div className='flex items-center space-x-2'>
                                         <MessageSquareMore className='w-4 h-4' />
                                         <p>
-                                            x note
+                                            {(s.pilotComment && s.studentComment) ? "2 notes" : 
+                                                (s.pilotComment || s.studentComment) ? "1 note" : 
+                                                "0 note"
+                                            }
                                         </p>
                                     </div>
                                 </ShowCommentSession>

@@ -77,9 +77,11 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                             >
                                 <div className='flex items-center space-x-2'>
                                     <MessageSquareMore className='w-4 h-4' />
-                                    {/* @TODO: add number note (1 or 2) */}
                                     <p>
-                                        x note
+                                        {(s.pilotComment && s.studentComment) ? "2 notes" :
+                                            (s.pilotComment || s.studentComment) ? "1 note" :
+                                                "0 note"
+                                        }
                                     </p>
                                 </div>
                             </ShowCommentSession>
