@@ -8,6 +8,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { IoIosWarning } from 'react-icons/io';
+import { updateCommentSession } from '@/api/db/sessions';
 
 interface Props {
     children: React.ReactNode;
@@ -26,9 +27,7 @@ const ShowCommentSession = ({ children, session, setSessions }: Props) => {
     const onClickAction = async () => {
         setLoading(true);
         try {
-            // @TODO: create and implement server function to update comment
-            // const res = await updateSessionComment(session, currentUser as User);
-            const res = { success: "La note a été modifiée avec succès !", error: null };
+            const res = await updateCommentSession(session, pilotComment as string, studentComment as string);
             if (res.error) {
                 setError(res.error);
                 toast({

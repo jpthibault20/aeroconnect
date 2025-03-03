@@ -154,8 +154,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
         try {
             setLoading(true);
-            // @TODO: add studentComment
-            const res = await studentRegistration(session, currentUser as User, plane, currentClub as Club, new Date().getTimezoneOffset() as number);
+            const res = await studentRegistration(session, currentUser as User, plane, currentClub as Club, new Date().getTimezoneOffset() as number, studentComment as string);
             if (res.error) {
                 toast({
                     title: res.error,
@@ -292,7 +291,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 >
                                     <div className='flex items-center space-x-2'>
                                         <MessageSquareMore className='w-4 h-4' />
-                                        {/* @TODO: add number note (1 or 2) */}
                                         <p>
                                             x note
                                         </p>
