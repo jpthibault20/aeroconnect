@@ -48,7 +48,7 @@ export const NotificationBookingStudent = ({ startDate, endDate, clubName, clubA
                 )}
                 {studentComment && (
                     <Text>
-                        Note étudiant : {studentComment}
+                        Note élèvé : {studentComment}
                     </Text>
                 )}
                 <Text className="text-lg leading-6">Information : Veuillez prévoir 30 minutes avant le vol et 15 minutes après le vol.</Text>

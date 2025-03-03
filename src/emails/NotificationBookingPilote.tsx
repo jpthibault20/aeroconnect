@@ -50,7 +50,7 @@ export const NotificationBookingPilote = ({ startDate, endDate, name, firstName,
                 )}
                 {studentComment && (
                     <Text>
-                        Note étudiant : {studentComment}
+                        Note élève : {studentComment}
                     </Text>
                 )}
             </Section>
