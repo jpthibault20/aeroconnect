@@ -1,4 +1,4 @@
-import { flight_sessions } from '@prisma/client';
+import { Club, flight_sessions, User } from '@prisma/client';
 import React, { useState } from 'react'
 import { Spinner } from './ui/SpinnerVariants';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
@@ -9,15 +9,20 @@ import { Textarea } from './ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { IoIosWarning } from 'react-icons/io';
 import { updateCommentSession } from '@/api/db/sessions';
+import { sendNotificationUpdateNoteHandler } from '@/lib/mail';
+import { receiveType } from '@/lib/utils';
+import { useCurrentClub } from '@/app/context/useCurrentClub';
 
 interface Props {
     children: React.ReactNode;
     session: flight_sessions;
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
+    usersProp: User[];
 }
 
-const ShowCommentSession = ({ children, session, setSessions }: Props) => {
+const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props) => {
     const { currentUser } = useCurrentUser()
+    const { currentClub } = useCurrentClub()
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -25,6 +30,16 @@ const ShowCommentSession = ({ children, session, setSessions }: Props) => {
     const [studentComment, setStudentComment] = useState(session.studentComment);
 
     const onClickAction = async () => {
+        // Check if any comments have changed before proceeding
+        const isPilotCommentChanged = pilotComment !== session.pilotComment;
+        const isStudentCommentChanged = studentComment !== session.studentComment;
+
+        // If nothing changed, simply close the modal and return
+        if (!isPilotCommentChanged && !isStudentCommentChanged) {
+            setIsOpen(false);
+            return;
+        }
+
         setLoading(true);
         try {
             const res = await updateCommentSession(session, pilotComment as string, studentComment as string);
@@ -34,7 +49,7 @@ const ShowCommentSession = ({ children, session, setSessions }: Props) => {
                     title: res.error,
                     duration: 5000,
                     style: {
-                        background: '#ab0b0b', //rouge : ab0b0b
+                        background: '#ab0b0b', // red: ab0b0b
                         color: '#fff',
                     }
                 });
@@ -44,20 +59,55 @@ const ShowCommentSession = ({ children, session, setSessions }: Props) => {
                     title: res.success,
                     duration: 5000,
                     style: {
-                        background: '#0bab15', //rouge : ab0b0b
+                        background: '#0bab15', // green: 0bab15
                         color: '#fff',
                     }
                 });
                 setIsOpen(false);
+
+                // Update sessions with new comments
                 setSessions(prevSessions => {
-                    const updatedSessions = prevSessions.map(s =>
-                        s.id === session.id
-                            ? { ...s, studentComment: studentComment, pilotComment: pilotComment }
-                            : s
-                    );
+                    // Trouver l'index de la session à modifier
+                    const sessionIndex = prevSessions.findIndex(s => s.id === session.id);
+                    
+                    // Si la session n'est pas trouvée, retourner le tableau inchangé
+                    if (sessionIndex === -1) return prevSessions;
+                    
+                    // Créer une copie du tableau
+                    const updatedSessions = [...prevSessions];
+                    
+                    // Mettre à jour uniquement la session spécifique
+                    updatedSessions[sessionIndex] = {
+                        ...updatedSessions[sessionIndex],
+                        studentComment,
+                        pilotComment
+                    };
+                    
                     return updatedSessions;
                 });
-                // @TODO: create and implement mail send function to student and pilote
+
+
+                // Lookup users only once
+                const pilote = usersProp?.find((user) => user.id === session.pilotID) as User;
+                const student = usersProp?.find((user) => user.id === session.studentID) as User;
+
+                // Determine notification recipient based on changes
+                const receiver = (isPilotCommentChanged && isStudentCommentChanged) ? receiveType.all :
+                    (isPilotCommentChanged) ? receiveType.student :
+                        receiveType.pilote;
+
+                // @TODO: Optimization by deleting the creation of this object. a bug persists, I have the old sessions even with a setstate
+                // Create new session object with updated comments
+                const newSession = {...session, pilotComment, studentComment};
+
+                // Send notification with appropriate recipient
+                sendNotificationUpdateNoteHandler({
+                    receiver,
+                    pilote,
+                    student,
+                    club: currentClub as Club,
+                    session: newSession
+                });
             }
         } catch (error) {
             console.error(error);

@@ -6,9 +6,11 @@ import NotificationBookingPilote from "@/emails/NotificationBookingPilote";
 import NotificationBookingStudent from "@/emails/NotificationBookingStudent";
 import NotificationSudentRemove from "@/emails/NotificationSudentRemove"
 import NotificationSudentRemoveForPilot from "@/emails/NotificationSudentRemoveForPilot"
+import NotificationUpdateNote from "@/emails/NotificationUpdateNote";
 import { clubAdressType } from "@/emails/Template";
-import { Club } from "@prisma/client";
+import { Club, flight_sessions, User } from "@prisma/client";
 import { Resend } from "resend";
+import { receiveType } from "./utils";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const domain = process.env.NEXT_PUBLIC_APP_URL;
@@ -77,13 +79,13 @@ export const sendNotificationBooking = async (email: string, studentFirstname: s
     from: senderMailAdress,
     to: email,
     subject: "Un élève s'est inscrit un vol",
-    react: NotificationBookingPilote({ 
-      startDate: formatedStartDate,  
-      endDate: formatedEndDate, 
-      name: studentLastname, 
-      firstName: studentFirstname, 
-      clubName: name, 
-      clubAdress: adress as clubAdressType ,
+    react: NotificationBookingPilote({
+      startDate: formatedStartDate,
+      endDate: formatedEndDate,
+      name: studentLastname,
+      firstName: studentFirstname,
+      clubName: name,
+      clubAdress: adress as clubAdressType,
       planeName,
       pilotComment: pilotComment as string,
       studentComment: studentComment as string
@@ -106,11 +108,11 @@ export const sendStudentNotificationBooking = async (email: string, startDate: D
     from: senderMailAdress,
     to: email,
     subject: "Confirmation de votre inscription a un vol",
-    react: NotificationBookingStudent({ 
-      startDate: formatedStartDate, 
-      endDate: formatedEndDate, 
-      clubName: name, clubAdress: 
-      adress as clubAdressType,
+    react: NotificationBookingStudent({
+      startDate: formatedStartDate,
+      endDate: formatedEndDate,
+      clubName: name, clubAdress:
+        adress as clubAdressType,
       planeName,
       pilotComment: pilotComment as string,
       studentComment: studentComment as string
@@ -119,9 +121,9 @@ export const sendStudentNotificationBooking = async (email: string, startDate: D
 }
 
 export const sendNotificationRemoveAppointment = async (
-  email: string, 
-  startDate: Date, 
-  endDate: Date, 
+  email: string,
+  startDate: Date,
+  endDate: Date,
   club: Club
 ) => {
   // Validation précoce et rapide
@@ -132,12 +134,12 @@ export const sendNotificationRemoveAppointment = async (
 
   try {
     // Déstructuration et formatage en une seule étape
-    const { 
-      Name: clubName, 
-      Country: countrie, 
-      ZipCode: zipCode, 
-      City: city, 
-      Address: adress 
+    const {
+      Name: clubName,
+      Country: countrie,
+      ZipCode: zipCode,
+      City: city,
+      Address: adress
     } = club;
 
     const formatedStartDate = formattedDate(startDate);
@@ -148,11 +150,11 @@ export const sendNotificationRemoveAppointment = async (
       from: senderMailAdress,
       to: email,
       subject: "Vol annulé",
-      react: NotificationSudentRemove({ 
-        startDate: formatedStartDate, 
-        endDate: formatedEndDate, 
-        clubName, 
-        clubAdress: { countrie, zipCode, city, adress } 
+      react: NotificationSudentRemove({
+        startDate: formatedStartDate,
+        endDate: formatedEndDate,
+        clubName,
+        clubAdress: { countrie, zipCode, city, adress }
       })
     });
   } catch (error) {
@@ -162,9 +164,9 @@ export const sendNotificationRemoveAppointment = async (
 };
 
 export const sendNotificationSudentRemoveForPilot = async (
-  email: string, 
-  startDate: Date, 
-  endDate: Date, 
+  email: string,
+  startDate: Date,
+  endDate: Date,
   club: Club
 ) => {
   // Validation précoce et rapide
@@ -175,12 +177,12 @@ export const sendNotificationSudentRemoveForPilot = async (
 
   try {
     // Déstructuration et formatage en une seule étape
-    const { 
-      Name: clubName, 
-      Country: countrie, 
-      ZipCode: zipCode, 
-      City: city, 
-      Address: adress 
+    const {
+      Name: clubName,
+      Country: countrie,
+      ZipCode: zipCode,
+      City: city,
+      Address: adress
     } = club;
 
     const formatedStartDate = formattedDate(startDate);
@@ -191,11 +193,11 @@ export const sendNotificationSudentRemoveForPilot = async (
       from: senderMailAdress,
       to: email,
       subject: "Vol annulé",
-      react: NotificationSudentRemoveForPilot({ 
-        startDate: formatedStartDate, 
-        endDate: formatedEndDate, 
-        clubName, 
-        clubAdress: { countrie, zipCode, city, adress } 
+      react: NotificationSudentRemoveForPilot({
+        startDate: formatedStartDate,
+        endDate: formatedEndDate,
+        clubName,
+        clubAdress: { countrie, zipCode, city, adress }
       })
     });
   } catch (error) {
@@ -219,4 +221,45 @@ export const sendNotificationRequestClub = async (email: string, clubID: string)
     subject: "Demande d'adhésion au club",
     react: AcceptedToClub({ clubName: name, clubAdress: adress as clubAdressType })
   });
+}
+
+interface NotificationUpdateNoteProps {
+  receiver: receiveType;
+  pilote: User;
+  student: User;
+  club: Club;
+  session: flight_sessions;
+}
+export const sendNotificationUpdateNoteHandler = async ({ receiver, pilote, student, club, session }: NotificationUpdateNoteProps) => {
+
+  if (receiver == receiveType.pilote || receiver == receiveType.all) {
+    await resend.emails.send({
+      from: senderMailAdress,
+      to:pilote.email,
+      subject: "une note a été mise à jour",
+      react: NotificationUpdateNote({
+        receiver,
+        club,
+        session,
+        pilote,
+        student,
+      })
+    });
+  }
+
+  if (receiver == receiveType.student || receiver == receiveType.all) {
+    await resend.emails.send({
+      from: senderMailAdress,
+      to:student.email,
+      subject: "une note a été mise à jour",
+      react: NotificationUpdateNote({
+        receiver,
+        club,
+        session,
+        pilote,
+        student,
+      })
+    });
+  }
+
 }
