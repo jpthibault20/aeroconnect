@@ -277,7 +277,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                         {s.studentLastName?.slice(0, 1)
                                             .toUpperCase() +
                                             "." +
-                                            s.studentLastName}
+                                            s.studentFirstName}
                                     </p>
                                 </div>
 
