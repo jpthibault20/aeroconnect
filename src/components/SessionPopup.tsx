@@ -285,7 +285,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                     </p>
                                 </div>
 
-                                {/* comment */}
+                                {/* Note section */}
                                 <ShowCommentSession
                                     session={s}
                                     setSessions={setSessions}
@@ -324,7 +324,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                         Note de l&apos;instructeur
                                     </Label>
                                     <Textarea
-                                        value={session.pilotComment || "..."}
+                                        value={session.pilotComment || ""}
                                         disabled
                                     />
                                 </div>

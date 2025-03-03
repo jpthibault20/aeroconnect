@@ -82,7 +82,8 @@ const ShowCommentSession = ({ children, session, setSessions }: Props) => {
                     <div className='grid gap-2'>
                         <Label>Instructeur</Label>
                         <Textarea
-                            value={pilotComment || "..."}
+                            value={pilotComment || ""}
+                            placeholder='...'
                             disabled={["ADMIN", "OWNER"].includes(currentUser?.role as string) === true ? false : currentUser?.id !== session.pilotID}
                             onChange={(e) => setPilotComment(e.target.value)}
                             className="w-full p-2 text-base border border-gray-300 rounded-md"
@@ -91,7 +92,8 @@ const ShowCommentSession = ({ children, session, setSessions }: Props) => {
                     <div className='grid gap-2'>
                         <Label>Elève</Label>
                         <Textarea
-                            value={studentComment || "..."}
+                            value={studentComment || ""}
+                            placeholder='...'
                             disabled={["ADMIN", "OWNER"].includes(currentUser?.role as string) === true ? false : currentUser?.id !== session.studentID}
                             onChange={(e) => setStudentComment(e.target.value)}
                             className="w-full p-2 text-base border border-gray-300 rounded-md"
