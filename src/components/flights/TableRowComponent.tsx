@@ -155,6 +155,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                     <ShowCommentSession
                         session={session}
                         setSessions={setSessions}
+                        usersProp={usersProp}
                     >
                         <div className='flex items-center'>
                             <MessageSquareMore

@@ -295,6 +295,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 <ShowCommentSession
                                     session={s}
                                     setSessions={setSessions}
+                                    usersProp={usersProps}
                                 >
                                     <div className='flex items-center space-x-2'>
                                         <MessageSquareMore className='w-4 h-4' />
