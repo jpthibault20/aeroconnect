@@ -648,7 +648,7 @@ export const updateCommentSession = async(session: flight_sessions, pilotComment
             }
         });
 
-        return { success: "Les commentaires ont été mis à jour avec succès !" };
+        return { success: "Les notes ont été mises à jour avec succès !" };
     } catch (error) {
         console.error('Error updating comment:', error);
         return { error: "Erreur lors de la mise à jour des commentaires" };
