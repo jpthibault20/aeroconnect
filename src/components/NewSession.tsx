@@ -344,7 +344,9 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                     </div>
                 }
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] lg:max-w-[600px]">
+            <DialogContent className="sm:max-w-[425px] lg:max-w-[600px] w-full max-w-full max-h-screen overflow-y-auto 
+    sm:rounded-lg sm:left-1/2 sm:-translate-x-1/2">
+
                 <DialogHeader>
                     <DialogTitle>Nouvelle session</DialogTitle>
                     <DialogDescription>Configuration de la nouvelle session</DialogDescription>
