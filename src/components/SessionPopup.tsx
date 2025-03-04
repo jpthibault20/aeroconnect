@@ -186,9 +186,9 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 const endDate = new Date(session!.sessionDateStart);
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
                 const instructorFull = usersProps.find(user => user.id === session.pilotID);
-                const planeName = plane === "classroomSession" ? "Théorique" : 
-                                            plane == "noPlane" ? "Son avion personnel" :
-                                            planesProp.find((p) => p.id === plane)?.name;
+                const planeName = plane === "classroomSession" ? "Théorique" :
+                    plane == "noPlane" ? "Son avion personnel" :
+                        planesProp.find((p) => p.id === plane)?.name;
                 const pilotComment = session.pilotComment as string;
 
                 Promise.all([
@@ -287,7 +287,9 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                     <p>
                                         {s.studentPlaneID === "classroomSession"
                                             ? "Théorique"
-                                            : planesProp.find((plane) => plane.id === s.studentPlaneID)?.name}
+                                            : s.studentPlaneID === "noPlane"
+                                                ? "Sans appareil"
+                                                : planesProp.find((plane) => plane.id === s.studentPlaneID)?.name}
                                     </p>
                                 </div>
 
@@ -300,9 +302,9 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                     <div className='flex items-center space-x-2'>
                                         <MessageSquareMore className='w-4 h-4' />
                                         <p>
-                                            {(s.pilotComment && s.studentComment) ? "2 notes" : 
-                                                (s.pilotComment || s.studentComment) ? "1 note" : 
-                                                "0 note"
+                                            {(s.pilotComment && s.studentComment) ? "2 notes" :
+                                                (s.pilotComment || s.studentComment) ? "1 note" :
+                                                    "0 note"
                                             }
                                         </p>
                                     </div>

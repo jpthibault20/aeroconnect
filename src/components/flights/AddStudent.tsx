@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { addStudentToSession, InvitedStudent } from '@/api/db/users';
-import { flight_sessions, planes, User } from '@prisma/client';
+import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import { Button } from '../ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Spinner } from '../ui/SpinnerVariants';
@@ -10,6 +10,7 @@ import { getFreePlanesUsers } from '@/api/popupCalendar';
 import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
 import { IoIosWarning, IoMdPersonAdd } from 'react-icons/io';
 import InvitedForm from './InvitedForm';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
 
 interface Props {
     session: flight_sessions;
@@ -20,6 +21,7 @@ interface Props {
 }
 
 const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: Props) => {
+    const { currentUser } = useCurrentUser()
     const [error, setError] = useState("");
     const [freeStudents, setFreeStudents] = useState<{ id: string, name: string }[]>([]);
     const [studentId, setStudentId] = useState<string>("");
@@ -120,12 +122,12 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     }, [freePlanes]);
 
     useEffect(() => {
-        if (freeStudents.length === 0) {
+        if (freeStudents.length === 0 && planeId !== "noPlane") {
             setWarningStudent("l'étudiant n'est pas autorisé pour cet classe d'avion");
         } else {
             setWarningStudent("");
         }
-    }, [freeStudents]);
+    }, [freeStudents, planeId]);
 
     useEffect(() => {
         if (freePlanes.length === 0) {
@@ -286,9 +288,11 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                 {item.name}
                             </SelectItem>
                         ))}
-                        <SelectItem value={"invited"}>
-                            invité
-                        </SelectItem>
+                        {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER ? (
+                            <SelectItem value={"invited"}>
+                                invité
+                            </SelectItem>
+                        ) : null}
                     </SelectContent>
                 </Select>
 
@@ -316,17 +320,19 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                 {item.name}
                             </SelectItem>
                         ))}
+                        <SelectItem value={"noPlane"}>Sans appareil</SelectItem>
                     </SelectContent>
                 </Select>
 
                 {warningPlane && <div className="flex items-center text-orange-500 mb-4">
-                    <IoIosWarning className="mr-2" size={30} />
-                    <span>{warningPlane}</span>
-                </div>}
-
                 {warningStudent && <div className="flex items-center text-orange-500 mb-4">
                     <IoIosWarning className="mr-2 " size={30} />
                     <span>{warningStudent}</span>
+                </div>}
+
+                {warningPlane && <div className="flex items-center text-orange-500 mb-4">
+                    <IoIosWarning className="mr-2" size={30} />
+                    <span>{warningPlane}</span>
                 </div>}
 
                 {error && (
