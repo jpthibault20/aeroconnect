@@ -212,14 +212,18 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                 session.sessionDateStart,
                                 endDate,
                                 session.clubID,
-                                planeName as string
+                                planeName as string,
+                                session.pilotComment as string,
+                                session.studentComment as string
                             ),
                             sendStudentNotificationBooking(
                                 studentId === 'invited' ? invitedStudent.email : selectedUser?.email as string,
                                 session.sessionDateStart,
                                 endDate,
                                 session.clubID,
-                                planeName as string
+                                planeName as string,
+                                session.pilotComment as string,
+                                session.studentComment as string
                             ),
                         ]);
 

@@ -1,6 +1,6 @@
 import { flight_sessions, planes, User, userRole } from '@prisma/client'
 import React from 'react'
-import { Plane } from 'lucide-react'
+import { MessageSquareMore, Plane } from 'lucide-react'
 import { PiStudent } from 'react-icons/pi'
 import { LiaChalkboardTeacherSolid } from 'react-icons/lia'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
@@ -8,6 +8,7 @@ import { MdDeleteForever } from "react-icons/md";
 import AddStudent from './flights/AddStudent'
 import RemoveStudent from './RemoveStudent'
 import DeleteFlightSession from './DeleteFlightSession'
+import ShowCommentSession from './ShowCommentSession'
 
 interface Prop {
     sessions: flight_sessions[]
@@ -50,7 +51,7 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                 <PiStudent />
                                 <p>
                                     {s.studentID ? (
-                                        s.studentLastName?.slice(0, 1).toUpperCase() 
+                                        s.studentLastName?.slice(0, 1).toUpperCase()
                                         + "." +
                                         s.studentFirstName
                                     ) : (
@@ -68,6 +69,23 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                         : s.studentID ? planesProp.find((plane) => plane.id === s.studentPlaneID)?.name : "..."}
                                 </p>
                             </div>
+
+                            {/* Commment */}
+                            <ShowCommentSession
+                                session={s}
+                                setSessions={setSessions}
+                                usersProp={usersProps}
+                            >
+                                <div className='flex items-center space-x-2'>
+                                    <MessageSquareMore className='w-4 h-4' />
+                                    <p>
+                                        {(s.pilotComment && s.studentComment) ? "2 notes" :
+                                            (s.pilotComment || s.studentComment) ? "1 note" :
+                                                "0 note"
+                                        }
+                                    </p>
+                                </div>
+                            </ShowCommentSession>
                         </div>
 
                         {(currentUser?.role === userRole.ADMIN ||

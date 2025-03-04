@@ -16,6 +16,7 @@ export interface interfaceSessions {
     endReccurence: Date | undefined;
     planeId: string[];
     classes: number[];
+    comment: string;
 }
 
 export const checkSessionDate = async (sessionData: interfaceSessions, user: User | undefined) => {
@@ -183,6 +184,7 @@ export const newSession = async (sessionData: interfaceSessions, instructor: Use
                             pilotID: instructor.id,
                             pilotFirstName: instructor.firstName,
                             pilotLastName: instructor.lastName,
+                            pilotComment: sessionData.comment,
                             studentID: null,
                             studentFirstName: null,
                             studentLastName: null,
@@ -314,6 +316,7 @@ export const removeStudentFromSessionID = async (session: flight_sessions, timeZ
                 studentPhone: null,
                 student_type: null,
                 studentPlaneID: null,
+                studentComment: null,
             }
         });
 
@@ -361,7 +364,7 @@ export const getSessionPlanes = async (sessionID: string) => {
     }
 };
 
-export const studentRegistration = async (session: flight_sessions, student: User, planeID: string, club: Club, localTimeOffset: number) => {
+export const studentRegistration = async (session: flight_sessions, student: User, planeID: string, club: Club, localTimeOffset: number, studentComment: string) => {
     if (!session || !student || !planeID || !club) {
         return { error: "Une erreur est survenue (E_00x: paramètres invalides)" };
     }
@@ -439,6 +442,7 @@ export const studentRegistration = async (session: flight_sessions, student: Use
                     studentPlaneID: planeID,
                     studentFirstName: student.firstName,
                     studentLastName: student.lastName,
+                    studentComment: studentComment,
                 }})            
         }
 
@@ -627,4 +631,26 @@ export const getHoursByStudent = async (clubID: string) => {
         name: studentMap[studentID] || 'Inconnu',
         hours,
     }));
+};
+
+export const updateCommentSession = async(session: flight_sessions, pilotComment: string, studentComment: string) => {
+    if (!session || !session.id) {
+        return { error: "Une erreur est survenue (E_001: session is undefined)" };
+    }
+
+    try {
+        // Mise à jour des commentaires
+        await prisma.flight_sessions.update({
+            where: { id: session.id },
+            data: {
+                pilotComment: pilotComment,
+                studentComment: studentComment,
+            }
+        });
+
+        return { success: "Les notes ont été mises à jour avec succès !" };
+    } catch (error) {
+        console.error('Error updating comment:', error);
+        return { error: "Erreur lors de la mise à jour des commentaires" };
+    }
 };
