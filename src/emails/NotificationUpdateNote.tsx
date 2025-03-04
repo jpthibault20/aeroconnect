@@ -51,8 +51,8 @@ export const NotificationUpdateNote = ({ receiver, club, session, pilote, studen
                     </Text>
                 )}
                 <Text>
-                    {receiver === receiveType.pilote ? `Pilote : ${pilote.lastName.slice(0, 1).toUpperCase()}.${pilote.firstName}` :
-                        receiver === receiveType.student ? `Élève : ${student.lastName.slice(0, 1).toUpperCase()}.${student.firstName}` :
+                    {receiver === receiveType.student ? `Élève : ${pilote.lastName.slice(0, 1).toUpperCase()}.${pilote.firstName}` :
+                        receiver === receiveType.pilote ? `Pilote : ${student.lastName.slice(0, 1).toUpperCase()}.${student.firstName}` :
                             null
                     }
                 </Text>
