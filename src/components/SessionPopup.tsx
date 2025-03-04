@@ -258,7 +258,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                         {sessions.map((s, index) => (
                             <div
                                 key={index}
-                                className="flex flex-col items-center justify-center border rounded-md p-4 text-center"
+                                className="flex flex-col items-start justify-center border rounded-md p-4 text-center"
                             >
                                 {/* Pilote */}
                                 <div className="flex items-center space-x-2">
