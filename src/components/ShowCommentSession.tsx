@@ -69,20 +69,20 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
                 setSessions(prevSessions => {
                     // Trouver l'index de la session à modifier
                     const sessionIndex = prevSessions.findIndex(s => s.id === session.id);
-                    
+
                     // Si la session n'est pas trouvée, retourner le tableau inchangé
                     if (sessionIndex === -1) return prevSessions;
-                    
+
                     // Créer une copie du tableau
                     const updatedSessions = [...prevSessions];
-                    
+
                     // Mettre à jour uniquement la session spécifique
                     updatedSessions[sessionIndex] = {
                         ...updatedSessions[sessionIndex],
                         studentComment,
                         pilotComment
                     };
-                    
+
                     return updatedSessions;
                 });
 
@@ -98,7 +98,7 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
 
                 // @TODO: Optimization by deleting the creation of this object. a bug persists, I have the old sessions even with a setstate
                 // Create new session object with updated comments
-                const newSession = {...session, pilotComment, studentComment};
+                const newSession = { ...session, pilotComment, studentComment };
 
                 // Send notification with appropriate recipient
                 sendNotificationUpdateNoteHandler({
@@ -138,7 +138,8 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
                             className="w-full p-2 text-base border border-gray-300 rounded-md"
                         />
                     </div>
-                    <div className='grid gap-2'>
+                    {["ADMIN", "OWNER", "INSTRUCTOR"].includes(currentUser?.role as string) || currentUser?.id === session.studentID ? (
+                        <div className='grid gap-2'>
                         <Label>Elève</Label>
                         <Textarea
                             value={studentComment || ""}
@@ -148,6 +149,8 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
                             className="w-full p-2 text-base border border-gray-300 rounded-md"
                         />
                     </div>
+                    ):null}
+                    
                 </div>
                 <DialogFooter className='w-full'>
                     {error && (
