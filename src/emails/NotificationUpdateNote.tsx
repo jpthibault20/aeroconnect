@@ -40,12 +40,12 @@ export const NotificationUpdateNote = ({ receiver, club, session, pilote, studen
                 <Text className="text-lg leading-6">
                     Les notes de la session du {formattedDate(session.sessionDateStart)} ont été mises à jour :
                 </Text>
-                {(receiver === receiveType.pilote || receiver === receiveType.all) && session.pilotComment && (
+                {(receiver === receiveType.pilote || receiver === receiveType.all) && (
                     <Text className="text-lg leading-6">
                         Note élève : {session.studentComment}
                     </Text>
                 )}
-                {(receiver === receiveType.student || receiver === receiveType.all) && session.studentComment && (
+                {(receiver === receiveType.student || receiver === receiveType.all) && (
                     <Text className="text-lg leading-6">
                         Note pilote : {session.pilotComment}
                     </Text>
