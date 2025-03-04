@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useSearchParams } from "next/navigation";
 import { updateUserClub } from "@/api/db/users";
+import packageJson from "../../package.json";
 
 interface props {
     clubsProp: Club[]
@@ -144,6 +145,9 @@ const SideBar = ({ clubsProp }: props) => {
                         );
                     })}
             </nav>
+            <div className="text-center text-xs text-gray-500 mt-auto mb-4">
+                version : {packageJson.version} - {packageJson.date}
+            </div>
 
             <div className="border-1 border-b border-[#797979] mx-3 mb-6" />
 

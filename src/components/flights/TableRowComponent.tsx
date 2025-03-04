@@ -23,6 +23,8 @@ import { FaArrowRight } from "react-icons/fa";
 import SessionPopup from '../SessionPopup';
 import RemoveStudent from '../RemoveStudent';
 import DeleteFlightSession from '../DeleteFlightSession';
+import ShowCommentSession from '../ShowCommentSession';
+import { MessageSquareMore } from 'lucide-react';
 
 
 interface props {
@@ -146,6 +148,26 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
             <TableCell className='text-center'>
                 {plane?.name || '...'}
             </TableCell>
+
+            <TableCell className='text-center'>
+                {/* Note section */}
+                <span className='flex items-center justify-center'>
+                    <ShowCommentSession
+                        session={session}
+                        setSessions={setSessions}
+                        usersProp={usersProp}
+                    >
+                        <div className='flex items-center'>
+                            <MessageSquareMore
+                                className='w-4 h-4'
+                                color={(session.studentComment || session.pilotComment) ? 'green' : 'gray'}
+                            />
+                        </div>
+                    </ShowCommentSession>
+                </span>
+
+            </TableCell>
+
             <TableCell className='h-full w-full justify-center items-center flex'>
                 {currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
                     (

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { addStudentToSession } from '@/api/db/users';
+import { addStudentToSession, InvitedStudent } from '@/api/db/users';
 import { flight_sessions, planes, User } from '@prisma/client';
 import { Button } from '../ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -9,6 +9,7 @@ import { Spinner } from '../ui/SpinnerVariants';
 import { getFreePlanesUsers } from '@/api/popupCalendar';
 import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
 import { IoIosWarning, IoMdPersonAdd } from 'react-icons/io';
+import InvitedForm from './InvitedForm';
 
 interface Props {
     session: flight_sessions;
@@ -27,6 +28,12 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     const [loading, setLoading] = useState(false);
     const [warningStudent, setWarningStudent] = useState("");
     const [warningPlane, setWarningPlane] = useState("");
+    const [invitedStudent, setInvitedStudent] = useState<InvitedStudent>({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: ""
+    });
 
     // Filtrer les étudiants en fonction de l'avion sélectionné
     const filterStudentsByPlane = (planeId: string) => {
@@ -52,25 +59,29 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
     // Filtrer les avions en fonction de l'étudiant sélectionné
     const filterPlanesByStudent = (studentId: string) => {
-        if (session.planeID.includes("classroomSession")) {
-            return [{ id: "classroomSession", name: "Session théorique" }];
-        }
+        if (!studentId) return [];
 
         const { planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
-        if (!studentId || studentId === " ") {
-            return planes.map(plane => ({ id: plane.id, name: plane.name }));
+        let planesRes: { id: string, name: string }[] = [];
+
+        if (studentId === "invited") {
+            planesRes = planes.map(plane => ({ id: plane.id, name: plane.name }));
+        }
+        else if (studentId) {
+            for (const plane of planes) {
+                const userClasses = usersProp.find(user => user.id === studentId)?.classes || [];
+                if (userClasses.includes(plane.classes)) {
+                    planesRes.push({ id: plane.id, name: plane.name });
+
+                }
+            }
         }
 
-        const selectedStudent = usersProp.find(user => user.id === studentId);
-        if (!selectedStudent) return [];
+        if (session.planeID.includes("classroomSession")) {
+            planesRes.push({ id: "classroomSession", name: "Session théorique" });
+        }
 
-        const userClasses = selectedStudent.classes || [];
-        return planes.filter(plane =>
-            userClasses.includes(plane.classes)
-        ).map(plane => ({
-            id: plane.id,
-            name: plane.name
-        }));
+        return planesRes;
     };
 
     // Mise à jour des listes lors de la sélection
@@ -147,15 +158,21 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         if (studentId) {
             const selectedUser = usersProp.find(user => user.id === studentId);
 
-            if (selectedUser) {
-                const { firstName, lastName } = selectedUser;
+            if (selectedUser || studentId === 'invited') {
+
+                console.log(
+                    session.id,
+                    invitedStudent
+                )
 
                 try {
                     const res = await addStudentToSession(session.id, {
                         id: studentId,
-                        firstName,
-                        lastName,
+                        firstName: studentId === 'invited' ? invitedStudent.firstName : selectedUser?.firstName as string,
+                        lastName: studentId === 'invited' ? invitedStudent.lastName : selectedUser?.lastName as string,
                         planeId,
+                        email: studentId === 'invited' ? invitedStudent.email : usersProp.find(user => user.id === studentId)?.email as string,
+                        phone: studentId === 'invited' ? invitedStudent.phone : usersProp.find(user => user.id === studentId)?.phone as string,
                     }, new Date().getTimezoneOffset() as number);
 
                     if (res.error) {
@@ -190,19 +207,23 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         Promise.all([
                             sendNotificationBooking(
                                 instructor?.email || "",
-                                selectedUser.firstName,
-                                selectedUser.lastName,
+                                studentId === 'invited' ? invitedStudent.firstName : selectedUser?.firstName as string,
+                                studentId === 'invited' ? invitedStudent.lastName : selectedUser?.lastName as string,
                                 session.sessionDateStart,
                                 endDate,
                                 session.clubID,
-                                planeName as string
+                                planeName as string,
+                                session.pilotComment as string,
+                                session.studentComment as string
                             ),
                             sendStudentNotificationBooking(
-                                selectedUser.email || "",
+                                studentId === 'invited' ? invitedStudent.email : selectedUser?.email as string,
                                 session.sessionDateStart,
                                 endDate,
                                 session.clubID,
-                                planeName as string
+                                planeName as string,
+                                session.pilotComment as string,
+                                session.studentComment as string
                             ),
                         ]);
 
@@ -212,8 +233,8 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                     ? {
                                         ...s,
                                         studentID: studentId,
-                                        studentFirstName: firstName,
-                                        studentLastName: lastName,
+                                        studentFirstName: studentId === 'invited' ? invitedStudent.firstName : selectedUser?.firstName as string,
+                                        studentLastName: studentId === 'invited' ? invitedStudent.lastName : selectedUser?.lastName as string,
                                         studentPlaneID: planeId,
                                     }
                                     : s
@@ -247,7 +268,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                 <DialogHeader>
                     <DialogTitle>Ajouter un élève</DialogTitle>
                     <DialogDescription>
-                        Voulez-vous ajouter un élève à ce vol ?
+                        Choisissez l&apos;élève et l&apos;avion que vous souhaitez ajouter à la session
                     </DialogDescription>
                 </DialogHeader>
 
@@ -265,8 +286,21 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                 {item.name}
                             </SelectItem>
                         ))}
+                        <SelectItem value={"invited"}>
+                            invité
+                        </SelectItem>
                     </SelectContent>
                 </Select>
+
+                {/* only for invited */}
+                {studentId === "invited" && (
+                    <div>
+                        <InvitedForm
+                            invitedStudent={invitedStudent}
+                            setInvitedStudent={setInvitedStudent}
+                        />
+                    </div>
+                )}
 
                 <Select
                     value={planeId}

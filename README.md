@@ -2,7 +2,12 @@
 
 Ce projet est une application de calendrier conçue spécifiquement pour les clubs d'aviation légère et d'ULM. Elle permet une gestion simple et efficace des réservations entre instructeurs et élèves, ainsi que des paiements et de la location d'avions.
 
-## Version actuelle 1.3.1
+## Version actuelle 1.4.0
+
+**Version 1.4.x**
+ * Add feature for STEX
+ * add verion view
+ * fix différents bugs
 
 **Version 1.3.x**
  *  Corréction de tous les bugs connue afin d'arrivé à une permière version stable et commercialisable 
@@ -56,49 +61,13 @@ Les fonctionnalités listées dans la section "Fonctionnalités principales" ci-
 - **React Email** Mise en page des emails
 - **recharts** Graphiques
 
-## Installation
-
-1. Clonez ce dépôt :
-
-```bash
-git clone https://github.com/jpthibault20/aeroconnect.git
-```	
-
-2. Installez les dépendances :
-
-```bash
-npm install
-```
-
-3. Configurez les variables d'environnement :
-
-créer les fichiers suivant : 
-
-.env.local
-```bash
-WEBSITE_LINK=
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-```
-.env
-```bash
-DATABASE_URL=""
-DIRECT_URL=""
-RESEND_API_KEY=""
-```
-Puis y ajouter vos element de connexions
-
-4. Démarrez le serveur :
-
-```bash
-npm run dev
-```
 
 ## TODO
 
 Voici les tâches restantes à accomplir pour finaliser le projet :
 
 - [ ] **Time Server** quand l'heure est utilisé dans le server envoyer au server via le clien le décalage horaire pour travailler toujours sur la meme heure
+- [ ] **Version** différents TODO sont indiqué dans le code "@TODO"
 
 ## Contribuer
 
