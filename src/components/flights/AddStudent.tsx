@@ -324,7 +324,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                     </SelectContent>
                 </Select>
 
-                {warningPlane && <div className="flex items-center text-orange-500 mb-4">
                 {warningStudent && <div className="flex items-center text-orange-500 mb-4">
                     <IoIosWarning className="mr-2 " size={30} />
                     <span>{warningStudent}</span>
