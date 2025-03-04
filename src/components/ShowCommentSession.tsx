@@ -129,7 +129,7 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
                 </DialogHeader>
                 <div className='grid gap-4'>
                     <div className='grid gap-2'>
-                        <Label>Instructeur</Label>
+                        <Label>Instructeur {`(${session.pilotLastName.slice(0,1).toUpperCase()}.${session.pilotFirstName})`}</Label>
                         <Textarea
                             value={pilotComment || ""}
                             placeholder='...'
@@ -140,7 +140,7 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
                     </div>
                     {["ADMIN", "OWNER", "INSTRUCTOR"].includes(currentUser?.role as string) || currentUser?.id === session.studentID ? (
                         <div className='grid gap-2'>
-                        <Label>Elève</Label>
+                        <Label>Elève {(session.studentFirstName && session.studentLastName) ? `(${session.studentLastName.slice(0,1).toUpperCase()}.${session.studentFirstName})` : ""}</Label>
                         <Textarea
                             value={studentComment || ""}
                             placeholder='...'
