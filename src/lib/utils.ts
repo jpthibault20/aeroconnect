@@ -1,4 +1,4 @@
-import { Club } from "@prisma/client";
+import { Club, planes } from "@prisma/client";
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -21,4 +21,16 @@ export const formattedDate = (date: Date) => {
 
 export const formatClubAdressString = (club: Club) => {
   return `${club.Country} ${club.ZipCode} ${club.City} ${club.Address}`
+}
+
+export const getPlaneName = (planeID: string, planesProp: planes[]) => {
+  if (planeID === "classroomSession") {
+      return { name: "Théorique" };
+  }
+  if (planeID === "noPlane") {
+      return { name: "Perso" };
+  }
+  const plane = planesProp.find((plane) => plane.id === planeID);
+  return { name: plane?.name };
+
 }

@@ -1,9 +1,8 @@
-import { Clock, Plane } from 'lucide-react'
-import { cn } from "@/lib/utils"
+import { Clock, MessageSquareMore, Plane } from 'lucide-react'
+import { cn, getPlaneName } from "@/lib/utils"
 import { flight_sessions, planes, User } from '@prisma/client'
 import SessionPopup from '@/components/SessionPopup'
 import { useEffect, useState } from 'react'
-import { getPlaneName } from '@/api/db/planes'
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import { PiStudent } from "react-icons/pi";
 import { useCurrentUser } from '@/app/context/useCurrentUser'
@@ -25,18 +24,10 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
 
     useEffect(() => {
         if (session.studentPlaneID) {
-            getPlaneName(session.studentPlaneID).then(res => {
-                if (res && 'name' in res) {
-                    setPlanesString(res.name as string);
-                }
-            })
+            setPlanesString(getPlaneName(session.studentPlaneID,PlaneProps).name as string);
         }
         else if (session.planeID.length === 1) {
-            getPlaneName(session.planeID[0]).then(res => {
-                if (res && 'name' in res) {
-                    setPlanesString(res.name as string);
-                }
-            })
+            setPlanesString(getPlaneName(session.planeID[0],PlaneProps).name as string);
         }
         else {
             const planes = filterdPlanes
@@ -46,7 +37,7 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
 
             setPlanesString(planesNumber + " avions");
         }
-    }, [filterdPlanes, session.planeID, session.studentPlaneID])
+    }, [PlaneProps, filterdPlanes, session.planeID, session.studentPlaneID])
 
     const endSessionDate = new Date(
         session.sessionDateStart.getFullYear(),
@@ -81,7 +72,7 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
 
                 {session.studentID && (
                     <div className='flex flex-col items-center justify-center'>
-                        <span className="text-lg font-medium">Complet</span>
+                        {/* <span className="text-lg font-medium">Complet</span> */}
                         <div className='flex justify-center items-center space-x-1'>
                             <PiStudent />
                             <span>{session.studentLastName?.toUpperCase().slice(0, 1)}.{session.studentFirstName}</span>
@@ -89,10 +80,19 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
                     </div>
                 )}
 
-                <div className='flex items-start justify-end'>
-                    <div className='flex justify-center items-center space-x-1'>
+                <div className='flex-row items-start justify-end'>
+                    <div className='flex justify-start items-center space-x-1'>
                         <LiaChalkboardTeacherSolid />
                         <span className="text-sm">{session.pilotLastName.toUpperCase().slice(0, 1)}.{session.pilotFirstName}</span>
+                    </div>
+                    <div className='flex justify-start items-center space-x-1'>
+                        <MessageSquareMore className='w-3 h-3' />
+                        <span className="text-sm">
+                            {(session.pilotComment && session.studentComment) ? "2 notes" :
+                                (session.pilotComment || session.studentComment) ? "1 note" :
+                                    "0 note"
+                            }
+                        </span>
                     </div>
                 </div>
             </div>
