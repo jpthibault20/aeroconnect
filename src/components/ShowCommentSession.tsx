@@ -117,6 +117,10 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
         }
     };
 
+    if (["ADMIN", "OWNER"]!.includes(currentUser?.role as string) || (currentUser?.id !== session.studentID && currentUser?.id !== session.pilotID)) {
+        return null
+    }
+
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger className='flex items-center justify-center'>
@@ -138,7 +142,6 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
                             className="w-full p-2 text-base border border-gray-300 rounded-md"
                         />
                     </div>
-                    {["ADMIN", "OWNER", "INSTRUCTOR"].includes(currentUser?.role as string) || currentUser?.id === session.studentID ? (
                         <div className='grid gap-2'>
                         <Label>Elève {(session.studentFirstName && session.studentLastName) ? `(${session.studentLastName.slice(0,1).toUpperCase()}.${session.studentFirstName})` : ""}</Label>
                         <Textarea
@@ -149,7 +152,6 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
                             className="w-full p-2 text-base border border-gray-300 rounded-md"
                         />
                     </div>
-                    ):null}
                     
                 </div>
                 <DialogFooter className='w-full'>
