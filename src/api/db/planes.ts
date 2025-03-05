@@ -184,29 +184,6 @@ export const getAllPlanesOperational = async (clubID: string) => {
     }
 }
 
-export async function getPlaneName(planeID: string) {
-    if (planeID === "classroomSession") {
-        return { name: "Théorique" };
-    }
-    try {
-        const planes = await prisma.planes.findUnique({
-            where: {
-                id: planeID
-            },
-            select: {
-                name: true
-            }
-        })
-        return planes;
-    } catch (error) {
-        console.error('Error getting planes:', error);
-        return { error: "Erreur lors de la récupération des avions" };
-    }
-    finally {
-        await prisma.$disconnect();
-    }
-}
-
 export const updatePlane = async (plane: planes) => {
     if (!plane.id) {
         return { error: 'Missing planeID' };
