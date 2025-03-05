@@ -1,4 +1,4 @@
-import { Club, flight_sessions, User } from '@prisma/client';
+import { Club, flight_sessions, User, userRole } from '@prisma/client';
 import React, { useState } from 'react'
 import { Spinner } from './ui/SpinnerVariants';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
@@ -117,7 +117,7 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
         }
     };
 
-    if (["ADMIN", "OWNER"]!.includes(currentUser?.role as string) || (currentUser?.id !== session.studentID && currentUser?.id !== session.pilotID)) {
+    if ((currentUser?.role !== userRole.ADMIN && currentUser?.role !== userRole.OWNER) && (currentUser?.id !== session.studentID && currentUser?.id !== session.pilotID)) {
         return null
     }
 
