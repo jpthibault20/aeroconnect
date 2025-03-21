@@ -281,7 +281,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Élèves" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60 overflow-y-auto">
                         <SelectItem value=" ">Élèves</SelectItem>
                         {freeStudents.map((item, index) => (
                             <SelectItem key={index} value={item.id}>
@@ -313,7 +313,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Appareils" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60 overflow-y-auto">
                         <SelectItem value=" ">Appareils</SelectItem>
                         {freePlanes.map((item, index) => (
                             <SelectItem key={index} value={item.id}>
