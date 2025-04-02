@@ -185,7 +185,7 @@ const Filter = ({
                                                 );
                                             }
                                         })}
-                                        {["ADMIN", "OWNER"].includes(currentUser?.role as userRole) && (
+                                        {["ADMIN", "OWNER", "MANAGER"].includes(currentUser?.role as userRole) && (
                                             <DropdownItem key={currentUser.id} textValue={currentUser.id}>
                                                 {currentUser.lastName.toUpperCase().slice(0, 1)}.{currentUser.firstName}
                                             </DropdownItem>
@@ -200,6 +200,7 @@ const Filter = ({
                     {/* Filter by students */}
                     {currentUser?.role === userRole.ADMIN ||
                         currentUser?.role === userRole.OWNER ||
+                        currentUser?.role === userRole.MANAGER ||
                         currentUser?.role === userRole.INSTRUCTOR ? (
                         <div className="flex flex-col px-1 py-4 w-full space-y-2">
                             <Label id="instructor-label" className="font-semibold">

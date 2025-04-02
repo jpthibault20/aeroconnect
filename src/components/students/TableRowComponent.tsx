@@ -110,6 +110,7 @@ const TableRowComponent = ({ user, setUsers }: props) => {
                 {user.role === "STUDENT" && "Elève"}
                 {user.role === "INSTRUCTOR" && "Instructeur"}
                 {user.role === "PILOT" && "Pilote"}
+                {user.role === "MANAGER" && "Manager"}
                 {user.role === "OWNER" && "Président"}
                 {user.role === "ADMIN" && "Administrateur"}
             </TableCell>

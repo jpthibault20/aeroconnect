@@ -113,6 +113,7 @@ const AcceptMemberInClub = ({ membershipRequests, setMembershipRequests, userReq
                                                                 {value === "STUDENT" && "Élève"}
                                                                 {value === "PILOT" && "Pilote"}
                                                                 {value === "INSTRUCTOR" && "Instructeur"}
+                                                                {value === "MANAGER" && "Manager"}
                                                                 {value === "OWNER" && "Président"}
                                                             </button>
                                                         ))}

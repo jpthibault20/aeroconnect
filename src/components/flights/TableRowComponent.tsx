@@ -47,7 +47,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
     finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min); // Calculate end time of the session
 
     useEffect(() => {
-        if (currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR" || session.studentID === currentUser?.id) {
+        if (currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR" || currentUser?.role === "MANAGER" || session.studentID === currentUser?.id) {
             setAutorisedDeleteStudent(true);
         } else {
             setAutorisedDeleteStudent(false);

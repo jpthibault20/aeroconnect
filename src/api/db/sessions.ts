@@ -119,6 +119,10 @@ export const newSession = async (sessionData: interfaceSessions, instructor: Use
         return { error: "L'instructeur est obligatoire" };
     }
 
+    if (instructor.role === "MANAGER") {
+        return { error: "L'instructeur n'est pas valide" };
+    }
+
     const baseSessionDateStart = new Date(Date.UTC(
         sessionData.date.getUTCFullYear(),
         sessionData.date.getUTCMonth(),
