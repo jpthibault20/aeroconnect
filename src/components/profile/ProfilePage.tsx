@@ -132,7 +132,7 @@ const ProfilePage = () => {
                         </div>
                         <div>
                             <InputClasses
-                                disabled={loading || currentUser?.role !== userRole.OWNER && currentUser?.role !== userRole.ADMIN}
+                                disabled={loading || currentUser?.role !== userRole.OWNER && currentUser?.role !== userRole.ADMIN && currentUser?.role !== userRole.MANAGER}
                                 classes={classes}
                                 setClasses={setClasses}
                             />

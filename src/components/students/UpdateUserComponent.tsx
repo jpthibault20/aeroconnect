@@ -228,6 +228,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                                                     {key === "STUDENT" && "Elève"}
                                                     {key === "INSTRUCTOR" && "Instructeur"}
                                                     {key === "PILOT" && "Pilote"}
+                                                    {key === "MANAGER" && "Manager"}
                                                     {key === "OWNER" && "Président"}
                                                 </SelectItem>
                                             ))}

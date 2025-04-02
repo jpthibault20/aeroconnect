@@ -117,7 +117,7 @@ const TableRowComponent = ({ user, setUsers }: props) => {
                 <Restricted user={user} />
             </TableCell>
             <TableCell className="text-center">{user.phone}</TableCell>
-            {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER ? (
+            {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER || currentUser?.role === userRole.MANAGER ? (
                 <TableCell className="flex flex-col items-center space-y-3 justify-center">
                     <UpdateUserComponent
                         showPopup={showPopup}

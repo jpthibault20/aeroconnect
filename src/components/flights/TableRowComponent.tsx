@@ -130,7 +130,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                         }
                     </div>
                 )
-                    : currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
+                    : currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER || currentUser?.role == userRole.MANAGER ?
                         (
                             <AddStudent session={session} setSessions={setSessions} sessions={sessions} planesProp={planesProp} usersProp={usersProp} />
                         )
@@ -169,7 +169,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
             </TableCell>
 
             <TableCell className='h-full w-full justify-center items-center flex'>
-                {currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
+                {currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER || currentUser?.role == userRole.MANAGER ?
                     (
 
                         <DeleteFlightSession description={`Ce vol sera supprimé définitivement`} sessions={[session]} setSessions={setSessions} usersProp={usersProp}>

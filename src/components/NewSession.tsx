@@ -67,7 +67,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         if (currentUser?.role === userRole.ADMIN){
             setInstructors(usersProps.filter(user => user.role === userRole.INSTRUCTOR || user.role === userRole.OWNER || user.role === userRole.ADMIN))
         }
-        else if (currentUser?.role === userRole.OWNER){
+        else if (currentUser?.role === userRole.OWNER || currentUser?.role === userRole.MANAGER){
             setInstructors(usersProps.filter(user => user.role === userRole.INSTRUCTOR || user.role === userRole.OWNER))
         }
         else{
@@ -116,7 +116,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
     }, [sessionData.duration, sessionData.startHour, sessionData.startMinute])
 
 
-    if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR))) {
+    if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR) || currentUser?.role.includes(userRole.MANAGER))) {
         return null
     }
 

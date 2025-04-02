@@ -291,7 +291,7 @@ export const removeStudentFromSessionID = async (session: flight_sessions, timeZ
 
         const minutesUntilSession = differenceInMinutes(session.sessionDateStart, nowUTC);
 
-        const allowedRoles: userRole[] = [userRole.ADMIN, userRole.INSTRUCTOR, userRole.OWNER];
+        const allowedRoles: userRole[] = [userRole.ADMIN, userRole.INSTRUCTOR, userRole.OWNER, userRole.MANAGER];
 
         if(!allowedRoles.includes(user.role) && !club.userCanUnsubscribe) {
             return { error: "Les inscriptions sont désactivées par le club, se raprocher de l'administrateur du club." };

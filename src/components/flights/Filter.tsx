@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @file Filter.tsx
  * @brief A React component for filtering flight sessions.
@@ -7,19 +6,17 @@
  * It uses a popover interface to present the filtering options to the user.
  */
 
-import React, { useEffect } from 'react';
-import { Checkbox } from "@/components/ui/checkbox";
+import React from 'react';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { planes, User, userRole } from '@prisma/client';
-import { fr } from 'date-fns/locale';
 import { CiFilter } from "react-icons/ci";
 import { ChevronDown } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@nextui-org/popover";
-import { Button, ButtonGroup } from "@nextui-org/button";
+import { Button } from "@nextui-org/button";
 import { Label } from '@radix-ui/react-label';
 import { DatePicker } from "@nextui-org/date-picker";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownSection, DropdownItem } from "@nextui-org/dropdown";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/dropdown";
 import { DateValue } from "@internationalized/date";
 import { StatusType } from './FlightsPageComponent';
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -65,33 +62,28 @@ const Filter = ({
             <PopoverContent className="w-fit">
                 <ScrollArea className="h-[300px] md:h-fit w-fit" >
                     {/* Filter by date */}
-                    {currentUser?.role === userRole.ADMIN ||
-                        currentUser?.role === userRole.OWNER ||
-                        currentUser?.role === userRole.INSTRUCTOR ||
-                        currentUser?.role === userRole.STUDENT ||
-                        currentUser?.role === userRole.PILOT ? (
-                        <div className="flex flex-col border-b px-1 py-4 w-full space-y-2">
-                            <Label id="date-label" className="font-semibold">
-                                Date
-                            </Label>
-                            <DatePicker
-                                className="max-w-[284px]"
-                                aria-labelledby="date-label"
-                                aria-label="Select a date"
-                                onChange={setFilterDate}
-                            />
-                            <div className="flex w-full justify-end">
-                                <button onClick={() => setFilterDate(null)} className="text-xs">
-                                    Toutes les dates
-                                </button>
-                            </div>
+
+                    <div className="flex flex-col border-b px-1 py-4 w-full space-y-2">
+                        <Label id="date-label" className="font-semibold">
+                            Date
+                        </Label>
+                        <DatePicker
+                            className="max-w-[284px]"
+                            aria-labelledby="date-label"
+                            aria-label="Select a date"
+                            onChange={setFilterDate}
+                        />
+                        <div className="flex w-full justify-end">
+                            <button onClick={() => setFilterDate(null)} className="text-xs">
+                                Toutes les dates
+                            </button>
                         </div>
-                    ) : null
-                    }
+                    </div>
 
                     {/* Filter by status */}
                     {currentUser?.role === userRole.ADMIN ||
                         currentUser?.role === userRole.OWNER ||
+                        currentUser?.role === userRole.MANAGER ||
                         currentUser?.role === userRole.INSTRUCTOR ? (
                         <div className="flex flex-col border-b px-1 py-2 w-full space-y-2">
                             <Label id="status-label" className="font-semibold">
@@ -125,47 +117,41 @@ const Filter = ({
                     }
 
                     {/* Filter by plane */}
-                    {currentUser?.role === userRole.ADMIN ||
-                        currentUser?.role === userRole.OWNER ||
-                        currentUser?.role === userRole.INSTRUCTOR ||
-                        currentUser?.role === userRole.STUDENT ||
-                        currentUser?.role === userRole.PILOT ? (
-                        <div className="flex flex-col border-b px-1 py-4 w-full space-y-2">
-                            <Label id="plane-label" className="font-semibold">
-                                Avions
-                            </Label>
-                            <Dropdown placement="bottom">
-                                <DropdownTrigger>
-                                    <Button
-                                        variant="light"
-                                        className="flex justify-between items-center border border-gray-200 shadow-md"
-                                        aria-labelledby="plane-label"
-                                    >
-                                        {selectedPlane === "al" ? "Tous les avions" : selectedPlane === "classroomSession" ? "Théorique" : selectedPlane ? planesProp.find((plane) => plane.id === selectedPlane)?.name : "Appareils"}
-                                        <ChevronDown />
-                                    </Button>
-                                </DropdownTrigger>
-                                <DropdownMenu
-                                    aria-label="Filtrer les sessions par avion"
-                                    selectionMode="single"
-                                    onAction={(key) => setSelectedPlane(key as string)}
+                    <div className="flex flex-col border-b px-1 py-4 w-full space-y-2">
+                        <Label id="plane-label" className="font-semibold">
+                            Avions
+                        </Label>
+                        <Dropdown placement="bottom">
+                            <DropdownTrigger>
+                                <Button
+                                    variant="light"
+                                    className="flex justify-between items-center border border-gray-200 shadow-md"
+                                    aria-labelledby="plane-label"
                                 >
-                                    <>
-                                        <DropdownItem key="al" textValue="al">Tous les appareils</DropdownItem>
-                                        <DropdownItem key="classroomSession" textValue="classroomSession">Théorique</DropdownItem>
-                                        {planesProp.map((plane) => (
-                                            <DropdownItem key={plane.id} textValue={plane.name}>{plane.name}</DropdownItem>
-                                        ))}
-                                    </>
-                                </DropdownMenu>
-                            </Dropdown>
-                        </div>
-                    ) : null
-                    }
+                                    {selectedPlane === "al" ? "Tous les avions" : selectedPlane === "classroomSession" ? "Théorique" : selectedPlane ? planesProp.find((plane) => plane.id === selectedPlane)?.name : "Appareils"}
+                                    <ChevronDown />
+                                </Button>
+                            </DropdownTrigger>
+                            <DropdownMenu
+                                aria-label="Filtrer les sessions par avion"
+                                selectionMode="single"
+                                onAction={(key) => setSelectedPlane(key as string)}
+                            >
+                                <>
+                                    <DropdownItem key="al" textValue="al">Tous les appareils</DropdownItem>
+                                    <DropdownItem key="classroomSession" textValue="classroomSession">Théorique</DropdownItem>
+                                    {planesProp.map((plane) => (
+                                        <DropdownItem key={plane.id} textValue={plane.name}>{plane.name}</DropdownItem>
+                                    ))}
+                                </>
+                            </DropdownMenu>
+                        </Dropdown>
+                    </div>
 
                     {/* Filter by instructor */}
                     {currentUser?.role === userRole.ADMIN ||
                         currentUser?.role === userRole.OWNER ||
+                        currentUser?.role === userRole.MANAGER ||
                         currentUser?.role === userRole.STUDENT ||
                         currentUser?.role === userRole.PILOT ? (
                         <div className="flex flex-col px-1 py-4 w-full space-y-2">

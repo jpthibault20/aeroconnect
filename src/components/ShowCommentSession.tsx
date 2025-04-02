@@ -117,7 +117,7 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
         }
     };
 
-    if ((currentUser?.role !== userRole.ADMIN && currentUser?.role !== userRole.OWNER) && (currentUser?.id !== session.studentID && currentUser?.id !== session.pilotID)) {
+    if ((currentUser?.role !== userRole.ADMIN && currentUser?.role !== userRole.OWNER && currentUser?.role !== userRole.MANAGER) && (currentUser?.id !== session.studentID && currentUser?.id !== session.pilotID)) {
         return null
     }
 

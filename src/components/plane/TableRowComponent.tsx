@@ -134,8 +134,7 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                         </div>
                     </TableCell>
                 </>
-                ) : currentUser?.role == userRole.OWNER || currentUser?.role == userRole.ADMIN ?
-                    (
+                ) : currentUser?.role == userRole.OWNER || currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.MANAGER ? (
                         <>
                             <TableCell>
                                 <div>

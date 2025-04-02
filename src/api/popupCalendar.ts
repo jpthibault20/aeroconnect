@@ -73,7 +73,7 @@ export const getFreePlanesUsers = (
 
     // Filtrer les utilisateurs avec le rôle "admin" et les étudiants disponibles
     const students = usersProp.filter(
-        user => user.role !== userRole.ADMIN && !usedStudentIDs.includes(user.id)
+        user => user.role !== userRole.ADMIN && user.role !== userRole.MANAGER && !usedStudentIDs.includes(user.id)
     );
 
     // Filtrer les avions disponibles

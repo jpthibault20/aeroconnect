@@ -58,7 +58,7 @@ const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, 
                             <TableHead className="text-black text-center">Élève inscrit</TableHead>
                             <TableHead className="text-black text-center">Appareils</TableHead>
                             <TableHead className="text-black text-center">Notes</TableHead>
-                            {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.OWNER ? (
+                            {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.OWNER || currentUser?.role === userRole.MANAGER ? (
                                 <TableHead className="text-black text-center">Action</TableHead>
                             ) : null}
                         </TableRow>
