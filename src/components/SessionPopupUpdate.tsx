@@ -92,6 +92,7 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
 
                         {(currentUser?.role === userRole.ADMIN ||
                             currentUser?.role === userRole.OWNER ||
+                            currentUser?.role === userRole.MANAGER ||
                             currentUser?.id === s.pilotID) && (
                                 <div className="flex flex-col space-y-2">
                                     <DeleteFlightSession

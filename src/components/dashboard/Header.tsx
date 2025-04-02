@@ -1,4 +1,5 @@
 import { useCurrentClub } from "@/app/context/useCurrentClub";
+import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { ChartSpline, Settings2 } from "lucide-react";
 import { FC } from "react";
 
@@ -9,6 +10,7 @@ interface HeaderProps {
 
 const Header: FC<HeaderProps> = ({ display, setDisplay }) => {
   const { currentClub } = useCurrentClub();
+  const { currentUser } = useCurrentUser();
   const onClick = () => {
     setDisplay(display === "dashboard" ? "settings" : "dashboard");
   };
@@ -37,6 +39,7 @@ const Header: FC<HeaderProps> = ({ display, setDisplay }) => {
         {/* Settings Button */}
         <button
           onClick={onClick}
+          disabled={currentUser!.role !== "OWNER" && currentUser!.role !== "ADMIN"}
           className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all ${isSettingsActive ? "bg-purple-800 text-white shadow-md" : "text-gray-500 hover:bg-gray-100"
             }`}
           aria-pressed={isSettingsActive}

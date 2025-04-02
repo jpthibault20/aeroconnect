@@ -102,7 +102,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
             <div className='my-3 flex justify-between'>
                 <div className='flex space-x-3'>
 
-                    {sessionChecked.length > 0 && (currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER) ?
+                    {sessionChecked.length > 0 && (currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER  || currentUser?.role == userRole.MANAGER) ?
                         (
                             <DeleteFlightSession description={`${sessionChecked.length} vols vont être supprimé définitivement`} sessions={sessionChecked} setSessions={setSessions} usersProp={usersProp}>
                                 <div className='px-2 py-1 bg-red-600 text-white rounded-lg'>

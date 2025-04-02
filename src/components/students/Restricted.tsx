@@ -51,7 +51,7 @@ const Restricted = ({ user }: props) => {
             <Switch
                 checked={blocked}
                 onCheckedChange={onChangeRestricted}
-                disabled={["ADMIN", "OWNER"].includes(currentUser?.role as string) ? false : ["ADMIN", "OWNER", "INSTRUCTOR"].includes(user.role as string)}
+                disabled={["ADMIN", "OWNER", "MANAGER"].includes(currentUser?.role as string) ? false : ["ADMIN", "OWNER", "INSTRUCTOR"].includes(user.role as string)}
             />
             <p>
                 {blocked ? 'Oui' : 'Non'}

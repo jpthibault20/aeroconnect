@@ -89,6 +89,7 @@ const AcceptMemberInClub = ({ membershipRequests, setMembershipRequests, userReq
                                                 {studentRole === userRole.STUDENT && "Élève"}
                                                 {studentRole === userRole.PILOT && "Pilote"}
                                                 {studentRole === userRole.INSTRUCTOR && "Instructeur"}
+                                                {studentRole === userRole.MANAGER && "Manager"}
                                                 {studentRole === userRole.OWNER && "Président"}
                                             </span>
                                             <ChevronDown className="ml-2" />
@@ -112,6 +113,7 @@ const AcceptMemberInClub = ({ membershipRequests, setMembershipRequests, userReq
                                                                 {value === "STUDENT" && "Élève"}
                                                                 {value === "PILOT" && "Pilote"}
                                                                 {value === "INSTRUCTOR" && "Instructeur"}
+                                                                {value === "MANAGER" && "Manager"}
                                                                 {value === "OWNER" && "Président"}
                                                             </button>
                                                         ))}

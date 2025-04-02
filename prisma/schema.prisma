@@ -89,6 +89,7 @@ enum userRole {
   PILOT
   OWNER
   ADMIN
+  MANAGER
   INSTRUCTOR
 }
 

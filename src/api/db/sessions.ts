@@ -119,6 +119,10 @@ export const newSession = async (sessionData: interfaceSessions, instructor: Use
         return { error: "L'instructeur est obligatoire" };
     }
 
+    if (instructor.role === "MANAGER") {
+        return { error: "L'instructeur n'est pas valide" };
+    }
+
     const baseSessionDateStart = new Date(Date.UTC(
         sessionData.date.getUTCFullYear(),
         sessionData.date.getUTCMonth(),
@@ -291,7 +295,7 @@ export const removeStudentFromSessionID = async (session: flight_sessions, timeZ
 
         const minutesUntilSession = differenceInMinutes(session.sessionDateStart, nowUTC);
 
-        const allowedRoles: userRole[] = [userRole.ADMIN, userRole.INSTRUCTOR, userRole.OWNER];
+        const allowedRoles: userRole[] = [userRole.ADMIN, userRole.INSTRUCTOR, userRole.OWNER, userRole.MANAGER];
 
         if(!allowedRoles.includes(user.role) && !club.userCanUnsubscribe) {
             return { error: "Les inscriptions sont désactivées par le club, se raprocher de l'administrateur du club." };
