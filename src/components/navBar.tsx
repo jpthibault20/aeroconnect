@@ -57,9 +57,11 @@ const NavBar = () => {
                                         ? "Pilote"
                                         : currentUser?.role === "OWNER"
                                             ? "Président"
-                                            : currentUser?.role === "ADMIN"
-                                                ? "Administrateur"
-                                                : "Visiteur"
+                                            : currentUser?.role === "MANAGER"
+                                                ? "Manager"
+                                                : currentUser?.role === "ADMIN"
+                                                    ? "Administrateur"
+                                                    : "Visiteur"
                                 }
                             </p>
                         </div>

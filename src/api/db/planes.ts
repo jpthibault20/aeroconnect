@@ -45,7 +45,7 @@ export const createPlane = async (dataPlane: planes) => {
         });
         prisma.$disconnect();
 
-        return { success: 'Plane created successfully', planes };
+        return { success: 'Aion créé avec succès !', planes };
 
     } catch (error) {
         console.error(error);

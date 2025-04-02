@@ -34,7 +34,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
     const [userState, setUserState] = useState<User>(user);
 
     useEffect(() => {
-        if (currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR") {
+        if (currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR" || currentUser?.role === "MANAGER") {
             setAutorisedModifyRole(true);
         } else {
             setAutorisedModifyRole(false);
@@ -228,6 +228,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                                                     {key === "STUDENT" && "Elève"}
                                                     {key === "INSTRUCTOR" && "Instructeur"}
                                                     {key === "PILOT" && "Pilote"}
+                                                    {key === "MANAGER" && "Manager"}
                                                     {key === "OWNER" && "Président"}
                                                 </SelectItem>
                                             ))}

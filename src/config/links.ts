@@ -17,36 +17,36 @@ export const navigationLinks: NavLink[] = [
         name: "Calendrier",
         path: "/calendar",
         icon: CalendarDays, // Icône JSX
-        roles: ["USER", "STUDENT", "PILOT", "OWNER", "ADMIN", "INSTRUCTOR"], // Rôles autorisés
+        roles: ["USER", "STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"], // Rôles autorisés
     },
     {
         name: "Club",
         path: "/dashboard",
         icon: ChartLine, // Icône JSX
-        roles: ["OWNER", "ADMIN"], // Rôles autorisés
+        roles: ["MANAGER", "OWNER", "ADMIN"], // Rôles autorisés
     },
     {
         name: "Vols",
         path: "/flights",
         icon: BetweenHorizontalStart, // Icône JSX
-        roles: ["USER", "STUDENT", "PILOT", "OWNER", "ADMIN", "INSTRUCTOR"],
+        roles: ["USER", "STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"],
     },
     {
         name: "Avions",
         path: "/planes",
         icon: Plane, // Icône JSX
-        roles: ["PILOT", "OWNER", "ADMIN", "INSTRUCTOR", "STUDENT"],
+        roles: ["PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR", "STUDENT"],
     },
     {
         name: "Utilisateurs",
         path: "/students",
         icon: GraduationCap, // Icône JSX
-        roles: ["OWNER", "ADMIN", "INSTRUCTOR"],
+        roles: ["MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"],
     },
     {
         name: "Profil",
         path: "/profile",
         icon: User, // Icône JSX
-        roles: ["USER", "STUDENT", "PILOT", "OWNER", "ADMIN", "INSTRUCTOR"],
+        roles: ["USER", "STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"],
     }
 ]

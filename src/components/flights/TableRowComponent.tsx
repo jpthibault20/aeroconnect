@@ -47,7 +47,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
     finalDate.setMinutes(finalDate.getMinutes() + session.sessionDateDuration_min); // Calculate end time of the session
 
     useEffect(() => {
-        if (currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR" || session.studentID === currentUser?.id) {
+        if (currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR" || currentUser?.role === "MANAGER" || session.studentID === currentUser?.id) {
             setAutorisedDeleteStudent(true);
         } else {
             setAutorisedDeleteStudent(false);
@@ -130,7 +130,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
                         }
                     </div>
                 )
-                    : currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
+                    : currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER || currentUser?.role == userRole.MANAGER ?
                         (
                             <AddStudent session={session} setSessions={setSessions} sessions={sessions} planesProp={planesProp} usersProp={usersProp} />
                         )
@@ -169,7 +169,7 @@ const TableRowComponent = ({ session, sessions, setSessions, setSessionChecked, 
             </TableCell>
 
             <TableCell className='h-full w-full justify-center items-center flex'>
-                {currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER ?
+                {currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER || currentUser?.role == userRole.MANAGER ?
                     (
 
                         <DeleteFlightSession description={`Ce vol sera supprimé définitivement`} sessions={[session]} setSessions={setSessions} usersProp={usersProp}>

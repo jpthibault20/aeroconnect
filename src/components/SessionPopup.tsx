@@ -238,7 +238,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 <SessionHeader sessionStartDate={startDate} />
                 <SessionDate startDate={startDate} endDate={endDate} />
 
-                {["ADMIN", "OWNER", "INSTRUCTOR"].includes(currentUser?.role as string) ? (
+                {["ADMIN", "OWNER", "INSTRUCTOR", "MANAGER"].includes(currentUser?.role as string) ? (
                     <SessionPopupUpdate
                         sessions={sessions}
                         setSessions={setSessions}

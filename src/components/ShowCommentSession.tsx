@@ -117,7 +117,7 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
         }
     };
 
-    if ((currentUser?.role !== userRole.ADMIN && currentUser?.role !== userRole.OWNER) && (currentUser?.id !== session.studentID && currentUser?.id !== session.pilotID)) {
+    if ((currentUser?.role !== userRole.ADMIN && currentUser?.role !== userRole.OWNER && currentUser?.role !== userRole.MANAGER) && (currentUser?.id !== session.studentID && currentUser?.id !== session.pilotID)) {
         return null
     }
 
@@ -137,7 +137,7 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
                         <Textarea
                             value={pilotComment || ""}
                             placeholder='...'
-                            disabled={["ADMIN", "OWNER"].includes(currentUser?.role as string) === true ? false : currentUser?.id !== session.pilotID}
+                            disabled={["ADMIN", "OWNER", "MANAGER"].includes(currentUser?.role as string) === true ? false : currentUser?.id !== session.pilotID}
                             onChange={(e) => setPilotComment(e.target.value)}
                             className="w-full p-2 text-base border border-gray-300 rounded-md"
                         />
@@ -147,7 +147,7 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp }: Props
                         <Textarea
                             value={studentComment || ""}
                             placeholder='...'
-                            disabled={["ADMIN", "OWNER"].includes(currentUser?.role as string) === true ? false : currentUser?.id !== session.studentID}
+                            disabled={["ADMIN", "OWNER", "MANAGER"].includes(currentUser?.role as string) === true ? false : currentUser?.id !== session.studentID}
                             onChange={(e) => setStudentComment(e.target.value)}
                             className="w-full p-2 text-base border border-gray-300 rounded-md"
                         />
