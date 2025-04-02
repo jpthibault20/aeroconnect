@@ -26,7 +26,7 @@ export const Login = () => {
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
         setMessageG(searchParams.get('messageG') ?? '');
-        setLoading(false); // Réinitialiser le loading à false après avoir récupéré les paramètres de recherche
+        // setLoading(false); // Réinitialiser le loading à false après avoir récupéré les paramètres de recherche
     }, [searchParams]);
 
     const {
@@ -47,10 +47,16 @@ export const Login = () => {
 
             // Appel API de connexion
             await login(formData);
+            setMessage("");
+            setMessageG("");
+
+            // setLoading(false);
 
         } catch (error) {
             console.error("Erreur de connexion :", error);
+            setLoading(false);
         }
+
     };
 
     return (
