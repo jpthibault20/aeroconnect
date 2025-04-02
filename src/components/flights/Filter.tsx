@@ -231,12 +231,12 @@ const Filter = ({
                                     </Button>
                                 </DropdownTrigger>
                                 <DropdownMenu
-                                    aria-label="Filtrer les sessions par instructeur"
+                                    aria-label="Filtrer les sessions par élèves"
                                     selectionMode="single"
                                     onAction={(key) => setSelectedStudents(key as string)}
                                 >
                                     <>
-                                        <DropdownItem key="al" textValue="al">Tous les instructeurs</DropdownItem>
+                                        <DropdownItem key="al" textValue="al">Tous les élèves</DropdownItem>
                                         {usersProp.map((user) => {
                                             if (["STUDENT", "PILOT"].includes(user.role as userRole)) {
                                                 return (

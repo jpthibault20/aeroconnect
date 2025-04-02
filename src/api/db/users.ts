@@ -148,9 +148,6 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             return { error: "L'avion est désactivé par l'administrateur du club." };
         }
 
-        console.log("session date : ", session.sessionDateStart)
-        console.log("now : ", nowDate)
-
         if (session.sessionDateStart < nowDate) {
             return { error: "La date de la session est passée." };
         }
