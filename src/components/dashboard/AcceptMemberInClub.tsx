@@ -98,7 +98,7 @@ const AcceptMemberInClub = ({ membershipRequests, setMembershipRequests, userReq
                                         {/* Dropdown Menu */}
                                         {isDropdownOpen && (
                                             <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg">
-                                                <ScrollArea className="max-h-48">
+                                                <ScrollArea className="max-h-48 overflow-y-auto">
                                                     {Object.entries(userRole)
                                                         .filter(([key]) => key !== "ADMIN") // Exclure "ADMIN"
                                                         .map(([key, value]) => (
