@@ -16,6 +16,7 @@ import { defaultHours } from '@/config/config';
 import { useCurrentClub } from '@/app/context/useCurrentClub';
 import DeleteManySessions from '../DeleteManySessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
+import Export from './Export';
 
 interface Props {
     sessions: flight_sessions[];
@@ -103,6 +104,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
                                 onClickToday={onClickToday}
                             />
                             <div className='flex space-x-2 px-3 '>
+                                <Export usersProps={usersProps} flightsSessions={sessions} planes={planesProp} />
                                 <DeleteManySessions usersProps={usersProps} sessionsProps={sessions} setSessions={setSessions} />
                                 <div>
                                     <NewSession
