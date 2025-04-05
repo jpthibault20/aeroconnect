@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { IoIosWarning } from 'react-icons/io'
 import { MyDocument } from '../pdf/exportCalendar'
 import { useCurrentClub } from '@/app/context/useCurrentClub'
+import { useCurrentUser } from '@/app/context/useCurrentUser'
 
 interface Props {
     usersProps: User[]
@@ -21,6 +22,7 @@ interface Props {
 
 const Export = ({ usersProps, flightsSessions, planes }: Props) => {
     const { currentClub } = useCurrentClub()
+    const { currentUser } = useCurrentUser()
     const [errorMessage, setErrorMessage] = useState("")
     const [isOpenPopover, setIsPopoverOpen] = useState(false)
     const [isOpenCal1, setIsOpenCal1] = useState(false)
@@ -62,6 +64,8 @@ const Export = ({ usersProps, flightsSessions, planes }: Props) => {
             console.error("Erreur lors de la génération du PDF", error);
         }
     };
+
+    if (currentUser?.role !== userRole.ADMIN) return null;
 
     return (
         <Dialog open={isOpenPopover} onOpenChange={setIsPopoverOpen}>
