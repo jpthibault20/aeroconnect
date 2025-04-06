@@ -4,7 +4,7 @@ import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure
 import React, { useEffect, useState } from 'react'
 import { RiDeleteBin5Fill } from "react-icons/ri";
 import { Button } from "./ui/button";
-import { DatePicker, DateRangePicker } from "@nextui-org/date-picker";
+import { DateRangePicker } from "@nextui-org/date-picker";
 import { DateValue, getLocalTimeZone } from "@internationalized/date";
 import type { RangeValue } from "@react-types/shared";
 import { Label } from "./ui/label";
