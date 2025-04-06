@@ -65,7 +65,12 @@ const Export = ({ usersProps, flightsSessions, planes }: Props) => {
         }
     };
 
-    if (currentUser?.role !== userRole.ADMIN) return null;
+    if (currentUser?.role !== userRole.ADMIN &&
+        currentUser?.role !== userRole.OWNER &&
+        currentUser?.role !== userRole.MANAGER
+    ) {
+        return null;
+    }
 
     return (
         <Dialog open={isOpenPopover} onOpenChange={setIsPopoverOpen}>
