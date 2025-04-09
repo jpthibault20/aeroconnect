@@ -1,7 +1,7 @@
 import psycopg2
 import os
+from env import DATABASE_URL
 
-DATABASE_URL="postgresql://postgres:aeroconnect2024@db.gyvdsqiccisshuvgvsxe.supabase.co:5432/postgres"
 
 def get_all_clubs(cursor):
     """Récupère tous les noms de clubs de la table Club"""
