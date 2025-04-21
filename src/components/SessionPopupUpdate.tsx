@@ -66,7 +66,9 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                 <p>
                                     {s.studentPlaneID === "classroomSession"
                                         ? "Théorique"
-                                        : s.studentID ? planesProp.find((plane) => plane.id === s.studentPlaneID)?.name : "..."}
+                                        : s.studentPlaneID === "noPlane"
+                                            ? "Sans appareil"
+                                            : s.studentID ? planesProp.find((plane) => plane.id === s.studentPlaneID)?.name : "..."}
                                 </p>
                             </div>
 

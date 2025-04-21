@@ -144,7 +144,7 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             return { error: "Session introuvable." };
         }
 
-        if (student.planeId != "classroomSession" && !plane?.operational) {
+        if (student.planeId != "classroomSession" && student.planeId != "noPlane" && !plane?.operational) {
             return { error: "L'avion est désactivé par l'administrateur du club." };
         }
 

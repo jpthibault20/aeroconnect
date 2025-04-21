@@ -164,8 +164,7 @@ export const MyDocument = ({ instructorIDs, flightsSessions, planes, startDate, 
                     </View>
                     <View style={styles.footer}>
                         <Text>
-                            Attention : ce planning papier peut ne pas représenter la réalité.
-                            Pour consulter les dernières mises à jour, veuillez vous rendre sur https://app.aeroconnect.fr/
+                        Attention : ce planning papier peut ne pas refléter la réalité. Pour consulter les dernières mises à jour, veuillez vous rendre sur https://app.aeroconnect.fr/
                         </Text>
                     </View>
                 </Page>
