@@ -1,21 +1,42 @@
-    ---         Ajouter la possibilitée d'obtenir son carnet de vol         ---
+    ---         Ajout du carnet de vols         ---
 
-Données (pilote) : 
+tableaux de données :
+pilote : 
     Tableaux générale 
-        => Date | heure départ | base départ | heure arrivé | base d'arrivée | temps de vol | Aeronef | Type de vols | MONO Pilote | MULTI Pilote | Nbr Décollage(s) | Nbr atterrissage(s) | commentaires
-    Info statistique 
-        => Heure totale | heure/aeronef | Décollage total | atterrissage total
+        => Date | horodateur début | horodateur fin | Aeronef | Type de vols | Pilote A | Pilote B | commentaires
+    Info statistique (dispo sous forms de graphique)
+        => Heure total (mois / année / perso) | heure/aeronef/mois | heure/aeronef/année
 
-Données (Aeronef) :
+Aeronef :
     Tableaux générale
-        => Pilote 1 | Pilote 2 | Date | heure départ | base départ | heure arrivé | base d'arrivée | temps de vol | Type de vols |  Nbr Décollage(s) | Nbr atterrissage(s) 
+        => Date | horodateur début | horodateur fin | Pilote A | Pilote B | Type de vols
     Info statistique
-        => ???
+        => Heure total (mois / année / perso) | heure/pilote/(mois/année/perso)
 
-Pour ce faire les modificaions a faire avant :
-    - Ajouter dans la création de session le type de vol [vol, baptème, instruction, autre(input)]
-    - Ajouter dans la réservation de session le type de vol [vol, baptème, instruction, autre(input)]
-    - Ajouter la possibilitée de remplire / compléter une session une fois fini (rapide a l'ouvertur de l'app) ou dans le calendrier
+Etapes :
+#01
+    - mettre a jour la database avec les nouvelles informations
+        -> type de vols (flights)
+        -> commentaire (flights)
+        -> horodateur départ (flights)
+        -> horodateur arrivé (flights)
 
+#02
+    - Refont de la popup de detail d'une session (popup => page entière) designe et concepte a définir
+    - Même feature que actuelle, ajouter en plus :
+        -> type de vols (si le pilote B a le role élève le type de vols es automatiquement remplie avec 'instruction')
+        -> Horodateur début
+        -> Horodateur fin
+        -> commentaire
     
+#03
+    - Ouverture d'une popup automatiquement a l'ouverture de l'app si une session est en cours ou fini dans les quelques minutes
+        -> heure de début automatique (avec l'heure de fin pécédente en fonction de la machine) heure de fin a remplire
 
+#04
+    - Ajouter un tableau dans la page 'profil' pour afficher le carnet de vols
+        -> définir le designe 
+
+#05
+    - Ajouter un tableau dans la page 'planes' pour afficher le carnet de vols pour un aeronef voulue
+        -> définir le designe 
