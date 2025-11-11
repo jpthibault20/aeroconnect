@@ -1,5 +1,10 @@
     ---         Ajout du carnet de vols         ---
 
+    Objectif :
+        Depuis la nouvelle réglementation de 2025, les pilotes ont l'obligation de pouvoir présenter leur carnet de vols lors d'un controle.
+        ce qui concerne également les appareils.
+        Le but es de donner cest carnet a dispo dans ll'application, que le pilote puisse trouver sont carnet et celui de sa machine pour 
+        
 tableaux de données :
 pilote : 
     Tableaux générale 
