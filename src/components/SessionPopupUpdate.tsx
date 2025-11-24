@@ -94,32 +94,41 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                             currentUser?.role === userRole.OWNER ||
                             currentUser?.role === userRole.MANAGER ||
                             currentUser?.id === s.pilotID) && (
-                                <div className="flex flex-col space-y-2">
-                                    <DeleteFlightSession
-                                        description={`Ce vol sera supprimé définitivement`}
-                                        sessions={sessions} setSessions={setSessions}
-                                        usersProp={usersProps}
-                                    >
-                                        <MdDeleteForever color="red" size={15} />
-                                    </DeleteFlightSession>
-                                    {s.studentID ? (
-                                        <RemoveStudent
-                                            session={s}
-                                            setSessions={setSessions}
+                                <div className="flex flex-col space-y-2 ">
+                                    <div className='flex items-center justify-end'>
+                                        <DeleteFlightSession
+                                            description={`Ce vol sera supprimé définitivement`}
+                                            sessions={sessions} setSessions={setSessions}
                                             usersProp={usersProps}
-                                        />
-                                    ) : (
-                                        <AddStudent
-                                            session={s}
-                                            sessions={sessions}
-                                            setSessions={setSessions}
-                                            planesProp={planesProp}
-                                            usersProp={usersProps}
-                                        />
-                                    )}
+                                        >
+                                            <MdDeleteForever color="red" size={15} />
+                                        </DeleteFlightSession>
+                                    </div>
+                                    <div className='flex items-center justify-end'>
+                                        {s.studentID ? (
+                                            <RemoveStudent
+                                                session={s}
+                                                setSessions={setSessions}
+                                                usersProp={usersProps}
+                                            />
+                                        ) : (
+                                            <AddStudent
+                                                session={s}
+                                                sessions={sessions}
+                                                setSessions={setSessions}
+                                                planesProp={planesProp}
+                                                usersProp={usersProps}
+                                            />
+                                        )}
+                                    </div>
+                                    <div>
+                                        {/* Compléter la session pour le carnet de vol */}
+                                        <p className='text-blue-500 underline'>
+                                            Compléter <br />la session
+                                        </p>
+                                    </div>
                                 </div>
                             )}
-
                     </div>
                 ))}
             </div>
