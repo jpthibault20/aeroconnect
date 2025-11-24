@@ -1,3 +1,4 @@
+// users.ts
 "use server";
 import { createClient } from '@/utils/supabase/server';
 import { userRole } from '@prisma/client'
@@ -79,8 +80,11 @@ export const getSession = async () => {
 
 export const getUser = async () => {
     const supabase = await createClient()
+
     try {
+        // 1. Récupération de la session (inchangé)
         const { data, error: authError } = await supabase.auth.getUser();
+
         if (authError || !data?.user) {
             console.log("Erreur de récupération de l'utilisateur Supabase :", authError?.message);
             return { error: "Utilisateur non connecté ou session invalide." };
@@ -92,19 +96,34 @@ export const getUser = async () => {
             return { error: "L'email de l'utilisateur est introuvable dans la session Supabase." };
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email: userEmail },
-        });
+        // 2. Remplacement de Prisma par Supabase Query
+        // Ancien code :
+        // const user = await prisma.user.findUnique({ where: { email: userEmail } });
 
-        if (!user) {
-            console.error(`Aucun utilisateur trouvé avec l'email : ${userEmail}`);
-            return { error: `Aucun utilisateur n'est associé à l'email : ${userEmail}` };
+        const { data: user, error: dbError } = await supabase
+            .from('User') // ⚠️ ATTENTION : Vérifie le nom exact de ta table (souvent 'users' ou 'User')
+            .select('*')
+            .eq('email', userEmail)
+            .single(); // .single() est l'équivalent de findUnique (retourne un objet, pas un tableau)
+
+        // Gestion des erreurs BDD
+        if (dbError) {
+            // Code d'erreur PGRST116 signifie "Row not found" (Aucun résultat)
+            if (dbError.code === 'PGRST116') {
+                 console.error(`Aucun utilisateur trouvé avec l'email : ${userEmail}`);
+                 return { error: `Aucun utilisateur n'est associé à l'email : ${userEmail}` };
+            }
+            
+            console.error("Erreur BDD lors de la récupération du profil :", dbError.message);
+            return { error: "Erreur lors de la lecture des données utilisateur." };
         }
 
+        // Si on arrive ici, 'user' contient les données
         return {
             success: "Utilisateur récupéré avec succès",
-            user,
+            user, // ⚠️ ATTENTION : Vérifie le format des colonnes (camelCase vs snake_case)
         };
+
     } catch (error) {
         console.error("Erreur lors de l'exécution de la fonction getUser :", error);
         return { error: "Une erreur inattendue est survenue lors de la récupération de l'utilisateur." };
