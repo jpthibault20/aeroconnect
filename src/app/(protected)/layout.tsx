@@ -6,7 +6,7 @@ import { getUser } from "@/api/db/users";
 import { CurrentUserWrapper } from "../context/useCurrentUser";
 import UpdateContext from "@/components/UpdateContext";
 import Navigation from "@/components/navigation";
-import prisma from "@/api/prisma";
+import { createClient } from "@/utils/supabase/server";
 import { CurrentClubWrapper } from "../context/useCurrentClub";
 
 export default async function ProtectLayout({
@@ -16,7 +16,6 @@ export default async function ProtectLayout({
 }) {
     // Récupérer les informations utilisateur côté serveur
     const res = await getUser();
-    const clubs = await prisma.club.findMany();
 
     if (res.error) {
         console.error("Erreur lors de la récupération de l'utilisateur :", res.error);
@@ -30,12 +29,29 @@ export default async function ProtectLayout({
         redirect('/auth/login');
     }
 
+    // Remplacer Prisma par Supabase pour récupérer les clubs
+    const supabase = await createClient();
+    const { data: clubs, error: clubsError } = await supabase
+        .from('club')
+        .select('*');
+
+    if (clubsError) {
+        console.error("Erreur lors de la récupération des clubs :", clubsError);
+        // Décider si tu veux rediriger ou continuer avec un tableau vide
+        redirect('/auth/login');
+    }
+
+    const userClub = clubs?.find(club => club.id === user.clubID);
+
     return (
         <div className="h-full">
             <CurrentUserWrapper>
                 <CurrentClubWrapper>
-                    <UpdateContext userProp={user} clubProp={clubs.filter(club => club.id === user.clubID)[0]} />
-                    <Navigation clubsProp={clubs}>{children}</Navigation>
+                    <UpdateContext 
+                        userProp={user} 
+                        clubProp={userClub} 
+                    />
+                    <Navigation clubsProp={clubs || []}>{children}</Navigation>
                 </CurrentClubWrapper>
             </CurrentUserWrapper>
         </div>
