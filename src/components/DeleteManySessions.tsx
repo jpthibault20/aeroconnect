@@ -1,16 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
-import React, { useEffect, useState } from 'react'
-import { Trash2, Calendar, AlertTriangle, AlertOctagon } from "lucide-react";
+import React, { useEffect, useState, forwardRef } from 'react'
+import { Trash2, Calendar, AlertTriangle, AlertOctagon, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Spinner } from "./ui/SpinnerVariants";
-import DatePicker from 'react-datepicker';
+import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { Club, flight_sessions, User, userRole } from "@prisma/client";
@@ -19,18 +20,50 @@ import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot
 import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { toast } from "@/hooks/use-toast";
 
+// Enregistrement de la locale française pour être sûr
+registerLocale('fr', fr);
+
 interface Prop {
     usersProps: User[];
     sessionsProps: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
 }
 
+interface DatePickerCustomInputProps {
+    value?: string;
+    onClick?: () => void;
+    className?: string;
+    placeholder?: string;
+}
+
+// --- COMPOSANT CUSTOM INPUT POUR LE DATEPICKER ---
+// Cela remplace l'input moche par défaut par un joli bouton qui s'intègre au design system
+const DatePickerCustomInput = forwardRef<HTMLButtonElement, DatePickerCustomInputProps>(({ value, onClick, className, placeholder }, ref) => (
+    <Button
+        type="button" // Important pour ne pas submit le formulaire si dans un form
+        variant="outline"
+        className={cn(
+            "w-full justify-start text-left font-normal bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300 shadow-sm h-10 px-3",
+            !value && "text-muted-foreground",
+            className
+        )}
+        onClick={onClick}
+        ref={ref}
+    >
+        <Calendar className="mr-2 h-4 w-4 text-slate-500" />
+        <span className='truncate capitalize'>
+            {value || <span className="text-slate-400">{placeholder}</span>}
+        </span>
+    </Button>
+));
+DatePickerCustomInput.displayName = "DatePickerCustomInput";
+
+
 const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) => {
     const { currentUser } = useCurrentUser()
     const { currentClub } = useCurrentClub()
     const [isOpen, setIsOpen] = useState(false);
 
-    // Remplacement du RangeValue de NextUI par deux états simples pour react-datepicker
     const [startDate, setStartDate] = useState<Date | null>(new Date());
     const [endDate, setEndDate] = useState<Date | null>(new Date());
 
@@ -59,9 +92,6 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
     }, [startDate, endDate, piloteID, sessionsProps]);
 
     // Sécurité Rôle
-    // Note: J'ai corrigé .includes() par une vérification directe si c'est un enum unique, 
-    // ou laissé tel quel si 'role' est traité comme une chaîne. 
-    // Si userRole est un Enum Prisma, il vaut mieux utiliser ===.
     if (currentUser?.role === userRole.USER || currentUser?.role === userRole.STUDENT || currentUser?.role === userRole.PILOT) {
         return null
     }
@@ -70,17 +100,6 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
         try {
             setLoading(true);
             setError(null);
-
-            // Vérification anti-fail (sécurité supplémentaire)
-            const invalidSession = sessionsToDelete.find(session => new Date(session.sessionDateStart) < new Date());
-            // Note: J'ai commenté cette sécurité car parfois on veut nettoyer des vieilles sessions, 
-            // mais tu peux la décommenter si tu veux interdire la suppression du passé.
-            /* if (invalidSession) {
-                setError("Impossible de supprimer des sessions passées.");
-                setLoading(false);
-                return;
-            } 
-            */
 
             const sessionsIDs = sessionsToDelete.map(session => session.id);
             const res = await removeSessionsByID(sessionsIDs);
@@ -91,7 +110,7 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                 return;
             }
 
-            // Notifications (inchangé)
+            // Notifications
             for (const session of sessionsToDelete) {
                 if (session.studentID) {
                     const student = usersProps.find(item => item.id === session.studentID);
@@ -131,7 +150,6 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                {/* Nouveau style "Toolbar Item" : Ghost Danger */}
                 <Button
                     variant="ghost"
                     size="sm"
@@ -139,6 +157,7 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                     aria-label="Suppression multiple"
                 >
                     <Trash2 className="w-4 h-4" />
+                    <span className="hidden xl:inline text-xs font-medium">Nettoyer</span>
                 </Button>
             </DialogTrigger>
 
@@ -151,49 +170,47 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                         Suppression multiple
                     </DialogTitle>
                     <DialogDescription className="text-slate-500">
-                        Sélectionnez une plage horaire pour supprimer en masse des sessions.
+                        Définissez une période pour supprimer toutes les sessions correspondantes.
                         <br />
-                        <span className="text-red-500 font-medium text-xs">Cette action est irréversible.</span>
+                        <span className="text-red-500 font-medium text-xs">Attention : Cette action est irréversible.</span>
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="py-6 space-y-6">
-                    {/* Sélecteurs de Date */}
+                    {/* --- ZONE SÉLECTION DATE PROPRE --- */}
                     <div className="space-y-3">
                         <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Période à nettoyer</Label>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-600">Début</Label>
-                                <div className="relative">
-                                    <DatePicker
-                                        selected={startDate}
-                                        onChange={(date) => setStartDate(date)}
-                                        showTimeSelect
-                                        dateFormat="dd/MM/yyyy HH:mm"
-                                        timeFormat="HH:mm"
-                                        timeIntervals={60}
-                                        locale={fr}
-                                        className="w-full h-9 px-3 py-1 text-sm border border-slate-200 rounded-md bg-slate-50 focus:ring-2 focus:ring-red-500 focus:outline-none cursor-pointer"
-                                    />
-                                    <Calendar className="absolute right-3 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
-                                </div>
+                                <Label className="text-xs font-medium text-slate-600">À partir du</Label>
+                                <DatePicker
+                                    selected={startDate}
+                                    onChange={(date) => setStartDate(date)}
+                                    showTimeSelect
+                                    dateFormat="d MMM yyyy à HH:mm"
+                                    timeFormat="HH:mm"
+                                    timeIntervals={60}
+                                    locale="fr"
+                                    customInput={<DatePickerCustomInput placeholder="Date de début" />}
+                                    wrapperClassName="w-full"
+                                    popperClassName="z-50" // Assure que le calendrier passe au dessus
+                                />
                             </div>
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-600">Fin</Label>
-                                <div className="relative">
-                                    <DatePicker
-                                        selected={endDate}
-                                        onChange={(date) => setEndDate(date)}
-                                        showTimeSelect
-                                        dateFormat="dd/MM/yyyy HH:mm"
-                                        timeFormat="HH:mm"
-                                        timeIntervals={60}
-                                        locale={fr}
-                                        minDate={startDate || undefined}
-                                        className="w-full h-9 px-3 py-1 text-sm border border-slate-200 rounded-md bg-slate-50 focus:ring-2 focus:ring-red-500 focus:outline-none cursor-pointer"
-                                    />
-                                    <Calendar className="absolute right-3 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
-                                </div>
+                                <Label className="text-xs font-medium text-slate-600">Jusqu&apos;au</Label>
+                                <DatePicker
+                                    selected={endDate}
+                                    onChange={(date) => setEndDate(date)}
+                                    showTimeSelect
+                                    dateFormat="d MMM yyyy à HH:mm"
+                                    timeFormat="HH:mm"
+                                    timeIntervals={60}
+                                    locale="fr"
+                                    minDate={startDate || undefined}
+                                    customInput={<DatePickerCustomInput placeholder="Date de fin" />}
+                                    wrapperClassName="w-full"
+                                    popperClassName="z-50"
+                                />
                             </div>
                         </div>
                     </div>
@@ -205,7 +222,7 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-slate-600">Instructeur concerné</Label>
                                 <Select value={piloteID} onValueChange={setPiloteID}>
-                                    <SelectTrigger className="bg-slate-50 border-slate-200 h-9">
+                                    <SelectTrigger className="bg-slate-50 border-slate-200 h-10 shadow-sm">
                                         <SelectValue placeholder="Sélectionner un instructeur" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -224,20 +241,20 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
 
                     {/* Résumé Impact */}
                     {sessionsToDelete.length > 0 ? (
-                        <div className="bg-red-50 border border-red-100 rounded-lg p-3 flex items-start gap-3">
+                        <div className="bg-red-50 border border-red-100 rounded-lg p-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                             <AlertOctagon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                             <div>
                                 <p className="text-sm font-bold text-red-800">
                                     {sessionsToDelete.length} session(s) trouvée(s)
                                 </p>
                                 <p className="text-xs text-red-600 mt-1">
-                                    En validant, ces sessions seront définitivement supprimées et les élèves notifiés.
+                                    En validant, ces sessions seront définitivement supprimées.
                                 </p>
                             </div>
                         </div>
                     ) : (
                         <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-center text-sm text-slate-500 italic">
-                            Aucune session trouvée dans cette période pour cet instructeur.
+                            Aucune session trouvée dans cette période.
                         </div>
                     )}
                 </div>
@@ -265,7 +282,7 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                         {loading ? <Spinner className="text-white" /> : (
                             <>
                                 <Trash2 className="w-4 h-4" />
-                                <span>Supprimer</span>
+                                <span>Tout supprimer</span>
                             </>
                         )}
                     </Button>

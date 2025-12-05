@@ -66,7 +66,7 @@ const SideBar = ({ clubsProp }: props) => {
     };
 
     return (
-        <aside className="hidden lg:flex w-72 h-screen bg-[#1A1B1E] text-slate-300 flex-col transition-all duration-300 z-20 border-r border-white/5">
+        <aside className="hidden lg:flex w-60 h-screen bg-[#1A1B1E] text-slate-300 flex-col transition-all duration-300 z-20 border-r border-white/5">
             {/* --- HEADER : LOGO --- */}
             <div className="h-20 flex items-center px-6 border-b border-white/5">
                 <button
