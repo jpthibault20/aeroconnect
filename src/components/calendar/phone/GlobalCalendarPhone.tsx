@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { flight_sessions, planes, User } from '@prisma/client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, MoveLeft, MoveRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { Session } from './Session';
 import Filter from '../Filter';
 import NewSession from '@/components/NewSession';
@@ -14,7 +14,6 @@ interface Props {
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
     planesProp: planes[];
     usersProps: User[]
-
 }
 
 const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: Props) => {
@@ -23,25 +22,17 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [dates, setDates] = useState<Date[]>([]);
-    const scrollRef = React.useRef<HTMLDivElement>(null);
-    const todayRef = React.useRef<HTMLButtonElement>(null);
+
+    // Remplacement de todayRef par une Map pour stocker toutes les refs des dates
+    const itemsRef = useRef<Map<string, HTMLButtonElement | null>>(new Map());
+
+    const PRIMARY_COLOR = "bg-[#774BBE]";
+    const PRIMARY_BORDER = "border-[#774BBE]";
 
     useEffect(() => {
         const today = new Date();
         setSelectedDate(today);
-        const datesArray = getDaysInMonth(today.getFullYear(), today.getMonth());
-        setDates(datesArray);
-
-        // Faire défiler automatiquement jusqu'à la date actuelle
-        setTimeout(() => {
-            if (todayRef.current) {
-                todayRef.current.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'center',
-                });
-            }
-        }, 0); // Petit délai pour que le rendu se fasse avant le scroll
+        // Le scroll initial se fera via le useEffect qui écoute selectedDate
     }, []);
 
     useEffect(() => {
@@ -49,9 +40,34 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         setDates(datesArray);
     }, [currentDate]);
 
+    // Effet pour centrer automatiquement le scroll sur la date sélectionnée
+    // ET synchroniser le mois affiché si la date sélectionnée change de mois
+    useEffect(() => {
+        // Synchronisation du mois si nécessaire (Navigation via les flèches jours)
+        if (selectedDate.getMonth() !== currentDate.getMonth() || selectedDate.getFullYear() !== currentDate.getFullYear()) {
+            setCurrentDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+            return; // On attend que dates se mette à jour avant de scroller
+        }
+
+        const key = formatDateAsKey(selectedDate);
+        const element = itemsRef.current.get(key);
+
+        if (element) {
+            // Petit délai pour s'assurer que le rendu est terminé (notamment lors du changement de mois)
+            const timer = setTimeout(() => {
+                element.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'center'
+                });
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [selectedDate, dates, currentDate]);
+
     // Re-traitement lorsque `sessions` change
     useEffect(() => {
-        setSessionsFiltered(sessions); // Réinitialiser les sessions filtrées
+        setSessionsFiltered(sessions);
     }, [sessions]);
 
     const getDaysInMonth = (year: number, month: number) => {
@@ -67,24 +83,32 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
     const changeMonth = (increment: number) => {
         const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + increment, 1);
         setCurrentDate(newDate);
+        // On sélectionne le 1er du nouveau mois
         setSelectedDate(new Date(newDate.getFullYear(), newDate.getMonth(), 1));
     };
 
     const formatDate = (date: Date) => {
-        return date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const dayName = date.toLocaleDateString('fr-FR', { weekday: 'long' });
+        const dayNumber = date.getDate();
+        const monthName = date.toLocaleDateString('fr-FR', { month: 'long' });
+        const year = date.getFullYear();
+
+        const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+        return `${capitalize(dayName)} ${dayNumber} ${capitalize(monthName)} ${year}`;
     };
 
     const formatDateAsKey = (date: Date) => {
         const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0'); // Mois commence à 0
+        const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`; // Exemple : "2024-12-02"
+        return `${year}-${month}-${day}`;
     };
 
     const getSessionsGroupedByDate = () => {
         const grouped: Record<string, flight_sessions[]> = {};
         sessionsFlitered
-            .sort((a, b) => new Date(a.sessionDateStart).getTime() - new Date(b.sessionDateStart).getTime()) // Tri par date de début
+            .sort((a, b) => new Date(a.sessionDateStart).getTime() - new Date(b.sessionDateStart).getTime())
             .forEach((session) => {
                 const dateKey = formatDateAsKey(session.sessionDateStart);
                 if (!grouped[dateKey]) grouped[dateKey] = [];
@@ -93,7 +117,6 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         return grouped;
     };
 
-    // Mémoriser le regroupement des sessions pour éviter les recalculs inutiles
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const sessionsGroupedByDate = useMemo(() => getSessionsGroupedByDate(), [sessionsFlitered]);
 
@@ -116,135 +139,187 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         return result;
     };
 
+    // Fonction pour gérer l'assignation des refs dans la map
+    const setDateRef = (element: HTMLButtonElement | null, date: Date) => {
+        const key = formatDateAsKey(date);
+        if (element) {
+            itemsRef.current.set(key, element);
+        } else {
+            itemsRef.current.delete(key);
+        }
+    };
 
     return (
-        <div className=" w-full bg-background mt-6 pb-20">
-            {/* Header */}
-            <div className="flex items-center justify-between mt-4 px-8">
-                <div className="flex items-center space-x-2">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => changeMonth(-1)}
-                        className="h-8 w-8"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <h2 className="text-lg font-semibold w-[150px] text-center">
-                        {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                    </h2>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => changeMonth(1)}
-                        className="h-8 w-8"
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
-                </div>
-                <div className="flex items-center space-x-2">
+        <div className="flex flex-col w-full min-h-screen bg-slate-50 pb-24 font-sans">
+
+            {/* --- HEADER: MOIS & NAVIGATION --- */}
+            <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                    {/* Navigation Mois */}
+                    <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => changeMonth(-1)}
+                            className="h-8 w-8 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-600"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm font-semibold text-slate-700 min-w-[100px] text-center capitalize">
+                            {currentDate.toLocaleString('fr-FR', { month: 'long', year: 'numeric' })}
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => changeMonth(1)}
+                            className="h-8 w-8 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-600"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    {/* Bouton Aujourd'hui */}
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={() => {
                             const today = new Date();
-                            setCurrentDate(today);
+                            // Si le mois est différent, on met à jour currentDate pour charger les bons jours
+                            if (today.getMonth() !== currentDate.getMonth() || today.getFullYear() !== currentDate.getFullYear()) {
+                                setCurrentDate(today);
+                            }
                             setSelectedDate(today);
-                            const datesArray = getDaysInMonth(today.getFullYear(), today.getMonth());
-                            setDates(datesArray);
-                            setTimeout(() => {
-                                if (todayRef.current) {
-                                    todayRef.current.scrollIntoView({
-                                        behavior: 'smooth',
-                                        block: 'nearest',
-                                        inline: 'center',
-                                    });
-                                }
-                            }, 0);
                         }}
+                        className="h-9 px-3 text-xs border-slate-200 text-slate-600 gap-2 hover:bg-purple-50 hover:text-[#774BBE] hover:border-purple-100"
                     >
-                        Aujourd&apos;hui
+                        <CalendarIcon size={14} />
+                        Auj.
                     </Button>
                 </div>
-            </div>
 
-            <div className="justify-between items-center my-4 flex px-8">
-                <div className='flex h-full space-x-2'>
-                    <DeleteManySessions usersProps={usersProps} sessionsProps={sessions} setSessions={setSessions} />
-                    <NewSession
-                        display='phone'
-                        setSessions={setSessions}
-                        planesProp={planesProp.filter((p) => currentUser?.classes.includes(p.classes))}
-                        usersProps={usersProps}
-                    />
+                {/* --- TOOLBAR: ACTIONS --- */}
+                <div className="flex items-center justify-between gap-2">
+                    {/* Filtre */}
+                    <div className="flex-1">
+                        <Filter
+                            sessions={sessions}
+                            setSessionsFiltered={setSessionsFiltered}
+                            display='phone'
+                            usersProps={usersProps}
+                            planesProp={planesProp.filter((p) => currentUser?.classes.includes(p.classes))}
+                        />
+                    </div>
+
+                    {/* Actions de session */}
+                    <div className='flex items-center gap-2'>
+                        <DeleteManySessions usersProps={usersProps} sessionsProps={sessions} setSessions={setSessions} />
+                        <NewSession
+                            display='phone'
+                            setSessions={setSessions}
+                            planesProp={planesProp.filter((p) => currentUser?.classes.includes(p.classes))}
+                            usersProps={usersProps}
+                        />
+                    </div>
                 </div>
-
-                <Filter
-                    sessions={sessions}
-                    setSessionsFiltered={setSessionsFiltered}
-                    display='phone'
-                    usersProps={usersProps}
-                    planesProp={planesProp.filter((p) => currentUser?.classes.includes(p.classes))}
-                />
             </div>
 
-            {/* Calendrier */}
-            <div className='flex space-x-2 px-1'>
-                <div className='flex items-center justify-center'>
-                    <button onClick={() => setSelectedDate(addDays(selectedDate, -1))}>
-                        <MoveLeft />
+            {/* --- CALENDRIER HORIZONTAL (STRIP) --- */}
+            <div className='bg-white border-b border-slate-100 py-3 shadow-sm'>
+                <div className="flex items-center">
+                    {/* Bouton Gauche (fixe) */}
+                    <button
+                        onClick={() => setSelectedDate(addDays(selectedDate, -1))}
+                        className="p-2 text-slate-400 hover:text-[#774BBE] transition-colors flex-shrink-0"
+                    >
+                        <ChevronLeft size={20} />
+                    </button>
+
+                    {/* Zone de scroll */}
+                    <div
+                        className="flex-1 flex overflow-x-auto scrollbar-hide gap-3 px-1 snap-x snap-mandatory"
+                    >
+                        {dates.map((date) => {
+                            const isSelected = selectedDate.toDateString() === date.toDateString();
+                            const barColor = getBarColor(date);
+
+                            return (
+                                <button
+                                    key={formatDateAsKey(date)}
+                                    // Utilisation de la callback ref pour stocker l'élément dans la Map
+                                    ref={(el) => setDateRef(el, date)}
+                                    onClick={() => setSelectedDate(date)}
+                                    className={cn(
+                                        'snap-start flex flex-col items-center justify-center min-w-[4.2rem] h-[5.5rem] rounded-2xl transition-all duration-300 border',
+                                        isSelected
+                                            ? `${PRIMARY_COLOR} ${PRIMARY_BORDER} text-white shadow-lg shadow-purple-200 scale-105 z-10`
+                                            : 'bg-white border-slate-100 text-slate-500 hover:border-purple-200'
+                                    )}
+                                >
+                                    <span className={cn(
+                                        "text-[10px] uppercase font-bold tracking-wider mb-1 opacity-80",
+                                        isSelected ? "text-purple-100" : "text-slate-400"
+                                    )}>
+                                        {date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3)}
+                                    </span>
+
+                                    <span className={cn(
+                                        "text-2xl font-bold leading-none mb-2",
+                                        isSelected ? "text-white" : "text-slate-700"
+                                    )}>
+                                        {date.getDate()}
+                                    </span>
+
+                                    {/* Indicateur de statut (Point) */}
+                                    <div className={cn(
+                                        "h-1.5 w-1.5 rounded-full transition-colors",
+                                        barColor ? barColor : "bg-transparent",
+                                        !barColor && isSelected ? "bg-white/0" : ""
+                                    )} />
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Bouton Droite (fixe) */}
+                    <button
+                        onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                        className="p-2 text-slate-400 hover:text-[#774BBE] transition-colors flex-shrink-0"
+                    >
+                        <ChevronRight size={20} />
                     </button>
                 </div>
-                <div
-                    ref={scrollRef}
-                    className="flex overflow-x-auto scrollbar-hide  pt-2"
-                    style={{ scrollSnapType: 'x mandatory' }}
-                >
-                    {dates.map((date) => {
-                        const barColor = getBarColor(date);
-                        return (
-                            <button
-                                key={formatDateAsKey(date)}
-                                ref={date.toDateString() === new Date().toDateString() ? todayRef : null}
-                                onClick={() => setSelectedDate(date)}
-                                className={cn(
-                                    'flex min-w-[60px] flex-col items-center rounded-lg px-2 py-3 text-center',
-                                    selectedDate.toDateString() === date.toDateString()
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'hover:bg-muted'
-                                )}
-                                style={{ scrollSnapAlign: 'start' }}
-                            >
-                                <span className="text-sm font-medium">
-                                    {date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3)}
-                                </span>
-                                <span className="text-xl font-bold">{date.getDate()}</span>
-                                {barColor && <div className={`h-1 w-5 ${barColor} rounded-full`}></div>}
-                            </button>
-                        );
-                    })}
-                </div>
-                <div className='flex items-center justify-center'>
-                    <button onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
-                        <MoveRight />
-                    </button>
-                </div>
             </div>
 
-            {/* Date */}
-            <div className="mt-4 text-center text-xl mx-8 border-t pt-6 border-gray-400 ">{formatDate(selectedDate)}</div>
+            {/* --- LISTE DES SESSIONS --- */}
+            <div className="flex flex-col flex-1">
+                {/* En-tête de date sélectionnée */}
+                <div className="px-6 py-5 flex items-center gap-4">
+                    <div className="h-px flex-1 bg-slate-200" />
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                        {formatDate(selectedDate)}
+                    </span>
+                    <div className="h-px flex-1 bg-slate-200" />
+                </div>
 
-            {/* Sessions */}
-            <div className="mt-4 px-8">
-                <h3 className="text-lg font-semibold mb-2"></h3>
-                {getSessionsForDate(selectedDate).map((session, index) => (
-                    <Session
-                        key={index}
-                        PlaneProps={planesProp}
-                        session={session}
-                        setSessions={setSessions}
-                        userProps={usersProps} />
-                ))}
+                {/* Liste */}
+                <div className="px-4 space-y-4">
+                    {getSessionsForDate(selectedDate).length > 0 ? (
+                        getSessionsForDate(selectedDate).map((session, index) => (
+                            <div key={index} className="animate-in slide-in-from-bottom-2 duration-500 fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+                                <Session
+                                    PlaneProps={planesProp}
+                                    session={session}
+                                    setSessions={setSessions}
+                                    userProps={usersProps}
+                                />
+                            </div>
+                        ))
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-12 text-slate-400 text-sm italic">
+                            <span>Aucun vol prévu pour cette date.</span>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
