@@ -39,7 +39,9 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         phone: ""
     });
 
-    // --- LOGIQUE METIER (Inchangée pour garantir le fonctionnement) ---
+    const PRIMARY_COLOR = "#774BBE";
+
+    // --- LOGIQUE METIER (Inchangée) ---
 
     const filterStudentsByPlane = (planeId: string) => {
         const { students } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
@@ -174,7 +176,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         toast({
                             title: "Succès",
                             description: res.success,
-                            className: "bg-green-600 text-white border-none",
+                            style: { background: '#0bab15', color: '#fff' }
                         });
 
                         const endDate = new Date(session.sessionDateStart);
@@ -245,35 +247,38 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 gap-1.5 transition-colors"
+                    className="h-7 px-2 text-xs font-medium text-slate-600 hover:text-[#774BBE] hover:bg-purple-50 gap-1.5 transition-colors"
                 >
                     <UserPlus size={14} />
                     Ajouter
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[450px] bg-white rounded-xl shadow-2xl p-0 gap-0 overflow-hidden">
-                <DialogHeader className="bg-slate-50 p-6 border-b border-slate-100">
-                    <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
-                        <div className="p-2 bg-emerald-100 rounded-lg">
-                            <UserPlus className="w-5 h-5 text-emerald-600" />
-                        </div>
-                        Inscrire un élève
-                    </DialogTitle>
-                    <DialogDescription className="text-slate-500">
-                        Sélectionnez un élève et un appareil pour ce créneau.
-                    </DialogDescription>
-                </DialogHeader>
+            <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden border-slate-200">
+                {/* Header Style Pro */}
+                <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-start gap-4">
+                    <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 hidden sm:block">
+                        <UserPlus className="w-6 h-6 text-[#774BBE]" />
+                    </div>
+                    <DialogHeader className="text-left space-y-1">
+                        <DialogTitle className="text-xl font-semibold text-slate-800">
+                            Inscrire un élève
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 text-sm">
+                            Sélectionnez un élève et un appareil pour ce créneau.
+                        </DialogDescription>
+                    </DialogHeader>
+                </div>
 
                 <div className="p-6 space-y-6">
                     {/* Choix Élève */}
-                    <div className="space-y-2">
-                        <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Qui participe ?</Label>
+                    <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            <UserIcon className="w-3 h-3" /> Qui participe ?
+                        </Label>
+
                         <Select value={studentId} onValueChange={handleStudentChange} disabled={loading}>
-                            <SelectTrigger className="w-full bg-slate-50 border-slate-200 focus:ring-emerald-500">
-                                <div className="flex items-center gap-2">
-                                    <UserIcon className="w-4 h-4 text-slate-400" />
-                                    <SelectValue placeholder="Sélectionner un élève" />
-                                </div>
+                            <SelectTrigger className="w-full bg-slate-50/50 border-slate-200 focus:ring-[#774BBE] focus:border-[#774BBE] transition-all">
+                                <SelectValue placeholder="Sélectionner un élève" />
                             </SelectTrigger>
                             <SelectContent className="max-h-60">
                                 <SelectItem value=" ">-- Choisir --</SelectItem>
@@ -285,7 +290,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                 {(currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER) && (
                                     <>
                                         <div className="mx-2 my-1 h-px bg-slate-100" />
-                                        <SelectItem value="invited" className="text-emerald-600 font-medium">
+                                        <SelectItem value="invited" className="text-[#774BBE] font-medium focus:text-[#774BBE]">
                                             + Invité externe
                                         </SelectItem>
                                     </>
@@ -294,15 +299,15 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         </Select>
 
                         {warningStudent && (
-                            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2 rounded-md text-xs">
-                                <AlertCircle size={12} /> {warningStudent}
+                            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2.5 rounded-md text-xs border border-amber-100">
+                                <AlertCircle size={14} className="shrink-0" /> {warningStudent}
                             </div>
                         )}
                     </div>
 
                     {/* Formulaire Invité (Conditionnel) */}
                     {studentId === "invited" && (
-                        <div className="border-l-2 border-emerald-500 pl-4 py-2 bg-emerald-50/50 rounded-r-lg">
+                        <div className="border-l-2 border-[#774BBE] pl-4 py-1 bg-purple-50/30 rounded-r-lg animate-in slide-in-from-top-2 fade-in duration-300">
                             <InvitedForm
                                 invitedStudent={invitedStudent}
                                 setInvitedStudent={setInvitedStudent}
@@ -311,14 +316,13 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                     )}
 
                     {/* Choix Avion */}
-                    <div className="space-y-2">
-                        <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sur quel appareil ?</Label>
+                    <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            <Plane className="w-3 h-3" /> Sur quel appareil ?
+                        </Label>
                         <Select value={planeId} onValueChange={handlePlaneChange} disabled={loading}>
-                            <SelectTrigger className="w-full bg-slate-50 border-slate-200 focus:ring-emerald-500">
-                                <div className="flex items-center gap-2">
-                                    <Plane className="w-4 h-4 text-slate-400" />
-                                    <SelectValue placeholder="Sélectionner un appareil" />
-                                </div>
+                            <SelectTrigger className="w-full bg-slate-50/50 border-slate-200 focus:ring-[#774BBE] focus:border-[#774BBE] transition-all">
+                                <SelectValue placeholder="Sélectionner un appareil" />
                             </SelectTrigger>
                             <SelectContent className="max-h-60">
                                 <SelectItem value=" ">-- Choisir --</SelectItem>
@@ -328,38 +332,41 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                     </SelectItem>
                                 ))}
                                 <div className="mx-2 my-1 h-px bg-slate-100" />
-                                <SelectItem value="noPlane" className="text-amber-700">Sans appareil</SelectItem>
+                                <SelectItem value="noPlane" className="text-amber-700 focus:text-amber-800">
+                                    Sans appareil
+                                </SelectItem>
                             </SelectContent>
                         </Select>
 
                         {warningPlane && (
-                            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2 rounded-md text-xs">
-                                <AlertCircle size={12} /> {warningPlane}
+                            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2.5 rounded-md text-xs border border-amber-100">
+                                <AlertCircle size={14} className="shrink-0" /> {warningPlane}
                             </div>
                         )}
                     </div>
 
                     {error && (
-                        <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-md text-sm">
+                        <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-md text-sm border border-red-100">
                             <AlertCircle className="w-4 h-4 flex-shrink-0" />
                             <span>{error}</span>
                         </div>
                     )}
                 </div>
 
-                <DialogFooter className="bg-slate-50 p-4 border-t border-slate-100 flex sm:justify-end gap-3">
+                <DialogFooter className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row gap-3 items-center sm:justify-end">
                     <Button
                         variant="ghost"
                         onClick={() => setIsOpen(false)}
                         disabled={loading}
-                        className="text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                        className="text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 w-full sm:w-auto"
                     >
                         Annuler
                     </Button>
                     <Button
                         onClick={onClickAction}
                         disabled={loading}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[120px]"
+                        style={{ backgroundColor: PRIMARY_COLOR }}
+                        className="text-white shadow-md hover:opacity-90 transition-opacity w-full sm:w-auto min-w-[120px]"
                     >
                         {loading ? <Spinner className="text-white w-4 h-4" /> : (
                             <div className="flex items-center gap-2">
