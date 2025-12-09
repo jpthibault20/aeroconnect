@@ -236,7 +236,8 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
 
                     {/* Zone de scroll */}
                     <div
-                        className="flex-1 flex overflow-x-auto scrollbar-hide gap-3 px-1 snap-x snap-mandatory"
+                        // Ajout de overflow-y-hidden pour bloquer le scroll vertical
+                        className="flex-1 flex overflow-x-auto overflow-y-hidden scrollbar-hide gap-2 px-1 py-2 snap-x snap-mandatory"
                     >
                         {dates.map((date) => {
                             const isSelected = selectedDate.toDateString() === date.toDateString();
@@ -249,21 +250,24 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
                                     ref={(el) => setDateRef(el, date)}
                                     onClick={() => setSelectedDate(date)}
                                     className={cn(
-                                        'snap-start flex flex-col items-center justify-center min-w-[4.2rem] h-[5.5rem] rounded-2xl transition-all duration-300 border',
+                                        // Réduction des dimensions : min-w-[3.5rem] h-[4.8rem] (au lieu de 4.2rem/5.5rem)
+                                        'snap-start flex flex-col items-center justify-center min-w-14 h-16 rounded-xl transition-all duration-300 border',
                                         isSelected
-                                            ? `${PRIMARY_COLOR} ${PRIMARY_BORDER} text-white shadow-lg shadow-purple-200 scale-105 z-10`
+                                            ? `${PRIMARY_COLOR} ${PRIMARY_BORDER} text-white shadow-md shadow-purple-200 scale-105 z-10`
                                             : 'bg-white border-slate-100 text-slate-500 hover:border-purple-200'
                                     )}
                                 >
                                     <span className={cn(
-                                        "text-[10px] uppercase font-bold tracking-wider mb-1 opacity-80",
+                                        // Réduction police : text-[9px]
+                                        "text-[9px] uppercase font-bold tracking-wider mb-0.5 opacity-80",
                                         isSelected ? "text-purple-100" : "text-slate-400"
                                     )}>
                                         {date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3)}
                                     </span>
 
                                     <span className={cn(
-                                        "text-2xl font-bold leading-none mb-2",
+                                        // Réduction police : text-xl
+                                        "text-xl font-bold leading-none mb-1.5",
                                         isSelected ? "text-white" : "text-slate-700"
                                     )}>
                                         {date.getDate()}
