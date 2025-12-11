@@ -238,7 +238,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
                                         ref={(el) => setDateRef(el, date)}
                                         onClick={() => setSelectedDate(date)}
                                         className={cn(
-                                            'snap-start flex flex-col items-center justify-center min-w-[3.5rem] h-[4.8rem] rounded-xl transition-all duration-300 border',
+                                            'snap-start flex flex-col items-center justify-center min-w-14 h-16 my-1 rounded-xl transition-all duration-300 border',
                                             isSelected
                                                 ? `${PRIMARY_COLOR} ${PRIMARY_BORDER} text-white shadow-md shadow-purple-200 scale-105 z-10`
                                                 : 'bg-white border-slate-100 text-slate-500 hover:border-purple-200'
