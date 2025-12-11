@@ -18,7 +18,6 @@ import {
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { createClub } from "@/api/db/club";
 import { Spinner } from "./ui/SpinnerVariants";
-import { codeNewClub } from "@/config/config";
 import {
     InputOTP,
     InputOTPGroup,
@@ -32,6 +31,7 @@ import {
     ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import codeNewClubIsValid from "@/api/client/newClubValidation";
 
 // --- Schéma de validation ---
 const clubFormSchema = z.object({
@@ -96,7 +96,7 @@ const NewClub = ({ setNewClub }: Props) => {
     const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
 
     const onSubmitOTP = () => {
-        if (Number(code) === codeNewClub) {
+        if (codeNewClubIsValid(Number(code))) {
             setAuthorizedCreateNewClub(true);
             setErrorOTP("");
         } else {
