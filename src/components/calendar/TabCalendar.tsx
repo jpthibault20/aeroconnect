@@ -69,7 +69,7 @@ const TabCalendar = ({ date, sessions, setSessions, clubHours, usersProps, plane
                                         "flex flex-col items-center justify-center py-2 rounded-lg transition-colors border",
                                         item.isToday
                                             ? "bg-[#774BBE] border-[#774BBE] text-white shadow-md"
-                                            : "bg-white border-transparent text-slate-700"
+                                            : " border-transparent text-slate-700"
                                     )}>
                                         <p className={cn("font-bold text-sm uppercase tracking-wider", item.isToday ? "text-white/90" : "text-slate-500")}>
                                             {item.dayName}

@@ -66,7 +66,6 @@ const TableComponent = ({ planes, setPlanes }: Props) => {
                             {/* Colonne Actions */}
                             {canManage && (
                                 <TableHead className={`${headerClass} text-right pr-6`}>
-                                    Actions
                                 </TableHead>
                             )}
                         </TableRow>

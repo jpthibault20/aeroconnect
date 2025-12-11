@@ -157,7 +157,6 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                     aria-label="Suppression multiple"
                 >
                     <Trash2 className="w-4 h-4" />
-                    <span className="hidden xl:inline text-xs font-medium">Nettoyer</span>
                 </Button>
             </DialogTrigger>
 
