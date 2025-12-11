@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginSchema, loginSchema } from "../../schemas/loginSchema"; // Assure-toi que le chemin est correct
 import { useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Logo } from '../Logo';
@@ -15,6 +15,7 @@ import { Spinner } from '../ui/SpinnerVariants';
 import { Eye, EyeOff } from 'lucide-react';
 import { Label } from '../ui/label';
 import { login } from "@/app/auth/login/action"
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 export const Login = () => {
     const [loading, setLoading] = React.useState(false);
@@ -22,7 +23,12 @@ export const Login = () => {
     const [messageG, setMessageG] = React.useState('');
     const [showPassword, setShowPassword] = React.useState(false); // État pour la visibilité du mot de passe
     const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
+    const router = useRouter();
 
+    // Précharge la page de destination
+    useEffect(() => {
+        router.prefetch('/Calendar'); // Ou ta page de destination
+    }, [router]);
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
         setMessageG(searchParams.get('messageG') ?? '');
@@ -39,24 +45,27 @@ export const Login = () => {
     });
 
     const onSubmit = async (data: LoginSchema) => {
-        setLoading(true); // Activation de l'état de chargement
+        setLoading(true);
+        setMessage("");
+        setMessageG("");
+
         try {
             const formData = new FormData();
             formData.append('email', data.email);
             formData.append('password', data.password);
 
-            // Appel API de connexion
             await login(formData);
-            setMessage("");
-            setMessageG("");
-
-            // setLoading(false);
 
         } catch (error) {
+            // Ignore les erreurs de redirection Next.js
+            if (isRedirectError(error)) {
+                throw error;
+            }
+
             console.error("Erreur de connexion :", error);
             setLoading(false);
+            setMessage("Erreur de connexion");
         }
-
     };
 
     return (
