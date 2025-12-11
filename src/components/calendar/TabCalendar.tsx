@@ -4,7 +4,7 @@ import { dayFr } from '@/config/config';
 import { formatTime, getDaysOfWeek, getSessionsFromDate } from '@/api/date';
 import { flight_sessions, planes, User } from '@prisma/client';
 import Session from './Session';
-import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { cn } from '@/lib/utils';
 
 interface Props {
     className?: string;
@@ -40,59 +40,99 @@ const TabCalendar = ({ date, sessions, setSessions, clubHours, usersProps, plane
             minutes,
             0
         );
-        return getSessionsFromDate(sessionDate, sessions); // Filtre les sessions pertinentes
+        return getSessionsFromDate(sessionDate, sessions);
     };
 
     return (
-        <div className="w-full h-full ">
-            <div className="table w-full h-full table-fixed">
-                {/* En-tête avec les jours de la semaine */}
-                <div className="table-header-group">
-                    <div className="table-row">
-                        <div className="table-cell w-20" />
-                        {daysOfWeek.map((item, index) => (
-                            <div className="table-cell p-1" key={index}>
-                                <div className={`font-bold text-center rounded-md ${item.isToday ? 'bg-[#373573]' : ''}`}>
-                                    <p className={`font-istok text-xl ${item.isToday ? 'text-white' : 'text-black'}`}>
-                                        {item.dayName}
-                                    </p>
-                                    <p className={`font-istok font-semibold text-xl text-center ${item.isToday ? 'text-white' : 'text-black'}`}>
-                                        {item.dayNumber}
-                                    </p>
-                                </div>
-                                <div className="h-3" />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                {/* Créneaux horaires */}
-                <div className="table-row-group h-full bg-gray-100">
-                    {hours.map((hour, index) => (
-                        <div key={index} className="table-row">
-                            <div className={`table-cell pl-3 text-center font-istok font-semibold text-[#646464] align-middle ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''} w-20`}>
-                                {formatTime(hour)}
-                            </div>
-                            {dayFr.map((item, indexday) => {
-                                const slotSessions = getSessions(index, indexday);
+        // Conteneur principal : Flex column + Bordure plus contrastée (slate-300)
+        <div className="w-full h-full flex flex-col bg-white shadow-sm rounded-lg border border-slate-300 overflow-hidden">
 
-                                return (
-                                    <div
-                                        className={`table-cell p-1 border-b border-[#C1C1C1] ${index === 0 ? 'border-t-2 border-[#A5A5A5]' : ''}`}
-                                        key={indexday}
-                                    >
-                                        {slotSessions?.length > 0 && (
-                                            <Session
-                                                sessions={slotSessions}
-                                                setSessions={setSessions}
-                                                usersProps={usersProps}
-                                                planesProp={planesProp}
-                                            />
-                                        )}
+            {/* Zone Scrollable : prend tout l'espace restant */}
+            <div className="flex-1 overflow-y-auto relative">
+
+                {/* Structure Table : 
+                    Ajout de 'min-h-full' pour forcer la table à prendre toute la hauteur disponible 
+                    et éviter l'espace blanc en bas si le contenu est court.
+                */}
+                <div className="table w-full min-h-full table-fixed border-collapse">
+
+                    {/* En-tête Sticky : Reste accroché en haut lors du scroll */}
+                    <div className="table-header-group sticky top-0 z-20 shadow-sm">
+                        <div className="table-row">
+                            {/* Cellule Coin vide (haut gauche) */}
+                            <div className="table-cell w-20 bg-slate-100 border-b border-r border-slate-300" />
+
+                            {/* Jours de la semaine */}
+                            {daysOfWeek.map((item, index) => (
+                                <div className="table-cell p-2 align-top border-b border-r border-slate-300 bg-slate-100 last:border-r-0" key={index}>
+                                    <div className={cn(
+                                        "flex flex-col items-center justify-center py-2 rounded-lg transition-colors border",
+                                        item.isToday
+                                            ? "bg-[#774BBE] border-[#774BBE] text-white shadow-md"
+                                            : " border-transparent text-slate-700"
+                                    )}>
+                                        <p className={cn("font-bold text-sm uppercase tracking-wider", item.isToday ? "text-white/90" : "text-slate-500")}>
+                                            {item.dayName}
+                                        </p>
+                                        <p className="font-extrabold text-2xl">
+                                            {item.dayNumber}
+                                        </p>
                                     </div>
-                                );
-                            })}
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    </div>
+
+                    {/* Corps du calendrier */}
+                    <div className="table-row-group bg-white">
+                        {hours.map((hour, index) => {
+                            // Pré-calculer les sessions pour toute la ligne
+                            const rowSessions = dayFr.map((_, indexday) => getSessions(index, indexday));
+
+                            // Vérifier s'il y a au moins une session dans cette ligne
+                            const hasSessionsInRow = rowSessions.some(sessions => sessions.length > 0);
+
+                            // Hauteur dynamique : h-28 si contenu, h-14 si vide.
+                            // Note : Avec min-h-full sur la table, ces hauteurs agiront comme des minimums, 
+                            // et les lignes s'étireront si nécessaire pour remplir l'écran.
+                            const rowHeightClass = hasSessionsInRow ? "h-20" : "h-14";
+
+                            return (
+                                <div key={index} className="table-row">
+                                    {/* Colonne Heure */}
+                                    <div className="table-cell w-20 align-middle text-center border-r border-slate-300 border-b border-slate-300/60 bg-slate-50">
+                                        <span className="text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm relative -top-3">
+                                            {formatTime(hour)}
+                                        </span>
+                                    </div>
+
+                                    {/* Cellules Grille */}
+                                    {dayFr.map((item, indexday) => {
+                                        const slotSessions = rowSessions[indexday];
+
+                                        return (
+                                            <div
+                                                className={cn(
+                                                    "table-cell p-1 border-b border-r border-slate-300/60 relative transition-all duration-200 hover:bg-slate-50 last:border-r-0",
+                                                    rowHeightClass
+                                                )}
+                                                key={indexday}
+                                            >
+                                                {slotSessions?.length > 0 && (
+                                                    <Session
+                                                        sessions={slotSessions}
+                                                        setSessions={setSessions}
+                                                        usersProps={usersProps}
+                                                        planesProp={planesProp}
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </div>

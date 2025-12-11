@@ -33,7 +33,6 @@ export const createUser = async (dataUser: UserMin) => {
                 phone: dataUser.phone,
             },
         });
-        prisma.$disconnect();
         return { succes: "User created successfully" };
 
     } catch (error) {
@@ -52,7 +51,6 @@ export const getAllUser = async (clubID: string) => {
                 clubID: clubID
             }
         })
-        prisma.$disconnect();
         return users;
     } catch (error) {
         console.error('Error getting user:', error);
@@ -190,7 +188,6 @@ export const deleteUser = async (studentID: string) => {
                 role: userRole.USER
             }
         });
-        prisma.$disconnect();
         console.log('User deleted successfully');
         return { success: "L'utilisateur a été supprimé de votre club avec succès !" };
     } catch (error) {
@@ -224,7 +221,6 @@ export const updateUser = async (user: User) => {
                 canSubscribeWithoutPlan: user.canSubscribeWithoutPlan,
             }
         });
-        prisma.$disconnect();
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch (error) {
         console.error('Error updating user:', error);
@@ -241,7 +237,6 @@ export const getUserByID = async (id: string[]) => {
                 }
             }
         })
-        prisma.$disconnect();
         return user;
     } catch (error) {
         console.error('Error getting user:', error);
@@ -261,7 +256,6 @@ export const getInsctructors = async (clubID: string | undefined) => {
                 role: { in: [userRole.INSTRUCTOR, userRole.ADMIN, userRole.OWNER] }
             }
         })
-        prisma.$disconnect();
         return instructors;
     } catch (error) {
         console.error('Error getting instructors:', error);
@@ -284,7 +278,6 @@ export const blockUser = async (userID: string, restricted: boolean) => {
                 restricted: restricted
             }
         });
-        prisma.$disconnect();
         return { success: "L'utilisateur a été bloqué avec succès !" };
     } catch (error) {
         console.error('Error blocking user:', error);

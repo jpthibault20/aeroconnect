@@ -6,7 +6,7 @@ import { removeSessionsByID } from '@/api/db/sessions'
 import { toast } from '@/hooks/use-toast';
 import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail'
 import { useCurrentClub } from '@/app/context/useCurrentClub'
-
+import { Trash2, AlertTriangle } from 'lucide-react'
 
 interface Props {
     children: React.ReactNode;
@@ -21,109 +21,148 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    const removeFlight = (sessionIDProp: flight_sessions[]) => {
-        const sessionID = sessionIDProp.length === 1 ? [sessionIDProp[0].id] : sessionIDProp.map(session => session.id);
-        const removeSessions = async () => {
-            if (sessions.length > 0) {
-                const sessionDate = new Date(sessions[0].sessionDateStart.getFullYear(), sessions[0].sessionDateStart.getMonth(), sessions[0].sessionDateStart.getDate(), sessions[0].sessionDateStart.getUTCHours(), sessions[0].sessionDateStart.getUTCMinutes(), 0);
-                const nowDate = new Date();
+    const handleRemoveFlight = async () => {
+        if (sessions.length === 0) return;
 
-                if (sessionDate.getTime() < nowDate.getTime()) {
-                    toast({
-                        title: "Impossible de supprimer une session qui est passée",
-                        duration: 5000,
-                        style: {
-                            background: '#ab0b0b', //rouge : ab0b0b
-                            color: '#fff',
+        // Vérification date passée (basée sur la première session)
+        const sessionDate = new Date(sessions[0].sessionDateStart);
+        const nowDate = new Date();
+
+        if (sessionDate.getTime() < nowDate.getTime()) {
+            toast({
+                title: "Action impossible",
+                description: "Vous ne pouvez pas supprimer une session passée.",
+                variant: "destructive"
+            });
+            setIsOpen(false);
+            return;
+        }
+
+        setLoading(true);
+        const sessionIDs = sessions.map(s => s.id);
+
+        try {
+            const res = await removeSessionsByID(sessionIDs);
+
+            if (res.error) {
+                toast({
+                    title: "Erreur",
+                    description: res.error,
+                    variant: "destructive"
+                });
+            } else if (res.success) {
+                // Envoi des notifications pour chaque session avec élève
+                const notifications = [];
+
+                for (const session of sessions) {
+                    if (session.studentID) {
+                        const student = usersProp.find(item => item.id === session.studentID)
+                        const pilote = usersProp.find(item => item.id === session.pilotID)
+
+                        const endDate = new Date(session.sessionDateStart);
+                        endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
+
+                        if (student?.email) {
+                            notifications.push(sendNotificationRemoveAppointment(
+                                student.email,
+                                session.sessionDateStart,
+                                endDate,
+                                currentClub as Club
+                            ));
                         }
-                    });
-                    setIsOpen(false);
-                    return;
+                        if (pilote?.email) {
+                            notifications.push(sendNotificationSudentRemoveForPilot(
+                                pilote.email,
+                                session.sessionDateStart,
+                                endDate,
+                                currentClub as Club
+                            ));
+                        }
+                    }
                 }
 
-                setLoading(true);
-                try {
-                    const res = await removeSessionsByID(sessionID);
-                    if (res.error) {
-                        toast({
-                            title: res.error,
-                            duration: 5000,
-                            style: {
-                                background: '#ab0b0b', //rouge : ab0b0b
-                                color: '#fff',
-                            }
-                        });
-                    }
-                    if (res.success) {
+                // On attend que les notifs soient parties (ou échouées, sans bloquer l'UI)
+                await Promise.allSettled(notifications);
 
+                toast({
+                    title: "Succès",
+                    description: sessions.length === 1 ? "Le vol a été supprimé." : "Les vols ont été supprimés.",
+                    className: "bg-green-600 text-white border-none"
+                });
 
-                        for (const session of sessions) {
-                            if (session.studentID) {
-                                const student = usersProp.find(item => item.id === session.studentID)
-                                const pilote = usersProp.find(item => item.id === session.pilotID)
-
-                                const endDate = new Date(session.sessionDateStart);
-                                endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
-
-                                Promise.all([
-                                    sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart as Date, endDate as Date, currentClub as Club),
-                                    sendNotificationSudentRemoveForPilot(pilote?.email as string, session.sessionDateStart as Date, endDate as Date, currentClub as Club),
-                                ])
-                                    .catch((error) => {
-                                        console.log(error);
-                                    });
-                            }
-                        }
-                        toast({
-                            title: res.success,
-                            duration: 5000,
-                            style: {
-                                background: '#0bab15', //rouge : ab0b0b
-                                color: '#fff',
-                            }
-                        });
-
-                        //supprimer les sessions de la base de données local
-                        setSessions(prevSessions => {
-                            const updatedSessions = prevSessions.filter(session => !sessionID.includes(session.id));
-                            return updatedSessions;
-                        });
-                        setIsOpen(false);
-                    }
-                } catch (error) {
-                    console.log(error);
-                } finally {
-                    setLoading(false);
-                }
+                // Mise à jour de l'état local
+                setSessions(prevSessions => prevSessions.filter(session => !sessionIDs.includes(session.id)));
+                setIsOpen(false);
             }
-        };
-        removeSessions();
-    }
+        } catch (error) {
+            console.error(error);
+            toast({
+                title: "Erreur technique",
+                description: "Impossible de supprimer le vol.",
+                variant: "destructive"
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
-        <AlertDialog open={isOpen}>
-            <AlertDialogTrigger onClick={() => setIsOpen(true)}>
+        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+            <AlertDialogTrigger asChild>
                 {children}
             </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>{sessions.length === 1 ? "Supprimer le vol" : "Supprimer les vols"}</AlertDialogTitle>
-                    <AlertDialogDescription>{description}</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setIsOpen(false)} disabled={loading}>retour</AlertDialogCancel>
-                    {loading ? (
-                        <div className="flex justify-center items-center">
-                            <Spinner />
+            <AlertDialogContent className="sm:max-w-[500px] bg-white rounded-xl shadow-2xl p-0 gap-0 overflow-hidden border-none">
+
+                {/* Header Danger */}
+                <AlertDialogHeader className="bg-red-50 p-6 border-b border-red-100">
+                    <AlertDialogTitle className="flex items-center gap-2 text-xl font-bold text-red-900">
+                        <div className="p-2 bg-red-100 rounded-lg border border-red-200">
+                            <Trash2 className="w-5 h-5 text-red-600" />
                         </div>
-                    ) : (
-                        <AlertDialogAction
-                            className="bg-red-700 hover:bg-red-800 text-white"
-                            onClick={() => removeFlight(sessions)}
-                        >
-                            Supprimer
-                        </AlertDialogAction>
-                    )}
+                        {sessions.length > 1 ? "Supprimer les vols" : "Supprimer le vol"}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-red-700/80 mt-2">
+                        {description}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                {/* Warning Content */}
+                <div className="p-6">
+                    <div className="bg-slate-50 border border-slate-100 rounded-lg p-4 flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium text-slate-700">Attention</p>
+                            <p className="text-xs text-slate-500 leading-relaxed">
+                                Cette action est irréversible. Si des élèves sont inscrits, ils recevront une notification d&apos;annulation par email.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer Actions */}
+                <AlertDialogFooter className="bg-slate-50 p-4 border-t border-slate-100 flex sm:justify-end gap-3">
+                    <AlertDialogCancel
+                        onClick={() => setIsOpen(false)}
+                        disabled={loading}
+                        className="mt-0 text-slate-500 hover:text-slate-800 hover:bg-slate-200 border-slate-200"
+                    >
+                        Annuler
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={(e) => {
+                            e.preventDefault(); // Empêche la fermeture automatique pour gérer le loading
+                            handleRemoveFlight();
+                        }}
+                        disabled={loading}
+                        className="bg-red-600 hover:bg-red-700 text-white min-w-[120px]"
+                    >
+                        {loading ? <Spinner className="text-white w-4 h-4" /> : (
+                            <div className="flex items-center gap-2">
+                                <Trash2 size={16} />
+                                <span>Confirmer</span>
+                            </div>
+                        )}
+                    </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

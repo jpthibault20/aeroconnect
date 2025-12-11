@@ -1,0 +1,21 @@
+    ---         Ajouter la possibilitée d'obtenir son carnet de vol         ---
+
+Données (pilote) : 
+    Tableaux générale 
+        => Date | heure départ | base départ | heure arrivé | base d'arrivée | temps de vol | Aeronef | Type de vols | MONO Pilote | MULTI Pilote | Nbr Décollage(s) | Nbr atterrissage(s) | commentaires
+    Info statistique 
+        => Heure totale | heure/aeronef | Décollage total | atterrissage total
+
+Données (Aeronef) :
+    Tableaux générale
+        => Pilote 1 | Pilote 2 | Date | heure départ | base départ | heure arrivé | base d'arrivée | temps de vol | Type de vols |  Nbr Décollage(s) | Nbr atterrissage(s) 
+    Info statistique
+        => ???
+
+Pour ce faire les modificaions a faire avant :
+    - Ajouter dans la création de session le type de vol [vol, baptème, instruction, autre(input)]
+    - Ajouter dans la réservation de session le type de vol [vol, baptème, instruction, autre(input)]
+    - Ajouter la possibilitée de remplire / compléter une session une fois fini (rapide a l'ouvertur de l'app) ou dans le calendrier
+
+    
+

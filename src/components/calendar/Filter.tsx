@@ -2,7 +2,9 @@ import { flight_sessions, planes, User, userRole } from '@prisma/client'
 import React, { useEffect, useState } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
-import { Settings2 } from 'lucide-react'
+import { User as UserIcon, Plane, SlidersHorizontal, FilterX } from 'lucide-react'
+import { Button } from '../ui/button'
+import { cn } from '@/lib/utils'
 
 interface Props {
     sessions: flight_sessions[],
@@ -18,65 +20,91 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
 
     const instructors = usersProps.filter((instructor) => instructor.role === userRole.INSTRUCTOR || instructor.role === userRole.OWNER);
 
-
     // Effet pour filtrer les sessions lorsque l'avion ou l'instructeur change
     useEffect(() => {
         const filteredSessions = sessions?.filter(session => {
-            // Si "Tous" est sélectionné pour l'instructeur, toutes les sessions sont valides pour ce critère
             const instructorMatch = instructor === "all" || session.pilotID === instructor;
-
-            // Si "Tous" est sélectionné pour l'avion, toutes les sessions sont valides pour ce critère
             const planeMatch = plane === "all" || session.planeID.includes(plane);
-
-            // Retourne true si la session correspond aux deux filtres (ou si "Tous" est sélectionné)
             return instructorMatch && planeMatch;
         });
 
-        // Mettre à jour les sessions filtrées
         setSessionsFiltered(filteredSessions);
-
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [plane, instructor, sessions]);
 
+    // Fonction pour reset les filtres
+    const resetFilters = () => {
+        setPlane("all");
+        setInstructor("all");
+    }
+
+    const hasActiveFilters = plane !== "all" || instructor !== "all";
+
     if (display === "desktop") {
         return (
-            <div className='flex space-y-0 space-x-3'>
+            <div className='flex items-center gap-1'>
                 {/* Filtre par Instructeur */}
-                <div>
-                    <Select value={instructor} onValueChange={(val) => setInstructor(val)}>
-                        <SelectTrigger className="w-[150px]">
+                <Select value={instructor} onValueChange={(val) => setInstructor(val)}>
+                    <SelectTrigger
+                        className={cn(
+                            "h-8 border-none shadow-none bg-transparent hover:bg-slate-50 focus:ring-0 gap-2 min-w-[130px] px-2 transition-colors",
+                            instructor !== "all" ? "text-[#774BBE] font-medium" : "text-slate-600"
+                        )}
+                    >
+                        <UserIcon className={cn("w-4 h-4", instructor !== "all" ? "text-[#774BBE]" : "text-slate-400")} />
+                        <div className="truncate text-xs">
                             <SelectValue placeholder="Instructeurs" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {/* Option pour "Tous" les instructeurs */}
-                            <SelectItem value="all">Instructeurs</SelectItem>
-                            {instructors.map((item, index) => (
-                                <SelectItem key={index} value={item.id}>
-                                    {item.firstName} {item.lastName}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+                        </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all" className="text-slate-500 font-medium">Tous les instructeurs</SelectItem>
+                        {instructors.map((item, index) => (
+                            <SelectItem key={index} value={item.id}>
+                                {item.firstName} {item.lastName}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+
+                {/* Séparateur visuel léger entre les deux filtres */}
+                <div className="w-px h-4 bg-slate-200" />
 
                 {/* Filtre par Avion */}
-                <div>
-                    <Select value={plane} onValueChange={(val) => setPlane(val)}>
-                        <SelectTrigger className="w-[150px]">
+                <Select value={plane} onValueChange={(val) => setPlane(val)}>
+                    <SelectTrigger
+                        className={cn(
+                            "h-8 border-none shadow-none bg-transparent hover:bg-slate-50 focus:ring-0 gap-2 min-w-[130px] px-2 transition-colors",
+                            plane !== "all" ? "text-[#774BBE] font-medium" : "text-slate-600"
+                        )}
+                    >
+                        <Plane className={cn("w-4 h-4", plane !== "all" ? "text-[#774BBE]" : "text-slate-400")} />
+                        <div className="truncate text-xs">
                             <SelectValue placeholder="Appareils" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {/* Option pour "Tous" les avions */}
-                            <SelectItem value="all">Appareils</SelectItem>
-                            {planesProp.map((item, index) => (
-                                <SelectItem key={index} value={item.id}>
-                                    {item.name}
-                                </SelectItem>
-                            ))}
-                            <SelectItem value="classroomSession">Session théorique</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+                        </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all" className="text-slate-500 font-medium">Tous les appareils</SelectItem>
+                        {planesProp.map((item, index) => (
+                            <SelectItem key={index} value={item.id}>
+                                {item.name}
+                            </SelectItem>
+                        ))}
+                        <SelectItem value="classroomSession">Session théorique</SelectItem>
+                    </SelectContent>
+                </Select>
+
+                {/* Bouton Reset (visible seulement si filtres actifs) */}
+                {hasActiveFilters && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 ml-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full"
+                        onClick={resetFilters}
+                        title="Réinitialiser les filtres"
+                    >
+                        <FilterX className="w-3 h-3" />
+                    </Button>
+                )}
             </div>
         )
     }
@@ -84,27 +112,37 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
         return (
             <div>
                 <Popover>
-                    <PopoverTrigger >
-                        <Settings2 />  {/* Icon trigger for opening the popover */}
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" size="icon" className={cn("h-8 w-8", hasActiveFilters ? "border-[#774BBE] text-[#774BBE] bg-purple-50" : "")}>
+                            <SlidersHorizontal className="w-4 h-4" />
+                        </Button>
                     </PopoverTrigger>
-                    <PopoverContent className='w-fit'>
-                        <div className="space-y-3">
-                            <div className="space-y-2">
-                                <h4 className="font-medium leading-none">Filtres</h4>
-                                <p className="text-sm text-muted-foreground">
-                                    Définissez vos filtres
-                                </p>
+                    <PopoverContent className='w-[280px] p-4' align="end">
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h4 className="font-semibold text-sm">Filtres</h4>
+                                {hasActiveFilters && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-auto p-0 text-xs text-red-500 hover:text-red-600 hover:bg-transparent"
+                                        onClick={resetFilters}
+                                    >
+                                        Réinitialiser
+                                    </Button>
+                                )}
                             </div>
+
                             <div className="space-y-3">
                                 {/* Filtre par Instructeur */}
-                                <div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs text-slate-500 uppercase font-medium">Instructeur</label>
                                     <Select value={instructor} onValueChange={(val) => setInstructor(val)}>
-                                        <SelectTrigger className="w-[120px]">
+                                        <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Instructeurs" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {/* Option pour "Tous" les instructeurs */}
-                                            <SelectItem value="all">Instructeurs</SelectItem>
+                                            <SelectItem value="all">Tous</SelectItem>
                                             {instructors.map((item, index) => (
                                                 <SelectItem key={index} value={item.id}>
                                                     {item.firstName} {item.lastName}
@@ -115,14 +153,14 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
                                 </div>
 
                                 {/* Filtre par Avion */}
-                                <div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs text-slate-500 uppercase font-medium">Appareil</label>
                                     <Select value={plane} onValueChange={(val) => setPlane(val)}>
-                                        <SelectTrigger className="w-[120px]">
+                                        <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Avions" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {/* Option pour "Tous" les avions */}
-                                            <SelectItem value="all">Avions</SelectItem>
+                                            <SelectItem value="all">Tous</SelectItem>
                                             {planesProp.map((item, index) => (
                                                 <SelectItem key={index} value={item.id}>
                                                     {item.name}

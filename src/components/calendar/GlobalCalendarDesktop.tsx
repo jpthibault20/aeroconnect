@@ -1,11 +1,8 @@
 /**
- * @file GlobalCalendarDesktop.js
- * @brief This component renders the desktop version of the calendar with filters for instructors and planes.
- * 
- * The component includes logic for navigating through weeks, selecting the current day, and filtering by instructor and plane. 
- * It is optimized for larger screens (hidden on smaller screens) and provides a smooth user experience for scheduling sessions.
+ * @file GlobalCalendarDesktop.tsx
+ * @brief Composant principal du calendrier pour la vue Desktop (Refondu UI/UX).
  */
-import React, { useEffect, useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { monthFr } from '@/config/config';
 import DaySelector from './DaySelector';
 import TabCalendar from './TabCalendar';
@@ -25,22 +22,16 @@ interface Props {
     usersProps: User[]
 }
 
-/**
- * @function GlobalCalendarDesktop
- * @brief Main desktop calendar component with navigation and filters.
- *
- * This component allows the user to navigate between weeks, select today's date, 
- * and filter calendar sessions by instructor and plane. It renders the calendar 
- * within a desktop-only layout, hidden on mobile devices.
- * 
- */
 const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }: Props) => {
     const { currentUser } = useCurrentUser()
     const { currentClub } = useCurrentClub();
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
-    const filterdPlanes = planesProp.filter((p) => currentUser?.classes.includes(p.classes))
 
+    // Optimisation avec useMemo
+    const filterdPlanes = useMemo(() =>
+        planesProp.filter((p) => currentUser?.classes.includes(p.classes)),
+        [planesProp, currentUser]);
 
     const onClickNextweek = () => {
         setDate(prevDate => {
@@ -64,78 +55,76 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
 
     const clubHours = currentClub?.HoursOn || defaultHours;
 
-    // Effect pour récupérer les jours de la semaine
-    useEffect(() => {
-        const newDate = new Date(date); // Crée une copie de la date donnée
-
-        // On récupère le jour de la semaine (0 = dimanche, 1 = lundi, ..., 6 = samedi)
-        const dayOfWeek = newDate.getDay();
-
-        // Si le jour est dimanche (0), on doit reculer d'un jour pour commencer la semaine le lundi
-        const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-
-        // Calculer le premier jour de la semaine (lundi)
-        const startOfWeek = new Date(newDate);
-        startOfWeek.setDate(newDate.getDate() + diffToMonday);
-
-        // Calculer le dernier jour de la semaine (dimanche)
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [date]);
-
     return (
-        // Only rendered on large screens (hidden on smaller screens), includes a loading state.
-        <div className='hidden lg:block h-full'>
-            <div className="flex flex-col h-full overflow-y-auto">
-                <div className="w-full flex items-center my-6">
-                    {/* Displays the current month and year at the top of the calendar. */}
-                    <p className="text-5xl font-istok pl-3 w-[400px]">
-                        {monthFr[date.getMonth()]}, {date.getFullYear()}
-                    </p>
-                    <div className='flex-1'>
-                        <div className='w-full flex justify-between items-end pl-6'>
-                            {/* Day selector component allowing navigation between weeks. */}
-                            <DaySelector
-                                className="h-full flex items-end"
-                                onClickNextWeek={onClickNextweek}
-                                onClickPreviousWeek={onClickPreviousWeek}
-                                onClickToday={onClickToday}
-                            />
-                            <div className='flex space-x-2 px-3 '>
-                                <Export usersProps={usersProps} flightsSessions={sessions} planes={planesProp} />
-                                <DeleteManySessions usersProps={usersProps} sessionsProps={sessions} setSessions={setSessions} />
-                                <div>
-                                    <NewSession
-                                        display='desktop'
-                                        setSessions={setSessions}
-                                        planesProp={filterdPlanes}
-                                        usersProps={usersProps}
-                                />
-                                </div>
-                                <Filter
-                                    sessions={sessions}
-                                    setSessionsFiltered={setSessionsFiltered}
-                                    display='desktop'
-                                    usersProps={usersProps}
-                                    planesProp={filterdPlanes}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className='h-full'>
-                    <TabCalendar
-                        date={date}
-                        sessions={sessionsFlitered}
-                        setSessions={setSessions}
-                        clubHours={clubHours}
-                        usersProps={usersProps}
-                        planesProp={planesProp}
+        <div className='hidden lg:flex flex-col h-full bg-slate-50/50 w-full'>
+
+            {/* --- HEADER & TOOLBAR --- */}
+            <header className="flex-none px-6 py-5 flex items-center justify-between gap-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+
+                {/* Gauche: Titre & Navigation Date */}
+                <div className="flex items-center gap-6">
+                    <h1 className="text-3xl font-bold text-slate-800 capitalize flex items-baseline gap-2 min-w-fit">
+                        {monthFr[date.getMonth()]}
+                        <span className="text-slate-400 font-light text-2xl">{date.getFullYear()}</span>
+                    </h1>
+
+                    {/* Séparateur visuel */}
+                    <div className="h-8 w-px bg-slate-200 hidden xl:block" />
+
+                    <DaySelector
+                        className="flex items-center"
+                        onClickNextWeek={onClickNextweek}
+                        onClickPreviousWeek={onClickPreviousWeek}
+                        onClickToday={onClickToday}
                     />
                 </div>
-            </div>
+
+                {/* Droite: Actions */}
+                <div className='flex items-center gap-3'>
+                    {/* Groupe d'outils secondaires (Unifié visuellement) */}
+                    <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
+                        <Export usersProps={usersProps} flightsSessions={sessions} planes={planesProp} />
+
+                        <div className="w-px h-5 bg-slate-100 mx-1" />
+
+                        <Filter
+                            sessions={sessions}
+                            setSessionsFiltered={setSessionsFiltered}
+                            display='desktop'
+                            usersProps={usersProps}
+                            planesProp={filterdPlanes}
+                        />
+
+                        {/* On affiche DeleteManySessions seulement si nécessaire, mais supposons qu'il gère sa propre visibilité ou est toujours là */}
+                        <div className="w-px h-5 bg-slate-100 mx-1" />
+
+                        <DeleteManySessions usersProps={usersProps} sessionsProps={sessions} setSessions={setSessions} />
+                    </div>
+
+                    {/* Action Principale */}
+                    <div className="shadow-sm shadow-purple-200 rounded-lg">
+                        <NewSession
+                            display='desktop'
+                            setSessions={setSessions}
+                            planesProp={filterdPlanes}
+                            usersProps={usersProps}
+                        />
+                    </div>
+                </div>
+            </header>
+
+            {/* --- CALENDAR CONTENT --- */}
+            <main className='flex-1 overflow-hidden'>
+                {/* Le calendrier prend tout l'espace restant */}
+                <TabCalendar
+                    date={date}
+                    sessions={sessionsFlitered}
+                    setSessions={setSessions}
+                    clubHours={clubHours}
+                    usersProps={usersProps}
+                    planesProp={planesProp}
+                />
+            </main>
         </div>
     )
 }

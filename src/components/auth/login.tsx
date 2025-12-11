@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginSchema, loginSchema } from "../../schemas/loginSchema"; // Assure-toi que le chemin est correct
 import { useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Logo } from '../Logo';
@@ -15,6 +15,7 @@ import { Spinner } from '../ui/SpinnerVariants';
 import { Eye, EyeOff } from 'lucide-react';
 import { Label } from '../ui/label';
 import { login } from "@/app/auth/login/action"
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 export const Login = () => {
     const [loading, setLoading] = React.useState(false);
@@ -22,7 +23,12 @@ export const Login = () => {
     const [messageG, setMessageG] = React.useState('');
     const [showPassword, setShowPassword] = React.useState(false); // État pour la visibilité du mot de passe
     const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
+    const router = useRouter();
 
+    // Précharge la page de destination
+    useEffect(() => {
+        router.prefetch('/Calendar'); // Ou ta page de destination
+    }, [router]);
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
         setMessageG(searchParams.get('messageG') ?? '');
@@ -39,24 +45,42 @@ export const Login = () => {
     });
 
     const onSubmit = async (data: LoginSchema) => {
-        setLoading(true); // Activation de l'état de chargement
+        setLoading(true);
+        setMessage("");
+        setMessageG("");
+
         try {
             const formData = new FormData();
             formData.append('email', data.email);
             formData.append('password', data.password);
 
-            // Appel API de connexion
-            await login(formData);
-            setMessage("");
-            setMessageG("");
+            // 1. On stocke le résultat de l'action
+            const res = await login(formData);
 
-            // setLoading(false);
+            // 2. On vérifie si l'action a retourné une erreur "logique" (mauvais mdp, etc.)
+            // Note: Si 'res' existe, c'est que le redirect n'a PAS eu lieu (car redirect lance une erreur)
+            if (res && !res.success) {
+                console.log("Erreur logique détectée:", res.message);
+                setMessage(res.message || "Erreur de connexion");
+                setLoading(false); // ICI : On arrête le spinner car l'utilisateur doit réessayer
+                return;
+            }
 
         } catch (error) {
-            console.error("Erreur de connexion :", error);
-            setLoading(false);
-        }
+            // 3. Gestion de la redirection (SUCCÈS)
+            // La fonction `redirect()` de Next.js lance une erreur spéciale de type NEXT_REDIRECT
+            if (isRedirectError(error)) {
+                // C'est le signe que tout a marché !
+                // On NE met PAS setLoading(false) ici.
+                // On laisse le spinner tourner pendant que la page change.
+                throw error;
+            }
 
+            // 4. Gestion des vrais crashs techniques (Bug code, serveur down...)
+            console.error("Erreur technique :", error);
+            setLoading(false); // On arrête le spinner
+            setMessage("Une erreur inattendue est survenue.");
+        }
     };
 
     return (

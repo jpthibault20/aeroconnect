@@ -1,17 +1,13 @@
-"use client";
 /**
  * @file PlanesPage.tsx
- * @brief A React component for displaying a list of planes.
- * 
- * This component shows the number of planes available and provides a button
- * to create a new plane. It also renders a table of planes using the 
- * `TableComponent`.
- * 
- * @returns The rendered planes page component.
+ * @brief Component for displaying and managing the fleet of planes.
  */
 
-import React, { useEffect, useState } from 'react';
+"use client";
+
+import React, { useState } from 'react';
 import TableComponent from './TableComponent';
+import MobilePlaneList from './MobilePlaneList'; // <-- IMPORT DU NOUVEAU COMPOSANT
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { planes, userRole } from '@prisma/client';
 import NewPlane from './NewPlane';
@@ -21,42 +17,45 @@ interface Props {
     PlanesProps: planes[];
 }
 
-const useViewportHeight = () => {
-    const [vh, setVh] = useState<number>(window.innerHeight);
-
-    useEffect(() => {
-        const updateHeight = () => setVh(window.innerHeight);
-
-        window.addEventListener("resize", updateHeight);
-        return () => window.removeEventListener("resize", updateHeight);
-    }, []);
-
-    return vh;
-};
-
 const PlanesPage = ({ PlanesProps }: Props) => {
     const { currentUser } = useCurrentUser();
-    const [planes, setPlanes] = useState<planes[]>(PlanesProps);
+    const [planesList, setPlanes] = useState<planes[]>(PlanesProps);
 
-    const vh = useViewportHeight();
+    const canEdit = currentUser?.role === userRole.ADMIN ||
+        currentUser?.role === userRole.OWNER ||
+        currentUser?.role === userRole.MANAGER;
 
     return (
-        <div
-            className="flex flex-col bg-gray-200 pb-20 p-3"
-            style={{ height: `${vh}px` }} // Hauteur dynamique
-        >
-            <Header planesLenght={planes.length} />
+        <div className="flex flex-col min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
 
-            <div className="my-3 flex justify-end">
-                {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER || currentUser?.role === userRole.MANAGER ? (
-                    <NewPlane setPlanes={setPlanes} />
-                ) : null}
+            {/* --- TOP BAR: Titre & Actions --- */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+
+                <div className="flex-1">
+                    <Header planesLenght={planesList.length} />
+                </div>
+
+                {canEdit && (
+                    <div className="shrink-0 w-full md:w-auto">
+                        <NewPlane setPlanes={setPlanes} />
+                    </div>
+                )}
             </div>
 
-            {/* Le tableau doit prendre tout l'espace restant */}
-            <div className="flex-1 overflow-y-auto">
-                <TableComponent planes={planes} setPlanes={setPlanes} />
+            {/* --- CONTENT --- */}
+
+            {/* 1. VUE DESKTOP (Tableau) : Cachée sur mobile */}
+            <div className="hidden md:block flex-1 bg-white border border-slate-200 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden flex-col h-full">
+                <div className="flex-1 overflow-auto">
+                    <TableComponent planes={planesList} setPlanes={setPlanes} />
+                </div>
             </div>
+
+            {/* 2. VUE MOBILE (Cartes) : Visible uniquement sur mobile */}
+            <div className="block md:hidden pb-10">
+                <MobilePlaneList planesList={planesList} setPlanes={setPlanes} />
+            </div>
+
         </div>
     );
 };

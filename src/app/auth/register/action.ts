@@ -13,9 +13,13 @@ export async function signup(formData: FormData) {
         email: formData.get('email') as string,
         password: formData.get('password') as string
     })
+    
     if (errorAuth) {
         console.log(errorAuth.message)
-        redirect('/auth/login?message=Une erreur est survenue lors de la création du compte, se rapprocher de l\'administrateur (E_009: failed to create auth user)')
+        const errorMessage = encodeURIComponent(
+            "Une erreur est survenue lors de la création du compte, se rapprocher de l'administrateur (E_009: failed to create auth user)"
+        );
+        redirect(`/auth/login?message=${errorMessage}`)
     }
 
     try {
@@ -27,9 +31,13 @@ export async function signup(formData: FormData) {
         })
     } catch (error) {
         console.log(error)
-        return redirect('/auth/register?message=Une erreur est survenue lors de la création du compte, se rapprocher de l\'administrateur (E_010: failed to create private user)')
+        const errorMessage = encodeURIComponent(
+            "Une erreur est survenue lors de la création du compte, se rapprocher de l'administrateur (E_010: failed to create private user)"
+        );
+        redirect(`/auth/register?message=${errorMessage}`)
     }
 
     revalidatePath('/', 'layout')
-    redirect(`/auth/login?messageG=${encodeURIComponent('compte créé avec succès')}`);
+    const successMessage = encodeURIComponent('Compte créé avec succès');
+    redirect(`/auth/login?messageG=${successMessage}`);
 }

@@ -18,31 +18,36 @@ import {
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { createClub } from "@/api/db/club";
 import { Spinner } from "./ui/SpinnerVariants";
-import { codeNewClub } from "@/config/config";
 import {
     InputOTP,
     InputOTPGroup,
     InputOTPSlot,
-} from "@/components/ui/input-otp"
+} from "@/components/ui/input-otp";
+import {
+    LockKeyhole,
+    Building2,
+    MapPin,
+    Clock,
+    ArrowRight
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import codeNewClubIsValid from "@/api/client/newClubValidation";
 
-
-// Schéma de validation avec Zod
+// --- Schéma de validation ---
 const clubFormSchema = z.object({
     name: z.string().min(1, "Le nom du club est requis"),
-    id: z.string().min(3, "L'ID du club n'est pas valide"),
+    id: z.string().min(3, "L'ID du club doit faire 3 caractères min.").toUpperCase(),
     address: z.string().optional(),
     city: z.string().optional(),
     zipCode: z.string().optional(),
-    workStartTime: z.string().min(1, "L'heure de début est requise"),
-    workEndTime: z.string().min(1, "L'heure de fin est requise"),
-    sessionDuration: z
-        .number()
-        .default(60)
+    workStartTime: z.string().min(1, "Heure de début requise"),
+    workEndTime: z.string().min(1, "Heure de fin requise"),
+    sessionDuration: z.number().default(60)
 }).refine(
     (data) => parseInt(data.workEndTime) - parseInt(data.workStartTime) >= 3,
     {
         path: ["workEndTime"],
-        message: "La plage horaire doit être d'au moins 3 heures.",
+        message: "La journée doit durer au moins 3h.",
     }
 );
 
@@ -56,10 +61,9 @@ const NewClub = ({ setNewClub }: Props) => {
     const [formError, setFormError] = useState<string | null>(null);
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
-    const [authorizedCreateNewClub, setAuthorizedCreateNewClub] = useState(false)
-    const [code, setCode] = useState()
-    const [errorOTP, setErrorOTP] = useState("")
-
+    const [authorizedCreateNewClub, setAuthorizedCreateNewClub] = useState(false);
+    const [code, setCode] = useState("");
+    const [errorOTP, setErrorOTP] = useState("");
 
     const {
         register,
@@ -68,247 +72,219 @@ const NewClub = ({ setNewClub }: Props) => {
         formState: { errors },
     } = useForm<ClubFormValues>({
         resolver: zodResolver(clubFormSchema),
-        defaultValues: {
-            sessionDuration: 60, // Valeur par défaut
-        },
+        defaultValues: { sessionDuration: 60 },
     });
 
-    const onSubmit = (data: ClubFormValues) => {
-        const createClubAPI = async () => {
-            setLoading(true);
+    const onSubmit = async (data: ClubFormValues) => {
+        setLoading(true);
+        setFormError(null);
+        try {
             const res = await createClub(data, currentUser?.id as string);
             if (res.error) {
                 setFormError(res.error);
             } else if (res.success) {
-                setNewClub(false);
-                setFormError(null);
                 window.location.href = '/calendar?clubID=' + data.id;
             }
+        } catch (error) {
+            console.error(error);
+            setFormError("Une erreur technique est survenue.");
+        } finally {
             setLoading(false);
-        };
-        createClubAPI();
+        }
     };
 
-    const hours = Array.from({ length: 24 }, (_, i) =>
-        i.toString().padStart(2, "0")
-    );
+    const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
 
     const onSubmitOTP = () => {
-        if (Number(code) === codeNewClub) {
-            setAuthorizedCreateNewClub(true)
-            setErrorOTP("")
+        if (codeNewClubIsValid(Number(code))) {
+            setAuthorizedCreateNewClub(true);
+            setErrorOTP("");
+        } else {
+            setErrorOTP("Code de sécurité incorrect.");
         }
-        else {
-            setErrorOTP("Code incorrect")
-            setAuthorizedCreateNewClub(false)
-        }
-    }
+    };
 
+    // Styles Helpers
+    const inputStyle = "bg-slate-50 border-slate-200 focus:ring-[#774BBE] focus:border-[#774BBE]";
+    const sectionTitleStyle = "text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-3 pb-1 border-b border-slate-100";
+
+    // --- ÉCRAN 1 : FORMULAIRE CRÉATION ---
     if (authorizedCreateNewClub) {
         return (
-            <div className="flex flex-col justify-center items-center space-y-6">
-                <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-6">
-                    {/* Nom du club */}
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Nom du club</Label>
-                        <Input
-                            id="name"
-                            placeholder="Nom du club"
-                            {...register("name")}
-                        />
-                        {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
-                    </div>
+            <div className="animate-in slide-in-from-right-4 duration-300">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
-                    {/* ID du club */}
-                    <div className="space-y-2">
-                        <Label htmlFor="id">ID du club (LF_ _ _ _)</Label>
-                        <Input
-                            id="id"
-                            placeholder="ID du club"
-                            {...register("id")}
-                        />
-                        {errors.id && <p className="text-red-500 text-sm">{errors.id.message}</p>}
-                    </div>
-
-                    {/* Adresse */}
-                    <div className="space-y-2">
-                        <Label htmlFor="address">Adresse</Label>
-                        <Textarea
-                            id="address"
-                            placeholder="Numéro et nom de rue"
-                            {...register("address")}
-                        />
-                        {errors.address && (
-                            <p className="text-red-500 text-sm">{errors.address.message}</p>
-                        )}
-                    </div>
-
-                    {/* Ville et code postal */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="zipCode">Code postal</Label>
-                            <Input
-                                id="zipCode"
-                                placeholder="Code postal"
-                                {...register("zipCode")}
-                            />
-                            {errors.zipCode && (
-                                <p className="text-red-500 text-sm">{errors.zipCode.message}</p>
-                            )}
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="city">Ville</Label>
-                            <Input
-                                id="city"
-                                placeholder="Ville"
-                                {...register("city")}
-                            />
-                            {errors.city && (
-                                <p className="text-red-500 text-sm">{errors.city.message}</p>
-                            )}
+                    {/* Identité */}
+                    <div>
+                        <h3 className={sectionTitleStyle}>
+                            <Building2 className="w-4 h-4 text-[#774BBE]" /> Identité du Club
+                        </h3>
+                        <div className="grid grid-cols-1 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="name">Nom officiel</Label>
+                                <Input id="name" placeholder="Ex: Aéroclub de l'Est" {...register("name")} className={inputStyle} />
+                                {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="id">Identifiant Unique (Code OACI/LF)</Label>
+                                <Input id="id" placeholder="Ex: LFKZ" {...register("id")} className={cn(inputStyle, "uppercase")} />
+                                {errors.id && <p className="text-xs text-red-500">{errors.id.message}</p>}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Heures de travail */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="workStartTime">Début de la journée</Label>
-                            <Controller
-                                name="workStartTime"
-                                control={control}
-                                render={({ field }) => (
-                                    <Select
-                                        onValueChange={field.onChange}
-                                        value={field.value || ""}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Début" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {hours.map((hour) => (
-                                                <SelectItem key={hour} value={hour}>
-                                                    {hour}:00
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
-                            {errors.workStartTime && (
-                                <p className="text-red-500 text-sm">
-                                    {errors.workStartTime.message}
-                                </p>
-                            )}
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="workEndTime">Fin de la journée</Label>
-                            <Controller
-                                name="workEndTime"
-                                control={control}
-                                render={({ field }) => (
-                                    <Select
-                                        onValueChange={field.onChange}
-                                        value={field.value || ""}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Fin" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {hours.map((hour) => (
-                                                <SelectItem key={hour} value={hour}>
-                                                    {hour}:00
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
-                            {errors.workEndTime && (
-                                <p className="text-red-500 text-sm">
-                                    {errors.workEndTime.message}
-                                </p>
-                            )}
+                    {/* Localisation */}
+                    <div>
+                        <h3 className={sectionTitleStyle}>
+                            <MapPin className="w-4 h-4 text-[#774BBE]" /> Localisation
+                        </h3>
+                        <div className="space-y-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="address">Adresse</Label>
+                                <Textarea id="address" placeholder="Rue, aérodrome..." {...register("address")} className={cn(inputStyle, "min-h-[60px]")} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="zipCode">Code Postal</Label>
+                                    <Input id="zipCode" placeholder="75000" {...register("zipCode")} className={inputStyle} />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="city">Ville</Label>
+                                    <Input id="city" placeholder="Paris" {...register("city")} className={inputStyle} />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Durée des sessions */}
-                    <div className="space-y-2">
-                        <Label htmlFor="sessionDuration">Durée des sessions (minutes)</Label>
-                        <Input
-                            id="sessionDuration"
-                            type="number"
-                            disabled
-                            defaultValue={60}
-                            {...register("sessionDuration", { valueAsNumber: true })}
-                        />
+                    {/* Horaires */}
+                    <div>
+                        <h3 className={sectionTitleStyle}>
+                            <Clock className="w-4 h-4 text-[#774BBE]" /> Paramètres par défaut
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label>Ouverture</Label>
+                                <Controller
+                                    name="workStartTime"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <SelectTrigger className={inputStyle}><SelectValue placeholder="09:00" /></SelectTrigger>
+
+                                            {/* CORRECTION ICI : z-[10000] et max-h pour le scroll */}
+                                            <SelectContent className="max-h-[200px] z-[10000]">
+                                                {hours.map(h => <SelectItem key={h} value={h}>{h}:00</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label>Fermeture</Label>
+                                <Controller
+                                    name="workEndTime"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <SelectTrigger className={inputStyle}><SelectValue placeholder="18:00" /></SelectTrigger>
+
+                                            {/* CORRECTION ICI : z-[10000] et max-h pour le scroll */}
+                                            <SelectContent className="max-h-[200px] z-[10000]">
+                                                {hours.map(h => <SelectItem key={h} value={h}>{h}:00</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
+                            </div>
+                        </div>
+                        {errors.workEndTime && <p className="text-xs text-red-500 mt-1">{errors.workEndTime.message}</p>}
                     </div>
 
-                    {/* Boutons */}
-                    <div className="flex justify-end space-x-4">
+                    {/* Erreur API */}
+                    {formError && (
+                        <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+                            <span>⚠️</span> {formError}
+                        </div>
+                    )}
+
+                    {/* Footer Buttons */}
+                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                         <Button
                             variant="ghost"
                             type="button"
                             onClick={() => setNewClub(false)}
-                            className="text-gray-500"
+                            className="text-slate-500 hover:text-slate-800"
                             disabled={loading}
                         >
-                            Retour
+                            Annuler
                         </Button>
-                        <Button type="submit" variant="perso">
-                            {loading ? (
-                                <Spinner />
-                            ) : (
-                                "Créer le club"
-                            )}
+                        <Button
+                            type="submit"
+                            disabled={loading}
+                            className="bg-[#774BBE] hover:bg-[#6538a5] text-white min-w-[130px]"
+                        >
+                            {loading ? <Spinner className="text-white w-4 h-4" /> : "Créer le club"}
                         </Button>
                     </div>
                 </form>
-
-                {formError && <p className="text-red-500 text-sm">{formError}</p>}
             </div>
-        )
+        );
     }
+
+    // --- ÉCRAN 2 : VÉRIFICATION OTP ---
     else {
         return (
-            <div className="flex flex-col space-y-3 w-full items-center justify-center">
-                <InputOTP
-                    maxLength={4}
-                    onComplete={(otp) => setCode(otp)}
-                    className="flex w-fit"
-                >
-                    <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                    </InputOTPGroup>
-                </InputOTP>
+            <div className="flex flex-col items-center justify-center py-6 space-y-6 animate-in zoom-in-95 duration-300">
 
-                {errorOTP && <p className="text-red-500 text-sm">{errorOTP}</p>}
-
-                <div className="flex justify-end space-x-4">
-                    <Button
-                        variant="ghost"
-                        type="button"
-                        onClick={() => setNewClub(false)}
-                        className="text-gray-500"
-                    >
-                        Retour
-                    </Button>
-                    <Button
-                        variant="perso"
-                        type="button"
-                        onClick={onSubmitOTP}
-                        className=""
-                    >
-                        Valider
-                    </Button>
+                <div className="h-16 w-16 bg-purple-50 rounded-full flex items-center justify-center mb-2">
+                    <LockKeyhole className="w-8 h-8 text-[#774BBE]" />
                 </div>
 
+                <div className="text-center space-y-1 max-w-xs">
+                    <h3 className="font-semibold text-slate-900">Accès Restreint</h3>
+                    <p className="text-sm text-slate-500">
+                        La création d&apos;un nouveau club est protégée. Veuillez saisir le code administrateur.
+                    </p>
+                </div>
 
+                <div className="space-y-2 flex flex-col items-center">
+                    <InputOTP
+                        maxLength={4}
+                        value={code}
+                        onChange={(val) => setCode(val)}
+                    >
+                        <InputOTPGroup>
+                            <InputOTPSlot index={0} className="border-slate-200" />
+                            <InputOTPSlot index={1} className="border-slate-200" />
+                            <InputOTPSlot index={2} className="border-slate-200" />
+                            <InputOTPSlot index={3} className="border-slate-200" />
+                        </InputOTPGroup>
+                    </InputOTP>
 
+                    <div className="h-6 flex items-center">
+                        {errorOTP && <p className="text-xs text-red-500 font-medium animate-pulse">{errorOTP}</p>}
+                    </div>
+                </div>
+
+                <div className="flex gap-3 w-full pt-4">
+                    <Button
+                        variant="outline"
+                        type="button"
+                        onClick={() => setNewClub(false)}
+                        className="flex-1 border-slate-200 text-slate-600 hover:bg-slate-50"
+                    >
+                        Annuler
+                    </Button>
+                    <Button
+                        onClick={onSubmitOTP}
+                        className="flex-1 bg-[#774BBE] hover:bg-[#6538a5] text-white"
+                        disabled={code.length < 4}
+                    >
+                        Valider <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                </div>
             </div>
-        )
+        );
     }
 };
 
