@@ -1,10 +1,8 @@
 /**
  * @file PlanePageComponent.tsx
  * @brief Component for displaying flight sessions and filters.
- * 
- * @details
- * This component handles the display of flight sessions, allows filtering
- * options, and manages session selection.
+ * * @details
+ * Updated design to match Aero Connect modern dashboard style.
  */
 
 "use client";
@@ -18,6 +16,8 @@ import DeleteFlightSession from '../DeleteFlightSession';
 import { isSameDay } from 'date-fns';
 import { DateValue } from "@internationalized/date";
 
+// Icônes (Optionnel : si tu as lucide-react ou heroicons, c'est mieux d'ajouter des icônes visuelles)
+
 interface Props {
     sessionsProp: flight_sessions[];
     planesProp: planes[];
@@ -25,13 +25,6 @@ interface Props {
 }
 export type StatusType = "al" | "available" | "unavailable";
 
-
-/**
- * @component PlanePageComponent
- * @description Component for managing and displaying flight sessions.
- * 
- * @returns  The rendered component.
- */
 const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const [sessionChecked, setSessionChecked] = useState<flight_sessions[]>([]);
@@ -40,6 +33,8 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
     const [selectedInstructor, setSelectedInstructor] = useState<string>("al");
     const [selectedStudents, setSelectedStudents] = useState<string>("al");
     const [status, setStatus] = useState<StatusType>("al");
+
+    // Initialisation du state (inchangé)
     const [sessions, setSessions] = useState<flight_sessions[]>(() => {
         if (currentUser?.role === userRole.STUDENT || currentUser?.role === userRole.PILOT || currentUser?.role === userRole.USER) {
             return sessionsProp.filter(session => session.studentID === currentUser?.id);
@@ -50,115 +45,123 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
         else {
             return sessionsProp;
         }
-    });;
-    const [filteredSessions, setFilteredSessions] = useState(sessions)
+    });
 
-    const planes = planesProp.filter((p) => currentUser?.classes.includes(p.classes))
+    const [filteredSessions, setFilteredSessions] = useState(sessions);
+    const planes = planesProp.filter((p) => currentUser?.classes.includes(p.classes));
 
-
+    // Logique de filtrage (inchangé)
     useEffect(() => {
         const filtered = sessions.filter(session => {
             let isValid = true;
-
-            if (status === "available") {
-                isValid = isValid && session.studentID === null;
-            }
-
-            if (status === "unavailable") {
-                isValid = isValid && session.studentID !== null;
-            }
-
-            if (selectedPlane && selectedPlane !== "al") {
-                isValid = isValid && session.planeID.includes(selectedPlane);
-            }
-            if (selectedInstructor && selectedInstructor !== "al") {
-                isValid = isValid && session.pilotID === selectedInstructor;
-            }
-            if (selectedStudents && selectedStudents !== "al") {
-                isValid = isValid && session.studentID === selectedStudents;
-            }
-
+            if (status === "available") isValid = isValid && session.studentID === null;
+            if (status === "unavailable") isValid = isValid && session.studentID !== null;
+            if (selectedPlane && selectedPlane !== "al") isValid = isValid && session.planeID.includes(selectedPlane);
+            if (selectedInstructor && selectedInstructor !== "al") isValid = isValid && session.pilotID === selectedInstructor;
+            if (selectedStudents && selectedStudents !== "al") isValid = isValid && session.studentID === selectedStudents;
             if (filterDate) {
                 const comparisonDate = new Date(filterDate.year, filterDate.month - 1, filterDate.day);
                 isValid = isValid && isSameDay(session.sessionDateStart, comparisonDate);
             }
-
-
             return isValid;
         });
-
-        setFilteredSessions(filtered); // Update the filtered sessions
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [status, filterDate, sessions, selectedPlane, selectedInstructor, selectedStudents]); // Recalculate filters when any filter changes
+        setFilteredSessions(filtered);
+    }, [status, filterDate, sessions, selectedPlane, selectedInstructor, selectedStudents]);
 
 
+    // --- RENDU ---
 
     return (
-        <div className='h-full p-6 bg-gray-200'>
-            <div className='flex space-x-3'>
-                <p className='font-medium text-3xl'>Mes vols</p>
-                <p className='text-[#797979] text-3xl'>{currentUser?.role !== userRole.USER && filteredSessions.length}</p>
-            </div>
-            <div className='my-3 flex justify-between'>
-                <div className='flex space-x-3'>
+        // 1. Fond plus léger et moderne (Slate-50 au lieu de Gray-200)
+        <div className='h-full min-h-screen bg-slate-50 p-6 md:p-8 font-sans text-slate-800'>
 
-                    {sessionChecked.length > 0 && (currentUser?.role == userRole.ADMIN || currentUser?.role == userRole.INSTRUCTOR || currentUser?.role == userRole.OWNER  || currentUser?.role == userRole.MANAGER) ?
-                        (
-                            <DeleteFlightSession description={`${sessionChecked.length} vols vont être supprimé définitivement`} sessions={sessionChecked} setSessions={setSessions} usersProp={usersProp}>
-                                <div className='px-2 py-1 bg-red-600 text-white rounded-lg'>
-                                    Supprimer
-                                </div>
-                            </DeleteFlightSession>
-                        ) : null
-                    }
+            {/* Header Section */}
+            <div className='flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4'>
+                <div className='flex items-center space-x-3'>
+                    <h1 className='font-bold text-3xl text-slate-900 tracking-tight'>Mes vols</h1>
 
+                    {/* Badge compteur stylisé */}
+                    {currentUser?.role !== userRole.USER && (
+                        <span className='px-3 py-1 bg-white text-purple-600 border border-purple-100 font-semibold rounded-full text-sm shadow-sm'>
+                            {filteredSessions.length} vols
+                        </span>
+                    )}
                 </div>
 
-                <div className='flex w-full justify-end space-x-2'>
-                    <>
-                        <div className='hidden lg:block h-full'>
-                            <NewSession 
-                                display={'desktop'} 
-                                setSessions={setSessions} 
-                                planesProp={planes} 
+                {/* Action Bar */}
+                <div className='flex items-center gap-3'>
+
+                    {/* Zone de suppression conditionnelle (Stylisée en mode "Danger") */}
+                    {sessionChecked.length > 0 && (currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.OWNER || currentUser?.role === userRole.MANAGER) && (
+                        <DeleteFlightSession
+                            description={`${sessionChecked.length} vols vont être supprimés définitivement`}
+                            sessions={sessionChecked}
+                            setSessions={setSessions}
+                            usersProp={usersProp}
+                        >
+                            <div className='cursor-pointer px-4 py-2 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors font-medium rounded-lg text-sm flex items-center shadow-sm'>
+                                <span>Supprimer ({sessionChecked.length})</span>
+                            </div>
+                        </DeleteFlightSession>
+                    )}
+
+                    {/* Groupe Filtre & Ajout */}
+                    <div className='flex items-center space-x-2 '>
+                        <Filter
+                            status={status}
+                            setStatus={setStatus}
+                            selectedPlane={selectedPlane}
+                            setFilterDate={setFilterDate}
+                            setSelectedPlane={setSelectedPlane}
+                            usersProp={usersProp}
+                            planesProp={planesProp}
+                            selectedInstructor={selectedInstructor}
+                            setSelectedInstructor={setSelectedInstructor}
+                            selectedStudents={selectedStudents}
+                            setSelectedStudents={setSelectedStudents}
+                        />
+
+                        <div className='h-6 w-[1px] bg-slate-200 mx-1'></div> {/* Séparateur vertical visuel */}
+
+                        <div className='hidden lg:block'>
+                            <NewSession
+                                display={'desktop'}
+                                setSessions={setSessions}
+                                planesProp={planes}
                                 usersProps={usersProp}
                             />
                         </div>
-                        <div className='lg:hidden block h-full'>
-                            <NewSession 
-                                display={'phone'} 
-                                setSessions={setSessions} 
-                                planesProp={planes} 
+                        <div className='lg:hidden block'>
+                            <NewSession
+                                display={'phone'}
+                                setSessions={setSessions}
+                                planesProp={planes}
                                 usersProps={usersProp}
                             />
                         </div>
-                    </>
-                    <Filter
-                        status={status}
-                        setStatus={setStatus}
-                        selectedPlane={selectedPlane}
-                        setFilterDate={setFilterDate}
-                        setSelectedPlane={setSelectedPlane}
+                    </div>
+                </div>
+            </div>
+
+            {/* Content Card */}
+            {/* C'est ici que se joue le design "Aero Connect" : une carte blanche, ombrée, qui contient la table */}
+            <div className='bg-white border border-slate-200 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden'>
+
+                {/* Si la table est vide, on peut afficher un état vide (optionnel mais recommandé) */}
+                {filteredSessions.length === 0 ? (
+                    <div className="p-10 text-center text-slate-400">
+                        <p>Aucun vol trouvé pour ces critères.</p>
+                    </div>
+                ) : (
+                    <TableComponent
+                        sessions={filteredSessions}
+                        setSessions={setSessions}
+                        setSessionChecked={setSessionChecked}
+                        planesProp={planesProp}
                         usersProp={usersProp}
-                        planesProp={planes}
-                        selectedInstructor={selectedInstructor}
-                        setSelectedInstructor={setSelectedInstructor}
-                        selectedStudents={selectedStudents}
-                        setSelectedStudents={setSelectedStudents}
                     />
-                </div>
-
+                )}
             </div>
-            {/* Use filtered sessions in the table */}
-
-            <TableComponent
-                sessions={filteredSessions} // Pass filtered sessions here
-                setSessions={setSessions}
-                setSessionChecked={setSessionChecked}
-                planesProp={planesProp}
-                usersProp={usersProp}
-            />
-
         </div>
     );
 };
