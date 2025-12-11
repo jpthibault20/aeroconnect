@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import { ChevronDown, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -21,6 +21,7 @@ import { useSearchParams } from "next/navigation";
 import { updateUserClub } from "@/api/db/users";
 import packageJson from "../../package.json";
 import { cn } from "@/lib/utils";
+import { getAllUserRequestedClubID } from "@/api/db/club";
 
 interface props {
     clubsProp: Club[]
@@ -34,6 +35,54 @@ const SideBar = ({ clubsProp }: props) => {
     const searchParams = useSearchParams();
     const clubID = searchParams.get("clubID");
     const [clubForAdmin, setClubForAdmin] = React.useState<string | null>(clubID);
+    const [refreshTrigger, setRefreshTrigger] = React.useState(0);
+
+    // Nouvel état pour le nombre de demandes en attente
+    const [requestCount, setRequestCount] = React.useState(0);
+
+    // --- EFFECT: Récupérer les demandes en attente ---
+    useEffect(() => {
+        const fetchRequests = async () => {
+            // Définition explicite des rôles pour TypeScript
+            const allowedRoles: userRole[] = [userRole.ADMIN, userRole.OWNER, userRole.MANAGER];
+
+            // Vérification si l'utilisateur a le droit de voir les demandes
+            const canManage = currentUser?.role && allowedRoles.includes(currentUser.role);
+
+            if (clubID && canManage) {
+                try {
+                    const requests = await getAllUserRequestedClubID(clubID);
+                    // Mise à jour du compteur si la réponse est un tableau
+                    if (Array.isArray(requests)) {
+                        setRequestCount(requests.length);
+                    }
+                } catch (error) {
+                    console.error("Erreur lors du chargement des notifications:", error);
+                }
+            }
+        };
+
+        // Appel immédiat au chargement du composant
+        fetchRequests();
+
+        // --- GESTION DE L'AUTO-REFRESH ---
+
+        // Fonction qui sera appelée quand l'événement est déclenché
+        const handleRefresh = () => {
+            // On incrémente ce compteur, ce qui modifie une dépendance du useEffect
+            // et force React à relancer 'fetchRequests()'
+            setRefreshTrigger((prev) => prev + 1);
+        };
+
+        // On écoute l'événement global personnalisé
+        window.addEventListener('refresh-club-requests', handleRefresh);
+
+        // Fonction de nettoyage (très important pour éviter les fuites de mémoire)
+        return () => {
+            window.removeEventListener('refresh-club-requests', handleRefresh);
+        };
+
+    }, [clubID, currentUser, refreshTrigger]);
 
     const handleNavigation = (href: string) => {
         router.push(href);
@@ -52,7 +101,6 @@ const SideBar = ({ clubsProp }: props) => {
         }
     };
 
-    // Helper pour le rôle (affichage propre)
     const getRoleLabel = (role?: string) => {
         switch (role) {
             case "STUDENT": return "Élève";
@@ -127,6 +175,9 @@ const SideBar = ({ clubsProp }: props) => {
                                 const IconComponent = link.icon;
                                 const isActive = pathname === link.path;
 
+                                // Vérifie si c'est l'onglet "Membres" (ou le nom que tu utilises) pour afficher la notif
+                                const showBadge = (link.name === "Membres" || link.name === "Club") && requestCount > 0;
+
                                 return (
                                     <Link
                                         href={`${link.path}?clubID=${currentUser?.clubID || ""}`}
@@ -134,18 +185,27 @@ const SideBar = ({ clubsProp }: props) => {
                                         className={cn(
                                             "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group relative overflow-hidden",
                                             isActive
-                                                ? "bg-[#774BBE] text-white shadow-lg shadow-[#774BBE]/20" // Actif : Violet plein, très lisible sur fond sombre
-                                                : "text-slate-400 hover:bg-white/5 hover:text-white" // Inactif : Gris clair -> Blanc
+                                                ? "bg-[#774BBE] text-white shadow-lg shadow-[#774BBE]/20"
+                                                : "text-slate-400 hover:bg-white/5 hover:text-white"
                                         )}
                                     >
                                         <IconComponent
                                             size={20}
                                             className={cn(
-                                                "transition-colors",
+                                                "transition-colors flex-shrink-0",
                                                 isActive ? "text-white" : "text-slate-500 group-hover:text-white"
                                             )}
                                         />
-                                        <span className="relative z-10">{link.name}</span>
+                                        <span className="relative z-10 flex-1 flex justify-between items-center">
+                                            {link.name}
+
+                                            {/* --- BULLE DE NOTIFICATION --- */}
+                                            {showBadge && (
+                                                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-sm ring-2 ring-[#1A1B1E] animate-in zoom-in-50 duration-300">
+                                                    {requestCount}
+                                                </span>
+                                            )}
+                                        </span>
                                     </Link>
                                 );
                             })}

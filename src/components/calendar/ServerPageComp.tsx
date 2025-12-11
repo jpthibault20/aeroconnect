@@ -10,9 +10,7 @@ interface PageProps {
 }
 
 const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
-
     if (ClubIDprop) {
-
         const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
         // Exécution parallèle des requêtes Prisma
         const [sessions, planes, users] = await Promise.all([
@@ -35,7 +33,6 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             );
         }
     }
-
     return (
         <div className='h-full'>
             <NoClubID />

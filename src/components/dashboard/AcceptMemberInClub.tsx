@@ -53,6 +53,7 @@ const AcceptMemberInClub = ({ membershipRequests, setMembershipRequests, userReq
         acceptMembershipRequest(user.id, user.clubIDRequest, studentRole, studentClasses);
         setMembershipRequests(membershipRequests.filter(req => req.id !== user.id));
         onClose();
+        window.dispatchEvent(new Event('refresh-club-requests'));
     };
 
     return (

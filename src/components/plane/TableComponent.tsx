@@ -39,7 +39,6 @@ const TableComponent = ({ planes, setPlanes }: Props) => {
 
                             {/* Colonne Icône (Visuel) */}
                             <TableHead className={`${headerClass} w-[50px] text-center`}>
-                                <Plane className="w-4 h-4 mx-auto text-slate-400" />
                             </TableHead>
 
                             {/* Colonne Nom */}

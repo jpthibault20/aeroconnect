@@ -128,7 +128,6 @@ export const getAllUserRequestedClubID = async (clubID: string) => {
                 clubIDRequest: clubID
             }
         })
-        prisma.$disconnect();
         return user;
     } catch (error) {
         console.error('Error getting user:', error);
@@ -195,7 +194,6 @@ export const rejectMembershipRequest = async (userID: string) => {
                 clubIDRequest: null
             }
         });
-        prisma.$disconnect();
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch (error) {
         console.error('Error blocking user:', error);

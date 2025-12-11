@@ -54,17 +54,32 @@ export const Login = () => {
             formData.append('email', data.email);
             formData.append('password', data.password);
 
-            await login(formData);
+            // 1. On stocke le résultat de l'action
+            const res = await login(formData);
+
+            // 2. On vérifie si l'action a retourné une erreur "logique" (mauvais mdp, etc.)
+            // Note: Si 'res' existe, c'est que le redirect n'a PAS eu lieu (car redirect lance une erreur)
+            if (res && !res.success) {
+                console.log("Erreur logique détectée:", res.message);
+                setMessage(res.message || "Erreur de connexion");
+                setLoading(false); // ICI : On arrête le spinner car l'utilisateur doit réessayer
+                return;
+            }
 
         } catch (error) {
-            // Ignore les erreurs de redirection Next.js
+            // 3. Gestion de la redirection (SUCCÈS)
+            // La fonction `redirect()` de Next.js lance une erreur spéciale de type NEXT_REDIRECT
             if (isRedirectError(error)) {
+                // C'est le signe que tout a marché !
+                // On NE met PAS setLoading(false) ici.
+                // On laisse le spinner tourner pendant que la page change.
                 throw error;
             }
 
-            console.error("Erreur de connexion :", error);
-            setLoading(false);
-            setMessage("Erreur de connexion");
+            // 4. Gestion des vrais crashs techniques (Bug code, serveur down...)
+            console.error("Erreur technique :", error);
+            setLoading(false); // On arrête le spinner
+            setMessage("Une erreur inattendue est survenue.");
         }
     };
 
