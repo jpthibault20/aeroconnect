@@ -40,8 +40,8 @@ const PlaneSelect = ({ planes, selectedPlane, onPlaneChange }: PlaneSelectProps)
 
                 {/* Option spéciale "Sans avion" si l'utilisateur y a droit */}
                 {currentUser?.canSubscribeWithoutPlan && (
-                    <SelectItem value="noPlane" className="text-amber-700 font-medium">
-                        Sans avion (Vol personnel)
+                    <SelectItem value="noPlane" className="text-blue-700">
+                        Sans avion (Appareil personnel)
                     </SelectItem>
                 )}
             </SelectContent>
