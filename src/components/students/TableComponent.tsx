@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { JSX } from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '../ui/table';
 import { User } from '@prisma/client';
 import TableRowComponent from './TableRowComponent';
