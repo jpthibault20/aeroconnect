@@ -1,287 +1,292 @@
-import React, { useEffect, useState } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { User, userRole } from '@prisma/client'
-import { updateUser } from '@/api/db/users'
-import { toast } from '@/hooks/use-toast'
-import { Switch } from '../ui/switch'
-import { FaCheck } from "react-icons/fa";
-import { ImCross } from "react-icons/im";
-import { useCurrentUser } from '@/app/context/useCurrentUser'
-import { Spinner } from '../ui/SpinnerVariants'
-import InputClasses from '../InputClasses'
-import { ScrollArea } from '../ui/scroll-area'
-import { clearCache } from '@/lib/cache'
-
-
+import React, { useEffect, useState } from 'react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
+} from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '../ui/select';
+import { User, userRole } from '@prisma/client';
+import { updateUser } from '@/api/db/users';
+import { toast } from '@/hooks/use-toast';
+import { Switch } from '../ui/switch';
+import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { Spinner } from '../ui/SpinnerVariants';
+import InputClasses from '../InputClasses';
+import { clearCache } from '@/lib/cache';
+import { UserCog, Ban, Plane } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { IoIosWarning } from 'react-icons/io';
 
 interface Props {
-    children: React.ReactNode
-    showPopup: boolean
-    setShowPopup: React.Dispatch<React.SetStateAction<boolean>>
+    children: React.ReactNode;
+    showPopup: boolean;
+    setShowPopup: React.Dispatch<React.SetStateAction<boolean>>;
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
-    user: User
+    user: User;
 }
 
 const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user }: Props) => {
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
     const [autorisedModifyRole, setAutorisedModifyRole] = useState(false);
     const [classes, setClasses] = useState<number[]>(user.classes);
     const [userState, setUserState] = useState<User>(user);
 
+    // Vérification des droits
     useEffect(() => {
-        if (currentUser?.role === "ADMIN" || currentUser?.role === "OWNER" || currentUser?.role === "INSTRUCTOR" || currentUser?.role === "MANAGER") {
-            setAutorisedModifyRole(true);
-        } else {
-            setAutorisedModifyRole(false);
-        }
+        const canModify = ["ADMIN", "OWNER", "INSTRUCTOR", "MANAGER"].includes(currentUser?.role || "");
+        setAutorisedModifyRole(canModify);
     }, [currentUser]);
 
+    // Synchro des classes
     useEffect(() => {
-        setUserState({ ...userState, classes })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [classes])
+        setUserState(prev => ({ ...prev, classes }));
+    }, [classes]);
 
     const onChangeUserState = (key: keyof typeof userState, value: string | boolean) => {
         setUserState((prev) => ({
             ...prev,
             [key]: value,
-        }))
-    }
-
-    const onClickUpdateUser = () => {
-        const updateUserAction = async () => {
-            setLoading(true);
-            try {
-                const res = await updateUser(userState);
-                if (res.success) {
-                    // Met à jour l'utilisateur dans la liste des utilisateurs
-                    setUsers((prevUsers) =>
-                        prevUsers.map((u) =>
-                            u.id === userState.id ? { ...u, ...userState } : u
-                        )
-                    );
-
-                    setShowPopup(false);
-                    setLoading(false);
-                    clearCache(`users:${userState.clubID}`)
-                    toast({
-                        title: "Utilisateur mis à jour avec succès",
-                        duration: 5000,
-                        style: {
-                            background: '#0bab15', //rouge : ab0b0b
-                            color: '#fff',
-                        }
-                    });
-                }
-                if (res.error) {
-                    console.log(res.error);
-                    setLoading(false);
-                    toast({
-                        title: "Oups, une erreur est survenue",
-                        duration: 5000,
-                        style: {
-                            background: '#ab0b0b', //rouge : ab0b0b
-                            color: '#fff',
-                        }
-                    });
-                }
-            } catch (error) {
-                console.log(error);
-                setLoading(false);
-            }
-        };
-        updateUserAction();
+        }));
     };
 
+    const onClickUpdateUser = async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const res = await updateUser(userState);
+            if (res.success) {
+                // Update local state
+                setUsers((prevUsers) =>
+                    prevUsers.map((u) =>
+                        u.id === userState.id ? { ...u, ...userState } : u
+                    )
+                );
+                clearCache(`users:${userState.clubID}`);
+                toast({
+                    title: "Profil mis à jour",
+                    description: `${userState.firstName} ${userState.lastName} a été modifié avec succès.`,
+                    className: "bg-green-600 text-white border-none"
+                });
+                setShowPopup(false);
+            } else {
+                setError(res.error || "Une erreur est survenue.");
+            }
+        } catch (error) {
+            console.error(error);
+            setError("Erreur technique lors de la sauvegarde.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Helper styles
+    const inputStyle = "bg-slate-50 border-slate-200 focus:ring-[#774BBE] focus:border-[#774BBE]";
+    const labelStyle = "text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 block";
 
     return (
         <Dialog open={showPopup} onOpenChange={setShowPopup}>
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>Mise à jour du profil</DialogTitle>
-                    <DialogDescription>
-                        Modifiez les informations du profil de l&apos;utilisateur
-                    </DialogDescription>
-                </DialogHeader>
-                <ScrollArea className='h-[500px]' type='always'>
-                    <div className='space-y-3 max-h-[60vh] md:max-h-none overflow-y-auto md:overflow-visible'>
-                        {/* Nom et Prénom */}
-                        <div className="grid grid-cols-2 gap-4 py-2">
-                            <div className="grid items-center gap-2">
-                                <Label htmlFor="firstName">Nom</Label>
-                                <Input
-                                    id="firstName"
-                                    value={userState.firstName}
-                                    disabled={loading}
-                                    onChange={(e) => onChangeUserState('firstName', e.target.value)}
-                                />
+
+            <DialogContent className="w-[95%] sm:max-w-[600px] p-0 gap-0 bg-white rounded-xl sm:rounded-2xl border-none shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+
+                {/* --- Header --- */}
+                <div className="bg-slate-50 p-6 border-b border-slate-100 flex-shrink-0">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                            <div className="p-2 bg-purple-100 text-[#774BBE] rounded-lg">
+                                <UserCog className="w-5 h-5" />
                             </div>
-                            <div className="grid items-center gap-2">
-                                <Label htmlFor="lastName">Prénom</Label>
-                                <Input
-                                    id="lastName"
-                                    value={userState.lastName || ''}
-                                    disabled={loading}
-                                    onChange={(e) => onChangeUserState('lastName', e.target.value)}
-                                />
+                            Modifier le membre
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 ml-11">
+                            Édition du profil et des permissions d&apos;accès.
+                        </DialogDescription>
+                    </DialogHeader>
+                </div>
+
+                {/* --- Content Scrollable --- */}
+                <div className='p-6 space-y-8 overflow-y-auto'>
+
+                    {/* 1. Identité */}
+                    <div>
+                        <span className={labelStyle}>Identité & Contact</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="lastName">Nom</Label>
+                                <Input id="lastName" value={userState.lastName} onChange={(e) => onChangeUserState('lastName', e.target.value)} disabled={loading} className={inputStyle} />
                             </div>
-                        </div>
-
-                        {/* Email */}
-                        <div className="grid items-center gap-2">
-                            <Label htmlFor="email">Adresse email</Label>
-                            <Input
-                                id="email"
-                                value={userState.email}
-                                disabled={true}
-                                onChange={(e) => onChangeUserState('email', e.target.value)}
-                            />
-                        </div>
-
-                        {/* Téléphone */}
-                        <div className="grid items-center gap-2">
-                            <Label htmlFor="phone">Téléphone</Label>
-                            <Input
-                                id="phone"
-                                value={userState.phone || ''}
-                                disabled={loading}
-                                onChange={(e) => onChangeUserState('phone', e.target.value)}
-                            />
-                        </div>
-
-                        {/* Adresse */}
-                        <div className="grid items-center gap-2">
-                            <Label htmlFor="adress">Adresse</Label>
-                            <Input
-                                id="adress"
-                                value={userState.adress || ''}
-                                disabled={loading}
-                                onChange={(e) => onChangeUserState('adress', e.target.value)}
-                            />
-                        </div>
-
-                        {/* Ville et Code Postal */}
-                        <div className="grid grid-cols-2 gap-4 py-2">
-                            <div className="grid items-center gap-2">
-                                <Label htmlFor="city">Ville</Label>
-                                <Input
-                                    id="city"
-                                    value={userState.city || ''}
-                                    disabled={loading}
-                                    onChange={(e) => onChangeUserState('city', e.target.value)}
-                                />
+                            <div className="space-y-1.5">
+                                <Label htmlFor="firstName">Prénom</Label>
+                                <Input id="firstName" value={userState.firstName} onChange={(e) => onChangeUserState('firstName', e.target.value)} disabled={loading} className={inputStyle} />
                             </div>
-                            <div className="grid items-center gap-2">
-                                <Label htmlFor="zipcode">Code postal</Label>
-                                <Input
-                                    id="zipcode"
-                                    value={userState.zipCode || ''}
-                                    disabled={loading}
-                                    onChange={(e) => onChangeUserState('zipCode', e.target.value)}
-                                />
+                            <div className="space-y-1.5">
+                                <Label htmlFor="email">Email</Label>
+                                <Input id="email" value={userState.email} disabled className="bg-slate-100 text-slate-500" />
                             </div>
-                        </div>
-
-                        {/* User can suscribe without plane */}
-                        <div className="grid items-center gap-2">
-                            <Label htmlFor="restricted">Utilisateur autonome</Label>
-                            <div className='flex items-center gap-2 border border-gray-300 rounded-xl p-2'>
-                                <p className='text-gray-500'>Cette utilisateur peux s&apos;inscrire sans choisir d&apos;avion</p>
-                                <div className='flex items-center gap-2'>
-                                    <ImCross color='red' />
-                                    <Switch
-                                        checked={userState.canSubscribeWithoutPlan}
-                                        onCheckedChange={(checked) => onChangeUserState('canSubscribeWithoutPlan', checked)}
-                                        disabled={loading || !autorisedModifyRole}
-                                    />
-                                    <FaCheck color='green' />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Rôle et clubID */}
-                        <div className="grid grid-cols-2 gap-4 py-2">
-                            <div className="grid items-center gap-2">
-                                <Label htmlFor="role">Rôle</Label>
-                                <Select
-                                    value={userState.role}
-                                    disabled={loading}
-                                    onValueChange={(val: userRole) => onChangeUserState('role', val)}
-                                >
-                                    <SelectTrigger className="w-[150px]" disabled={!autorisedModifyRole}>
-                                        <SelectValue placeholder="Rôle" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.entries(userRole)
-                                            .filter(([key]) => key !== "ADMIN") // Exclure "ADMIN"
-                                            .map(([key, value]) => (
-                                                <SelectItem key={key} value={value}>
-                                                    {key === "USER" && "Visiteur"}
-                                                    {key === "STUDENT" && "Elève"}
-                                                    {key === "INSTRUCTOR" && "Instructeur"}
-                                                    {key === "PILOT" && "Pilote"}
-                                                    {key === "MANAGER" && "Manager"}
-                                                    {key === "OWNER" && "Président"}
-                                                </SelectItem>
-                                            ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid items-center gap-2">
-                                <Label htmlFor="clubID">Identifiant club</Label>
-                                <Input
-                                    id="clubID"
-                                    value={userState.clubID as string}
-                                    disabled
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4 py-2">
-                            <InputClasses
-                                disabled={loading}
-                                classes={classes}
-                                setClasses={setClasses}
-                            />
-                        </div>
-
-                        {/* Restricted*/}
-                        <div className="grid items-center gap-2">
-                            <Label htmlFor="restricted">Restreindre l&apos;utilisateur</Label>
-                            <div className='flex items-center gap-2 border border-gray-300 rounded-xl p-2'>
-                                <p className='text-gray-500'>Cette utilisateur restreint ne peut que visualiser les sessions </p>
-                                <div className='flex items-center gap-2'>
-                                    <ImCross color='red' />
-                                    <Switch
-                                        checked={userState.restricted}
-                                        onCheckedChange={(checked) => onChangeUserState('restricted', checked)}
-                                        disabled={loading || !autorisedModifyRole}
-                                    />
-                                    <FaCheck color='green' />
-                                </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="phone">Téléphone</Label>
+                                <Input id="phone" value={userState.phone || ''} onChange={(e) => onChangeUserState('phone', e.target.value)} disabled={loading} className={inputStyle} />
                             </div>
                         </div>
                     </div>
-                </ScrollArea >
-                <DialogFooter>
-                    <button onClick={() => setShowPopup(false)} disabled={loading}>Annuler</button>
-                    <Button onClick={onClickUpdateUser} disabled={loading}>
-                        {loading ? (
-                            <Spinner />
-                        ) : "Enregistrer"}
-                    </Button>
-                </DialogFooter>
+
+                    <div className="h-px bg-slate-100 w-full" />
+
+                    {/* 2. Adresse (Pliable ou simplifié) */}
+                    <div>
+                        <span className={labelStyle}>Adresse</span>
+                        <div className="space-y-3">
+                            <Input placeholder="Rue..." value={userState.adress || ''} onChange={(e) => onChangeUserState('adress', e.target.value)} disabled={loading} className={inputStyle} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <Input placeholder="Ville" value={userState.city || ''} onChange={(e) => onChangeUserState('city', e.target.value)} disabled={loading} className={inputStyle} />
+                                <Input placeholder="Code Postal" value={userState.zipCode || ''} onChange={(e) => onChangeUserState('zipCode', e.target.value)} disabled={loading} className={inputStyle} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="h-px bg-slate-100 w-full" />
+
+                    {/* 3. Administration (Visible seulement pour Admin/Owner) */}
+                    <div>
+                        <span className={labelStyle}>Administration</span>
+                        <div className="space-y-4">
+
+                            {/* Role Select */}
+                            <div className="space-y-1.5">
+                                <Label>Rôle dans le club</Label>
+                                <Select
+                                    value={userState.role}
+                                    onValueChange={(val: userRole) => onChangeUserState('role', val)}
+                                    disabled={loading || !autorisedModifyRole}
+                                >
+                                    <SelectTrigger className={inputStyle}>
+                                        <SelectValue placeholder="Sélectionner un rôle" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="USER">Visiteur</SelectItem>
+                                        <SelectItem value="STUDENT">Élève</SelectItem>
+                                        <SelectItem value="PILOT">Pilote</SelectItem>
+                                        <SelectItem value="INSTRUCTOR">Instructeur</SelectItem>
+                                        <SelectItem value="MANAGER">Manager</SelectItem>
+                                        <SelectItem value="OWNER">Président</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Switches Design "Carte" */}
+                            <div className="grid grid-cols-1 gap-3">
+
+                                {/* Restricted Switch */}
+                                <div className={cn(
+                                    "flex items-center justify-between p-3 rounded-lg border transition-colors",
+                                    userState.restricted ? "bg-red-50 border-red-100" : "bg-white border-slate-200"
+                                )}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn("p-2 rounded-full", userState.restricted ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-500")}>
+                                            <Ban className="w-4 h-4" />
+                                        </div>
+                                        <div className="text-sm">
+                                            <p className="font-medium text-slate-900">Accès Restreint</p>
+                                            <p className="text-xs text-slate-500">Lecture seule uniquement</p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={userState.restricted}
+                                        onCheckedChange={(c) => onChangeUserState('restricted', c)}
+                                        disabled={loading || !autorisedModifyRole}
+                                        className="data-[state=checked]:bg-red-500"
+                                    />
+                                </div>
+
+                                {/* Autonome Switch */}
+                                <div className={cn(
+                                    "flex items-center justify-between p-3 rounded-lg border transition-colors",
+                                    userState.canSubscribeWithoutPlan ? "bg-blue-50 border-blue-100" : "bg-white border-slate-200"
+                                )}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn("p-2 rounded-full", userState.canSubscribeWithoutPlan ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-500")}>
+                                            <Plane className="w-4 h-4" />
+                                        </div>
+                                        <div className="text-sm">
+                                            <p className="font-medium text-slate-900">Utilisateur Autonome</p>
+                                            <p className="text-xs text-slate-500">Peut réserver sans instructeur</p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={userState.canSubscribeWithoutPlan}
+                                        onCheckedChange={(c) => onChangeUserState('canSubscribeWithoutPlan', c)}
+                                        disabled={loading || !autorisedModifyRole}
+                                        className="data-[state=checked]:bg-blue-600"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Classes */}
+                            <div className="pt-2">
+                                <Label className="mb-2 block">Qualifications</Label>
+                                <InputClasses
+                                    disabled={loading || !autorisedModifyRole}
+                                    classes={classes}
+                                    setClasses={setClasses}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- Footer --- */}
+                <div className="bg-slate-50 p-6 border-t border-slate-100 flex flex-col gap-4 flex-shrink-0">
+                    {error && (
+                        <div className="text-red-600 bg-red-50 border border-red-100 p-3 rounded-lg flex items-center gap-2 text-sm">
+                            <IoIosWarning className="w-5 h-5 flex-shrink-0" />
+                            <span>{error}</span>
+                        </div>
+                    )}
+
+                    <DialogFooter className="flex-col sm:flex-row gap-3 sm:gap-0">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setShowPopup(false)}
+                            disabled={loading}
+                            className="text-slate-600 hover:text-slate-900 hover:bg-slate-200"
+                        >
+                            Annuler
+                        </Button>
+                        <Button
+                            onClick={onClickUpdateUser}
+                            disabled={loading}
+                            className="bg-[#774BBE] hover:bg-[#6538a5] text-white min-w-[120px]"
+                        >
+                            {loading ? (
+                                <div className="flex items-center gap-2">
+                                    <Spinner className="text-white w-4 h-4" />
+                                    <span>Sauvegarde...</span>
+                                </div>
+                            ) : "Enregistrer"}
+                        </Button>
+                    </DialogFooter>
+                </div>
+
             </DialogContent>
         </Dialog>
-    )
-}
+    );
+};
 
-export default UpdateUserComponent
+export default UpdateUserComponent;

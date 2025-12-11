@@ -1,27 +1,18 @@
-/**
- * @file StudentsPage.tsx
- * @brief A React component that displays a list of students with filtering, searching, and action functionalities.
- * 
- * This component allows filtering students by their roles, searching by name, and provides actions
- * to update or delete user entries. The data is displayed in a table format, showing each user's
- * information, including their name, role, restricted status, and phone number.
- * 
- * @returns The rendered StudentsPage component.
- */
-
 "use client";
+
 import React, { useEffect, useState } from 'react';
 import { User, userRole } from '@prisma/client';
 import TableComponent from './TableComponent';
-import Header from './Header';
 import Filter from './Filter';
 import Search from './Search';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { useRouter } from 'next/navigation';
+import { Users } from 'lucide-react';
 
 interface props {
     userProps: User[]
 }
+
 const StudentsPage = ({ userProps }: props) => {
     const { currentUser } = useCurrentUser();
     const [searchQuery, setSearchQuery] = useState('');
@@ -30,6 +21,7 @@ const StudentsPage = ({ userProps }: props) => {
     const [roleFilter, setRoleFilter] = useState<userRole | 'all'>('all');
     const router = useRouter();
 
+    // --- Logic de tri et filtre ---
     useEffect(() => {
         setSortedUsers(sortUser(users, roleFilter, searchQuery));
     }, [users, roleFilter, searchQuery]);
@@ -46,7 +38,7 @@ const StudentsPage = ({ userProps }: props) => {
             filteredUsers = filteredUsers.filter((user) => user.role === roleFilter);
         }
 
-        // Filter by firstname and lastname
+        // Filter by name
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             filteredUsers = filteredUsers.filter(
@@ -63,25 +55,57 @@ const StudentsPage = ({ userProps }: props) => {
         setRoleFilter(value);
     };
 
-    if (currentUser?.role == userRole.USER || currentUser?.role === userRole.STUDENT || currentUser?.role === userRole.PILOT) {
+    // --- Calcul du nombre de membres affichés (Exclusion du currentUser) ---
+    // On filtre simplement l'utilisateur connecté pour le compteur
+    const membersCount = sortedUsers.filter(u => u.id !== currentUser?.id).length;
+
+    // --- Sécurité ---
+    if (currentUser?.role === userRole.USER || currentUser?.role === userRole.STUDENT || currentUser?.role === userRole.PILOT) {
         router.push('/calendar?clubID=' + currentUser?.clubID);
         return (
-            <div>
-                No access
+            <div className="h-screen w-full flex items-center justify-center bg-slate-50 text-slate-400">
+                Accès non autorisé. Redirection...
             </div>
-        )
+        );
     }
 
+    // --- Rendu UI ---
     return (
-        <div className='p-6 bg-gray-200 h-full'>
-            <Header users={sortedUsers} />
+        <div className='flex flex-col h-full min-h-screen bg-slate-50 p-6 md:p-8 font-sans text-slate-800'>
 
-            <div className='my-3 flex justify-end space-x-3'>
-                <Filter roleFilter={roleFilter} handle={handleRoleFilterChange} />
-                <Search searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+            {/* Top Bar */}
+            <div className='flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4'>
+
+                {/* Titre et Compteur */}
+                <div className='flex items-center space-x-3'>
+                    <div className="p-2 bg-purple-100 text-[#774BBE] rounded-lg hidden sm:block">
+                        <Users className="w-6 h-6" />
+                    </div>
+                    <h1 className='font-bold text-3xl text-slate-900 tracking-tight'>Membres</h1>
+
+                    {/* Badge compteur dynamique */}
+                    <span className='px-3 py-1 bg-white text-[#774BBE] border border-purple-100 font-semibold rounded-full text-sm shadow-sm'>
+                        {membersCount}
+                    </span>
+                </div>
+
+                {/* Toolbar */}
+                <div className='flex flex-col sm:flex-row gap-3 w-full md:w-auto'>
+                    <div className="w-full sm:w-auto">
+                        <Search searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+                    </div>
+                    <div className="w-full sm:w-auto">
+                        <Filter roleFilter={roleFilter} handle={handleRoleFilterChange} />
+                    </div>
+                </div>
             </div>
 
-            <TableComponent users={sortedUsers} setUsers={setUsers} />
+            {/* Carte de Contenu */}
+            <div className='flex-1 bg-white border border-slate-200 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col'>
+                <div className="flex-1 overflow-auto">
+                    <TableComponent users={sortedUsers} setUsers={setUsers} />
+                </div>
+            </div>
         </div>
     );
 }
