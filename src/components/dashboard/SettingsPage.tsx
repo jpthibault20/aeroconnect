@@ -1,7 +1,8 @@
 'use client'
+
 import React, { useState } from 'react'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card'
-import { Clock, OctagonMinus, Plane, Plus, Settings, Users, X } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card'
+import { Clock, OctagonMinus, Plane, Plus, Settings, Users, Save, MapPin, Trash2 } from 'lucide-react'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
 import { Separator } from '../ui/separator'
@@ -9,7 +10,7 @@ import { Switch } from '../ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Textarea } from '../ui/textarea'
 import { Button } from '../ui/button'
-import { User, userRole } from '@prisma/client'
+import { User } from '@prisma/client'
 import { IoIosWarning } from 'react-icons/io'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { useCurrentClub } from '@/app/context/useCurrentClub'
@@ -17,9 +18,9 @@ import { z } from 'zod'
 import { updateClub } from '@/api/db/club'
 import { Spinner } from '../ui/SpinnerVariants'
 import { toast } from '@/hooks/use-toast'
-import { FaSave } from "react-icons/fa";
+import { cn } from '@/lib/utils'
 
-// Définition du schéma Zod
+// --- Schéma Zod (Inchangé pour la logique) ---
 const configSchema = z.object({
     clubName: z.string().min(1, "Le nom du club est requis"),
     clubId: z.string().nonempty("L'identifiant du club est requis"),
@@ -32,40 +33,29 @@ const configSchema = z.object({
     hourStart: z.string().regex(/^\d{2}:\d{2}$/, "L'heure de début est invalide"),
     hourEnd: z.string().regex(/^\d{2}:\d{2}$/, "L'heure de fin est invalide"),
     totalHours: z.number().optional(),
-    timeOfSession: z.number().positive("La durée de la session doit être un nombre positif").optional(),
+    timeOfSession: z.number().positive("La durée doit être positive").optional(),
     userCanSubscribe: z.boolean(),
     preSubscribe: z.boolean(),
     timeDelaySubscribeminutes: z.number().optional(),
     userCanUnsubscribe: z.boolean(),
     preUnsubscribe: z.boolean(),
     timeDelayUnsubscribeminutes: z.number().optional(),
-    firstNameContact: z.string().min(1, "Le prénom du contact est requis"),
-    lastNameContact: z.string().min(1, "Le nom du contact est requis"),
-    mailContact: z.string().email("Adresse email invalide"),
-    phoneContact: z.string().regex(/^\+?\d{10,15}$/, "Numéro de téléphone invalide"),
+    firstNameContact: z.string().min(1, "Le prénom est requis"),
+    lastNameContact: z.string().min(1, "Le nom est requis"),
+    mailContact: z.string().email("Email invalide"),
+    phoneContact: z.string().regex(/^\+?\d{10,15}$/, "Téléphone invalide"),
 }).refine((data) => {
     const [startHour, startMinute] = data.hourStart.split(":").map(Number);
     const [endHour, endMinute] = data.hourEnd.split(":").map(Number);
-
     const startTotalMinutes = startHour * 60 + startMinute;
     const endTotalMinutes = endHour * 60 + endMinute;
-
-    // Vérifie si la différence est d'au moins 5 heures (300 minutes)
     return endTotalMinutes - startTotalMinutes >= 300;
 }, {
-    message: "L'heure de fin doit être au moins 5 heures après l'heure de début",
-    path: ["totalHours"], // Définit le champ qui recevra l'erreur
+    message: "L'amplitude doit être d'au moins 5h",
+    path: ["totalHours"],
 });
 
-
-const classesULM = [
-    "Paramoteur",
-    "Pendulaire",
-    "Multiaxe",
-    "Autogire",
-    "Aérostat ULM",
-    "Hélicoptère ULM"
-]
+const classesULM = ["Paramoteur", "Pendulaire", "Multiaxe", "Autogire", "Aérostat ULM", "Hélicoptère ULM"];
 
 interface Props {
     users: User[],
@@ -74,23 +64,21 @@ interface Props {
 const SettingsPage = ({ users }: Props) => {
     const { currentUser } = useCurrentUser();
     const { currentClub } = useCurrentClub();
+
+    // --- State Initialization ---
     const [config, setConfig] = useState({
-        clubName: currentClub?.Name || '', // Remplace null par une chaîne vide
-        clubId: currentClub?.id || '', // Remplace null par une chaîne vide
+        clubName: currentClub?.Name || '',
+        clubId: currentClub?.id || '',
         address: currentClub?.Address || '',
         city: currentClub?.City || '',
         zipCode: currentClub?.ZipCode || '',
         country: currentClub?.Country || '',
-        owners: currentClub?.OwnerId || [], // Tableau vide par défaut
-        classes: currentClub?.classes || [], // Tableau vide par défaut
-        hourStart: currentClub?.HoursOn
-            ? String(currentClub.HoursOn[0]).padStart(2, '0') + ":00"
-            : '00:00', // Heure par défaut si null
-        hourEnd: currentClub?.HoursOn
-            ? String(currentClub.HoursOn[currentClub.HoursOn.length - 1]).padStart(2, '0') + ":00"
-            : '00:00',
+        owners: currentClub?.OwnerId || [],
+        classes: currentClub?.classes || [],
+        hourStart: currentClub?.HoursOn ? String(currentClub.HoursOn[0]).padStart(2, '0') + ":00" : '00:00',
+        hourEnd: currentClub?.HoursOn ? String(currentClub.HoursOn[currentClub.HoursOn.length - 1]).padStart(2, '0') + ":00" : '00:00',
         timeOfSession: currentClub?.SessionDurationMin || 0,
-        userCanSubscribe: currentClub?.userCanSubscribe ?? false, // Assure un booléen par défaut
+        userCanSubscribe: currentClub?.userCanSubscribe ?? false,
         preSubscribe: currentClub?.preSubscribe ?? false,
         timeDelaySubscribeminutes: currentClub?.timeDelaySubscribeminutes || 0,
         userCanUnsubscribe: currentClub?.userCanUnsubscribe ?? false,
@@ -103,20 +91,23 @@ const SettingsPage = ({ users }: Props) => {
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [submiError, setSubmiError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Fonction de validation
+    // --- Handlers ---
+
     const validateConfig = () => {
         const result = configSchema.safeParse(config);
         if (!result.success) {
             const newErrors: Record<string, string> = {};
             result.error.errors.forEach(err => {
-                if (err.path[0]) {
-                    newErrors[err.path[0] as string] = err.message;
-                }
+                if (err.path[0]) newErrors[err.path[0] as string] = err.message;
             });
             setErrors(newErrors);
+            toast({
+                title: "Erreur de validation",
+                description: "Veuillez vérifier les champs en rouge.",
+                variant: "destructive"
+            });
             return false;
         }
         setErrors({});
@@ -124,640 +115,377 @@ const SettingsPage = ({ users }: Props) => {
     };
 
     const handleSubmit = async () => {
-        const res = validateConfig()
-        if (res) {
+        if (validateConfig()) {
             try {
                 setLoading(true);
                 const result = await updateClub(currentClub?.id as string, config)
                 if (result.error) {
-                    setSubmiError(result.error)
-                    console.log(result.error)
+                    toast({ title: "Erreur", description: result.error, variant: "destructive" });
+                } else {
                     toast({
-                        title: "Configuration mise à jour avec succès",
-                        duration: 5000,
-                        style: {
-                            background: '#ab0b0b',
-                            color: '#fff',
-                        },
+                        title: "Succès",
+                        description: "Paramètres du club mis à jour.",
+                        className: "bg-green-600 text-white border-none"
                     });
-                }
-                else {
-                    toast({
-                        title: "Configuration mise à jour avec succès",
-                        duration: 5000,
-                        style: {
-                            background: '#0bab15', //ab0b0b
-                            color: '#fff',
-                        },
-                    });
-                    setSubmiError(null)
                 }
             } catch (error) {
-                console.error("Erreur lors de la soumission des données :", error);
-                setSubmiError("Une erreur est survenue lors de la soumission des données.");
+                console.error(error);
+                toast({ title: "Erreur technique", variant: "destructive" });
             } finally {
                 setLoading(false);
             }
         }
-        else setSubmiError("Veuillez verfier les champs invalides")
-    }
+    };
 
-    // Handle Classes Choice
     const handleClassesChoice = (classesNumber: number) => {
         if (config.classes.includes(classesNumber)) {
-            setConfig(prev => ({ ...prev, classes: prev.classes.filter(classe => classe !== classesNumber) }))
+            setConfig(prev => ({ ...prev, classes: prev.classes.filter(c => c !== classesNumber) }))
         } else {
             setConfig(prev => ({ ...prev, classes: [...prev.classes, classesNumber] }))
         }
-    }
+    };
+
+    // --- Styles Helpers ---
+    const inputStyle = "bg-slate-50 border-slate-200 focus:ring-[#774BBE] focus:border-[#774BBE]";
+    const cardStyle = "border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden";
+    const sectionTitleStyle = "text-lg font-semibold text-slate-800 flex items-center gap-2";
+    const iconBoxStyle = "p-2 bg-purple-50 text-[#774BBE] rounded-lg";
 
     return (
-        <div className="space-y-8">
-            {/* Config générales */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center text-2xl">
-                        <Settings className="mr-2" />
-                        Paramètres Généraux
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className='flex justify-between w-full gap-4'>
-                        <div className='w-full'>
-                            <Label htmlFor="nomClub" className="text-lg">Nom du Club</Label>
-                            <Input
-                                id="nomClub"
-                                name="nomClub"
-                                value={config.clubName}
-                                onChange={(e) => setConfig(prev => ({ ...prev, clubName: e.target.value }))}
-                                className="mt-1"
-                            />
-                            {errors.clubName &&
-                                <div className="text-red-500 mt-2 flex space-x-3">
-                                    <IoIosWarning size={20} />
-                                    <span>{errors.clubName}</span>
-                                </div>
-                            }
-                        </div>
-                        <div className='w-full'>
-                            <Label htmlFor="clubId" className="text-lg">Identifiant du Club</Label>
-                            <Input
-                                id="clubId"
-                                name="clubID"
-                                value={config.clubId}
-                                disabled
-                                className="mt-1"
-                            />
-                            {errors.clubId &&
-                                <div className="text-red-500 mt-2 flex space-x-3">
-                                    <IoIosWarning size={20} />
-                                    <span>{errors.clubId}</span>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                    <Separator />
-                    <div className='space-y-3'>
-                        <div className='flex justify-between w-full gap-4'>
-                            <div className='w-full'>
-                                <Label htmlFor="firstNameContact">Prénom du contact</Label>
+        <div className="min-h-screen bg-slate-50 p-4 md:p-8 pb-32 font-sans">
+
+            {/* --- Header Page --- */}
+            <div className="max-w-4xl mx-auto mb-8">
+                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Paramètres du Club</h1>
+                <p className="text-slate-500">Configurez les informations générales, les accès et les règles de réservation.</p>
+            </div>
+
+            <div className="max-w-4xl mx-auto space-y-8">
+
+                {/* 1. CONFIGURATION GÉNÉRALE */}
+                <Card className={cardStyle}>
+                    <CardHeader className="bg-white pb-4 border-b border-slate-100">
+                        <CardTitle className={sectionTitleStyle}>
+                            <div className={iconBoxStyle}><Settings className="w-5 h-5" /></div>
+                            Informations Générales
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-6">
+                        {/* Identité Club */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="nomClub">Nom du Club</Label>
                                 <Input
-                                    id="firstNameContact"
-                                    name="firstNameContact"
-                                    value={config.firstNameContact}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, firstNameContact: e.target.value }))}
-                                    className="mt-1"
+                                    id="nomClub"
+                                    value={config.clubName}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, clubName: e.target.value }))}
+                                    className={inputStyle}
                                 />
-                                {errors.firstNameContact &&
-                                    <div className="text-red-500 mt-2 flex space-x-3">
-                                        <IoIosWarning size={20} />
-                                        <span>{errors.firstNameContact}</span>
-                                    </div>
-                                }
+                                {errors.clubName && <p className="text-xs text-red-500 flex items-center gap-1"><IoIosWarning /> {errors.clubName}</p>}
                             </div>
-                            <div className='w-full'>
-                                <Label htmlFor="lastNameContact">Nom du contact</Label>
-                                <Input
-                                    id="lastNameContact"
-                                    name="lastNameContact"
-                                    value={config.lastNameContact}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, lastNameContact: e.target.value }))}
-                                    className="mt-1"
-                                />
-                                {errors.lastNameContact &&
-                                    <div className="text-red-500 mt-2 flex space-x-3">
-                                        <IoIosWarning size={20} />
-                                        <span>{errors.lastNameContact}</span>
-                                    </div>
-                                }
+                            <div className="space-y-2">
+                                <Label htmlFor="clubId">Identifiant (Lecture seule)</Label>
+                                <Input id="clubId" value={config.clubId} disabled className="bg-slate-100 text-slate-500" />
                             </div>
                         </div>
 
-                        <div className='flex justify-between w-full gap-4'>
-                            <div className='w-full'>
-                                <Label htmlFor="mailContact">Mail du contact</Label>
-                                <Input
-                                    id="mailContact"
-                                    name="mailContact"
-                                    type='email'
-                                    value={config.mailContact}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, mailContact: e.target.value }))}
-                                    className="mt-1"
-                                />
-                                {errors.mailContact &&
-                                    <div className="text-red-500 mt-2 flex space-x-3">
-                                        <IoIosWarning size={20} />
-                                        <span>{errors.mailContact}</span>
-                                    </div>
-                                }
-                            </div>
-                            <div className='w-full'>
-                                <Label htmlFor="phoneContact">Téléphone du contact</Label>
-                                <Input
-                                    id="phoneContact"
-                                    name="phoneContact"
-                                    value={config.phoneContact}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, phoneContact: e.target.value }))}
-                                    className="mt-1"
-                                />
-                                {errors.phoneContact &&
-                                    <div className="text-red-500 mt-2 flex space-x-3">
-                                        <IoIosWarning size={20} />
-                                        <span>{errors.phoneContact}</span>
-                                    </div>
-                                }
-                            </div>
-                        </div>
+                        <Separator className="bg-slate-100" />
 
-                    </div>
-                    <Separator />
-                    <div>
+                        {/* Contact Principal */}
                         <div>
-                            <Label htmlFor="adresse">Adresse</Label>
-                            <Textarea
-                                id="adresse"
-                                name="adresse"
-                                value={config.address}
-                                onChange={(e) => setConfig(prev => ({ ...prev, address: e.target.value }))}
-                                className="mt-1"
-                            />
-                            {errors.adress &&
-                                <div className="text-red-500 mt-2 flex space-x-3">
-                                    <IoIosWarning size={20} />
-                                    <span>{errors.adress}</span>
+                            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Contact Principal</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                <div className="space-y-2">
+                                    <Label>Prénom</Label>
+                                    <Input value={config.firstNameContact} onChange={(e) => setConfig(prev => ({ ...prev, firstNameContact: e.target.value }))} className={inputStyle} />
+                                    {errors.firstNameContact && <p className="text-xs text-red-500">{errors.firstNameContact}</p>}
                                 </div>
-                            }
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <Label htmlFor="ville">Ville</Label>
-                                <Input
-                                    id="ville"
-                                    name="ville"
-                                    value={config.city}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, city: e.target.value }))}
-                                    className="mt-1"
-                                />
-                                {errors.city &&
-                                    <div className="text-red-500 mt-2 flex space-x-3">
-                                        <IoIosWarning size={20} />
-                                        <span>{errors.city}</span>
-                                    </div>
-                                }
+                                <div className="space-y-2">
+                                    <Label>Nom</Label>
+                                    <Input value={config.lastNameContact} onChange={(e) => setConfig(prev => ({ ...prev, lastNameContact: e.target.value }))} className={inputStyle} />
+                                </div>
                             </div>
-                            <div>
-                                <Label htmlFor="codePostal">Code Postal</Label>
-                                <Input
-                                    id="codePostal"
-                                    name="codePostal"
-                                    value={config.zipCode}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, zipCode: e.target.value }))}
-                                    className="mt-1"
-                                />
-                                {errors.zipCode &&
-                                    <div className="text-red-500 mt-2 flex space-x-3">
-                                        <IoIosWarning size={20} />
-                                        <span>{errors.zipCode}</span>
-                                    </div>
-                                }
-                            </div>
-                            <div>
-                                <Label htmlFor="pays">Pays</Label>
-                                <Input
-                                    id="pays"
-                                    name="pays"
-                                    value={config.country}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, country: e.target.value }))}
-                                    className="mt-1"
-                                />
-                                {errors.country &&
-                                    <div className="text-red-500 mt-2 flex space-x-3">
-                                        <IoIosWarning size={20} />
-                                        <span>{errors.country}</span>
-                                    </div>
-                                }
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label>Email</Label>
+                                    <Input type="email" value={config.mailContact} onChange={(e) => setConfig(prev => ({ ...prev, mailContact: e.target.value }))} className={inputStyle} />
+                                    {errors.mailContact && <p className="text-xs text-red-500">{errors.mailContact}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Téléphone</Label>
+                                    <Input type="tel" value={config.phoneContact} onChange={(e) => setConfig(prev => ({ ...prev, phoneContact: e.target.value }))} className={inputStyle} />
+                                    {errors.phoneContact && <p className="text-xs text-red-500">{errors.phoneContact}</p>}
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                </CardContent>
-            </Card>
+                        <Separator className="bg-slate-100" />
 
-            {/* Classes ULM */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center text-2xl">
-                        <Plane className="mr-2" />
-                        Classes ULM Acceptées
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {classesULM.map((classe, index) => (
-                            <div key={classe} className="flex items-center space-x-2">
-                                <input
-                                    type="checkbox"
-                                    id={classe}
-                                    checked={config.classes.includes(index + 1)}
-                                    onChange={() => handleClassesChoice(index + 1)}
-                                    className="rounded border-gray-300 text-primary focus:ring-primary"
-                                />
-                                <Label htmlFor={`classe-${classe}`} onClick={() => handleClassesChoice(index + 1)}>{classe}</Label>
-                            </div>
-                        ))}
-                    </div>
-                    {errors.classes &&
-                        <div className="text-red-500 mt-2 flex space-x-3">
-                            <IoIosWarning size={20} />
-                            <span>{errors.classes}</span>
-                        </div>
-                    }
-
-                </CardContent>
-            </Card>
-
-            {/* Heures de Travail */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center text-2xl">
-                        <Clock className="mr-2" />
-                        Heures de Travail
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Adresse */}
                         <div>
-                            <Label htmlFor="heureDebut">Heure de début</Label>
-                            <Select
-                                value={config.hourStart}
-                                onValueChange={(value) => setConfig((prev) => ({ ...prev, hourStart: value }))}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Sélectionnez l'heure de début" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Array.from({ length: 24 }, (_, i) => {
-                                        const formattedHour = `${i.toString().padStart(2, "0")}:00`;
-                                        return (
-                                            <SelectItem key={formattedHour} value={formattedHour}>
-                                                {formattedHour}
-                                            </SelectItem>
-                                        );
-                                    })}
-                                </SelectContent>
-                            </Select>
-                            {errors.hourStart &&
-                                <div className="text-red-500 mt-2 flex space-x-3">
-                                    <IoIosWarning size={20} />
-                                    <span>{errors.hourStart}</span>
+                            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <MapPin className="w-4 h-4" /> Localisation
+                            </h3>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Adresse</Label>
+                                    <Textarea value={config.address} onChange={(e) => setConfig(prev => ({ ...prev, address: e.target.value }))} className={inputStyle} />
                                 </div>
-                            }
-                        </div>
-                        <div>
-                            <Label htmlFor="heureFin">Heure de fin</Label>
-                            <Select onValueChange={(value) => setConfig(prev => ({ ...prev, hourEnd: value }))} value={config.hourEnd}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Sélectionnez l'heure de fin" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-                                        <SelectItem key={hour} value={`${hour.toString().padStart(2, '0')}:00`}>
-                                            {`${hour.toString().padStart(2, '0')}:00`}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {errors.hourEnd &&
-                                <div className="text-red-500 mt-2 flex space-x-3">
-                                    <IoIosWarning size={20} />
-                                    <span>{errors.hourEnd}</span>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="md:col-span-2 space-y-2">
+                                        <Label>Ville</Label>
+                                        <Input value={config.city} onChange={(e) => setConfig(prev => ({ ...prev, city: e.target.value }))} className={inputStyle} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Code Postal</Label>
+                                        <Input value={config.zipCode} onChange={(e) => setConfig(prev => ({ ...prev, zipCode: e.target.value }))} className={inputStyle} />
+                                    </div>
                                 </div>
-                            }
+                                <div className="space-y-2">
+                                    <Label>Pays</Label>
+                                    <Input value={config.country} onChange={(e) => setConfig(prev => ({ ...prev, country: e.target.value }))} className={inputStyle} />
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    {errors.totalHours &&
-                        <div className="text-red-500 mt-2 flex space-x-3">
-                            <IoIosWarning size={20} />
-                            <span>{errors.totalHours}</span>
-                        </div>
-                    }
+                    </CardContent>
+                </Card>
 
-                </CardContent>
-            </Card>
+                {/* 2. HORAIRES & SESSIONS */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Horaires */}
+                    <Card className={cn(cardStyle, "flex flex-col")}>
+                        <CardHeader className="bg-white border-b border-slate-100">
+                            <CardTitle className={sectionTitleStyle}>
+                                <div className={iconBoxStyle}><Clock className="w-5 h-5" /></div>
+                                Horaires d&apos;ouverture
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 flex-1 flex flex-col justify-center gap-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Ouverture</Label>
+                                    <Select value={config.hourStart} onValueChange={(v) => setConfig(prev => ({ ...prev, hourStart: v }))}>
+                                        <SelectTrigger className={inputStyle}><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            {Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, "0")}:00`).map(h => (
+                                                <SelectItem key={h} value={h}>{h}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Fermeture</Label>
+                                    <Select value={config.hourEnd} onValueChange={(v) => setConfig(prev => ({ ...prev, hourEnd: v }))}>
+                                        <SelectTrigger className={inputStyle}><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            {Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, "0")}:00`).map(h => (
+                                                <SelectItem key={h} value={h}>{h}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            {errors.totalHours && <p className="text-xs text-red-500 bg-red-50 p-2 rounded">{errors.totalHours}</p>}
+                        </CardContent>
+                    </Card>
 
-            {/* Configuration élèves */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center text-2xl">
-                        <OctagonMinus className="mr-2" />
-                        Configuration sessions
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className='space-y-1'>
-                        <Label className="text-lg">Configuration des sessions</Label>
-                        <div className="items-center justify-between">
-                            <Label htmlFor="timeOfSession">Durée des sessions (en minutes)</Label>
+                    {/* Classes ULM */}
+                    <Card className={cn(cardStyle, "flex flex-col")}>
+                        <CardHeader className="bg-white border-b border-slate-100">
+                            <CardTitle className={sectionTitleStyle}>
+                                <div className={iconBoxStyle}><Plane className="w-5 h-5" /></div>
+                                Flotte ULM
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <div className="grid grid-cols-2 gap-3">
+                                {classesULM.map((classe, index) => {
+                                    const isSelected = config.classes.includes(index + 1);
+                                    return (
+                                        <div
+                                            key={classe}
+                                            onClick={() => handleClassesChoice(index + 1)}
+                                            className={cn(
+                                                "cursor-pointer border rounded-lg p-3 text-sm font-medium transition-all flex items-center justify-between",
+                                                isSelected ? "bg-purple-50 border-[#774BBE] text-[#774BBE]" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                                            )}
+                                        >
+                                            {classe}
+                                            {isSelected && <div className="h-2 w-2 rounded-full bg-[#774BBE]" />}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                            {errors.classes && <p className="text-xs text-red-500 mt-2">{errors.classes}</p>}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* 3. RÈGLES DE RÉSERVATION (SESSIONS) */}
+                <Card className={cardStyle}>
+                    <CardHeader className="bg-white border-b border-slate-100">
+                        <CardTitle className={sectionTitleStyle}>
+                            <div className={iconBoxStyle}><OctagonMinus className="w-5 h-5" /></div>
+                            Règles de Réservation
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-8">
+
+                        {/* Durée */}
+                        <div className="space-y-2">
+                            <Label>Durée standard d&apos;une session (minutes)</Label>
                             <Input
-                                id="timeOfSession"
-                                name="timeOfSession"
                                 type="number"
                                 value={config.timeOfSession}
-                                disabled
+                                className={cn(inputStyle, "max-w-[200px]")}
                                 onChange={(e) => setConfig(prev => ({ ...prev, timeOfSession: Number(e.target.value) }))}
-                                className="mt-1"
                             />
-                            {errors.timeOfSession &&
-                                <div className="text-red-500 mt-2 flex space-x-3">
-                                    <IoIosWarning size={20} />
-                                    <span>{errors.timeOfSession}</span>
-                                </div>
-                            }
                         </div>
-                    </div>
 
-                    <Separator />
-
-                    <div className='space-y-1'>
-                        <Label className="text-lg">Configuration inscription</Label>
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="autorisationDesinscription" className="flex-grow">Autoriser l&apos;inscription des élèves</Label>
-                            <Switch
-                                id="autorisationInscription"
-                                checked={config.userCanSubscribe}
-                                onCheckedChange={(checked) => setConfig(prev => ({ ...prev, userCanSubscribe: checked }))}
-                            />
-                            {errors.userCanSubscribe &&
-                                <div className="text-red-500 mt-2 flex space-x-3">
-                                    <IoIosWarning size={20} />
-                                    <span>{errors.userCanSubscribe}</span>
-                                </div>
-                            }
-                        </div>
-                        {config.userCanSubscribe ? (
-                            <div className="space-y-4 pl-6 border-l-2 border-primary">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="preInscription">Activer la pré-inscription</Label>
-                                    <Switch
-                                        id="preInscription"
-                                        checked={config.preSubscribe}
-                                        disabled
-                                        onCheckedChange={(checked) => setConfig((prev) => ({ ...prev, preSubscribe: checked }))}
-                                    />
-                                    {errors.preSubscribe &&
-                                        <div className="text-red-500 mt-2 flex space-x-3">
-                                            <IoIosWarning size={20} />
-                                            <span>{errors.preSubscribe}</span>
-                                        </div>
-                                    }
-                                </div>
+                        {/* Inscription */}
+                        <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 gap-4">
                                 <div>
-                                    <Label htmlFor="delaisMinimuminscription">Délai minimum pour s&apos;inscrire (en minutes)</Label>
-                                    <Input
-                                        id="delaisMinimumInscription"
-                                        name="delaisMinimumInscription"
-                                        type="text"
-                                        value={config.timeDelaySubscribeminutes || "0"}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
-                                            // Vérifiez si la valeur est un nombre ou vide
-                                            if (/^\d*$/.test(value)) {
-                                                setConfig((prev) => ({
-                                                    ...prev,
-                                                    timeDelaySubscribeminutes: value === "" ? 0 : Number(value), // Remplacez les chaînes vides par 0 dans l'état
-                                                }));
-                                            }
-                                        }}
-                                        className="mt-1"
-                                    />
-                                    {errors.timeDelaySubscribeminutes &&
-                                        <div className="text-red-500 mt-2 flex space-x-3">
-                                            <IoIosWarning size={20} />
-                                            <span>{errors.timeDelaySubscribeminutes}</span>
-                                        </div>
-                                    }
+                                    <Label className="text-base">Autoriser l&apos;inscription élève</Label>
+                                    <p className="text-xs text-slate-500">Les élèves peuvent s&apos;inscrire eux-mêmes aux sessions.</p>
                                 </div>
+                                <Switch checked={config.userCanSubscribe} onCheckedChange={(c) => setConfig(prev => ({ ...prev, userCanSubscribe: c }))} />
                             </div>
 
-                        ) : (
-                            <div className="flex justify-start gap-2 items-center text-orange-500 mt-6">
-                                <span>Attention, dans cette configuration, les élèves ne pourront pas s&apos;inscrire a une session</span>
-                            </div>
-                        )}
-                    </div>
-
-                    <Separator />
-
-                    <div className='space-y-1'>
-                        <Label className="text-lg">Configuration désinscription</Label>
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="autorisationDesinscription" className="flex-grow">Autoriser la désinscription des élèves</Label>
-                            <Switch
-                                id="autorisationDesinscription"
-                                checked={config.userCanUnsubscribe}
-                                onCheckedChange={(checked) => setConfig(prev => ({ ...prev, userCanUnsubscribe: checked }))}
-                            />
-                            {errors.userCanUnsubscribe &&
-                                <div className="text-red-500 mt-2 flex space-x-3">
-                                    <IoIosWarning size={20} />
-                                    <span>{errors.userCanUnsubscribe}</span>
+                            {config.userCanSubscribe && (
+                                <div className="ml-4 pl-4 border-l-2 border-purple-100 space-y-4 animate-in slide-in-from-left-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label>Activer la pré-inscription</Label>
+                                        <Switch disabled checked={config.preSubscribe} onCheckedChange={(c) => setConfig(prev => ({ ...prev, preSubscribe: c }))} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Délai min. avant inscription (minutes)</Label>
+                                        <Input
+                                            value={config.timeDelaySubscribeminutes}
+                                            onChange={(e) => {
+                                                if (/^\d*$/.test(e.target.value)) setConfig(prev => ({ ...prev, timeDelaySubscribeminutes: Number(e.target.value) }))
+                                            }}
+                                            className={cn(inputStyle, "max-w-[200px]")}
+                                        />
+                                    </div>
                                 </div>
-                            }
+                            )}
                         </div>
-                        {config.userCanUnsubscribe ? (
-                            <div className="space-y-4 pl-6 border-l-2 border-primary">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="preDesinscription">Activer la pré-désinscription</Label>
-                                    <Switch
-                                        id="preDesinscription"
-                                        checked={config.preUnsubscribe}
-                                        disabled
-                                        onCheckedChange={(checked) => setConfig(prev => ({ ...prev, preUnsubscribe: checked }))}
-                                    />
-                                    {errors.preUnsubscribe &&
-                                        <div className="text-red-500 mt-2 flex space-x-3">
-                                            <IoIosWarning size={20} />
-                                            <span>{errors.preUnsubscribe}</span>
-                                        </div>
-                                    }
-                                </div>
-                                <div>
-                                    <Label htmlFor="delaisMinimumDesinscription">
-                                        Délai minimum pour se désinscrire (en minutes)
-                                    </Label>
-                                    <Input
-                                        id="delaisMinimumDesinscription"
-                                        name="delaisMinimumDesinscription"
-                                        type="text"
-                                        value={config.timeDelayUnsubscribeminutes || "0"}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
-                                            // Vérifiez si la valeur est un nombre ou vide
-                                            if (/^\d*$/.test(value)) {
-                                                setConfig((prev) => ({
-                                                    ...prev,
-                                                    timeDelayUnsubscribeminutes: value === "" ? 0 : Number(value), // Remplacez les chaînes vides par 0 dans l'état
-                                                }));
-                                            }
-                                        }}
-                                        className="mt-1"
-                                    />
-                                    {errors.timeDelayUnsubscribeminutes &&
-                                        <div className="text-red-500 mt-2 flex space-x-3">
-                                            <IoIosWarning size={20} />
-                                            <span>{errors.timeDelayUnsubscribeminutes}</span>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex justify-start gap-2 items-center text-orange-500 mt-6">
-                                <span>Attention, dans cette configuration, les élèves ne pourront pas se désinscrire de leurs sessions</span>
-                            </div>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
 
-            {/* Présidents du Club */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center text-2xl">
-                        <Users className="mr-2" />
-                        Présidents du Club
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        {/* Boucle sur les présidents dans config.owners */}
+                        {/* Désinscription */}
+                        <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 gap-4">
+                                <div>
+                                    <Label className="text-base">Autoriser la désinscription</Label>
+                                    <p className="text-xs text-slate-500">Les élèves peuvent annuler eux-mêmes.</p>
+                                </div>
+                                <Switch checked={config.userCanUnsubscribe} onCheckedChange={(c) => setConfig(prev => ({ ...prev, userCanUnsubscribe: c }))} />
+                            </div>
+
+                            {config.userCanUnsubscribe && (
+                                <div className="ml-4 pl-4 border-l-2 border-purple-100 space-y-4 animate-in slide-in-from-left-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label>Activer la pré-désinscription</Label>
+                                        <Switch disabled checked={config.preUnsubscribe} onCheckedChange={(c) => setConfig(prev => ({ ...prev, preUnsubscribe: c }))} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Délai min. avant annulation (minutes)</Label>
+                                        <Input
+                                            value={config.timeDelayUnsubscribeminutes}
+                                            onChange={(e) => {
+                                                if (/^\d*$/.test(e.target.value)) setConfig(prev => ({ ...prev, timeDelayUnsubscribeminutes: Number(e.target.value) }))
+                                            }}
+                                            className={cn(inputStyle, "max-w-[200px]")}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* 4. PRÉSIDENTS */}
+                <Card className={cardStyle}>
+                    <CardHeader className="bg-white border-b border-slate-100">
+                        <CardTitle className={sectionTitleStyle}>
+                            <div className={iconBoxStyle}><Users className="w-5 h-5" /></div>
+                            Présidence
+                        </CardTitle>
+                        <CardDescription>Gérez les membres ayant les droits de Président.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-4">
                         {config.owners.map((owner, index) => {
-                            // Trouver l'utilisateur correspondant à l'ID dans `president`
                             const selectedUser = users.find((user) => user.id === owner);
-
                             return (
-                                <div key={index} className="flex items-center space-x-2">
-                                    {/* Select pour choisir un président */}
+                                <div key={index} className="flex gap-2">
                                     <Select
-                                        value={owner} // L'identifiant de l'utilisateur sélectionné
-                                        onValueChange={(value) => {
-                                            // Mise à jour du tableau config.owners
-                                            const newPresidents = [...config.owners];
-                                            newPresidents[index] = value;
-                                            setConfig((prev) => ({ ...prev, owners: newPresidents }));
+                                        value={owner}
+                                        onValueChange={(val) => {
+                                            const newOwners = [...config.owners];
+                                            newOwners[index] = val;
+                                            setConfig(prev => ({ ...prev, owners: newOwners }));
                                         }}
+                                        disabled={config.owners.includes(currentUser?.id as string)}
                                     >
-                                        <SelectTrigger
-                                            className="flex-grow"
-                                            disabled={config.owners.includes(currentUser?.id as string)}
-
-                                        >
-                                            <SelectValue>
-                                                {selectedUser ? (
-                                                    `${selectedUser.firstName} ${selectedUser.lastName}`
-                                                ) : (
-                                                    "Sélectionnez un président"
-                                                )}
+                                        <SelectTrigger className={inputStyle}>
+                                            <SelectValue placeholder="Sélectionnez un membre">
+                                                {selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : "Sélectionner un membre"}
                                             </SelectValue>
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {/* Liste des utilisateurs */}
-                                            {users.map((user) => {
-                                                if (user.role === userRole.ADMIN) return null;
-                                                return (
-                                                    <SelectItem key={user.id} value={user.id}>
-                                                        {user.firstName} {user.lastName}
-                                                    </SelectItem>
-                                                )
-                                            })}
+                                            {users.filter(u => u.role !== 'ADMIN').map(u => (
+                                                <SelectItem key={u.id} value={u.id}>{u.firstName} {u.lastName}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
-
-                                    {/* Bouton pour supprimer un président */}
                                     <Button
-                                        variant="destructive"
+                                        variant="outline"
                                         size="icon"
-                                        disabled={currentUser?.id === owner}
                                         onClick={() => {
-                                            const newPresidents = config.owners.filter((_, i) => i !== index);
-                                            setConfig((prev) => ({ ...prev, owners: newPresidents }));
+                                            const newOwners = config.owners.filter((_, i) => i !== index);
+                                            setConfig(prev => ({ ...prev, owners: newOwners }));
                                         }}
+                                        disabled={currentUser?.id === owner}
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 border-slate-200"
                                     >
-                                        <X className="h-4 w-4" />
+                                        <Trash2 className="w-4 h-4" />
                                     </Button>
                                 </div>
                             );
                         })}
-
-                        {/* Bouton pour ajouter un nouveau président */}
                         <Button
                             variant="outline"
-                            onClick={() => setConfig((prev) => ({ ...prev, owners: [...prev.owners, ""] }))}
-                            className="w-full"
+                            onClick={() => setConfig(prev => ({ ...prev, owners: [...prev.owners, ""] }))}
+                            className="w-full border-dashed border-slate-300 text-slate-500 hover:text-[#774BBE] hover:border-[#774BBE] hover:bg-purple-50"
                         >
                             <Plus className="mr-2 h-4 w-4" /> Ajouter un président
                         </Button>
-                        {errors.owners &&
-                            <div className="text-red-500 mt-2 flex space-x-3">
-                                <IoIosWarning size={20} />
-                                <span>{errors.owners}</span>
-                            </div>
-                        }
-                    </div>
-                </CardContent>
-            </Card>
-            <CardFooter className="flex justify-start lg:justify-end">
-                <div className='space-y-3'>
-                    {submiError &&
-                        <div className="text-red-500 mt-2 flex space-x-3">
-                            <IoIosWarning size={20} />
-                            <span>{submiError}</span>
-                        </div>
-                    }
+                    </CardContent>
+                </Card>
+
+            </div>
+
+            {/* --- Sticky Bottom Bar (Mobile & Desktop) --- */}
+            {/* Cette barre reste fixée en bas de l'écran pour que l'action soit toujours visible */}
+            {/* CHANGEMENTS DESIGN :
+                1. 'relative' sur mobile : La barre est à la fin du flux (pas de conflit avec ton bouton menu).
+                2. 'lg:sticky lg:bottom-0' : Sur PC, la barre reste en bas mais respecte la largeur du contenu (ne couvre pas la sidebar).
+                3. 'mt-8' : Ajoute un peu d'espace avant la barre sur mobile.
+            */}
+            <div className="relative mt-8 lg:sticky bottom-0 z-40 w-full bg-white/95 backdrop-blur-sm border-t border-slate-200 p-4 md:px-8 flex justify-center md:justify-end">
+                <div className="w-full max-w-4xl flex justify-end">
                     <Button
                         size="lg"
                         onClick={handleSubmit}
                         disabled={loading}
+                        className="w-full md:w-auto bg-[#774BBE] hover:bg-[#6538a5] text-white shadow-lg transition-transform active:scale-95"
                     >
-                        {loading ? (
-                            <Spinner />
-                        ) : (
-                            'Enregistrer la configuration'
-                        )}
+                        {loading ? <Spinner className="text-white w-5 h-5 mr-2" /> : <Save className="w-5 h-5 mr-2" />}
+                        {loading ? "Enregistrement..." : "Enregistrer la configuration"}
                     </Button>
-
-
-                    <Button
-                        size="icon"
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="h-10 w-10 rounded-full shadow-lg bg-[#774BBE] fixed bottom-4 right-20 z-50 lg:hidden"
-                    >
-                        {loading ? <Spinner className="h-6 w-6" /> : <FaSave className="h-4 w-4" />}
-                        <span className="sr-only">Enregistrer</span>
-                    </Button>
-
                 </div>
-            </CardFooter>
+            </div>
+
         </div>
     )
 }
