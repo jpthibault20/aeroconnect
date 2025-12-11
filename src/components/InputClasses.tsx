@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Check, ChevronDown, X } from 'lucide-react'
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Label } from "./ui/label"
 import { BiSolidPlaneAlt } from "react-icons/bi";
 import { aircraftClasses } from "@/config/config"
 import { useCurrentClub } from "@/app/context/useCurrentClub"
@@ -57,9 +56,6 @@ const AircraftClassSelector = ({ disabled, classes, setClasses }: Props) => {
 
     return (
         <div>
-            <Label>
-                <span className="text-sm font-medium">Classes</span>
-            </Label>
             <div className="rounded-md shadow-sm border border-gray-200 p-2 flex flex-row justify-between items-center">
                 {/* Section des classes sélectionnées */}
                 <div className="flex flex-wrap gap-2">
