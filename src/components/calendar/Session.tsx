@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+'use client'
+
+import React, { useMemo } from 'react';
 import SessionPopup from '../SessionPopup';
 import { flight_sessions, planes, User } from '@prisma/client';
-import { Clock, Plane } from 'lucide-react';
-import { LiaChalkboardTeacherSolid } from 'react-icons/lia';
+import { Clock, Plane, User as UserIcon, Users } from 'lucide-react';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { cn } from '@/lib/utils';
 
 interface Props {
     sessions: flight_sessions[];
@@ -13,106 +15,129 @@ interface Props {
 }
 
 const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
-    const [planesString, setPlanesString] = useState("");
-    const [instructorString, setInstructorString] = useState("");
     const { currentUser } = useCurrentUser()
-    const filterdPlanes = planesProp.filter((p) => currentUser?.classes.includes(p.classes))
 
+    // --- 1. Logique (Memoïsée) ---
 
-    // Sépare les sessions réservées et disponibles
-    const availableSessions = sessions.filter(session => session.studentID === null);
-    const bookedSessions = sessions.filter(session => session.studentID !== null);
+    const allowedPlanes = useMemo(() => {
+        return planesProp.filter((p) => currentUser?.classes.includes(p.classes))
+    }, [planesProp, currentUser?.classes]);
 
-    const availablePlanes = new Set<string>();
-    const availablePilots = new Set<string>();
-
-    availableSessions.forEach(session => {
-        session.planeID.forEach((plane) => {
-            const foundPlane = filterdPlanes.find(p => p.id === plane);
-            if (foundPlane) {
-                availablePlanes.add(foundPlane.id);
-            } else if (plane === "classroomSession") {
-                availablePlanes.add("classroomSession");
-            }
-        }); availablePilots.add(session.pilotFirstName);
-    });
-
-    const noSessions = availableSessions.length === 0 ? true : false;
-
-    const endSessionDate = new Date(
-        sessions[0].sessionDateStart.getFullYear(),
-        sessions[0].sessionDateStart.getMonth(),
-        sessions[0].sessionDateStart.getDate(),
-        sessions[0].sessionDateStart.getHours(),
-        sessions[0].sessionDateStart.getMinutes() + sessions[0].sessionDateDuration_min,
-        0
-    );
-
-    // regroupe for planes
-    useEffect(() => {
-        const allPlanes = [
-            ...new Set([...availableSessions].flatMap(session => session.planeID))
-        ];
-
-        if (allPlanes.length === 1) {
-            setPlanesString(allPlanes[0] === "classroomSession" ? "Théorique" : filterdPlanes.find(p => p.id === allPlanes[0])?.name as string)
+    const { availableSessions, bookedSessions, isFullyBooked } = useMemo(() => {
+        const available = sessions.filter(session => session.studentID === null);
+        const booked = sessions.filter(session => session.studentID !== null);
+        return {
+            availableSessions: available,
+            bookedSessions: booked,
+            isFullyBooked: available.length === 0
         }
-        else if (allPlanes.length > 1) {
-            const planes = filterdPlanes
-            let planesNumber = planes.filter((p) => allPlanes.includes(p.id)).length
-            if (allPlanes.includes("classroomSession"))
-                planesNumber++;
+    }, [sessions]);
 
-            setPlanesString(planesNumber + " avions");
+    const firstSession = sessions[0];
+
+    const timeString = useMemo(() => {
+        if (!firstSession) return "";
+        const start = firstSession.sessionDateStart;
+        const endTimestamp = new Date(start).getTime() + firstSession.sessionDateDuration_min * 60000;
+        const endDate = new Date(endTimestamp);
+        const format = (h: number, m: number) =>
+            `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        return `${format(start.getUTCHours(), start.getUTCMinutes())} - ${format(endDate.getUTCHours(), endDate.getUTCMinutes())}`;
+    }, [firstSession]);
+
+    const planesString = useMemo(() => {
+        const uniquePlaneIds = Array.from(new Set(availableSessions.flatMap(s => s.planeID)));
+        if (isFullyBooked) return "Complet";
+        if (uniquePlaneIds.length === 0) return "Aucun appareil";
+
+        if (uniquePlaneIds.length === 1) {
+            const pid = uniquePlaneIds[0];
+            if (pid === "classroomSession") return "Théorique";
+            const plane = allowedPlanes.find(p => p.id === pid);
+            return plane ? plane.name : "Avion indisponible";
         }
-        else {
-            setPlanesString("0 avion");
+
+        let count = 0;
+        uniquePlaneIds.forEach(pid => {
+            if (pid === "classroomSession") count++;
+            else if (allowedPlanes.some(p => p.id === pid)) count++;
+        });
+
+        return count > 1 ? `${count} avions` : (count === 1 ? "1 avion" : "Non éligible");
+    }, [availableSessions, allowedPlanes, isFullyBooked]);
+
+    const instructorString = useMemo(() => {
+        if (isFullyBooked) return bookedSessions.length > 0 ? "Réservé" : "Indisponible";
+        if (availableSessions.length === 1) {
+            const s = availableSessions[0];
+            return `${s.pilotLastName.slice(0, 1).toUpperCase()}.${s.pilotFirstName}`;
         }
-    }, [availableSessions, bookedSessions, filterdPlanes])
+        return `${availableSessions.length} instructeurs`;
+    }, [availableSessions, isFullyBooked, bookedSessions.length]);
 
-    // regroupe for instructor
-    useEffect(() => {
+    if (sessions.length === 0) return null;
 
-        if (availableSessions.length === 0) {
-            setInstructorString("0 instructeur");
-        } else if (availableSessions.length === 1) {
-            setInstructorString(availableSessions[0].pilotLastName.slice(0, 1).toUpperCase() + "." + availableSessions[0].pilotFirstName)
-        } else {
-            setInstructorString(availableSessions.length + " Instructeurs")
-        }
-    }, [availableSessions, bookedSessions])
-
-    if ([...bookedSessions, ...availableSessions].length === 0) return null;
-
+    // --- 2. Design Desktop Pro ---
     return (
-        <SessionPopup sessions={[...bookedSessions, ...availableSessions]} noSessions={noSessions} setSessions={setSessions} usersProps={usersProps} planesProp={planesProp}>
-            <div className={`rounded-md p-1 shadow-sm  ${noSessions ? "bg-purple-100 opacity-50" : "bg-green-200"}`}>
-                <div className='flex w-full items-center justify-end'>
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span className='text-xs'>
-                        {sessions[0].sessionDateStart.getUTCHours().toString().padStart(2, '0')}:
-                        {sessions[0].sessionDateStart.getUTCMinutes().toString().padStart(2, '0')} -
-                        {endSessionDate.getUTCHours().toString().padStart(2, '0')}:
-                        {endSessionDate.getUTCMinutes().toString().padStart(2, '0')}
-                    </span>
+        <SessionPopup
+            sessions={[...bookedSessions, ...availableSessions]}
+            noSessions={isFullyBooked}
+            setSessions={setSessions}
+            usersProps={usersProps}
+            planesProp={planesProp}
+        >
+            <div
+                className={cn(
+                    "group relative flex flex-col gap-1 rounded-lg p-2 text-xs transition-all duration-200 h-full overflow-hidden select-none border",
+
+                    isFullyBooked
+                        // ÉTAT COMPLET : 
+                        // Fond gris-violet très clair qui se fond un peu avec le calendrier mais reste distinct.
+                        // Pas d'ombre (flat) pour montrer qu'il n'est pas "actif".
+                        // Opacité réduite pour ne pas attirer l'attention.
+                        ? "bg-slate-100/80 border-slate-200 text-slate-500 cursor-default"
+
+                        // ÉTAT DISPONIBLE : 
+                        // Fond BLANC PUR pour trancher avec le gris du calendrier.
+                        // Ombre portée pour donner du relief (effet carte).
+                        // Bordure gauche Violette (#774BBE) marqueur de la charte.
+                        // AJOUT : border-slate-200 remplace border-transparent pour une fine bordure tout autour
+                        : "bg-white border-[#9a82c0] border-l-[4px] border-l-[#774BBE] shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+                )}
+            >
+                {/* Ligne Horaire */}
+                <div className={cn(
+                    "flex items-center font-bold mb-0.5",
+                    isFullyBooked ? "text-slate-500" : "text-[#774BBE]"
+                )}>
+                    <Clock className={cn("w-3.5 h-3.5 mr-2 flex-shrink-0", isFullyBooked ? "opacity-50" : "")} />
+                    <span className="truncate tracking-tight">{timeString}</span>
                 </div>
 
-                <div className='flex items-center '>
-                    <Plane className="w-4 h-4 mr-1" />
-                    <span className='text-xs'>
-                        {planesString}
-                    </span>
+                {/* Info Avion */}
+                <div className={cn(
+                    "flex items-center gap-2 truncate",
+                    isFullyBooked ? "text-slate-400" : "text-slate-700 font-medium"
+                )}>
+                    <Plane className={cn("w-3.5 h-3.5 flex-shrink-0", isFullyBooked ? "opacity-50" : "text-[#774BBE]/70")} />
+                    <span className="truncate">{planesString}</span>
                 </div>
 
-                <div className='flex items-center'>
-                    <LiaChalkboardTeacherSolid className='w-4 h-4 mr-1' />
-                    <span className='text-xs'>
-                        {instructorString}
-                    </span>
+                {/* Info Instructeur */}
+                <div className={cn(
+                    "flex items-center gap-2 truncate",
+                    isFullyBooked ? "text-slate-400" : "text-slate-500"
+                )}>
+                    {availableSessions.length > 1 ? (
+                        <Users className={cn("w-3.5 h-3.5 flex-shrink-0", isFullyBooked ? "opacity-50" : "text-slate-400")} />
+                    ) : (
+                        <UserIcon className={cn("w-3.5 h-3.5 flex-shrink-0", isFullyBooked ? "opacity-50" : "text-slate-400")} />
+                    )}
+                    <span className="truncate">{instructorString}</span>
                 </div>
             </div>
         </SessionPopup>
-    )
+    );
 };
 
 export default Session;

@@ -1,17 +1,11 @@
 /**
  * @file TableRowComponent.tsx
- * @brief This component renders a single row in the user table.
- * It displays user information along with options to update or delete the user.
- * 
- * @details Each row includes the user's picture, name, email, role, restricted status, and phone number.
- * Icons are provided for update and delete actions, which log the respective user IDs to the console when clicked.
+ * @brief Renders a single row for a user with modern styling and actions.
  */
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 import { TableCell, TableRow } from '../ui/table';
 import Restricted from './Restricted';
-import userPicture from '../../../public/images/userProfil.png';
 import { User, userRole } from '@prisma/client';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import { Button } from '../ui/button';
@@ -19,28 +13,42 @@ import { deleteUser } from '@/api/db/users';
 import { toast } from '@/hooks/use-toast';
 import UpdateUserComponent from './UpdateUserComponent';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { Pencil, Trash2, Phone } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-interface props {
-    user: User;  ///< User object representing the user data to be displayed in this row.
+interface Props {
+    user: User;
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
 }
 
+// Configuration des couleurs et labels pour les rôles
+const roleConfig: Record<string, { label: string; color: string; border: string }> = {
+    OWNER: { label: 'Président', color: 'bg-purple-100 text-[#774BBE]', border: 'border-purple-200' },
+    ADMIN: { label: 'Admin', color: 'bg-slate-100 text-slate-700', border: 'border-slate-200' },
+    MANAGER: { label: 'Manager', color: 'bg-indigo-100 text-indigo-700', border: 'border-indigo-200' },
+    INSTRUCTOR: { label: 'Instructeur', color: 'bg-violet-50 text-violet-700', border: 'border-violet-100' },
+    PILOT: { label: 'Pilote', color: 'bg-blue-50 text-blue-700', border: 'border-blue-100' },
+    STUDENT: { label: 'Élève', color: 'bg-emerald-50 text-emerald-700', border: 'border-emerald-100' },
+    USER: { label: 'Visiteur', color: 'bg-gray-50 text-gray-600', border: 'border-gray-100' },
+};
 
-const TableRowComponent = ({ user, setUsers }: props) => {
+const TableRowComponent = ({ user, setUsers }: Props) => {
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
     const { currentUser } = useCurrentUser();
 
-    // Handler for deleting a user; removes the user from the state upon successful deletion.
-    const onClickDeleteUser = () => async () => {
+    // --- Permissions ---
+    const canManage = currentUser?.role === userRole.OWNER ||
+        currentUser?.role === userRole.ADMIN ||
+        currentUser?.role === userRole.MANAGER;
+
+    // --- Actions ---
+    const onClickDeleteUser = async () => {
         if (user.id === currentUser?.id) {
             toast({
-                title: "Vous ne pouvez pas supprimer votre propre compte",
-                duration: 5000,
-                style: {
-                    background: '#ab0b0b', //rouge : ab0b0b
-                    color: '#fff',
-                }
+                title: "Action impossible",
+                description: "Vous ne pouvez pas supprimer votre propre compte.",
+                variant: "destructive"
             });
             return;
         }
@@ -49,105 +57,116 @@ const TableRowComponent = ({ user, setUsers }: props) => {
         try {
             const res = await deleteUser(user.id);
             if (res.success) {
-                // Supprime l'utilisateur localement après une suppression réussie
                 setUsers((prevUsers) => prevUsers.filter((u) => u.id !== user.id));
                 toast({
-                    title: "Utilisateur supprimé avec succès",
-                    duration: 5000,
-                    style: {
-                        background: '#0bab15', //rouge : ab0b0b
-                        color: '#fff',
-                    }
+                    title: "Utilisateur supprimé",
+                    description: "Le membre a été retiré de la base de données.",
+                    className: "bg-green-600 text-white border-none"
                 });
             } else {
-                console.log(res.error);
                 toast({
-                    title: "Oups, une erreur est survenue",
-                    duration: 5000,
-                    style: {
-                        background: '#ab0b0b', //rouge : ab0b0b
-                        color: '#fff',
-                    }
+                    title: "Erreur",
+                    description: res.error || "Impossible de supprimer l'utilisateur.",
+                    variant: "destructive"
                 });
             }
         } catch (error) {
             console.error(error);
-            toast({
-                title: "Une erreur s'est produite, impossible de supprimer l'utilisateur pour le moment",
-                duration: 5000,
-                style: {
-                    background: '#ab0b0b', //rouge : ab0b0b
-                    color: '#fff',
-                }
-            });
+            toast({ title: "Erreur technique", variant: "destructive" });
         } finally {
             setLoading(false);
         }
     };
 
+    // --- Helpers ---
+    const roleInfo = roleConfig[user.role] || roleConfig.USER;
+    const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase();
+
     return (
-        <TableRow>
-            <TableCell>
-                <div className="flex">
-                    <Image
-                        src={userPicture}
-                        alt="User Image"
-                        height={50}
-                        width={50}
-                        className="rounded-full hidden md:flex justify-center"
-                        priority
-                    />
-                    <div className="ml-4 h-full w-full flex flex-col justify-center items-start">
-                        <div className="font-medium text-left">
-                            {user.lastName.toUpperCase()} {user.firstName}
-                        </div>
-                        <div className="text-left text-gray-500">{user.email}</div>
-                    </div>
+        <TableRow className="group hover:bg-slate-50 transition-colors">
+
+            {/* 1. Avatar (Visuel) */}
+            <TableCell className="text-center py-3">
+                <div className="mx-auto h-9 w-9 rounded-full bg-gradient-to-br from-[#774BBE] to-[#6035a0] flex items-center justify-center text-white text-xs font-bold shadow-sm border-2 border-white ring-1 ring-slate-100">
+                    {initials}
                 </div>
             </TableCell>
-            <TableCell className="text-center">
-                {user.role === "USER" && "Visiteur"}
-                {user.role === "STUDENT" && "Elève"}
-                {user.role === "INSTRUCTOR" && "Instructeur"}
-                {user.role === "PILOT" && "Pilote"}
-                {user.role === "MANAGER" && "Manager"}
-                {user.role === "OWNER" && "Président"}
-                {user.role === "ADMIN" && "Administrateur"}
+
+            {/* 2. Identité (Nom + Email) */}
+            <TableCell className="pl-4">
+                <div className="flex flex-col">
+                    <span className="font-semibold text-slate-900 text-sm">
+                        {user.lastName?.toUpperCase()} {user.firstName}
+                    </span>
+                    <span className="text-xs text-slate-500 flex items-center gap-1">
+                        {user.email}
+                    </span>
+                </div>
             </TableCell>
-            <TableCell className="text-center">
-                <Restricted user={user} />
+
+            {/* 3. Rôle (Badge) */}
+            <TableCell className="text-center hidden sm:table-cell">
+                <span className={cn(
+                    "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
+                    roleInfo.color,
+                    roleInfo.border
+                )}>
+                    {roleInfo.label}
+                </span>
             </TableCell>
-            <TableCell className="text-center">{user.phone}</TableCell>
-            {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER || currentUser?.role === userRole.MANAGER ? (
-                <TableCell className="flex flex-col items-center space-y-3 justify-center">
-                    <UpdateUserComponent
-                        showPopup={showPopup}
-                        setShowPopup={setShowPopup}
-                        user={user}
-                        setUsers={setUsers}
-                    >
-                        <Button className="w-fit bg-blue-600 hover:bg-blue-700">Modifier</Button>
-                    </UpdateUserComponent>
 
-                    <AlertConfirmDeleted
-                        title="Êtes-vous sûr de vouloir supprimer cet élève ?"
-                        description={`Vous allez supprimer ${user.firstName} ${user.lastName} définitivement.`}
-                        cancel="Annuler"
-                        confirm="Supprimer"
-                        confirmAction={onClickDeleteUser()}
-                        loading={loading}
-                    >
-                        <div className='px-2 py-1 bg-red-600 text-white rounded-lg'>
-                            Supprimer
-                        </div>
-                    </AlertConfirmDeleted>
+            {/* 4. Téléphone (Caché sur mobile) */}
+            <TableCell className="text-center hidden md:table-cell">
+                {user.phone ? (
+                    <div className="flex items-center justify-center gap-1 text-slate-600 text-sm">
+                        <Phone className="w-3 h-3 text-slate-400" />
+                        {user.phone}
+                    </div>
+                ) : (
+                    <span className="text-slate-300 text-xs">-</span>
+                )}
+            </TableCell>
 
+            {/* 5. Statut (Restreint) */}
+            <TableCell className="text-center">
+                <div className="flex justify-center">
+                    <Restricted user={user} />
+                </div>
+            </TableCell>
 
+            {/* 6. Actions (Edit / Delete) */}
+            {canManage && (
+                <TableCell className="text-right pr-4">
+                    <div className="flex items-center justify-end gap-1 opacity-100  transition-opacity">
+
+                        {/* Edit Button */}
+                        <UpdateUserComponent
+                            showPopup={showPopup}
+                            setShowPopup={setShowPopup}
+                            user={user}
+                            setUsers={setUsers}
+                        >
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-purple-600 hover:bg-purple-50">
+                                <Pencil className="w-4 h-4" />
+                            </Button>
+                        </UpdateUserComponent>
+
+                        {/* Delete Button */}
+                        <AlertConfirmDeleted
+                            title="Supprimer ce membre ?"
+                            description={`Êtes-vous sûr de vouloir supprimer ${user.firstName} ${user.lastName} ? Cette action est définitive.`}
+                            cancel="Annuler"
+                            confirm="Supprimer"
+                            confirmAction={onClickDeleteUser}
+                            loading={loading}
+                        >
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50">
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                        </AlertConfirmDeleted>
+                    </div>
                 </TableCell>
-            ) : (
-                null
-            )
-            }
+            )}
         </TableRow>
     );
 };

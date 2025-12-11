@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { addStudentToSession, InvitedStudent } from '@/api/db/users';
 import { flight_sessions, planes, User, userRole } from '@prisma/client';
@@ -8,9 +8,10 @@ import { toast } from '@/hooks/use-toast';
 import { Spinner } from '../ui/SpinnerVariants';
 import { getFreePlanesUsers } from '@/api/popupCalendar';
 import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
-import { IoIosWarning, IoMdPersonAdd } from 'react-icons/io';
+import { AlertCircle, UserPlus, Plane, User as UserIcon, Check } from 'lucide-react';
 import InvitedForm from './InvitedForm';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { Label } from '../ui/label';
 
 interface Props {
     session: flight_sessions;
@@ -22,6 +23,7 @@ interface Props {
 
 const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: Props) => {
     const { currentUser } = useCurrentUser()
+    const [isOpen, setIsOpen] = useState(false);
     const [error, setError] = useState("");
     const [freeStudents, setFreeStudents] = useState<{ id: string, name: string }[]>([]);
     const [studentId, setStudentId] = useState<string>("");
@@ -37,7 +39,10 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         phone: ""
     });
 
-    // Filtrer les étudiants en fonction de l'avion sélectionné
+    const PRIMARY_COLOR = "#774BBE";
+
+    // --- LOGIQUE METIER (Inchangée) ---
+
     const filterStudentsByPlane = (planeId: string) => {
         const { students } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
         if (!planeId || planeId === " " || planeId === "classroomSession") {
@@ -59,7 +64,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         }));
     };
 
-    // Filtrer les avions en fonction de l'étudiant sélectionné
     const filterPlanesByStudent = (studentId: string) => {
         if (!studentId) return [];
 
@@ -74,7 +78,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                 const userClasses = usersProp.find(user => user.id === studentId)?.classes || [];
                 if (userClasses.includes(plane.classes)) {
                     planesRes.push({ id: plane.id, name: plane.name });
-
                 }
             }
         }
@@ -86,7 +89,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         return planesRes;
     };
 
-    // Mise à jour des listes lors de la sélection
     useEffect(() => {
         if (planeId && planeId !== " ") {
             setFreeStudents(filterStudentsByPlane(planeId));
@@ -100,21 +102,17 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
             })));
 
             if (session.planeID.includes("classroomSession")) {
-                // Si on a une session en salle, on commence par ajouter tous les avions normaux
                 setFreePlanes([
                     ...planes.map(plane => ({ id: plane.id, name: plane.name })),
-                    // Puis on ajoute l'option de session théorique
                     { id: "classroomSession", name: "Session théorique" }
                 ]);
             } else {
-                // Si pas de session en salle, on n'affiche que les avions normaux
                 setFreePlanes(planes.map(plane => ({ id: plane.id, name: plane.name })));
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [planeId, studentId, session, sessions, usersProp, planesProp]);
 
-    // Mise à jour de l'avion sélectionné si il n'y a qu'un seul
     useEffect(() => {
         if (freePlanes.length === 1) {
             setPlaneId(freePlanes[0].id);
@@ -123,7 +121,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
     useEffect(() => {
         if (freeStudents.length === 0 && planeId !== "noPlane") {
-            setWarningStudent("l'étudiant n'est pas autorisé pour cet classe d'avion");
+            setWarningStudent("Aucun étudiant autorisé pour cette classe d'avion.");
         } else {
             setWarningStudent("");
         }
@@ -131,42 +129,30 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
     useEffect(() => {
         if (freePlanes.length === 0) {
-            setWarningPlane("Aucun avion n'est disponible pour cette d'étudiant");
+            setWarningPlane("Aucun avion disponible pour cet étudiant.");
         } else {
             setWarningPlane("");
         }
     }, [freePlanes]);
 
-    // Handler pour la sélection d'un étudiant
     const handleStudentChange = (value: string) => {
         setStudentId(value);
-        if (value === " ") {
-            setPlaneId(" ");
-        }
+        if (value === " ") setPlaneId(" ");
     };
 
-    // Handler pour la sélection d'un avion
     const handlePlaneChange = (value: string) => {
         setPlaneId(value);
-        if (value === " ") {
-            setStudentId(" ");
-        }
+        if (value === " ") setStudentId(" ");
     };
 
-    // Reste du code inchangé pour onClickAction...
     const onClickAction = async () => {
         setLoading(true);
+        setError("");
 
         if (studentId) {
             const selectedUser = usersProp.find(user => user.id === studentId);
 
             if (selectedUser || studentId === 'invited') {
-
-                console.log(
-                    session.id,
-                    invitedStudent
-                )
-
                 try {
                     const res = await addStudentToSession(session.id, {
                         id: studentId,
@@ -180,25 +166,17 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                     if (res.error) {
                         setError(res.error);
                         toast({
-                            title: "Oups, une erreur est survenue",
+                            title: "Erreur",
                             description: res.error,
-                            duration: 5000,
-                            style: {
-                                background: '#ab0b0b',
-                                color: '#fff',
-                            }
+                            variant: "destructive",
                         });
-                        setLoading(false);
                     }
 
                     if (res.success) {
                         toast({
-                            title: res.success,
-                            duration: 5000,
-                            style: {
-                                background: '#0bab15',
-                                color: '#fff',
-                            }
+                            title: "Succès",
+                            description: res.success,
+                            style: { background: '#0bab15', color: '#fff' }
                         });
 
                         const endDate = new Date(session.sessionDateStart);
@@ -230,7 +208,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         ]);
 
                         setSessions(prevSessions => {
-                            const updatedSessions = prevSessions.map(s =>
+                            return prevSessions.map(s =>
                                 s.id === session.id
                                     ? {
                                         ...s,
@@ -241,15 +219,16 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                     }
                                     : s
                             );
-                            return updatedSessions;
                         });
                         setStudentId(" ");
                         setPlaneId(" ");
-                        setLoading(false);
+                        setIsOpen(false);
                     }
                 } catch (err) {
                     console.error(err);
-                    setError("Une erreur est survenue lors de l'ajout de l'étudiant (E_023: failed to add student)");
+                    setError("Une erreur technique est survenue.");
+                } finally {
+                    setLoading(false);
                 }
             } else {
                 setError("Étudiant introuvable");
@@ -261,95 +240,141 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         }
     };
 
+    // --- 2. UI REFONTE ---
     return (
-        <Dialog>
-            <DialogTrigger>
-                <IoMdPersonAdd color='green' />
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs font-medium text-slate-600 hover:text-[#774BBE] hover:bg-purple-50 gap-1.5 transition-colors"
+                >
+                    <UserPlus size={14} />
+                    Ajouter
+                </Button>
             </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Ajouter un élève</DialogTitle>
-                    <DialogDescription>
-                        Choisissez l&apos;élève et l&apos;avion que vous souhaitez ajouter à la session
-                    </DialogDescription>
-                </DialogHeader>
-
-                <Select
-                    value={studentId}
-                    onValueChange={handleStudentChange}
-                    disabled={loading}>
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Élèves" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60 overflow-y-auto">
-                        <SelectItem value=" ">Élèves</SelectItem>
-                        {freeStudents.map((item, index) => (
-                            <SelectItem key={index} value={item.id}>
-                                {item.name}
-                            </SelectItem>
-                        ))}
-                        {currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER ? (
-                            <SelectItem value={"invited"}>
-                                invité
-                            </SelectItem>
-                        ) : null}
-                    </SelectContent>
-                </Select>
-
-                {/* only for invited */}
-                {studentId === "invited" && (
-                    <div>
-                        <InvitedForm
-                            invitedStudent={invitedStudent}
-                            setInvitedStudent={setInvitedStudent}
-                        />
+            <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden border-slate-200">
+                {/* Header Style Pro */}
+                <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-start gap-4">
+                    <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 hidden sm:block">
+                        <UserPlus className="w-6 h-6 text-[#774BBE]" />
                     </div>
-                )}
+                    <DialogHeader className="text-left space-y-1">
+                        <DialogTitle className="text-xl font-semibold text-slate-800">
+                            Inscrire un élève
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 text-sm">
+                            Sélectionnez un élève et un appareil pour ce créneau.
+                        </DialogDescription>
+                    </DialogHeader>
+                </div>
 
-                <Select
-                    value={planeId}
-                    onValueChange={handlePlaneChange}
-                    disabled={loading}>
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Appareils" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60 overflow-y-auto">
-                        <SelectItem value=" ">Appareils</SelectItem>
-                        {freePlanes.map((item, index) => (
-                            <SelectItem key={index} value={item.id}>
-                                {item.name}
-                            </SelectItem>
-                        ))}
-                        <SelectItem value={"noPlane"}>Sans appareil</SelectItem>
-                    </SelectContent>
-                </Select>
+                <div className="p-6 space-y-6">
+                    {/* Choix Élève */}
+                    <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            <UserIcon className="w-3 h-3" /> Qui participe ?
+                        </Label>
 
-                {warningStudent && <div className="flex items-center text-orange-500 mb-4">
-                    <IoIosWarning className="mr-2 " size={30} />
-                    <span>{warningStudent}</span>
-                </div>}
+                        <Select value={studentId} onValueChange={handleStudentChange} disabled={loading}>
+                            <SelectTrigger className="w-full bg-slate-50/50 border-slate-200 focus:ring-[#774BBE] focus:border-[#774BBE] transition-all">
+                                <SelectValue placeholder="Sélectionner un élève" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60">
+                                <SelectItem value=" ">-- Choisir --</SelectItem>
+                                {freeStudents.map((item, index) => (
+                                    <SelectItem key={index} value={item.id}>
+                                        {item.name}
+                                    </SelectItem>
+                                ))}
+                                {(currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER) && (
+                                    <>
+                                        <div className="mx-2 my-1 h-px bg-slate-100" />
+                                        <SelectItem value="invited" className="text-[#774BBE] font-medium focus:text-[#774BBE]">
+                                            + Invité externe
+                                        </SelectItem>
+                                    </>
+                                )}
+                            </SelectContent>
+                        </Select>
 
-                {warningPlane && <div className="flex items-center text-orange-500 mb-4">
-                    <IoIosWarning className="mr-2" size={30} />
-                    <span>{warningPlane}</span>
-                </div>}
-
-                {error && (
-                    <div className="flex items-center text-destructive mb-4">
-                        <IoIosWarning className="mr-2" />
-                        <span>{error}</span>
+                        {warningStudent && (
+                            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2.5 rounded-md text-xs border border-amber-100">
+                                <AlertCircle size={14} className="shrink-0" /> {warningStudent}
+                            </div>
+                        )}
                     </div>
-                )}
 
-                <DialogFooter>
-                    <DialogClose disabled={loading}>Cancel</DialogClose>
-                    {loading ? (
-                        <Spinner />
-                    ) : (
-                        <Button onClick={onClickAction} disabled={loading}>
-                            Ajouter
-                        </Button>
+                    {/* Formulaire Invité (Conditionnel) */}
+                    {studentId === "invited" && (
+                        <div className="border-l-2 border-[#774BBE] pl-4 py-1 bg-purple-50/30 rounded-r-lg animate-in slide-in-from-top-2 fade-in duration-300">
+                            <InvitedForm
+                                invitedStudent={invitedStudent}
+                                setInvitedStudent={setInvitedStudent}
+                            />
+                        </div>
                     )}
+
+                    {/* Choix Avion */}
+                    <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            <Plane className="w-3 h-3" /> Sur quel appareil ?
+                        </Label>
+                        <Select value={planeId} onValueChange={handlePlaneChange} disabled={loading}>
+                            <SelectTrigger className="w-full bg-slate-50/50 border-slate-200 focus:ring-[#774BBE] focus:border-[#774BBE] transition-all">
+                                <SelectValue placeholder="Sélectionner un appareil" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60">
+                                <SelectItem value=" ">-- Choisir --</SelectItem>
+                                {freePlanes.map((item, index) => (
+                                    <SelectItem key={index} value={item.id}>
+                                        {item.name}
+                                    </SelectItem>
+                                ))}
+                                <div className="mx-2 my-1 h-px bg-slate-100" />
+                                <SelectItem value="noPlane" className="text-amber-700 focus:text-amber-800">
+                                    Sans appareil
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        {warningPlane && (
+                            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2.5 rounded-md text-xs border border-amber-100">
+                                <AlertCircle size={14} className="shrink-0" /> {warningPlane}
+                            </div>
+                        )}
+                    </div>
+
+                    {error && (
+                        <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-md text-sm border border-red-100">
+                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                            <span>{error}</span>
+                        </div>
+                    )}
+                </div>
+
+                <DialogFooter className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row gap-3 items-center sm:justify-end">
+                    <Button
+                        variant="ghost"
+                        onClick={() => setIsOpen(false)}
+                        disabled={loading}
+                        className="text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 w-full sm:w-auto"
+                    >
+                        Annuler
+                    </Button>
+                    <Button
+                        onClick={onClickAction}
+                        disabled={loading}
+                        style={{ backgroundColor: PRIMARY_COLOR }}
+                        className="text-white shadow-md hover:opacity-90 transition-opacity w-full sm:w-auto min-w-[120px]"
+                    >
+                        {loading ? <Spinner className="text-white w-4 h-4" /> : (
+                            <div className="flex items-center gap-2">
+                                <Check size={16} />
+                                <span>Valider</span>
+                            </div>
+                        )}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
