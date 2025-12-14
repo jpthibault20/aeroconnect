@@ -1,87 +1,100 @@
-# Club Calendar Management System
+# ✈️ Club Calendar Management System
 
-Ce projet est une application de calendrier conçue spécifiquement pour les clubs d'aviation légère et d'ULM. Elle permet une gestion simple et efficace des réservations entre instructeurs et élèves, ainsi que des paiements et de la location d'avions.
+**La solution complète de gestion pour aéroclubs et clubs d'ULM.**
 
-## Version actuelle 2.0
+Ce projet est une application web moderne conçue pour simplifier le quotidien des clubs d'aviation légère. Elle centralise la gestion des réservations (instructeurs et élèves), le suivi de la flotte, ainsi que l'administration des membres et des paiements.
 
-**Version 2.x.x**
- * Refont all application with new designe 
- * fix minor bug
+---
 
-**Version 1.4.x**
- * Add feature for STEX
- * add verion view
- * fix différents bugs
+## 🚀 Fonctionnalités Actuelles
 
-**Version 1.3.x**
- *  Corréction de tous les bugs connue afin d'arrivé à une permière version stable et commercialisable 
-  * Ajout feature d'inscription sans avion ainsi que la configuration des utilisateurs pour avoir acces a cette feature
+L'application est actuellement stable et offre les fonctionnalités clés suivantes :
 
+### 📅 Gestion & Planning
+* **Calendrier interactif :** Vue moderne pour gérer les événements et réservations.
+* **Réservations :** Système de créneaux entre instructeurs et élèves.
+* **Gestion des sessions :** Inscription et suppression simplifiées aux sessions de vol.
+* **Flotte :** Sélection des avions disponibles lors des réservations.
 
-**Version 1.2.x**
- *  ajout en plus de la version précédent les 6 classes ulm avec des restriction, autorisation et gestion en fonction de celle ci
- *  correction bug lors de la suppression d'un element avec AlertConfirmDeleted
- *  Suppression d'un user => supression de l'utilisateur dans le club mais pas de la DB
- *  Amélioration de la page calendar avec un nouveau design et une possibilité de gérer les évènements directement depuis le calendrier
+### 👥 Administration & Membres
+* **Gestion des utilisateurs :** Création de profils avec rôles multiples (Admin, Instructeur, Élève).
+* **Configuration du Club :** Paramétrage complet de l'entité.
+* **Classes ULM (v1.2+) :** Gestion des 6 classes ULM avec restrictions et autorisations spécifiques.
+* **Suppression douce (Soft Delete) :** Désactivation des utilisateurs sans perte d'historique en base de données.
+* **Restriction :** Possibilité de restreindre l'accès à certains utilisateurs.
 
-**Version 1.1.x (old version since 06/01/2025)** 
+### 💻 Expérience Utilisateur
+* **Design Responsive :** Interface optimisée pour Mobile, Tablette et Desktop.
+* **Authentification :** Connexion sécurisée.
+* **Feature STEX :** (Intégrée en v1.4).
 
-Cette version est une version de développement et ne contient pas encore toutes les fonctionnalités prévues. Les fonctionnalités actuellement implémentées sont :
+---
 
-*   Authentification
-*   création des user avec des roles différents
-*   création / gestion / configuration d'un club
-*   inscription / suppresssion a une sessions
-*   Avions du club pour le choix dans une session de formation
-*   Application responsive pour téléphone / tablette / ordinateur
-*   possibilité de restreindre un utilisateurs
+## 🛠 Stack Technique
 
-Les fonctionnalités listées dans la section "Fonctionnalités principales" ci-dessous sont prévues pour les versions ultérieures.
+Ce projet repose sur une architecture robuste et typée :
 
-## Fonctionnalités principales (en développement)
+| Catégorie | Technologies |
+| :--- | :--- |
+| **Framework & Core** | ![Next.js](https://img.shields.io/badge/Next.js-black?style=flat-square&logo=next.js) ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript) |
+| **Backend & DB** | ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat-square&logo=supabase) ![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=flat-square&logo=prisma) |
+| **UI & Design** | ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css) **ShadcnUI** |
+| **Sécurité & Qualité** | **Zod** (Validation), **ESLint** (Linter), **Auth** (OAuth/Mail) |
+| **Communication** | **ReSend** (API Mail), **React Email** (Templates) |
+| **Divers** | **Recharts** (Graphiques), **Lucide React** (Icônes) |
 
-- **Authentification** Rapiditée, confirmation mail, OAuth
-- **Paiment** Ajouter la feature de paiment en utilisant stripe
-- **Location** Ajouter la feature location des avions
-- **React Native** Créer une application mobile avec react Native
-- **Maintenance** Gérer correctement la maintenance des avions, si un avions passe en maintenance, gerer les élèves deja inscrit, ajouter une date de fin de maintenance
-- **classe** Gérer la classes des avions (classe ULM)
-- **Mail** Possibilité d'envoyer des email a tous les contact ou choix, chat dans le club 
-- **Profile page** Finir la page profile en y ajoutant eds stats, et en la travaillant au niveau UI UX
+---
 
-## Technologies utilisées
+## 🔮 Roadmap & Fonctionnalités en développement
 
-- **Next.js** : Framework utilisé pour le développement de l'application.
-- **ESlint** Controle du code
-- **TypeScript** : Langage pour garantir la robustesse du code.
-- **Supabase** : Utilisé pour la gestion des bases de données et l'authentification.
-- **Tailwind CSS** : Framework CSS pour un design moderne et responsive.
-- **ShadcnUI** : Bibliothèque pour des composants UI avancés et réutilisables.
-- **Zod** Controlle des formulaire
-- **Prisma** Interface avec la base de donnée
-- **React icon & lucide react** Icon utiliser dans l'application
-- **Authentification** Rapiditée, confirmation mail, OAuth
-- **ReSend** Envoie des emails
-- **React Email** Mise en page des emails
-- **recharts** Graphiques
+Voici les axes de développement prioritaires pour les prochaines versions :
 
+- [ ] **Paiements :** Intégration complète de **Stripe** pour les règlements en ligne.
+- [ ] **Location :** Module de location d'avions (hors instruction).
+- [ ] **Maintenance Avancée :** Gestion des arrêts techniques (V.N.A), impact automatique sur les réservations existantes et dates de fin de maintenance.
+- [ ] **Communication :** Système de chat interne au club et mailing ciblé ou groupé.
+- [ ] **Profil Avancé :** Statistiques de vol détaillées et refonte UI/UX de la page profil.
+- [ ] **Application Mobile :** Portage d'une version mobile via **React Native**.
+- [ ] **Synchronisation Horaire :** Gestion unifiée du Time Server (Client/Server offset).
 
-## TODO
+---
 
-Voici les tâches restantes à accomplir pour finaliser le projet :
+## 📜 Historique des Versions (Changelog)
 
-- [ ] **Time Server** quand l'heure est utilisé dans le server envoyer au server via le clien le décalage horaire pour travailler toujours sur la meme heure
-- [ ] **Version** différents TODO sont indiqué dans le code "@TODO"
+### **Version 2.0.x (Actuelle)**
+* ✨ **Refonte totale :** Nouveau design global de l'application (UI/UX).
+* 🐛 **Fix :** Correction de bugs mineurs.
 
-## Contribuer
+### **Version 1.4.x**
+* 🚀 **New :** Ajout de la fonctionnalité STEX.
+* 👀 **UI :** Ajout de la vue de version.
+* 🐛 **Fix :** Corrections diverses.
 
-La contribution externe n'est pour le moment pas acceptée. 
+### **Version 1.3.x (Release Commerciale)**
+* ✅ **Stable :** Correction de tous les bugs connus pour la première version commercialisable.
+* 🚀 **New :** Feature d'inscription "sans avion" et configuration utilisateur associée.
 
-## License
+### **Version 1.2.x**
+* ✈️ **New :** Gestion des 6 classes ULM (restrictions/autorisations).
+* 🗑️ **Data :** Implémentation du *Soft Delete* pour les utilisateurs.
+* 📅 **Calendar :** Amélioration UX et gestion des événements directement depuis le calendrier.
+* 🛡️ **UX :** Ajout des `AlertConfirmDeleted` pour sécuriser les suppressions.
 
-Ce projet est sous licence MIT.
+### **Version 1.1.x (Legacy - 01/2025)**
+* Version de développement initiale (Authentification, Création Club/User, Sessions basiques).
 
-## Contact
+---
 
-Si vous avez des questions ou des commentaires, n'hésitez pas à me contacter via [mail](mailto:thibault@jp-developpement.com).
+## 🤝 Contribuer
 
+Ce projet est actuellement développé en interne. Les contributions externes ne sont pas acceptées pour le moment.
+
+## 📄 Licence
+
+Ce projet est distribué sous la licence **MIT**.
+
+## 📞 Contact
+
+Pour toute question, demande de démonstration ou retour technique, n'hésitez pas à me contacter :
+
+📧 **Thibault JEANPIERRE** – [thibault@jp-developpement.com](mailto:thibault@jp-developpement.com)
