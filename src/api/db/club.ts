@@ -17,7 +17,7 @@ export const getAllClubs = async () => {
         });
 
         // Transformer les données en tableau au format souhaité
-        const result = clubs.map((club) => ({
+        const result = clubs.map((club: { id: any; Name: any; }) => ({
             id: club.id,
             name: `${club.id} (${club.Name})`,
         }));

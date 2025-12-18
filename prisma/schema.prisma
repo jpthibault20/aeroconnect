@@ -1,29 +1,28 @@
+datasource db {
+  provider = "postgresql" // ou votre provider
+  url      = env("DATABASE_URL")
+}
+
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-}
-
 model User {
-  id            String   @id @unique @default(uuid())
-  email         String   @unique
-  clubID        String?
-  firstName     String
-  lastName      String
-  phone         String?
-  restricted    Boolean  @default(false)
-  role          userRole @default(USER)
-  country       String?
-  zipCode       String?
-  adress        String?
-  city          String?
-  clubIDRequest String?
-  classes       Int[]    @default([])
-  canSubscribeWithoutPlan Boolean @default(false)
+  id                      String   @id @unique @default(uuid())
+  email                   String   @unique
+  clubID                  String?
+  firstName               String
+  lastName                String
+  phone                   String?
+  restricted              Boolean  @default(false)
+  role                    userRole @default(USER)
+  country                 String?
+  zipCode                 String?
+  adress                  String?
+  city                    String?
+  clubIDRequest           String?
+  classes                 Int[]    @default([])
+  canSubscribeWithoutPlan Boolean  @default(false)
 }
 
 model flight_sessions {
