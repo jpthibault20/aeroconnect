@@ -1,16 +1,25 @@
+// src/api/prisma.ts
 import { PrismaClient } from '@prisma/client'
+import { withAccelerate } from '@prisma/extension-accelerate'
 
-// Ajout du type pour l'objet global
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
+// Déclarez le type étendu
+const prismaClientSingleton = () => {
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development' 
+      ? ['query', 'error', 'warn'] 
+      : ['error'],
+  }).$extends(withAccelerate())
 }
 
-// On utilise l'instance existante si elle est dispo, sinon on en crée une nouvelle
-const prisma = globalForPrisma.prisma ?? new PrismaClient()
+// Utilisez ReturnType pour capturer le type exact
+declare global {
+  var prismaGlobal: ReturnType<typeof prismaClientSingleton> | undefined
+}
+
+export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton()
+
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.prismaGlobal = prisma
+}
 
 export default prisma
-
-// En dev, on sauvegarde l'instance dans l'objet global pour la réutiliser au prochain reload
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
-}
