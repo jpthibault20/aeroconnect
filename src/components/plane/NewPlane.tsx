@@ -40,7 +40,9 @@ const NewPlane = ({ setPlanes }: Props) => {
         immatriculation: "",
         clubID: currentUser?.clubID ?? "",
         classes: 3,
-        operational: true
+        operational: true,
+        hobbsTotal: 0,
+        tasks: []
     };
 
     const [plane, setPlane] = useState<planes>(initialPlaneState);
