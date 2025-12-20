@@ -1,6 +1,7 @@
 datasource db {
-  provider = "postgresql" // ou votre provider
-  url      = env("DATABASE_URL")
+  provider  = "postgresql" // ou votre provider
+  url       = env("DATABASE_URL") // URL Accelerate pour l'application
+  directUrl = env("DIRECT_URL") // URL directe pour les migrations
 }
 
 generator client {
