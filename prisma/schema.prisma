@@ -27,11 +27,10 @@ model User {
 }
 
 model flight_sessions {
-  id                      String      @id @unique @default(uuid())
+  id                      String         @id @unique @default(uuid())
   clubID                  String
-  sessionDateStart        DateTime    @db.Timestamptz(6)
+  sessionDateStart        DateTime       @db.Timestamptz(6)
   sessionDateDuration_min Int
-  flightType              flightType?
   pilotID                 String
   pilotFirstName          String
   pilotLastName           String
@@ -43,19 +42,43 @@ model flight_sessions {
   studentPhone            String?
   student_type            flightType?
   studentComment          String?
-  finalReccurence         DateTime?   @db.Timestamptz(6)
+  finalReccurence         DateTime?      @db.Timestamptz(6)
   planeID                 String[]
   studentPlaneID          String?
-  classes                 Int[]       @default([])
+  classes                 Int[]          @default([])
+  // V2.0 : Nouveaux champs pour les carnets de vol
+  flightType              NatureOfTheft?
+  startLocation           String?
+  endLocation             String?
+  hobbsStart              Float?
+  hobbsEnd                Float?
+  landings                Int?           @default(1)
 }
 
 model planes {
-  id              String  @id @unique @default(uuid())
+  id              String            @id @unique @default(uuid())
   clubID          String
   name            String
   immatriculation String
-  operational     Boolean @default(true)
-  classes         Int     @default(3)
+  operational     Boolean           @default(true)
+  classes         Int               @default(3)
+  // V2.0 : Nouveaux champs pour les carnets de vol
+  hobbsTotal      Float?            @default(0)
+  // VX.X : Maintenance tasks
+  tasks           MaintenanceTask[]
+}
+
+model MaintenanceTask {
+  id                 String   @id @default(uuid())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  title              String // Ex: "Visite 50h", "Visite Annuelle", "Changement Huile"
+  intervalHours      Float? // Ex: 50 (toutes les 50h)
+  intervalMonths     Int? // Ex: 12 (tous les ans) ou 60 (5 ans)
+  lastPerformedDate  DateTime // La date de la dernière visite
+  lastPerformedHobbs Float // Le total horaire de l'avion à ce moment-là (Ex: 1450.0)
+  planeId            String
+  plane              planes   @relation(fields: [planeId], references: [id], onDelete: Cascade)
 }
 
 model Club {
@@ -83,6 +106,11 @@ model Club {
   mailContact                 String?
 }
 
+/**
+ * ****************************************************************************
+ * Enums
+ * ****************************************************************************
+ */
 enum userRole {
   USER
   STUDENT
@@ -97,4 +125,13 @@ enum flightType {
   FIRST_FLIGHT
   INITATION
   TRAINING
+}
+
+enum NatureOfTheft {
+  TRAINING // Instruction
+  PRIVATE // Personnel
+  SIGHTSEEING // VLO (Vol Local Onéreux / Baptême)
+  DISCOVERY // VLD (Vol de Découverte)
+  EXAM //(Test en vol)
+  // COST_SHARING (Co-avionnage wingly etc)
 }
