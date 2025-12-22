@@ -5,46 +5,9 @@ import { useEffect, useRef, useState } from "react"
 import { Check, ChevronDown, X, Briefcase, GraduationCap, Plane, Camera, Award, ListChecks } from 'lucide-react'
 import { NatureOfTheft } from "@prisma/client"
 import { cn } from "@/lib/utils"
+import { flightNatures } from "@/config/config"
 
-interface FlightNatureConfig {
-    value: NatureOfTheft
-    label: string
-    style: string
-    icon: React.ElementType
-}
 
-const flightNatures: FlightNatureConfig[] = [
-    {
-        value: "TRAINING",
-        label: "Instruction",
-        style: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
-        icon: GraduationCap
-    },
-    {
-        value: "PRIVATE",
-        label: "Privé",
-        style: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
-        icon: Briefcase
-    },
-    {
-        value: "SIGHTSEEING",
-        label: "Baptême (VLO)",
-        style: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
-        icon: Camera
-    },
-    {
-        value: "DISCOVERY",
-        label: "Découverte (VLD)",
-        style: "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100",
-        icon: Plane
-    },
-    {
-        value: "EXAM",
-        label: "Examen",
-        style: "bg-red-50 text-red-700 border-red-200 hover:bg-red-100",
-        icon: Award
-    },
-]
 
 interface Props {
     selectedNatures: NatureOfTheft[]

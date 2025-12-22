@@ -243,6 +243,12 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
             return;
         }
 
+        if (!classroomSession && sessionData.natureOfTheft.length === 0) {
+            setError("Veuillez sélectionner au moins une nature de vol");
+            setLoading(false);
+            return;
+        }
+
         try {
             const finalSessionData = {
                 ...sessionData,
