@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
-import { flight_sessions, planes, User, userRole } from '@prisma/client'
+// 1. IMPORT DE L'ENUM ET DU COMPOSANT
+import { flight_sessions, planes, User, userRole, NatureOfTheft } from '@prisma/client'
 import { toast } from "@/hooks/use-toast"
 import { checkSessionDate, interfaceSessions, newSession } from '@/api/db/sessions'
 import { fr } from "date-fns/locale"
@@ -25,10 +26,13 @@ import {
     ArrowRight,
     ArrowDown,
     Presentation,
-    CheckCircle2
+    CheckCircle2,
+    Tag // Ajout d'icone pour le type
 } from 'lucide-react'
 import { Textarea } from './ui/textarea'
 import { cn } from '@/lib/utils'
+// IMPORT DU SELECTEUR CREE
+import FlightNatureSelector from '@/components/FlightNatureSelector'
 
 interface Props {
     display: "desktop" | "phone"
@@ -44,13 +48,13 @@ interface SessionStats {
     totalSessions: number;
 }
 
-// Interface pour le composant interne TimeSelect pour éviter les 'any'
 interface TimeSelectProps {
     value: string;
     onChange: (value: string) => void;
     options: (string | number)[];
     placeholder?: string;
 }
+
 
 const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersProps }) => {
     const { currentUser } = useCurrentUser()
@@ -68,6 +72,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
     const [totalSessions, setTotalSessions] = useState(0)
     const [instructors, setInstructors] = useState<User[]>([])
 
+    // 2. MISE A JOUR DU STATE INITIAL
     const [sessionData, setSessionData] = useState<interfaceSessions>({
         instructorId: currentUser?.id as string,
         date: undefined,
@@ -79,7 +84,8 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         endReccurence: undefined,
         planeId: planesProp.map(plane => plane.id),
         classes: Array.from(new Set(planesProp.map(plane => plane.classes))),
-        comment: ""
+        comment: "",
+        natureOfTheft: []
     });
 
     // --- Effects ---
@@ -223,7 +229,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
 
     const onConfirm = async () => {
         setLoading(true);
-        setError(""); // Reset error
+        setError("");
         let successNewSessions = 0;
 
         if (!sessionData.date) {
@@ -257,7 +263,8 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
             setTotalSessions(splitSessionsArray.length);
 
             for (const session of splitSessionsArray) {
-                const result = await newSession(session, instructor);
+                // S'assurer que la fonction newSession de l'API accepte bien le champ natureOfTheft
+                const result = await newSession(session as any, instructor);
                 if (result?.error) {
                     toast({
                         title: "Erreur",
@@ -290,8 +297,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         }
     };
 
-    // --- Render Components Helper ---
-    // Composant pour l'affichage propre des selects de temps, typé correctement
     const TimeSelect = ({ value, onChange, options, placeholder }: TimeSelectProps) => (
         <Select value={value} onValueChange={onChange}>
             <SelectTrigger className="w-[70px] border-none shadow-none focus:ring-0 bg-transparent px-1 justify-center font-medium text-slate-700">
@@ -320,9 +325,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                 )}
             </DialogTrigger>
 
-            {/* Mobile: w-[95%] pour ne pas toucher les bords, max-w-[600px] pour desktop */}
             <DialogContent className="w-[95%] sm:max-w-[600px] max-h-[85vh] p-0 gap-0 bg-white rounded-xl sm:rounded-2xl border-none shadow-2xl flex flex-col">
-                {/* Header fixe */}
                 <div className="bg-slate-50 p-4 sm:p-6 border-b border-slate-100 flex-shrink-0 rounded-t-xl sm:rounded-t-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -337,7 +340,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                     </DialogHeader>
                 </div>
 
-                {/* Contenu scrollable */}
                 <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 overflow-y-auto flex-grow">
                     {/* Section 1: Qui et Quand */}
                     <div className="space-y-4">
@@ -377,7 +379,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                                 <Label className="text-slate-600 flex items-center gap-2 text-sm">
                                     <CalendarIcon className="w-4 h-4" /> Date
                                 </Label>
-                                <div className="relative">
+                                <div className="relative w-full">
                                     <DatePicker
                                         onInputClick={() => setIsOpenCal1(true)}
                                         onSelect={() => setIsOpenCal1(false)}
@@ -390,6 +392,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                                         }}
                                         dateFormat="dd/MM/yyyy"
                                         placeholderText="Sélectionner une date"
+                                        wrapperClassName="w-full"
                                         className="w-full h-10 px-3 py-2 rounded-md border border-slate-200 bg-slate-50 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#774BBE] focus-visible:ring-offset-2"
                                         todayButton="Aujourd'hui"
                                         locale={fr}
@@ -399,21 +402,35 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                             </div>
                         </div>
 
-                        {/* Horaires - Bloc unifié et responsive */}
+                        {/* 3. INTEGRATION DU SELECTEUR DE TYPE DE VOL */}
+                        <div className="space-y-2">
+                            <Label className="text-slate-600 flex items-center gap-2 text-sm">
+                                <Tag className="w-4 h-4" /> Nature du vol
+                            </Label>
+                            <FlightNatureSelector
+                                selectedNatures={sessionData.natureOfTheft}
+                                onChange={(natures) => setSessionData(prev => ({ ...prev, natureOfTheft: natures }))}
+                            />
+                        </div>
+
+                        {/* Horaires */}
                         <div className="space-y-2">
                             <Label className="text-slate-600 flex items-center gap-2 text-sm">
                                 <Clock className="w-4 h-4" /> Créneau horaire
                             </Label>
-                            {/* Mobile: flex-col, Desktop: flex-row */}
-                            <div className="flex flex-col sm:flex-row items-center justify-between p-2 sm:p-1 bg-slate-50 border border-slate-200 rounded-lg gap-3 sm:gap-0">
-                                <div className="flex items-center w-full sm:w-auto justify-center">
-                                    <span className="text-xs text-slate-400 mr-2 sm:hidden">Début</span>
+
+                            {/* Conteneur Parent : Transparent, gère l'espacement et l'alignement */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+
+                                {/* BLOC 1 : HEURE DE DÉBUT (Gris avec bordure) */}
+                                <div className="flex items-center justify-center w-full sm:w-auto p-1 bg-slate-50 border border-slate-200 rounded-lg shadow-sm">
+                                    <span className="text-xs text-slate-400 ml-2 mr-1 sm:hidden">Début</span>
                                     <TimeSelect
                                         value={sessionData.startHour}
                                         onChange={(v: string) => setSessionData(prev => ({ ...prev, startHour: v }))}
                                         options={currentClub?.HoursOn || []}
                                     />
-                                    <span className="text-slate-400 font-bold mx-1">:</span>
+                                    <span className="text-slate-400 font-bold mx-0.5">:</span>
                                     <TimeSelect
                                         value={sessionData.startMinute}
                                         onChange={(v: string) => setSessionData(prev => ({ ...prev, startMinute: v }))}
@@ -421,18 +438,21 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                                     />
                                 </div>
 
-                                {/* Flèche responsive: Bas sur mobile, Droite sur desktop */}
-                                <ArrowRight className="text-slate-300 w-4 h-4 hidden sm:block" />
-                                <ArrowDown className="text-slate-300 w-4 h-4 block sm:hidden" />
+                                {/* ÉLÉMENT CENTRAL : FLÈCHE (Fond blanc/transparent) */}
+                                <div className="text-slate-300 flex-shrink-0">
+                                    <ArrowRight className="w-5 h-5 hidden sm:block" />
+                                    <ArrowDown className="w-5 h-5 block sm:hidden" />
+                                </div>
 
-                                <div className="flex items-center w-full sm:w-auto justify-center">
-                                    <span className="text-xs text-slate-400 mr-2 sm:hidden">Fin</span>
+                                {/* BLOC 2 : HEURE DE FIN (Gris avec bordure) */}
+                                <div className="flex items-center justify-center w-full sm:w-auto p-1 bg-slate-50 border border-slate-200 rounded-lg shadow-sm">
+                                    <span className="text-xs text-slate-400 ml-2 mr-1 sm:hidden">Fin</span>
                                     <TimeSelect
                                         value={sessionData.endHour}
                                         onChange={(v: string) => setSessionData(prev => ({ ...prev, endHour: v }))}
                                         options={currentClub?.HoursOn || []}
                                     />
-                                    <span className="text-slate-400 font-bold mx-1">:</span>
+                                    <span className="text-slate-400 font-bold mx-0.5">:</span>
                                     <TimeSelect
                                         value={sessionData.endMinute}
                                         onChange={(v: string) => setSessionData(prev => ({ ...prev, endMinute: v }))}
@@ -474,7 +494,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                                         {allPlanesSelected ? "Tout désélectionner" : "Tout sélectionner"}
                                     </Button>
                                 </div>
-                                {/* Grid responsive: 2 colonnes sur mobile, 3 sur desktop */}
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                     {planesProp?.map((plane) => {
                                         const isSelected = sessionData.planeId.includes(plane.id);
@@ -571,7 +590,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                     </div>
                 </div>
 
-                {/* Footer fixe */}
                 <div className="bg-slate-50 p-4 sm:p-6 border-t border-slate-100 flex flex-col gap-4 flex-shrink-0 rounded-b-xl sm:rounded-b-2xl">
                     {error && (
                         <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-md text-sm">

@@ -1,6 +1,6 @@
 "use server";
 
-import { Club, flight_sessions, User, userRole } from '@prisma/client';
+import { Club, flight_sessions, User, userRole, NatureOfTheft } from '@prisma/client';
 import { differenceInMinutes, isBefore } from 'date-fns';
 import prisma from '../prisma';
 import { convertMinutesToHours } from '../global function/dateServeur';
@@ -17,6 +17,7 @@ export interface interfaceSessions {
     planeId: string[];
     classes: number[];
     comment: string;
+    natureOfTheft: NatureOfTheft[];
 }
 
 export const checkSessionDate = async (sessionData: interfaceSessions, user: User | undefined) => {
@@ -195,6 +196,7 @@ export const newSession = async (sessionData: interfaceSessions, instructor: Use
                             student_type: null,
                             planeID: sessionData.planeId,
                             classes: sessionData.classes,
+                            natureOfTheft: sessionData.natureOfTheft,
                         }
                     })
                 )

@@ -27,9 +27,9 @@ model User {
 }
 
 model flight_sessions {
-  id                      String         @id @unique @default(uuid())
+  id                      String          @id @unique @default(uuid())
   clubID                  String
-  sessionDateStart        DateTime       @db.Timestamptz(6)
+  sessionDateStart        DateTime        @db.Timestamptz(6)
   sessionDateDuration_min Int
   pilotID                 String
   pilotFirstName          String
@@ -42,17 +42,18 @@ model flight_sessions {
   studentPhone            String?
   student_type            flightType?
   studentComment          String?
-  finalReccurence         DateTime?      @db.Timestamptz(6)
+  finalReccurence         DateTime?       @db.Timestamptz(6)
   planeID                 String[]
   studentPlaneID          String?
-  classes                 Int[]          @default([])
+  classes                 Int[]           @default([])
+  flightType              NatureOfTheft? // TODO: à supprimer
   // V2.0 : Nouveaux champs pour les carnets de vol
-  flightType              NatureOfTheft?
+  natureOfTheft           NatureOfTheft[] @default([])
   startLocation           String?
   endLocation             String?
   hobbsStart              Float?
   hobbsEnd                Float?
-  landings                Int?           @default(1)
+  landings                Int?            @default(1)
 }
 
 model planes {
