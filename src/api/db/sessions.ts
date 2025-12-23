@@ -660,3 +660,86 @@ export const updateCommentSession = async(session: flight_sessions, pilotComment
         return { error: "Erreur lors de la mise à jour des commentaires" };
     }
 };
+
+interface CompleteFlightData {
+    sessionId: string
+    hobbsStart: number
+    hobbsEnd: number
+    duration: number
+    departurePlace: string
+    arrivalPlace: string
+    landings: number
+    natureOfTheft: NatureOfTheft[]
+    comment?: string
+}
+
+export const completeFlightSession = async (
+    data: CompleteFlightData, 
+    currentUser: User,
+) => {
+    try {
+        // 1. Récupérer la session (CORRECTION ICI : On retire le include)
+        const session = await prisma.flight_sessions.findUnique({
+            where: { id: data.sessionId }
+        })
+
+        if (!session) {
+            return { error: "Session introuvable." }
+        }
+
+        // 2. Vérification des droits
+        const isAuthorized = 
+            currentUser.role === userRole.ADMIN ||
+            currentUser.role === userRole.OWNER ||
+            currentUser.role === userRole.MANAGER ||
+            currentUser.id === session.pilotID
+
+        if (!isAuthorized) {
+            return { error: "Vous n'avez pas les droits pour clôturer ce vol." }
+        }
+
+        // 3. Validation des données
+        if (data.hobbsEnd <= data.hobbsStart) {
+            return { error: "Le compteur final doit être supérieur au compteur initial." }
+        }
+
+        // --- TRANSACTION PRISMA ---
+        await prisma.$transaction(async (tx) => {
+            
+            // A. Mise à jour de la SESSION
+            await tx.flight_sessions.update({
+                where: { id: data.sessionId },
+                data: {
+                    hobbsStart: data.hobbsStart,
+                    hobbsEnd: data.hobbsEnd,
+                    sessionDateDuration_min: data.duration,
+                    startLocation: data.departurePlace,
+                    endLocation: data.arrivalPlace,
+                    landings: data.landings,
+                    natureOfTheft: data.natureOfTheft,
+                    pilotComment: data.comment,
+                    // Assure-toi que ce champ existe bien dans ton schema (ex: status: "COMPLETED" ou isCompleted: true)
+                    // isCompleted: true 
+                }
+            })
+
+            // B. Mise à jour de l'AVION
+            // On utilise directement studentPlaneID qui est un champ scalaire (String)
+            if (session.studentPlaneID && session.studentPlaneID !== "noPlane" && session.studentPlaneID !== "classroomSession") {
+                await tx.planes.update({
+                    where: { id: session.studentPlaneID },
+                    data: {
+                        hobbsTotal: data.hobbsEnd, 
+                        // totalFlightHours: { increment: data.duration } // Optionnel
+                    }
+                })
+            }
+        })
+
+        return { success: true }
+
+    } catch (error) {
+        console.error("Erreur lors de la clôture du vol:", error)
+        return { error: "Une erreur technique est survenue lors de l'enregistrement." }
+    }
+}

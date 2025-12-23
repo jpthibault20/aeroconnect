@@ -378,6 +378,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                     loading={loading}
                                     error={error}
                                     disabledMessage={disabledMessage}
+                                    session={session}
                                 />
                             </div>
                         </div>

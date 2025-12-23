@@ -1,12 +1,16 @@
 import { flight_sessions, planes, User, userRole } from '@prisma/client'
 import React from 'react'
-import { MessageSquare, Plane, User as UserIcon, Trash2, GraduationCap } from 'lucide-react'
+import { MessageSquare, Plane, User as UserIcon, Trash2, GraduationCap, AlertTriangle } from 'lucide-react'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import AddStudent from './flights/AddStudent'
 import RemoveStudent from './RemoveStudent'
 import DeleteFlightSession from './DeleteFlightSession'
 import ShowCommentSession from './ShowCommentSession'
 import { cn } from '@/lib/utils'
+// IMPORT DU NOUVEAU COMPOSANT
+import CompleteFlightModal from './CompleteFlightModal'
+import { completeFlightSession } from '@/api/db/sessions'
+import { toast } from '@/hooks/use-toast'
 
 interface Prop {
     sessions: flight_sessions[]
@@ -18,11 +22,40 @@ interface Prop {
 const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: Prop) => {
     const { currentUser } = useCurrentUser()
 
-    // Helper pour formater les noms (ex: D.John)
     const formatName = (lastName: string, firstName: string) => {
         if (!lastName || !firstName) return "...";
         return `${lastName.slice(0, 1).toUpperCase()}.${firstName}`;
     };
+
+    // Fonction Placeholder pour l'API (à remplacer par ton vrai appel API/Server Action)
+    const handleCompleteFlight = async (data: any) => {
+        try {
+            // Appel de la Server Action créée précédemment
+            const res = await completeFlightSession(data, currentUser!);
+
+            if (res.error) {
+                // Si le back renvoie une erreur, on lève une exception pour que le Modal le sache
+                throw new Error(res.error);
+            }
+
+            // Si Succès : On met à jour l'affichage localement sans recharger la page
+            setSessions(prev => prev.map(s =>
+                s.id === data.sessionId
+                    ? { ...s, ...data, isCompleted: true } // On fusionne les nouvelles données
+                    : s
+            ));
+
+            toast({
+                title: "Vol clôturé !",
+                description: "Les données et le compteur de l'avion ont été mis à jour.",
+                className: "bg-green-600 text-white border-none"
+            });
+
+        } catch (error: any) {
+            // On renvoie l'erreur pour que le Modal puisse l'afficher et rester ouvert
+            throw error;
+        }
+    }
 
     return (
         <div className="space-y-4">
@@ -36,11 +69,28 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                 sessions.length > 1 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"
             )}>
                 {sessions.map((s, index) => {
+                    // 1. VERIFICATION DES DROITS
                     const isAuthorized =
                         currentUser?.role === userRole.ADMIN ||
                         currentUser?.role === userRole.OWNER ||
                         currentUser?.role === userRole.MANAGER ||
                         currentUser?.id === s.pilotID;
+
+                    // 2. VERIFICATION DU TEMPS (Vol terminé ?)
+                    const now = new Date();
+                    const sessionStart = new Date(s.sessionDateStart);
+
+                    // On calcule la fin : Date de début + (Durée en minutes * 60000 ms)
+                    const sessionEnd = new Date(sessionStart.getTime() + (s.sessionDateDuration_min * 60000));
+
+                    const isFinished = now > sessionEnd;
+
+                    // 3. VERIFICATION DE L'ELEVE
+                    const hasStudent = !!s.studentID && s.studentPlaneID !== "noPlane";
+
+                    // Condition globale pour afficher le bouton "Clôturer"
+                    const canCompleteSession = isAuthorized && isFinished && hasStudent;
+
 
                     const planeName = s.studentPlaneID === "classroomSession" ? "Théorique" :
                         s.studentPlaneID === "noPlane" ? "Sans appareil" :
@@ -71,7 +121,7 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                 {isAuthorized && (
                                     <DeleteFlightSession
                                         description={`Ce vol sera supprimé définitivement, et les participants notifiés.`}
-                                        sessions={[s]} // On passe un tableau avec la session unique
+                                        sessions={[s]}
                                         setSessions={setSessions}
                                         usersProp={usersProps}
                                     >
@@ -85,7 +135,7 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                 )}
                             </div>
 
-                            {/* Body: Étudiant & Avion */}
+                            {/* Body */}
                             <div className="p-4 flex-1 flex flex-col gap-4">
 
                                 {/* Slot Étudiant */}
@@ -93,7 +143,6 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                     <p className="text-[10px] text-slate-400 uppercase font-bold">Élève inscrit</p>
 
                                     {s.studentID ? (
-                                        // Cas : Étudiant Inscrit
                                         <div className="flex items-center justify-between bg-emerald-50/50 border border-emerald-100 rounded-lg p-2 transition-colors hover:bg-emerald-50">
                                             <div className="flex items-center gap-2">
                                                 <div className="bg-emerald-100 p-1 rounded-full">
@@ -112,7 +161,6 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                             )}
                                         </div>
                                     ) : (
-                                        // Cas : Place Libre
                                         <div className="flex items-center justify-between border border-dashed border-slate-300 rounded-lg p-2 bg-slate-50/30">
                                             <span className="text-xs text-slate-500 italic flex items-center gap-2">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
@@ -133,6 +181,24 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                     )}
                                 </div>
 
+                                {/* Zone d'Action : Clôture du vol */}
+                                {canCompleteSession && (
+                                    <div className="pt-2">
+                                        {/* On pourrait vérifier ici si le vol est déjà clôturé (ex: s.status === 'COMPLETED') pour afficher un badge vert à la place */}
+                                        <CompleteFlightModal
+                                            session={s}
+                                            onComplete={handleCompleteFlight}
+                                        />
+                                    </div>
+                                )}
+
+                                {!isFinished && hasStudent && (
+                                    <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2 rounded text-xs">
+                                        <AlertTriangle size={12} />
+                                        <span>Vol en cours ou à venir</span>
+                                    </div>
+                                )}
+
                                 <div className="h-px bg-slate-100 w-full" />
 
                                 {/* Footer: Avion & Notes */}
@@ -143,10 +209,9 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                     </div>
 
                                     <ShowCommentSession
-                                        session={s} // On passe un tableau avec la session unique
+                                        session={s}
                                         setSessions={setSessions}
                                         usersProp={usersProps}
-                                    // description='Notes'
                                     >
                                         <div className={cn(
                                             "flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer transition-colors text-xs font-medium border",

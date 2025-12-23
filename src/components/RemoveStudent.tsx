@@ -9,6 +9,7 @@ import { useCurrentClub } from '@/app/context/useCurrentClub';
 import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
+import { cn } from '@/lib/utils';
 
 interface Props {
     session: flight_sessions;
@@ -22,23 +23,13 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    // Calcul de la date
+    const sessionDate = new Date(session.sessionDateStart);
+    const nowDate = new Date();
+    const isSessionPassed = sessionDate.getTime() < nowDate.getTime();
+
     const handleRemoveStudent = async () => {
         const sessionID = session.id;
-
-        // Vérification date passée
-        const sessionDate = new Date(session.sessionDateStart);
-        const nowDate = new Date();
-
-        if (sessionDate.getTime() < nowDate.getTime()) {
-            toast({
-                title: "Action impossible",
-                description: "Vous ne pouvez pas retirer un élève d'une session passée.",
-                variant: "destructive"
-            });
-            setIsOpen(false);
-            return;
-        }
-
         setLoading(true);
         try {
             const student = usersProp.find(item => item.id === session.studentID)
@@ -53,60 +44,52 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
                     className: "bg-green-600 text-white border-none"
                 });
 
-                // Mise à jour de la session locale
                 setSessions(prevSessions => {
                     return prevSessions.map(s =>
                         s.id === sessionID
-                            ? {
-                                ...s,
-                                studentID: null,
-                                studentFirstName: "",
-                                studentLastName: "",
-                                studentPlaneID: null,
-                            }
+                            ? { ...s, studentID: null, studentFirstName: "", studentLastName: "", studentPlaneID: null }
                             : s
                     );
                 });
 
-                // Envoi des notifications
                 const endDate = new Date(session.sessionDateStart);
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
                 Promise.all([
-                    student?.email && sendNotificationRemoveAppointment(
-                        student.email,
-                        session.sessionDateStart as Date,
-                        endDate,
-                        currentClub as Club
-                    ),
-                    pilote?.email && sendNotificationSudentRemoveForPilot(
-                        pilote.email,
-                        session.sessionDateStart as Date,
-                        endDate,
-                        currentClub as Club
-                    ),
+                    student?.email && sendNotificationRemoveAppointment(student.email, session.sessionDateStart as Date, endDate, currentClub as Club),
+                    pilote?.email && sendNotificationSudentRemoveForPilot(pilote.email, session.sessionDateStart as Date, endDate, currentClub as Club),
                 ]);
 
                 setIsOpen(false);
             } else if (res.error) {
-                toast({
-                    title: "Erreur",
-                    description: res.error,
-                    variant: "destructive"
-                });
+                toast({ title: "Erreur", description: res.error, variant: "destructive" });
             }
         } catch (error) {
             console.error(error);
-            toast({
-                title: "Erreur technique",
-                description: "Impossible de retirer l'élève pour le moment.",
-                variant: "destructive"
-            });
+            toast({ title: "Erreur technique", description: "Impossible de retirer l'élève.", variant: "destructive" });
         } finally {
             setLoading(false);
         }
     };
 
+    // --- CAS 1 : SESSION PASSÉE (On retourne juste le bouton désactivé, SANS Dialog) ---
+    if (isSessionPassed) {
+        return (
+            <div title="Impossible de modifier une session passée">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled
+                    className="h-7 px-2 text-xs font-medium gap-1.5 transition-colors text-gray-400 cursor-not-allowed hover:bg-transparent opacity-50"
+                >
+                    <UserMinus size={14} />
+                    Retirer
+                </Button>
+            </div>
+        )
+    }
+
+    // --- CAS 2 : SESSION FUTURE (On retourne le Dialog complet) ---
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>

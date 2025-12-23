@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Spinner } from './ui/SpinnerVariants';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { userRole } from '@prisma/client';
+import { flight_sessions, userRole } from '@prisma/client';
 import { cn } from '@/lib/utils';
 
 interface SubmitButtonProps {
@@ -12,16 +12,16 @@ interface SubmitButtonProps {
     loading: boolean;
     error: string;
     disabledMessage: string;
+    session: flight_sessions | undefined;
 }
 
-const SubmitButton = ({ submitDisabled, onSubmit, loading, error, disabledMessage }: SubmitButtonProps) => {
+const SubmitButton = ({ submitDisabled, onSubmit, loading, error, disabledMessage, session }: SubmitButtonProps) => {
     const { currentUser } = useCurrentUser()
 
-    // Override local si l'utilisateur n'a pas les droits (Sécurité UI)
     let isBtnDisabled = submitDisabled;
     let localDisabledMessage = disabledMessage;
 
-    if (currentUser?.role === userRole.USER) {
+    if (currentUser?.role === userRole.USER && !session?.natureOfTheft.includes("DISCOVERY")) {
         isBtnDisabled = true;
         localDisabledMessage = "Vous n'avez pas les droits nécessaires pour cette action."
     }

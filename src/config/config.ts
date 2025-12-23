@@ -1,4 +1,4 @@
-import { NatureOfTheft } from "@prisma/client";
+import { NatureOfTheft, userRole } from "@prisma/client";
 import { GraduationCap, Briefcase, Camera, Plane, Award } from "lucide-react";
 
 // Liste des classes possibles
@@ -58,6 +58,7 @@ export interface FlightNatureConfig {
     label: string
     style: string
     icon: React.ElementType
+    role?: userRole[]
 }
 
 export const flightNatures: FlightNatureConfig[] = [
@@ -65,30 +66,35 @@ export const flightNatures: FlightNatureConfig[] = [
         value: "TRAINING",
         label: "Instruction",
         style: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
-        icon: GraduationCap
+        icon: GraduationCap,
+        role: ["STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"] // role autorisé
     },
     {
         value: "PRIVATE",
         label: "Privé",
         style: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
-        icon: Briefcase
+        icon: Briefcase,
+        role: ["STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"] // role autorisé
     },
     {
         value: "SIGHTSEEING",
         label: "Baptême ou Vol Onéreux",
         style: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
-        icon: Camera
+        icon: Camera,
+        role: ["USER", "STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"] // role autorisé
     },
     {
         value: "DISCOVERY",
         label: "Découverte (VLD)",
         style: "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100",
-        icon: Plane
+        icon: Plane,
+        role: ["USER", "STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"] // role autorisé
     },
     {
         value: "EXAM",
         label: "Examen",
         style: "bg-red-50 text-red-700 border-red-200 hover:bg-red-100",
-        icon: Award
+        icon: Award,
+        role: ["STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"] // role autorisé
     },
 ]

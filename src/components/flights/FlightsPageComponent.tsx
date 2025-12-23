@@ -34,7 +34,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
     const [selectedStudents, setSelectedStudents] = useState<string>("al");
     const [status, setStatus] = useState<StatusType>("al");
 
-    // Initialisation du state (inchangé)
+    // Initialisation des sessions en fonction du rôle de l'utilisateur
     const [sessions, setSessions] = useState<flight_sessions[]>(() => {
         if (currentUser?.role === userRole.STUDENT || currentUser?.role === userRole.PILOT || currentUser?.role === userRole.USER) {
             return sessionsProp.filter(session => session.studentID === currentUser?.id);
