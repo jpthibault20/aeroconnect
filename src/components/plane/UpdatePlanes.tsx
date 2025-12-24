@@ -1,4 +1,4 @@
-import { planes } from '@prisma/client'
+import { planes, userRole } from '@prisma/client'
 import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Label } from '../ui/label'
@@ -7,12 +7,13 @@ import { Button } from '../ui/button'
 import { Spinner } from '../ui/SpinnerVariants'
 import { Switch } from '../ui/switch'
 import { IoIosWarning } from 'react-icons/io'
-import { Pencil } from 'lucide-react' // Icône pour le header
+import { Pencil, Clock, ShieldAlert } from 'lucide-react'
 import { updatePlane } from '@/api/db/planes'
 import { toast } from '@/hooks/use-toast';
 import { clearCache } from '@/lib/cache'
 import { DropDownClasse } from './DropDownClasse'
 import { cn } from '@/lib/utils'
+import { useCurrentUser } from '@/app/context/useCurrentUser'
 
 interface props {
     children: React.ReactNode
@@ -25,8 +26,14 @@ interface props {
 }
 
 const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setPlanes, planes }: props) => {
+    const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    // Vérification des permissions pour modifier le Hobbs
+    const canEditHobbs = currentUser?.role === userRole.OWNER ||
+        currentUser?.role === userRole.ADMIN ||
+        currentUser?.role === userRole.MANAGER;
 
     const onClickUpdatePlane = async () => {
         setLoading(true);
@@ -58,13 +65,21 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
         }
     }
 
+    const handleHobbsChange = (value: string) => {
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue) && numValue >= 0) {
+            setPlane((prev) => ({ ...prev, hobbsTotal: numValue }));
+        } else if (value === '') {
+            setPlane((prev) => ({ ...prev, hobbsTotal: 0 }));
+        }
+    };
+
     return (
         <Dialog open={showPopup} onOpenChange={setShowPopup}>
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
 
-            {/* Structure identique à NewPlane : p-0 gap-0 pour le layout personnalisé */}
             <DialogContent className='w-[95%] sm:max-w-[500px] p-0 gap-0 bg-white rounded-xl sm:rounded-2xl border-none shadow-2xl flex flex-col overflow-hidden max-h-[90vh]'>
 
                 {/* --- Header Fixe --- */}
@@ -114,6 +129,42 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                     </div>
 
                     <div className="h-px bg-slate-100 w-full" />
+
+                    {/* Bloc Compteur Horaire (Hobbs Total) */}
+                    {canEditHobbs && (
+                        <>
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    Compteur horaire
+                                </h3>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="hobbsTotal" className="text-slate-700 font-medium flex items-center gap-2">
+                                        Heures totales (Hobbs)
+                                        <span className="text-xs text-slate-400 font-normal">(Accès restreint)</span>
+                                    </Label>
+                                    <div className="relative">
+                                        <Input
+                                            id='hobbsTotal'
+                                            type="number"
+                                            step="0.1"
+                                            min="0"
+                                            value={plane.hobbsTotal || 0}
+                                            disabled={loading}
+                                            onChange={(e) => handleHobbsChange(e.target.value)}
+                                            className="bg-blue-50 border-blue-200 focus:ring-blue-500 focus:border-blue-500 font-mono text-right pr-12"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-medium">
+                                            heures
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-slate-100 w-full" />
+                        </>
+                    )}
 
                     {/* Bloc Statut & Classe */}
                     <div className="space-y-4">

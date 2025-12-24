@@ -15,7 +15,7 @@ import UpdatePlanes from './UpdatePlanes';
 import { Button } from '../ui/button';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Pencil, Trash2, Plane as PlaneIcon, CheckCircle2, Ban } from 'lucide-react';
+import { Pencil, Trash2, Plane as PlaneIcon, CheckCircle2, Ban, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -105,6 +105,11 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
         return aircraftClasses.find(c => c.id === planeState.classes)?.label || "Classe Inconnue";
     };
 
+    const formatHobbsTotal = () => {
+        if (!planeState.hobbsTotal) return "0.0h";
+        return `${planeState.hobbsTotal.toFixed(1)}h`;
+    };
+
     return (
         <TableRow className="group hover:bg-slate-50 transition-colors">
 
@@ -137,7 +142,17 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                 </span>
             </TableCell>
 
-            {/* 5. Status Column */}
+            {/* 5. Hobbs Total Column (NEW - Hidden on mobile) */}
+            <TableCell className="text-center hidden md:table-cell">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span className="font-mono text-xs font-semibold">
+                        {formatHobbsTotal()}
+                    </span>
+                </div>
+            </TableCell>
+
+            {/* 6. Status Column */}
             {canViewStatus && (
                 <TableCell className="text-center">
                     {canManage ? (
@@ -169,7 +184,7 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                 </TableCell>
             )}
 
-            {/* 6. Actions Column */}
+            {/* 7. Actions Column */}
             {canManage && (
                 <TableCell className="text-right pr-4">
                     <div className="flex items-center justify-end gap-1 opacity-100  transition-opacity">
