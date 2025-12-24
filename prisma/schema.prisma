@@ -54,6 +54,7 @@ model flight_sessions {
   hobbsStart              Float?
   hobbsEnd                Float?
   landings                Int?            @default(1)
+  flightComment           String?
 }
 
 model planes {

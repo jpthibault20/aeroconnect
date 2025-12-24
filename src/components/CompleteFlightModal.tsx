@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { flight_sessions, NatureOfTheft } from "@prisma/client"
-import { ClipboardCheck, MapPin, Gauge, PlaneLanding, MessageSquare, ArrowRight } from "lucide-react"
+import { flight_sessions, NatureOfTheft, planes } from "@prisma/client"
+import { ClipboardCheck, MapPin, Gauge, PlaneLanding, MessageSquare, Clock } from "lucide-react"
 import { useCurrentClub } from "@/app/context/useCurrentClub"
 import { cn } from "@/lib/utils"
 import { flightNatures } from "@/config/config"
@@ -16,9 +16,10 @@ import { flightNatures } from "@/config/config"
 interface Props {
     session: flight_sessions
     onComplete: (data: any) => Promise<void>
+    planes: planes[]
 }
 
-const CompleteFlightModal = ({ session, onComplete }: Props) => {
+const CompleteFlightModal = ({ session, onComplete, planes }: Props) => {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const { currentClub } = useCurrentClub()
@@ -29,33 +30,50 @@ const CompleteFlightModal = ({ session, onComplete }: Props) => {
         departurePlace: string
         arrivalPlace: string
         landings: number
-        natureOfTheft: NatureOfTheft // <--- C'est ici que ça se joue
+        natureOfTheft: NatureOfTheft
         comment: string
     }>({
-        hobbsStart: 0,
-        hobbsEnd: 0,
-        departurePlace: "", // Sera écrasé par le useEffect
-        arrivalPlace: "",   // Sera écrasé par le useEffect
-        landings: 1,
-        natureOfTheft: NatureOfTheft.TRAINING,
-        comment: ""
+        hobbsStart: session.hobbsStart || 0,
+        hobbsEnd: session.hobbsEnd || 0,
+        departurePlace: session.startLocation || currentClub?.id || "",
+        arrivalPlace: session.endLocation || currentClub?.id || "",
+        landings: session.landings || 1,
+        natureOfTheft: session.natureOfTheft?.[0] || NatureOfTheft.TRAINING,
+        comment: session.flightComment || ""
     })
 
     // Pré-remplissage au montage
     useEffect(() => {
         if (open) {
+
+            const sessionPlaneId = session.planeID?.[0]
+            const currentPlane = planes?.find(p => p.id === sessionPlaneId)
+
             setFormData(prev => ({
                 ...prev,
-                departurePlace: currentClub?.id || "",
-                arrivalPlace: currentClub?.id || "",
-                natureOfTheft: session.natureOfTheft.length > 0 ? session.natureOfTheft[0] : NatureOfTheft.TRAINING,
-                comment: ""
+                hobbsStart: session.hobbsStart ?? currentPlane?.hobbsTotal ?? prev.hobbsStart,
+                hobbsEnd: session.hobbsEnd || prev.hobbsEnd,
+                departurePlace: session.startLocation || prev.departurePlace || currentClub?.id || "",
+                arrivalPlace: session.endLocation || prev.arrivalPlace || currentClub?.id || "",
+                landings: session.landings || prev.landings,
+                natureOfTheft: session.natureOfTheft?.length > 0 ? session.natureOfTheft[0] : prev.natureOfTheft,
+                comment: session.flightComment || prev.comment
             }))
         }
     }, [open, currentClub, session])
 
-    const duration = (formData.hobbsEnd - formData.hobbsStart).toFixed(2)
-    const isValidDuration = formData.hobbsEnd > formData.hobbsStart
+    // Calcul de la durée en dixièmes d'heure
+    const durationInTenths = formData.hobbsEnd - formData.hobbsStart
+    const isValidDuration = durationInTenths > 0
+
+    // Conversion dixièmes d'heure → heures:minutes pour affichage
+    const formatDuration = (tenths: number) => {
+        if (tenths <= 0) return "0h00"
+        const totalMinutes = Math.round(tenths * 6) // 1 dixième = 6 minutes
+        const hours = Math.floor(totalMinutes / 60)
+        const minutes = totalMinutes % 60
+        return `${hours}h${minutes.toString().padStart(2, '0')}`
+    }
 
     const handleSubmit = async () => {
         if (!isValidDuration) return
@@ -65,7 +83,7 @@ const CompleteFlightModal = ({ session, onComplete }: Props) => {
                 sessionId: session.id,
                 ...formData,
                 natureOfTheft: [formData.natureOfTheft],
-                duration: parseFloat(duration)
+                duration: parseFloat(durationInTenths.toFixed(1)) // Durée en dixièmes
             })
             setOpen(false)
         } catch (error) {
@@ -97,26 +115,29 @@ const CompleteFlightModal = ({ session, onComplete }: Props) => {
                         <DialogTitle className="text-lg font-bold text-slate-800">
                             Rapport de vol
                         </DialogTitle>
-                        <p className="text-xs text-slate-500 font-medium">Saisissez les données finales bloc-bloc</p>
+                        <p className="text-xs text-slate-500 font-medium">Saisissez les données finales (compteur en dixièmes d'heure)</p>
                     </div>
                 </div>
 
                 <div className="p-6 space-y-6 overflow-y-auto max-h-[80vh]">
 
-                    {/* 1. HORAMETRE (Retour à la V1 : Carte Grid) */}
+                    {/* 1. HORAMETRE (Dixièmes d'heure) */}
                     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                            <Gauge size={14} /> Horamètre (Hobbs)
+                            <Gauge size={14} /> Horamètre (en dixièmes d'heure)
                         </h4>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-slate-500 font-medium ml-1">Départ</Label>
                                 <Input
                                     type="number"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    value={formData.hobbsStart}
-                                    onChange={e => setFormData({ ...formData, hobbsStart: parseFloat(e.target.value) })}
+                                    step="0.1"
+                                    placeholder="0.0"
+                                    value={formData.hobbsStart || ""}
+                                    onChange={e => {
+                                        const value = parseFloat(e.target.value) || 0
+                                        setFormData({ ...formData, hobbsStart: Math.round(value * 10) / 10 })
+                                    }}
                                     className="font-mono text-lg text-center font-bold h-11 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
                                 />
                             </div>
@@ -124,10 +145,13 @@ const CompleteFlightModal = ({ session, onComplete }: Props) => {
                                 <Label className="text-xs text-slate-500 font-medium ml-1">Arrivée</Label>
                                 <Input
                                     type="number"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    value={formData.hobbsEnd}
-                                    onChange={e => setFormData({ ...formData, hobbsEnd: parseFloat(e.target.value) })}
+                                    step="0.1"
+                                    placeholder="0.0"
+                                    value={formData.hobbsEnd || ""}
+                                    onChange={e => {
+                                        const value = parseFloat(e.target.value) || 0
+                                        setFormData({ ...formData, hobbsEnd: Math.round(value * 10) / 10 })
+                                    }}
                                     className={cn(
                                         "font-mono text-lg text-center font-bold h-11 bg-slate-50 border-slate-200 focus:bg-white transition-colors",
                                         !isValidDuration && formData.hobbsEnd !== 0 && "border-red-300 bg-red-50 text-red-600 focus:bg-red-50"
@@ -135,26 +159,36 @@ const CompleteFlightModal = ({ session, onComplete }: Props) => {
                                 />
                             </div>
                         </div>
+
                         {/* Calcul automatique de la durée */}
-                        <div className="flex justify-between items-center border-t border-slate-100 pt-3 mt-1">
-                            <span className="text-xs font-medium text-slate-500">Temps de vol calculé</span>
-                            <div className="text-sm font-medium text-slate-600">
-                                Total : <span className={cn("text-xl font-bold ml-2", isValidDuration ? "text-emerald-600" : "text-slate-400")}>
-                                    {isValidDuration ? duration : "0.00"} h
-                                </span>
+                        <div className="border-t border-slate-100 pt-3 mt-1 space-y-2">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-medium text-slate-500">Temps de vol calculé</span>
+                                <div className="text-sm font-medium text-slate-600">
+                                    <span className={cn("text-xl font-bold", isValidDuration ? "text-emerald-600" : "text-slate-400")}>
+                                        {isValidDuration ? durationInTenths.toFixed(1) : "0.0"}
+                                    </span>
+                                    <span className="text-xs ml-1 text-slate-500">dixièmes</span>
+                                </div>
                             </div>
+
+                            {/* Affichage conversion en heures:minutes */}
+                            {isValidDuration && (
+                                <div className="flex items-center justify-end gap-2 text-xs text-slate-500">
+                                    <Clock size={12} />
+                                    <span>≈ {formatDuration(durationInTenths)}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* 2. NAVIGATION & ATTERRISSAGES (Correction d'alignement) */}
+                    {/* 2. NAVIGATION & ATTERRISSAGES */}
                     <section className="space-y-3">
                         <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                             <MapPin size={14} /> Route & Atterrissages
                         </Label>
 
-                        {/* Utilisation de grid-cols-3 avec gap fixe pour forcer l'alignement */}
                         <div className="grid grid-cols-3 gap-4">
-
                             {/* Départ */}
                             <div className="flex flex-col gap-1.5 w-full">
                                 <span className="text-[10px] uppercase font-bold text-slate-400 text-center w-full block">Départ</span>
@@ -162,6 +196,7 @@ const CompleteFlightModal = ({ session, onComplete }: Props) => {
                                     value={formData.departurePlace}
                                     onChange={e => setFormData({ ...formData, departurePlace: e.target.value.toUpperCase() })}
                                     className="uppercase text-center font-bold bg-white h-11 shadow-sm"
+                                    maxLength={4}
                                 />
                             </div>
 
@@ -172,6 +207,7 @@ const CompleteFlightModal = ({ session, onComplete }: Props) => {
                                     value={formData.arrivalPlace}
                                     onChange={e => setFormData({ ...formData, arrivalPlace: e.target.value.toUpperCase() })}
                                     className="uppercase text-center font-bold bg-white h-11 shadow-sm"
+                                    maxLength={4}
                                 />
                             </div>
 
@@ -184,7 +220,7 @@ const CompleteFlightModal = ({ session, onComplete }: Props) => {
                                     type="number"
                                     min={1}
                                     value={formData.landings}
-                                    onChange={e => setFormData({ ...formData, landings: parseInt(e.target.value) })}
+                                    onChange={e => setFormData({ ...formData, landings: Math.max(1, parseInt(e.target.value) || 1) })}
                                     className="text-center font-bold bg-white h-11 shadow-sm"
                                 />
                             </div>

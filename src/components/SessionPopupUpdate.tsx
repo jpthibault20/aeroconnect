@@ -188,6 +188,7 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                         <CompleteFlightModal
                                             session={s}
                                             onComplete={handleCompleteFlight}
+                                            planes={planesProp}
                                         />
                                     </div>
                                 )}
