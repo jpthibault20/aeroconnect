@@ -4,6 +4,24 @@ import { userRole } from '@prisma/client'
 import { User } from '@prisma/client'
 import prisma from '../prisma';
 
+const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+
+export async function requireAuth(allowedRoles?: userRole[]) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user?.email) {
+        return { error: "Non autorisé" };
+    }
+    const user = await prisma.user.findUnique({ where: { email: data.user.email } });
+    if (!user) {
+        return { error: "Non autorisé" };
+    }
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+        return { error: "Permissions insuffisantes" };
+    }
+    return { user };
+}
+
 export interface InvitedStudent {
     firstName: string,
     lastName: string,
@@ -35,9 +53,7 @@ export const createUser = async (dataUser: UserMin) => {
         });
         return { succes: "User created successfully" };
 
-    } catch (error) {
-        // Gestion des erreurs éventuelles
-        console.log(error);
+    } catch {
         return {
             error: 'User creation failed',
         };
@@ -52,8 +68,7 @@ export const getAllUser = async (clubID: string) => {
             }
         })
         return users;
-    } catch (error) {
-        console.error('Error getting user:', error);
+    } catch {
         return { error: "Erreur lors de la récupération des utilisateurs" };
     }
 
@@ -80,14 +95,12 @@ export const getUser = async () => {
     try {
         const { data, error: authError } = await supabase.auth.getUser();
         if (authError || !data?.user) {
-            console.log("Erreur de récupération de l'utilisateur Supabase :", authError?.message);
             return { error: "Utilisateur non connecté ou session invalide." };
         }
 
         const userEmail = data.user.email;
         if (!userEmail) {
-            console.error("L'utilisateur connecté n'a pas d'email.");
-            return { error: "L'email de l'utilisateur est introuvable dans la session Supabase." };
+            return { error: "Session utilisateur invalide." };
         }
 
         const user = await prisma.user.findUnique({
@@ -95,16 +108,14 @@ export const getUser = async () => {
         });
 
         if (!user) {
-            console.error(`Aucun utilisateur trouvé avec l'email : ${userEmail}`);
-            return { error: `Aucun utilisateur n'est associé à l'email : ${userEmail}` };
+            return { error: "Utilisateur introuvable." };
         }
 
         return {
             success: "Utilisateur récupéré avec succès",
             user,
         };
-    } catch (error) {
-        console.error("Erreur lors de l'exécution de la fonction getUser :", error);
+    } catch {
         return { error: "Une erreur inattendue est survenue lors de la récupération de l'utilisateur." };
     }
 };
@@ -165,8 +176,7 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
 
         return { success: "L'élève a été ajouté au vol !" };
 
-    } catch (error) {
-        console.error("Erreur lors de l'ajout de l'élève :", error);
+    } catch {
         return { error: "Erreur lors de l'ajout de l'élève au vol." };
     }
 };
@@ -176,11 +186,18 @@ export const deleteUser = async (studentID: string) => {
     if (!studentID) {
         return { error: "Une erreur est survenue (E_001: studentID is undefined)" };
     }
+
+    const auth = await requireAuth(MANAGEMENT_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
+    const target = await prisma.user.findUnique({ where: { id: studentID } });
+    if (!target || target.clubID !== auth.user.clubID) {
+        return { error: "Utilisateur introuvable dans votre club." };
+    }
+
     try {
         await prisma.user.update({
-            where: {
-                id: studentID
-            },
+            where: { id: studentID },
             data: {
                 clubID: null,
                 restricted: false,
@@ -188,10 +205,8 @@ export const deleteUser = async (studentID: string) => {
                 role: userRole.USER
             }
         });
-        console.log('User deleted successfully');
         return { success: "L'utilisateur a été supprimé de votre club avec succès !" };
-    } catch (error) {
-        console.error('Error deleting user:', error);
+    } catch {
         return { error: "Erreur lors de la suppression de l'utilisateur" };
     }
 }
@@ -200,11 +215,27 @@ export const updateUser = async (user: User) => {
     if (!user.id) {
         return { error: "Une erreur est survenue (E_001: user.id is undefined)" };
     }
+
+    const auth = await requireAuth();
+    if ('error' in auth) return { error: auth.error };
+
+    const isSelf = auth.user.id === user.id;
+    const isManager = MANAGEMENT_ROLES.includes(auth.user.role);
+
+    if (!isSelf && !isManager) {
+        return { error: "Permissions insuffisantes" };
+    }
+
+    if (!isSelf) {
+        const target = await prisma.user.findUnique({ where: { id: user.id } });
+        if (!target || target.clubID !== auth.user.clubID) {
+            return { error: "Utilisateur introuvable dans votre club." };
+        }
+    }
+
     try {
         await prisma.user.update({
-            where: {
-                id: user.id
-            },
+            where: { id: user.id },
             data: {
                 clubID: user.clubID,
                 firstName: user.firstName,
@@ -214,16 +245,15 @@ export const updateUser = async (user: User) => {
                 adress: user.adress,
                 city: user.city,
                 zipCode: user.zipCode,
-                role: user.role,
-                restricted: user.restricted,
+                role: isSelf && !isManager ? auth.user.role : user.role,
+                restricted: isSelf && !isManager ? auth.user.restricted : user.restricted,
                 country: user.country,
                 classes: user.classes,
                 canSubscribeWithoutPlan: user.canSubscribeWithoutPlan,
             }
         });
         return { success: "L'utilisateur a été mis à jour avec succès !" };
-    } catch (error) {
-        console.error('Error updating user:', error);
+    } catch {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 }
@@ -238,8 +268,7 @@ export const getUserByID = async (id: string[]) => {
             }
         })
         return user;
-    } catch (error) {
-        console.error('Error getting user:', error);
+    } catch {
         return { error: "Erreur lors de la récupération des utilisateurs" };
     }
 
@@ -257,8 +286,7 @@ export const getInsctructors = async (clubID: string | undefined) => {
             }
         })
         return instructors;
-    } catch (error) {
-        console.error('Error getting instructors:', error);
+    } catch {
         return { error: "Erreur lors de la récupération des instructeurs" };
     }
 
@@ -266,21 +294,24 @@ export const getInsctructors = async (clubID: string | undefined) => {
 
 export const blockUser = async (userID: string, restricted: boolean) => {
     if (!userID) {
-        console.log('userID is undefined');
         return { error: "Une erreur est survenue (E_001: userID is undefined)" };
     }
+
+    const auth = await requireAuth(MANAGEMENT_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
+    const target = await prisma.user.findUnique({ where: { id: userID } });
+    if (!target || target.clubID !== auth.user.clubID) {
+        return { error: "Utilisateur introuvable dans votre club." };
+    }
+
     try {
         await prisma.user.update({
-            where: {
-                id: userID
-            },
-            data: {
-                restricted: restricted
-            }
+            where: { id: userID },
+            data: { restricted }
         });
         return { success: "L'utilisateur a été bloqué avec succès !" };
-    } catch (error) {
-        console.error('Error blocking user:', error);
+    } catch {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 }
@@ -289,18 +320,17 @@ export const updateUserClub = async (userID: string, clubID: string) => {
     if (!userID) {
         return { error: "Une erreur est survenue (E_001: userID is undefined)" };
     }
+
+    const auth = await requireAuth(MANAGEMENT_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
     try {
         await prisma.user.update({
-            where: {
-                id: userID
-            },
-            data: {
-                clubID: clubID
-            }
+            where: { id: userID },
+            data: { clubID }
         });
         return { success: "L'utilisateur a été mis à jour avec succès !" };
-    } catch (error) {
-        console.error('Error updating user:', error);
+    } catch {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 }

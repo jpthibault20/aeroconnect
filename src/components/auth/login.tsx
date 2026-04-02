@@ -60,7 +60,6 @@ export const Login = () => {
             // 2. On vérifie si l'action a retourné une erreur "logique" (mauvais mdp, etc.)
             // Note: Si 'res' existe, c'est que le redirect n'a PAS eu lieu (car redirect lance une erreur)
             if (res && !res.success) {
-                console.log("Erreur logique détectée:", res.message);
                 setMessage(res.message || "Erreur de connexion");
                 setLoading(false); // ICI : On arrête le spinner car l'utilisateur doit réessayer
                 return;
@@ -77,7 +76,6 @@ export const Login = () => {
             }
 
             // 4. Gestion des vrais crashs techniques (Bug code, serveur down...)
-            console.error("Erreur technique :", error);
             setLoading(false); // On arrête le spinner
             setMessage("Une erreur inattendue est survenue.");
         }

@@ -225,7 +225,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         setIsOpen(false);
                     }
                 } catch (err) {
-                    console.error(err);
                     setError("Une erreur technique est survenue.");
                 } finally {
                     setLoading(false);

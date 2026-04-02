@@ -57,7 +57,6 @@ const SideBar = ({ clubsProp }: props) => {
                         setRequestCount(requests.length);
                     }
                 } catch (error) {
-                    console.error("Erreur lors du chargement des notifications:", error);
                 }
             }
         };

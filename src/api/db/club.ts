@@ -5,6 +5,9 @@ import { dayFr } from "@/config/config";
 import { sendNotificationRequestClub } from "@/lib/mail";
 import { userRole } from "@prisma/client";
 import prisma from "../prisma";
+import { requireAuth } from "./users";
+
+const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 export const getAllClubs = async () => {
     try {
@@ -23,12 +26,8 @@ export const getAllClubs = async () => {
         }));
 
         return result;
-    } catch (error) {
-        console.error("Erreur lors de la récupération des clubs :", error);
+    } catch {
         return [];
-    } finally {
-        // Assurez-vous que Prisma se déconnecte correctement
-
     }
 };
 
@@ -42,12 +41,8 @@ export const getClub = async (clubID: string) => {
         });
 
         return club;
-    } catch (error) {
-        console.error("Erreur lors de la récupération des clubs :", error);
+    } catch {
         return;
-    } finally {
-        // Assurez-vous que Prisma se déconnecte correctement
-
     }
 };
 
@@ -79,8 +74,7 @@ export const createClub = async (data: ClubFormValues, userID: string) => {
             },
         });
         return { success: "Club créé avec succès !" };
-    } catch (error) {
-        console.error("Erreur lors de la création du club :", error);
+    } catch {
         return { error: "Erreur lors de la création du club ou club déjà existant" };
     } finally {
         await prisma.user.update({
@@ -115,8 +109,7 @@ export const requestClubID = async (clubID: string, userID: string) => {
             }
         });
         return { success: "L'utilisateur a été mis à jour avec succès !" };
-    } catch (error) {
-        console.error('Error blocking user:', error);
+    } catch {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 }
@@ -129,8 +122,7 @@ export const getAllUserRequestedClubID = async (clubID: string) => {
             }
         })
         return user;
-    } catch (error) {
-        console.error('Error getting user:', error);
+    } catch {
         return { error: "Erreur lors de la récupération des utilisateurs" };
     }
 }
@@ -141,6 +133,13 @@ export const acceptMembershipRequest = async (userID: string, clubID: string | n
     }
     if (!clubID) {
         return { error: "Une erreur est survenue (E_001: clubID is undefined)" };
+    }
+
+    const auth = await requireAuth(MANAGEMENT_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
+    if (auth.user.clubID !== clubID) {
+        return { error: "Permissions insuffisantes" };
     }
 
     try {
@@ -174,8 +173,7 @@ export const acceptMembershipRequest = async (userID: string, clubID: string | n
         await sendNotificationRequestClub(user.email as string, club.id)
 
         return { success: "L'utilisateur a été mis à jour avec succès !" };
-    } catch (error) {
-        console.error("Erreur lors de la mise à jour de l'utilisateur :", error);
+    } catch {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 };
@@ -184,6 +182,9 @@ export const rejectMembershipRequest = async (userID: string) => {
     if (!userID) {
         return { error: "Une erreur est survenue (E_001: userID is undefined)" };
     }
+
+    const auth = await requireAuth(MANAGEMENT_ROLES);
+    if ('error' in auth) return { error: auth.error };
 
     try {
         await prisma.user.update({
@@ -195,8 +196,7 @@ export const rejectMembershipRequest = async (userID: string) => {
             }
         });
         return { success: "L'utilisateur a été mis à jour avec succès !" };
-    } catch (error) {
-        console.error('Error blocking user:', error);
+    } catch {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 };
@@ -215,8 +215,7 @@ export const getClubAdress = async (clubID: string) => {
             }
         });
         return club;
-    } catch (error) {
-        console.error('Error fetching club adress:', error);
+    } catch {
         return null;
     }
 }
@@ -246,6 +245,13 @@ export interface ConfigClub {
 }
 
 export const updateClub = async (clubID: string, data: ConfigClub) => {
+    const auth = await requireAuth([userRole.OWNER, userRole.ADMIN]);
+    if ('error' in auth) return { error: auth.error };
+
+    if (auth.user.clubID !== clubID) {
+        return { error: "Permissions insuffisantes" };
+    }
+
     // layout of working hours
     const workingHour: number[] = [];
     const startHour = parseInt(data.hourStart.split(":")[0], 10);
@@ -300,8 +306,7 @@ await Promise.all([updateClub, updateOwners]);
 
 
         return { success: "La configuration a été mise à jour avec succès !" };
-    } catch (error) {
-        console.error("Erreur lors de la mise à jour de la configuration :", error);
+    } catch {
         return { error: "Erreur lors de la mise à jour de la configuration" };
     }
 };

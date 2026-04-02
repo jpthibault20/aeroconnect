@@ -87,7 +87,6 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                 setError(res.error || "Une erreur est survenue.");
             }
         } catch (error) {
-            console.error(error);
             setError("Erreur technique lors de la sauvegarde.");
         } finally {
             setLoading(false);

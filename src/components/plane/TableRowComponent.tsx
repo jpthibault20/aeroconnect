@@ -62,7 +62,6 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                 });
             }
         } catch (error) {
-            console.error(error);
             toast({ title: "Erreur technique", variant: "destructive" });
         } finally {
             setLoading(false);
@@ -93,7 +92,6 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
             }
         } catch (error) {
             setPlaneState(prev => ({ ...prev, operational: !newState }));
-            console.error(error);
         } finally {
             setLoading(false);
         }

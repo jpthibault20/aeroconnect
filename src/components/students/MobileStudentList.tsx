@@ -46,7 +46,6 @@ const MobileStudentList = ({ users, setUsers }: Props) => {
                 toast({ title: "Erreur", description: res.error, variant: "destructive" });
             }
         } catch (e) {
-            console.error(e);
             toast({ title: "Erreur technique", variant: "destructive" });
         } finally {
             setLoadingMap(prev => ({ ...prev, [user.id]: false }));

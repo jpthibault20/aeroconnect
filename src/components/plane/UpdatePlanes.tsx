@@ -51,7 +51,6 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                 setShowPopup(false);
             }
         } catch (error) {
-            console.error(error);
             setError("Une erreur inattendue est survenue.");
         } finally {
             setLoading(false);

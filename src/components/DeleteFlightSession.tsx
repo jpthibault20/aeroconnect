@@ -95,7 +95,6 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
                 setIsOpen(false);
             }
         } catch (error) {
-            console.error(error);
             toast({
                 title: "Erreur technique",
                 description: "Impossible de supprimer le vol.",

@@ -12,9 +12,16 @@ import { Club, flight_sessions, User } from "@prisma/client";
 import { Resend } from "resend";
 import { receiveType } from "./utils";
 
+if (!process.env.RESEND_API_KEY) {
+  throw new Error("RESEND_API_KEY is not defined");
+}
+if (!process.env.SENDER_EMAIL) {
+  throw new Error("SENDER_EMAIL is not defined");
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 const domain = process.env.NEXT_PUBLIC_APP_URL;
-const senderMailAdress = process.env.SENDER_EMAIL as string;
+const senderMailAdress = process.env.SENDER_EMAIL;
 
 const formattedDate = (date: Date) => {
   const formatedDateString = date.toISOString();
@@ -39,8 +46,8 @@ const getClubData = (clubID: string) => {
         }
       });
       return { name: club?.Name, adress: { countrie: club?.Country, zipCode: club?.ZipCode, city: club?.City, adress: club?.Address } };
-    } catch (error) {
-      console.log(error)
+    } catch {
+      return undefined;
     }
   }
   return fetchClubData()
@@ -128,7 +135,6 @@ export const sendNotificationRemoveAppointment = async (
 ) => {
   // Validation précoce et rapide
   if (!email || !club?.Name) {
-    console.warn('Notification skipped: Missing email or club name');
     return;
   }
 
@@ -157,9 +163,8 @@ export const sendNotificationRemoveAppointment = async (
         clubAdress: { countrie, zipCode, city, adress }
       })
     });
-  } catch (error) {
-    // Gestion d'erreur avec logging minimal
-    console.error('Failed to send removal notification:', error);
+  } catch {
+    // silently fail - email is non-critical
   }
 };
 
@@ -171,7 +176,6 @@ export const sendNotificationSudentRemoveForPilot = async (
 ) => {
   // Validation précoce et rapide
   if (!email || !club?.Name) {
-    console.warn('Pilot notification skipped: Missing email or club name');
     return;
   }
 
@@ -200,9 +204,8 @@ export const sendNotificationSudentRemoveForPilot = async (
         clubAdress: { countrie, zipCode, city, adress }
       })
     });
-  } catch (error) {
-    // Gestion d'erreur avec logging minimal
-    console.error('Failed to send pilot removal notification:', error);
+  } catch {
+    // silently fail - email is non-critical
   }
 };
 

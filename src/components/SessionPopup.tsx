@@ -78,7 +78,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 setAvailableInstructors(pilotes);
                 setAvailablePlanes(planes);
             } catch (err) {
-                console.error("Error loading pilots and planes:", err);
             }
         };
         loadPilotsAndPlanes();
@@ -102,7 +101,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
     useEffect(() => {
         let updatedPlanes;
-        const classroomPlane = { id: "classroomSession", name: "Théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3 };
+        const classroomPlane = { id: "classroomSession", name: "Théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3, hobbsTotal: null };
 
         if (instructor === "nothing") {
             updatedPlanes = allPlanes;
@@ -195,7 +194,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 ]);
             }
         } catch (err) {
-            console.error(err);
             setError("Une erreur technique est survenue.");
         } finally {
             setLoading(false);

@@ -19,7 +19,6 @@ export async function forgotPassword(formData: FormData) {
     })
 
     if (error) {
-        console.log('Erreur lors de l\'envoi de l\'email de réinitialisation :', error.message)
         return redirect(`/auth/forgotPassword?message=${encodeURIComponent('Erreur lors de l\'envoi de l\'email de réinitialisation')}`)
     }
 
