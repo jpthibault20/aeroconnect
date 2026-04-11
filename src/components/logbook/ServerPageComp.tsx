@@ -23,7 +23,7 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             // Table flight_logs peut ne pas exister si la migration n'est pas faite
         }
 
-        let logs: Awaited<ReturnType<typeof prisma.flight_logs.findMany>> = [];
+        let logs: import("@prisma/client").flight_logs[] = [];
         try {
             logs = await prisma.flight_logs.findMany({
                 where: {
