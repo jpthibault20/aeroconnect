@@ -73,7 +73,7 @@ async function main() {
 
     // ─── Utilisateurs ───
     console.log("👥 Création des utilisateurs...");
-    const createdUsers: { id: string; firstName: string; lastName: string; email: string; phone: string; role: string }[] = [];
+    const createdUsers: { id: string; firstName: string; lastName: string; email: string; phone: string | null; role: string }[] = [];
 
     for (const u of USERS) {
         const existing = await prisma.user.findUnique({ where: { email: u.email } });
