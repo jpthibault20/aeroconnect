@@ -389,7 +389,7 @@ export const getIncompleteFlightLogs = async (pilotID: string, clubID: string) =
 
 // ─── Auto-création depuis les sessions passées ───
 
-export function mapFlightType(ft: string | null): flightNature {
+export async function mapFlightType(ft: string | null): Promise<flightNature> {
     switch (ft) {
         case "TRAINING": return "INSTRUCTION";
         case "PRIVATE": return "LOCAL";
@@ -488,7 +488,7 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
             const planeInfo = session.studentPlaneID ? planesMap.get(session.studentPlaneID) : null;
             const isClassroom = session.studentPlaneID === "classroomSession";
             const isNoPlane = session.studentPlaneID === "noPlane";
-            const nature = mapFlightType(session.flightType ?? session.student_type ?? null);
+            const nature = await mapFlightType(session.flightType ?? session.student_type ?? null);
 
             const basePlane = {
                 planeID: isClassroom || isNoPlane ? null : session.studentPlaneID,
