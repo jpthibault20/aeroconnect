@@ -296,11 +296,11 @@ describe("Protection des séances passées", () => {
     });
 
     describe("Modification d'un vol signé", () => {
-        const MANAGEMENT_LOGBOOK = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
+        const SIGN_OVERRIDE = [userRole.OWNER, userRole.ADMIN];
 
         function canModifySigned(pilotSigned: boolean, role: userRole): boolean {
             if (!pilotSigned) return true;
-            return MANAGEMENT_LOGBOOK.includes(role);
+            return SIGN_OVERRIDE.includes(role);
         }
 
         it("vol non signé = tout le monde peut modifier", () => {
@@ -315,12 +315,20 @@ describe("Protection des séances passées", () => {
             expect(canModifySigned(true, userRole.PILOT)).toBe(false);
         });
 
+        it("vol signé + INSTRUCTOR = impossible", () => {
+            expect(canModifySigned(true, userRole.INSTRUCTOR)).toBe(false);
+        });
+
+        it("vol signé + MANAGER = impossible", () => {
+            expect(canModifySigned(true, userRole.MANAGER)).toBe(false);
+        });
+
         it("vol signé + ADMIN = autorisé", () => {
             expect(canModifySigned(true, userRole.ADMIN)).toBe(true);
         });
 
-        it("vol signé + INSTRUCTOR = autorisé", () => {
-            expect(canModifySigned(true, userRole.INSTRUCTOR)).toBe(true);
+        it("vol signé + OWNER = autorisé", () => {
+            expect(canModifySigned(true, userRole.OWNER)).toBe(true);
         });
     });
 });

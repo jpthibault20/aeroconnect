@@ -8,8 +8,13 @@ const LOGBOOK_ROLES: userRole[] = [
     userRole.PILOT, userRole.STUDENT, userRole.INSTRUCTOR,
     userRole.OWNER, userRole.ADMIN, userRole.MANAGER,
 ];
+// Rôles pouvant voir/modifier les vols des autres pilotes
 const MANAGEMENT_ROLES: userRole[] = [
-    userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR,
+    userRole.OWNER, userRole.ADMIN, userRole.MANAGER,
+];
+// Rôles pouvant modifier un vol déjà signé
+const SIGN_OVERRIDE_ROLES: userRole[] = [
+    userRole.OWNER, userRole.ADMIN,
 ];
 
 // Date d'entrée en vigueur de l'arrêté du 17 février 2025
@@ -54,7 +59,7 @@ export const getLogbookByPilot = async (pilotID: string, clubID: string, year?: 
     const auth = await requireAuth(LOGBOOK_ROLES);
     if ("error" in auth) return { error: auth.error };
 
-    // Un pilote ne voit que son carnet, sauf si manager/admin/instructor
+    // Un pilote ne voit que son carnet, sauf si owner/admin/manager
     const isManager = MANAGEMENT_ROLES.includes(auth.user.role);
     if (!isManager && auth.user.id !== pilotID) {
         return { error: "Permissions insuffisantes" };
@@ -203,7 +208,8 @@ export const updateFlightLog = async (logID: string, data: Partial<CreateFlightL
         return { error: "Permissions insuffisantes" };
     }
 
-    if (existing.pilotSigned && !isManager) {
+    const canOverrideSigned = SIGN_OVERRIDE_ROLES.includes(auth.user.role);
+    if (existing.pilotSigned && !canOverrideSigned) {
         return { error: "Impossible de modifier une entrée signée" };
     }
 

@@ -85,7 +85,7 @@ describe("Matrice de permissions", () => {
     });
 
     describe("Consultation du carnet d'un autre pilote", () => {
-        const canViewOthersLogbook = (role: userRole) => ADMIN_ROLES.includes(role) || role === userRole.INSTRUCTOR;
+        const canViewOthersLogbook = (role: userRole) => ADMIN_ROLES.includes(role);
 
         it("un STUDENT ne peut PAS voir le carnet d'un autre", () => {
             expect(canViewOthersLogbook(userRole.STUDENT)).toBe(false);
@@ -95,23 +95,34 @@ describe("Matrice de permissions", () => {
             expect(canViewOthersLogbook(userRole.PILOT)).toBe(false);
         });
 
-        it("un INSTRUCTOR peut voir le carnet d'un autre", () => {
-            expect(canViewOthersLogbook(userRole.INSTRUCTOR)).toBe(true);
+        it("un INSTRUCTOR ne peut PAS voir le carnet d'un autre", () => {
+            expect(canViewOthersLogbook(userRole.INSTRUCTOR)).toBe(false);
         });
 
         it("un ADMIN peut voir le carnet d'un autre", () => {
             expect(canViewOthersLogbook(userRole.ADMIN)).toBe(true);
         });
+
+        it("un MANAGER peut voir le carnet d'un autre", () => {
+            expect(canViewOthersLogbook(userRole.MANAGER)).toBe(true);
+        });
     });
 
     describe("Modification d'un vol signé", () => {
-        const canModifySigned = (role: userRole) => ADMIN_ROLES.includes(role) || role === userRole.INSTRUCTOR;
+        const SIGN_OVERRIDE = [userRole.OWNER, userRole.ADMIN];
+        const canModifySigned = (role: userRole) => SIGN_OVERRIDE.includes(role);
 
-        it("seuls les managers/instructeurs peuvent modifier un vol signé", () => {
+        it("seuls OWNER et ADMIN peuvent modifier un vol signé", () => {
             expect(canModifySigned(userRole.OWNER)).toBe(true);
             expect(canModifySigned(userRole.ADMIN)).toBe(true);
-            expect(canModifySigned(userRole.MANAGER)).toBe(true);
-            expect(canModifySigned(userRole.INSTRUCTOR)).toBe(true);
+        });
+
+        it("un MANAGER ne peut PAS modifier un vol signé", () => {
+            expect(canModifySigned(userRole.MANAGER)).toBe(false);
+        });
+
+        it("un INSTRUCTOR ne peut PAS modifier un vol signé", () => {
+            expect(canModifySigned(userRole.INSTRUCTOR)).toBe(false);
         });
 
         it("un STUDENT ne peut PAS modifier un vol signé", () => {
