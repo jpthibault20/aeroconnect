@@ -62,7 +62,6 @@ const Export = ({ usersProps, flightsSessions, planes }: Props) => {
             URL.revokeObjectURL(url);
             setIsPopoverOpen(false);
         } catch (error) {
-            console.error("Erreur lors de la génération du PDF", error);
         }
     };
 

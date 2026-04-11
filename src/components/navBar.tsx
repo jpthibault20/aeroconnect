@@ -42,7 +42,6 @@ const NavBar = () => {
                         setRequestCount(requests.length);
                     }
                 } catch (error) {
-                    console.error("Erreur lors du chargement des notifications:", error);
                 }
             }
         };

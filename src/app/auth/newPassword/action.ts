@@ -35,7 +35,6 @@ export async function updatePassword(formData: FormData) {
     })
 
     if (error) {
-        console.log('Erreur lors de la mise à jour du mot de passe :', error.message)
         return redirect(`/auth/forgotPassword?message=${encodeURIComponent('Erreur lors de la mise à jour du mot de passe')}`)
     }
 

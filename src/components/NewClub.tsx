@@ -86,7 +86,6 @@ const NewClub = ({ setNewClub }: Props) => {
                 window.location.href = '/calendar?clubID=' + data.id;
             }
         } catch (error) {
-            console.error(error);
             setFormError("Une erreur technique est survenue.");
         } finally {
             setLoading(false);

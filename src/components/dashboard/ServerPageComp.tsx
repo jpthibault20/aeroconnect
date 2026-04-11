@@ -41,7 +41,6 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
 
         // Gestion des erreurs pour `UsersRequestedClubID`
         if ('error' in UsersRequestedClubID) {
-            console.error(UsersRequestedClubID.error);
             return (
                 <div className="h-full">
                     {UsersRequestedClubID.error}

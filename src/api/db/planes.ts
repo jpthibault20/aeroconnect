@@ -1,11 +1,21 @@
 "use server";
 
-import { planes } from "@prisma/client";
+import { planes, userRole } from "@prisma/client";
 import prisma from "../prisma";
+import { requireAuth } from "./users";
+
+const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 export const createPlane = async (dataPlane: planes) => {
     if (!dataPlane.name || !dataPlane.immatriculation || !dataPlane.clubID) {
         return { error: 'Missing required fields' };
+    }
+
+    const auth = await requireAuth(ADMIN_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
+    if (auth.user.clubID !== dataPlane.clubID) {
+        return { error: "Permissions insuffisantes" };
     }
 
     try {
@@ -44,8 +54,7 @@ export const createPlane = async (dataPlane: planes) => {
 
         return { success: 'Aion créé avec succès !', planes };
 
-    } catch (error) {
-        console.error(error);
+    } catch {
         return {
             error: 'Plane creation failed',
         };
@@ -65,8 +74,7 @@ export const getPlanes = async (clubID: string) => {
         });
 
         return planes;
-    } catch (error) {
-        console.error('Error getting planes:', error);
+    } catch {
         return [];
     }
 };
@@ -75,29 +83,26 @@ export const deletePlane = async (planeID: string) => {
     if (!planeID) {
         return { error: 'Missing planeID' };
     }
+
+    const auth = await requireAuth(ADMIN_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
     try {
         const plane = await prisma.planes.findFirst({
-            where: {
-                id: planeID
-            }
+            where: { id: planeID }
         });
 
-        if (!plane) {
+        if (!plane || plane.clubID !== auth.user.clubID) {
             return { error: 'Plane not found' };
         }
 
         await prisma.planes.delete({
-            where: {
-                id: planeID
-            }
+            where: { id: planeID }
         });
 
         return { success: 'Plane deleted successfully' };
-    } catch (error) {
-        console.error('Error deleting plane:', error);
-        return {
-            error: 'Plane deletion failed',
-        };
+    } catch {
+        return { error: 'Plane deletion failed' };
     }
 };
 
@@ -105,22 +110,19 @@ export const updateOperationalByID = async (planeID: string, operational: boolea
     if (!planeID) {
         return { error: 'Missing planeID' };
     }
+
+    const auth = await requireAuth(ADMIN_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
     try {
         await prisma.planes.update({
-            where: {
-                id: planeID
-            },
-            data: {
-                operational: operational
-            }
+            where: { id: planeID },
+            data: { operational }
         });
 
         return { success: 'Plane updated successfully' };
-    } catch (error) {
-        console.error('Error updating plane:', error);
-        return {
-            error: 'Plane update failed',
-        };
+    } catch {
+        return { error: 'Plane update failed' };
     }
 };
 
@@ -133,11 +135,8 @@ export const getPlaneByID = async (planeID: string) => {
         });
 
         return plane;
-    } catch (error) {
-        console.error('Error getting plane:', error);
-        return {
-            error: 'Plane get failed',
-        };
+    } catch {
+        return { error: 'Plane get failed' };
     }
 };
 
@@ -151,8 +150,7 @@ export const getPlanesByID = async (planeID: string[]) => {
             }
         });
         return planes;
-    } catch (error) {
-        console.error('Error getting planes:', error);
+    } catch {
         return { error: "Erreur lors de la récupération des avions" };
     }
 };
@@ -166,8 +164,7 @@ export const getAllPlanesOperational = async (clubID: string) => {
             }
         })
         return planes;
-    } catch (error) {
-        console.error('Error getting planes:', error);
+    } catch {
         return { error: "Erreur lors de la récupération des avions" };
     }
 
@@ -180,24 +177,24 @@ export const updatePlane = async (plane: planes) => {
     if (!plane.name && !plane.immatriculation && !plane.operational && !plane.classes) {
         return { error: 'Missing plane data' };
     }
+
+    const auth = await requireAuth(ADMIN_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
     try {
         await prisma.planes.update({
-            where: {
-                id: plane.id
-            },
+            where: { id: plane.id },
             data: {
                 name: plane.name,
                 immatriculation: plane.immatriculation,
                 operational: plane.operational,
                 classes: plane.classes,
+                hobbsTotal: plane.hobbsTotal,
             }
         });
 
         return { success: 'Plane updated successfully' };
-    } catch (error) {
-        console.error('Error updating plane:', error);
-        return {
-            error: 'Plane update failed',
-        };
+    } catch {
+        return { error: 'Plane update failed' };
     }
 };

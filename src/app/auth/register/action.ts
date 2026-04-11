@@ -15,7 +15,6 @@ export async function signup(formData: FormData) {
     })
     
     if (errorAuth) {
-        console.log(errorAuth.message)
         const errorMessage = encodeURIComponent(
             "Une erreur est survenue lors de la création du compte, se rapprocher de l'administrateur (E_009: failed to create auth user)"
         );
@@ -29,8 +28,7 @@ export async function signup(formData: FormData) {
             email: formData.get('email') as string,
             phone: formData.get('phone') as string,
         })
-    } catch (error) {
-        console.log(error)
+    } catch {
         const errorMessage = encodeURIComponent(
             "Une erreur est survenue lors de la création du compte, se rapprocher de l'administrateur (E_010: failed to create private user)"
         );

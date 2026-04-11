@@ -45,14 +45,12 @@ const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequ
         try {
             const res = await requestClubID(localSelectedId, currentUser!.id);
             if (res.error) {
-                console.error(res.error);
                 setError(res.error);
             } else {
                 setError(null);
                 setRequestClubID(true);
             }
         } catch (err) {
-            console.error(err);
             setError("Une erreur est survenue.");
         } finally {
             setLoading(false);

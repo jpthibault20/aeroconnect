@@ -1,11 +1,11 @@
-datasource db {
-  provider  = "postgresql" // ou votre provider
-  url       = env("DATABASE_URL") // URL Accelerate pour l'application
-  directUrl = env("DIRECT_URL") // URL directe pour les migrations
-}
-
 generator client {
   provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -27,32 +27,33 @@ model User {
 }
 
 model flight_sessions {
-  id                      String         @id @unique @default(uuid())
+  id                      String          @id @unique @default(uuid())
   clubID                  String
-  sessionDateStart        DateTime       @db.Timestamptz(6)
+  sessionDateStart        DateTime        @db.Timestamptz(6)
   sessionDateDuration_min Int
   pilotID                 String
   pilotFirstName          String
   pilotLastName           String
-  pilotComment            String?
   studentID               String?
   studentFirstName        String?
   studentLastName         String?
-  studentEmail            String?
-  studentPhone            String?
   student_type            flightType?
-  studentComment          String?
-  finalReccurence         DateTime?      @db.Timestamptz(6)
+  finalReccurence         DateTime?       @db.Timestamptz(6)
   planeID                 String[]
   studentPlaneID          String?
-  classes                 Int[]          @default([])
-  // V2.0 : Nouveaux champs pour les carnets de vol
-  flightType              NatureOfTheft?
-  startLocation           String?
+  classes                 Int[]           @default([])
+  studentEmail            String?
+  studentPhone            String?
+  pilotComment            String?
+  studentComment          String?
   endLocation             String?
-  hobbsStart              Float?
   hobbsEnd                Float?
-  landings                Int?           @default(1)
+  hobbsStart              Float?
+  landings                Int?            @default(1)
+  startLocation           String?
+  flightType              NatureOfTheft?
+  natureOfTheft           NatureOfTheft[] @default([])
+  flightComment           String?
 }
 
 model planes {
@@ -62,23 +63,8 @@ model planes {
   immatriculation String
   operational     Boolean           @default(true)
   classes         Int               @default(3)
-  // V2.0 : Nouveaux champs pour les carnets de vol
   hobbsTotal      Float?            @default(0)
-  // VX.X : Maintenance tasks
-  tasks           MaintenanceTask[]
-}
-
-model MaintenanceTask {
-  id                 String   @id @default(uuid())
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  title              String // Ex: "Visite 50h", "Visite Annuelle", "Changement Huile"
-  intervalHours      Float? // Ex: 50 (toutes les 50h)
-  intervalMonths     Int? // Ex: 12 (tous les ans) ou 60 (5 ans)
-  lastPerformedDate  DateTime // La date de la dernière visite
-  lastPerformedHobbs Float // Le total horaire de l'avion à ce moment-là (Ex: 1450.0)
-  planeId            String
-  plane              planes   @relation(fields: [planeId], references: [id], onDelete: Cascade)
+  MaintenanceTask MaintenanceTask[]
 }
 
 model Club {
@@ -88,37 +74,46 @@ model Club {
   City                        String?
   Country                     String?
   ZipCode                     String?
+  defaultAirfield             String?
   OwnerId                     String[]
   DaysOn                      String[]
-  HoursOn                     Int[]
   SessionDurationMin          Int      @default(60)
   AvailableMinutes            String[] @default([])
+  HoursOn                     Int[]
   classes                     Int[]    @default([1, 2, 3, 4, 5, 6])
-  userCanSubscribe            Boolean  @default(true)
   preSubscribe                Boolean  @default(false)
-  timeDelaySubscribeminutes   Int      @default(0)
-  userCanUnsubscribe          Boolean  @default(true)
   preUnsubscribe              Boolean  @default(false)
+  timeDelaySubscribeminutes   Int      @default(0)
   timeDelayUnsubscribeminutes Int      @default(0)
+  userCanSubscribe            Boolean  @default(true)
+  userCanUnsubscribe          Boolean  @default(true)
   firstNameContact            String?
   lastNameContact             String?
-  phoneContact                String?
   mailContact                 String?
+  phoneContact                String?
 }
 
-/**
- * ****************************************************************************
- * Enums
- * ****************************************************************************
- */
+model MaintenanceTask {
+  id                 String   @id
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+  title              String
+  intervalHours      Float?
+  intervalMonths     Int?
+  lastPerformedDate  DateTime
+  lastPerformedHobbs Float
+  planeId            String
+  planes             planes   @relation(fields: [planeId], references: [id], onDelete: Cascade)
+}
+
 enum userRole {
   USER
   STUDENT
   PILOT
   OWNER
   ADMIN
-  MANAGER
   INSTRUCTOR
+  MANAGER
 }
 
 enum flightType {
@@ -128,10 +123,77 @@ enum flightType {
 }
 
 enum NatureOfTheft {
-  TRAINING // Instruction
-  PRIVATE // Personnel
-  SIGHTSEEING // VLO (Vol Local Onéreux / Baptême)
-  DISCOVERY // VLD (Vol de Découverte)
-  EXAM //(Test en vol)
-  // COST_SHARING (Co-avionnage wingly etc)
+  TRAINING
+  PRIVATE
+  SIGHTSEEING
+  DISCOVERY
+  EXAM
+}
+
+enum pilotFunction {
+  EP
+  P
+  I
+}
+
+enum flightNature {
+  INSTRUCTION
+  LOCAL
+  NAVIGATION
+  VLO
+  VLD
+  EXAM
+  FIRST_FLIGHT
+  BAPTEME
+  OTHER
+}
+
+model flight_logs {
+  id                  String         @id @default(uuid())
+  clubID              String
+  sessionID           String?
+
+  date                DateTime       @db.Date
+  planeID             String?
+  planeRegistration   String
+  planeName           String
+  planeClass          Int?
+
+  pilotID             String
+  pilotFirstName      String
+  pilotLastName       String
+  pilotFunction       pilotFunction
+
+  instructorID        String?
+  instructorFirstName String?
+  instructorLastName  String?
+  studentID           String?
+  studentFirstName    String?
+  studentLastName     String?
+
+  flightNature        flightNature
+  durationMinutes     Int
+  takeoffs            Int            @default(1)
+  landings            Int            @default(1)
+
+  timeDC              Int            @default(0)
+  timePIC             Int            @default(0)
+  timeInstructor      Int            @default(0)
+
+  departureAirfield   String?
+  arrivalAirfield     String?
+
+  hobbsStart          Float?
+  hobbsEnd            Float?
+  fuelAdded           Float?
+  oilAdded            Float?
+  anomalies           String?
+
+  pilotSigned         Boolean        @default(false)
+  pilotSignedAt       DateTime?      @db.Timestamptz(6)
+  remarks             String?
+
+  createdAt           DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime       @updatedAt @db.Timestamptz(6)
+  isManualEntry       Boolean        @default(false)
 }

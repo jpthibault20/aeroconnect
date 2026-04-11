@@ -83,7 +83,6 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes }: CardProps) => {
                 toast({ title: "Erreur", description: res.error, variant: "destructive" });
             }
         } catch (error) {
-            console.error(error);
             toast({ title: "Erreur technique", variant: "destructive" });
         } finally {
             setLoading(false);
@@ -114,7 +113,6 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes }: CardProps) => {
             }
         } catch (error) {
             setPlaneState(prev => ({ ...prev, operational: !newState }));
-            console.error(error);
         } finally {
             setLoading(false);
         }
