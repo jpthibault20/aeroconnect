@@ -4,7 +4,7 @@ import { planes, userRole } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
 
-const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN];
+const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 export const createPlane = async (dataPlane: planes) => {
     if (!dataPlane.name || !dataPlane.immatriculation || !dataPlane.clubID) {
@@ -189,6 +189,7 @@ export const updatePlane = async (plane: planes) => {
                 immatriculation: plane.immatriculation,
                 operational: plane.operational,
                 classes: plane.classes,
+                hobbsTotal: plane.hobbsTotal,
             }
         });
 

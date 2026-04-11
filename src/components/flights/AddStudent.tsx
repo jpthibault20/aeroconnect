@@ -45,7 +45,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
     const filterStudentsByPlane = (planeId: string) => {
         const { students } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
-        if (!planeId || planeId === " " || planeId === "classroomSession") {
+        if (!planeId || planeId === " " || planeId === "classroomSession" || planeId === "noPlane") {
             return students.map(student => ({
                 id: student.id,
                 name: `${student.lastName} ${student.firstName}`

@@ -74,7 +74,7 @@ export const getLogbookByPilot = async (pilotID: string, clubID: string, year?: 
                     lte: new Date(`${currentYear}-12-31`),
                 },
             },
-            orderBy: { date: "asc" },
+            orderBy: { date: "desc" },
         });
         return { success: true, logs };
     } catch {
@@ -103,7 +103,7 @@ export const getLogbookByPlane = async (planeID: string, clubID: string, year?: 
                     lte: new Date(`${currentYear}-12-31`),
                 },
             },
-            orderBy: { date: "asc" },
+            orderBy: { date: "desc" },
         });
         return { success: true, logs };
     } catch {
@@ -327,6 +327,36 @@ export const getRunningTotals = async (pilotID: string, clubID: string) => {
         };
     } catch {
         return { error: "Erreur lors du calcul des totaux" };
+    }
+};
+
+// ─── Flight log par session + pilote ───
+
+export const getFlightLogBySession = async (sessionID: string, pilotID: string) => {
+    const auth = await requireAuth(LOGBOOK_ROLES);
+    if ("error" in auth) return { error: auth.error };
+
+    try {
+        const log = await prisma.flight_logs.findFirst({
+            where: { sessionID, pilotID },
+        });
+        return { success: true, log: log ?? null };
+    } catch {
+        return { error: "Erreur lors de la récupération du log" };
+    }
+};
+
+// ─── Hobbs courant d'un avion ───
+
+export const getPlaneHobbs = async (planeID: string): Promise<number | null> => {
+    try {
+        const plane = await prisma.planes.findUnique({
+            where: { id: planeID },
+            select: { hobbsTotal: true },
+        });
+        return plane?.hobbsTotal ?? null;
+    } catch {
+        return null;
     }
 };
 

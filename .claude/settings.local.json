@@ -11,7 +11,8 @@
       "WebSearch",
       "WebFetch(domain:www.legifrance.gouv.fr)",
       "WebFetch(domain:ffplum.fr)",
-      "WebFetch(domain:www.aclatranchesurmer.fr)"
+      "WebFetch(domain:www.aclatranchesurmer.fr)",
+      "Bash(npx next:*)"
     ]
   }
 }

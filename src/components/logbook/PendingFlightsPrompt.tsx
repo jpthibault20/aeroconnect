@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { flight_logs } from "@prisma/client";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
-import { getIncompleteFlightLogs } from "@/api/db/logbook";
+import { getIncompleteFlightLogs, autoCreateLogsFromSessions, getPlaneHobbs } from "@/api/db/logbook";
 import CompleteFlightDialog from "./CompleteFlightDialog";
 
 /**
@@ -20,16 +20,34 @@ const PendingFlightsPrompt = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [open, setOpen] = useState(false);
     const [loaded, setLoaded] = useState(false);
+    const [planeHobbsMap, setPlaneHobbsMap] = useState<Record<string, number>>({});
 
     // Charger les vols incomplets au montage
     useEffect(() => {
         if (!currentUser?.id || !currentClub?.id || loaded) return;
 
         const load = async () => {
+            // S'assurer que les flight_logs sont créés depuis les sessions passées
+            await autoCreateLogsFromSessions(currentClub.id);
+
             const res = await getIncompleteFlightLogs(currentUser.id, currentClub.id);
             if ("error" in res || !res.logs) return;
 
             if (res.logs.length > 0) {
+                // Récupérer le hobbsTotal de chaque avion concerné
+                const uniquePlaneIDs = [...new Set(res.logs.map(l => l.planeID).filter((id): id is string => !!id))];
+                const hobbsEntries = await Promise.all(
+                    uniquePlaneIDs.map(async (id) => {
+                        const hobbs = await getPlaneHobbs(id);
+                        return [id, hobbs] as const;
+                    })
+                );
+                const hobbsMap: Record<string, number> = {};
+                for (const [id, hobbs] of hobbsEntries) {
+                    if (hobbs != null) hobbsMap[id] = hobbs;
+                }
+                setPlaneHobbsMap(hobbsMap);
+
                 setQueue(res.logs);
                 setCurrentIndex(0);
                 setOpen(true);
@@ -66,6 +84,9 @@ const PendingFlightsPrompt = () => {
         ? `Vol ${currentIndex + 1} sur ${queue.length} à compléter`
         : undefined;
 
+    const defaultAirfield = currentClub?.id ?? undefined;
+    const defaultHobbsStart = currentLog.planeID ? planeHobbsMap[currentLog.planeID] : undefined;
+
     return (
         <CompleteFlightDialog
             log={currentLog}
@@ -73,6 +94,8 @@ const PendingFlightsPrompt = () => {
             onOpenChange={handleOpenChange}
             onCompleted={handleCompleted}
             queueInfo={queueInfo}
+            defaultAirfield={defaultAirfield}
+            defaultHobbsStart={defaultHobbsStart}
         />
     );
 };

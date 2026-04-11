@@ -33,7 +33,7 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
                         lte: new Date(`${currentYear}-12-31`),
                     },
                 },
-                orderBy: { date: 'asc' },
+                orderBy: { date: 'desc' },
             });
         } catch {
             // Table flight_logs peut ne pas exister si la migration n'est pas faite

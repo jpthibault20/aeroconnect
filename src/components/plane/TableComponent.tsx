@@ -56,6 +56,11 @@ const TableComponent = ({ planes, setPlanes }: Props) => {
                                 Classe
                             </TableHead>
 
+                            {/* Colonne Heures moteur */}
+                            <TableHead className={`${headerClass} text-center hidden sm:table-cell`}>
+                                Heures moteur
+                            </TableHead>
+
                             {/* Colonne État */}
                             {canViewStatus && (
                                 <TableHead className={`${headerClass} text-center`}>

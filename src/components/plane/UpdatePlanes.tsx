@@ -128,6 +128,21 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                 />
                             </div>
 
+                            {/* Heures moteur */}
+                            <div className="space-y-2">
+                                <Label htmlFor="hobbsTotal" className="text-slate-700 font-medium">Heures moteur</Label>
+                                <Input
+                                    id="hobbsTotal"
+                                    type="number"
+                                    step="0.1"
+                                    value={plane.hobbsTotal ?? ""}
+                                    disabled={loading}
+                                    onChange={(e) => setPlane((prev) => ({ ...prev, hobbsTotal: e.target.value ? parseFloat(e.target.value) : null }))}
+                                    placeholder="0.0"
+                                    className="bg-slate-50 border-slate-200 focus:ring-blue-500 focus:border-blue-500 font-mono"
+                                />
+                            </div>
+
                             {/* Switch Opérationnel - Design Carte */}
                             <div className={cn(
                                 "flex items-center justify-between p-4 rounded-xl border transition-all",
