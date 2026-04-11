@@ -389,7 +389,7 @@ export const getIncompleteFlightLogs = async (pilotID: string, clubID: string) =
 
 // ─── Auto-création depuis les sessions passées ───
 
-function mapFlightType(ft: string | null): flightNature {
+export function mapFlightType(ft: string | null): flightNature {
     switch (ft) {
         case "TRAINING": return "INSTRUCTION";
         case "PRIVATE": return "LOCAL";

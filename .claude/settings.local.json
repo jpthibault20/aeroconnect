@@ -12,7 +12,9 @@
       "WebFetch(domain:www.legifrance.gouv.fr)",
       "WebFetch(domain:ffplum.fr)",
       "WebFetch(domain:www.aclatranchesurmer.fr)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vitest:*)"
     ]
   }
 }
