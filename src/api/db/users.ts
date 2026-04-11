@@ -61,6 +61,10 @@ export const createUser = async (dataUser: UserMin) => {
 }
 
 export const getAllUser = async (clubID: string) => {
+    const auth = await requireAuth();
+    if ('error' in auth) return { error: auth.error };
+    if (auth.user.clubID !== clubID) return { error: "Permissions insuffisantes" };
+
     try {
         const users = await prisma.user.findMany({
             where: {
@@ -122,6 +126,8 @@ export const getUser = async () => {
 
 
 export const addStudentToSession = async (sessionID: string, student: { id: string, firstName: string, lastName: string, planeId: string, email: string, phone: string }, timeOffset: number) => {
+    const auth = await requireAuth(MANAGEMENT_ROLES);
+    if ('error' in auth) return { error: auth.error };
 
     const nowDate = new Date();
     nowDate.setMinutes(nowDate.getMinutes() - timeOffset);
@@ -151,6 +157,10 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
         // Vérifications critiques
         if (!session) {
             return { error: "Session introuvable." };
+        }
+
+        if (session.clubID !== auth.user.clubID) {
+            return { error: "Permissions insuffisantes." };
         }
 
         if (student.planeId != "classroomSession" && student.planeId != "noPlane" && !plane?.operational) {

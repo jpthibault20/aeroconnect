@@ -292,8 +292,11 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
 };
 
 export const removeStudentFromSessionID = async (session: flight_sessions, timeZoneOffset: number, club: Club, user: User) => {
+    const auth = await requireAuth();
+    if ('error' in auth) return { error: auth.error };
+
     try {
-        // Validation précoce 
+        // Validation précoce
         if (!session || !session.sessionDateStart || !session.studentID || !session.pilotID) {
             return { error: "Session introuvable ou incomplète." };
         }
@@ -375,6 +378,9 @@ export const getSessionPlanes = async (sessionID: string) => {
 };
 
 export const studentRegistration = async (session: flight_sessions, student: User, planeID: string, club: Club, localTimeOffset: number, studentComment: string) => {
+    const auth = await requireAuth();
+    if ('error' in auth) return { error: auth.error };
+
     if (!session || !student || !planeID || !club) {
         return { error: "Une erreur est survenue (E_00x: paramètres invalides)" };
     }
@@ -466,6 +472,10 @@ export const studentRegistration = async (session: flight_sessions, student: Use
 };
 
 export const getHoursByMonth = async (clubID: string) => {
+    const auth = await requireAuth(ADMIN_ROLES);
+    if ('error' in auth) return [];
+    if (auth.user.clubID !== clubID) return [];
+
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
@@ -505,6 +515,10 @@ export const getHoursByMonth = async (clubID: string) => {
 };
 
 export const getHoursByInstructor = async (clubID: string) => {
+    const auth = await requireAuth(ADMIN_ROLES);
+    if ('error' in auth) return [];
+    if (auth.user.clubID !== clubID) return [];
+
     const currentYear = new Date().getFullYear();
 
     const sessions = await prisma.flight_sessions.findMany({
@@ -545,6 +559,10 @@ export const getHoursByInstructor = async (clubID: string) => {
 };
 
 export const getHoursByPlane = async (clubID: string) => {
+    const auth = await requireAuth(ADMIN_ROLES);
+    if ('error' in auth) return [];
+    if (auth.user.clubID !== clubID) return [];
+
     const currentYear = new Date().getFullYear();
 
     const sessions = await prisma.flight_sessions.findMany({
@@ -589,6 +607,10 @@ export const getHoursByPlane = async (clubID: string) => {
 };
 
 export const getHoursByStudent = async (clubID: string) => {
+    const auth = await requireAuth(ADMIN_ROLES);
+    if ('error' in auth) return [];
+    if (auth.user.clubID !== clubID) return [];
+
     const currentYear = new Date().getFullYear();
 
     const [sessions, students] = await Promise.all([

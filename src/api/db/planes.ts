@@ -115,6 +115,11 @@ export const updateOperationalByID = async (planeID: string, operational: boolea
     if ('error' in auth) return { error: auth.error };
 
     try {
+        const existing = await prisma.planes.findUnique({ where: { id: planeID } });
+        if (!existing || existing.clubID !== auth.user.clubID) {
+            return { error: 'Permissions insuffisantes' };
+        }
+
         await prisma.planes.update({
             where: { id: planeID },
             data: { operational }
@@ -182,6 +187,11 @@ export const updatePlane = async (plane: planes) => {
     if ('error' in auth) return { error: auth.error };
 
     try {
+        const existing = await prisma.planes.findUnique({ where: { id: plane.id } });
+        if (!existing || existing.clubID !== auth.user.clubID) {
+            return { error: 'Permissions insuffisantes' };
+        }
+
         await prisma.planes.update({
             where: { id: plane.id },
             data: {
