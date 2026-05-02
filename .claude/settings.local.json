@@ -14,7 +14,8 @@
       "WebFetch(domain:www.aclatranchesurmer.fr)",
       "Bash(npx next:*)",
       "Bash(npm install:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "PowerShell(npm install *)"
     ]
   }
 }
