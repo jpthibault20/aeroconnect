@@ -20,6 +20,11 @@ const SIGN_OVERRIDE_ROLES: userRole[] = [
 // Date d'entrée en vigueur de l'arrêté du 17 février 2025
 const REGULATION_START = new Date("2025-07-01");
 
+// Date de mise en prod du carnet de vol : les vols antérieurs sont auto-créés
+// déjà signés (historique non sollicitable), les vols postérieurs déclenchent
+// la popup normale.
+const LEGACY_SIGNED_BEFORE = new Date("2026-05-02");
+
 export interface CreateFlightLogInput {
     clubID: string;
     sessionID?: string;
@@ -383,6 +388,7 @@ export const getIncompleteFlightLogs = async (pilotID: string, clubID: string) =
                 clubID,
                 pilotSigned: false,
                 date: { lt: new Date() },
+                pilotFunction: { not: "EP" },
             },
             orderBy: { date: "desc" },
             take: 20,
@@ -496,6 +502,11 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
             const isNoPlane = session.studentPlaneID === "noPlane";
             const nature = await mapFlightType(session.flightType ?? session.student_type ?? null);
 
+            const isLegacy = session.sessionDateStart < LEGACY_SIGNED_BEFORE;
+            const legacySignFields = isLegacy
+                ? { pilotSigned: true, pilotSignedAt: new Date() }
+                : {};
+
             const basePlane = {
                 planeID: isClassroom || isNoPlane ? null : session.studentPlaneID,
                 planeRegistration: planeInfo?.immatriculation ?? (isClassroom ? "THEORIQUE" : isNoPlane ? "PERSO" : "N/A"),
@@ -528,6 +539,7 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
                     departureAirfield: defaultAirfield,
                     arrivalAirfield: defaultAirfield,
                     isManualEntry: false,
+                    ...legacySignFields,
                 });
             }
 
@@ -557,6 +569,7 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
                         departureAirfield: defaultAirfield,
                         arrivalAirfield: defaultAirfield,
                         isManualEntry: false,
+                        ...legacySignFields,
                     });
                 }
             }

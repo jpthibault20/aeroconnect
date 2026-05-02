@@ -16,6 +16,12 @@ ADD COLUMN     "startLocation" TEXT,
 DROP COLUMN "flightType",
 ADD COLUMN     "flightType" "NatureOfTheft";
 
+-- Backfill : toutes les sessions passées sont marquées TRAINING
+-- (équivalent de INSTRUCTION dans flightNature via mapFlightType)
+UPDATE "flight_sessions"
+SET "flightType" = 'TRAINING'::"NatureOfTheft"
+WHERE "sessionDateStart" < NOW();
+
 -- AlterTable
 ALTER TABLE "planes" ADD COLUMN     "hobbsTotal" DOUBLE PRECISION DEFAULT 0;
 
