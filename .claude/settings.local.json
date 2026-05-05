@@ -15,7 +15,11 @@
       "Bash(npx next:*)",
       "Bash(npm install:*)",
       "Bash(npx vitest:*)",
-      "PowerShell(npm install *)"
+      "PowerShell(npm install *)",
+      "Bash(npm --version)",
+      "Bash(where.exe fnm *)",
+      "Bash(where.exe node *)",
+      "Bash(npm view *)"
     ]
   }
 }
