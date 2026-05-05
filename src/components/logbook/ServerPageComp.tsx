@@ -1,5 +1,3 @@
-'use server';
-
 import React from 'react';
 import LogbookPageComponent from './LogbookPageComponent';
 import InitialLoading from '@/components/InitialLoading';

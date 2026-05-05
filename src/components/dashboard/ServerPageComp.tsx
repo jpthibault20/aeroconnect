@@ -1,5 +1,3 @@
-"use server";
-
 import { getAllUserRequestedClubID } from '@/api/db/club';
 import { getHoursByInstructor, getHoursByMonth, getHoursByPlane, getHoursByStudent } from '@/api/db/sessions';
 import prisma from '@/api/prisma';

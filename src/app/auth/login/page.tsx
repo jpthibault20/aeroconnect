@@ -1,4 +1,3 @@
-"use server"
 import { Login } from '@/components/auth/login'
 import React, { Suspense } from 'react'
 
