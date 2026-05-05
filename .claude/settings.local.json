@@ -19,7 +19,9 @@
       "Bash(npm --version)",
       "Bash(where.exe fnm *)",
       "Bash(where.exe node *)",
-      "Bash(npm view *)"
+      "Bash(npm view *)",
+      "Bash(npm ls *)",
+      "Bash(npm run *)"
     ]
   }
 }

@@ -12,11 +12,11 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { planes, User, userRole } from '@prisma/client';
 import { CiFilter } from "react-icons/ci";
 import { ChevronDown } from "lucide-react";
-import { Popover, PopoverTrigger, PopoverContent } from "@nextui-org/popover";
-import { Button } from "@nextui-org/button";
+import { Popover, PopoverTrigger, PopoverContent } from "@heroui/popover";
+import { Button } from "@heroui/button";
 import { Label } from '@radix-ui/react-label';
-import { DatePicker } from "@nextui-org/date-picker";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/dropdown";
+import { DatePicker } from "@heroui/date-picker";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { DateValue } from "@internationalized/date";
 import { StatusType } from './FlightsPageComponent';
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -71,7 +71,7 @@ const Filter = ({
                             className="max-w-[284px]"
                             aria-labelledby="date-label"
                             aria-label="Select a date"
-                            onChange={setFilterDate}
+                            onChange={(v) => setFilterDate(v)}
                         />
                         <div className="flex w-full justify-end">
                             <button onClick={() => setFilterDate(null)} className="text-xs">
