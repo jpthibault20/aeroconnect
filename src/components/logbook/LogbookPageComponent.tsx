@@ -19,6 +19,7 @@ import { BookOpen, Plane, FileDown } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
 import { PilotLogbookDocument } from "@/components/pdf/exportPilotLogbook";
 import { AircraftLogbookDocument } from "@/components/pdf/exportAircraftLogbook";
+import { dedupAircraftLogs } from "./dedupAircraftLogs";
 
 interface Props {
     logsProp: flight_logs[];
@@ -97,7 +98,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                 filename = `carnet_de_vol_${currentUser.lastName}_${selectedYear}.pdf`;
             } else {
                 const plane = planesProp.find((p) => p.id === selectedPlaneForExport);
-                const planeLogs = visibleLogs.filter((l) => l.planeID === selectedPlaneForExport);
+                const planeLogs = dedupAircraftLogs(visibleLogs.filter((l) => l.planeID === selectedPlaneForExport));
                 blob = await pdf(
                     <AircraftLogbookDocument
                         logs={planeLogs}
