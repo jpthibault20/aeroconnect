@@ -62,7 +62,6 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                 });
             }
         } catch (error) {
-            console.error(error);
             toast({ title: "Erreur technique", variant: "destructive" });
         } finally {
             setLoading(false);
@@ -93,7 +92,6 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
             }
         } catch (error) {
             setPlaneState(prev => ({ ...prev, operational: !newState }));
-            console.error(error);
         } finally {
             setLoading(false);
         }
@@ -137,7 +135,14 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                 </span>
             </TableCell>
 
-            {/* 5. Status Column */}
+            {/* 5. Heures moteur Column (Hidden on mobile) */}
+            <TableCell className="text-center text-slate-500 hidden sm:table-cell">
+                <span className="text-xs font-mono">
+                    {planeState.hobbsTotal != null ? `${planeState.hobbsTotal}h` : "—"}
+                </span>
+            </TableCell>
+
+            {/* 6. Status Column */}
             {canViewStatus && (
                 <TableCell className="text-center">
                     {canManage ? (

@@ -86,7 +86,6 @@ const NewClub = ({ setNewClub }: Props) => {
                 window.location.href = '/calendar?clubID=' + data.id;
             }
         } catch (error) {
-            console.error(error);
             setFormError("Une erreur technique est survenue.");
         } finally {
             setLoading(false);
@@ -95,8 +94,8 @@ const NewClub = ({ setNewClub }: Props) => {
 
     const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
 
-    const onSubmitOTP = () => {
-        if (codeNewClubIsValid(Number(code))) {
+    const onSubmitOTP = async () => {
+        if (await codeNewClubIsValid(Number(code))) {
             setAuthorizedCreateNewClub(true);
             setErrorOTP("");
         } else {

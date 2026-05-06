@@ -28,7 +28,6 @@ const getPlaneName = (planeID: string, planes: planes[]) => {
 const getWeeksBetween = (startInput: Date, endInput: Date): Date[][] => {
     // Vérifier que les dates sont valides avant de procéder
     if (isNaN(startInput.getTime()) || isNaN(endInput.getTime())) {
-        console.error('Dates invalides fournies à getWeeksBetween', { startInput, endInput });
         return []; // Retourner un tableau vide en cas de dates invalides
     }
 
@@ -96,7 +95,6 @@ export const MyDocument = ({ instructorIDs, flightsSessions, planes, startDate, 
 
     // Vérifier que les dates sont valides
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        console.error('Dates invalides fournies au composant MyDocument', { startDate, endDate });
         return <Document><Page size="A4"><Text>Erreur: dates invalides</Text></Page></Document>;
     }
 

@@ -124,7 +124,6 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                             sendNotificationSudentRemoveForPilot(pilot?.email as string, session.sessionDateStart, endSessionDate, currentClub as Club),
                         ]);
                     } catch (notificationError) {
-                        console.error("Erreur notif:", notificationError);
                     }
                 }
             }
@@ -140,7 +139,6 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
             setIsOpen(false);
 
         } catch (error) {
-            console.error("Erreur:", error);
             setError("Une erreur est survenue.");
         } finally {
             setLoading(false);

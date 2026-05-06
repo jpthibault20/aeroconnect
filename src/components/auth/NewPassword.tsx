@@ -51,7 +51,6 @@ const NewPassword = () => {
             // Réinitialiser le formulaire après une soumission réussie
             reset();
         } catch (error) {
-            console.error("Error during password update:", error);
         } finally {
             setLoading(false); // Désactiver le chargement après la soumission
         }

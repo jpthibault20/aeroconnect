@@ -44,7 +44,6 @@ const ForgotPassword = () => {
             forgotPassword(formData);
 
         } catch (error) {
-            console.log(error);
         } finally {
             reset();
 

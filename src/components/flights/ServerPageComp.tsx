@@ -1,5 +1,3 @@
-'use server';
-
 import React from 'react';
 import FlightsPageComponent from '@/components/flights/FlightsPageComponent';
 import InitialLoading from '@/components/InitialLoading';

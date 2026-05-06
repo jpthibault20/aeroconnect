@@ -16,7 +16,7 @@ const Navigation = ({ children, clubsProp }: props) => {
                 {children}
             </div>
 
-            <NavBar />
+            <NavBar clubsProp={clubsProp} />
         </div>
     )
 }

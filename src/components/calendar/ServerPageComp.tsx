@@ -1,5 +1,3 @@
-'use server';
-
 import React from 'react';
 import PageComponent from '@/components/calendar/PageComponent';
 import NoClubID from '@/components/NoClubID';

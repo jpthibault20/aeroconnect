@@ -40,7 +40,8 @@ const NewPlane = ({ setPlanes }: Props) => {
         immatriculation: "",
         clubID: currentUser?.clubID ?? "",
         classes: 3,
-        operational: true
+        operational: true,
+        hobbsTotal: null
     };
 
     const [plane, setPlane] = useState<planes>(initialPlaneState);
@@ -78,7 +79,6 @@ const NewPlane = ({ setPlanes }: Props) => {
                 setError("Une erreur inconnue est survenue.");
             }
         } catch (error) {
-            console.error(error);
             setError("Une erreur est survenue lors de l'envoi des données.");
         } finally {
             setLoading(false);

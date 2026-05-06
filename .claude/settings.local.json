@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(find /c/Users/tjean/Documents/GitHub/aeroconnect/src -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec wc -l {} +)",
+      "Bash(git -C /c/Users/tjean/Documents/GitHub/aeroconnect log --oneline)",
+      "Bash(git:*)",
+      "Bash(xargs grep:*)",
+      "Bash(grep:*)",
+      "Bash(npx tsc:*)",
+      "WebSearch",
+      "WebFetch(domain:www.legifrance.gouv.fr)",
+      "WebFetch(domain:ffplum.fr)",
+      "WebFetch(domain:www.aclatranchesurmer.fr)",
+      "Bash(npx next:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vitest:*)",
+      "PowerShell(npm install *)",
+      "Bash(npm --version)",
+      "Bash(where.exe fnm *)",
+      "Bash(where.exe node *)",
+      "Bash(npm view *)",
+      "Bash(npm ls *)",
+      "Bash(npm run *)"
+    ]
+  }
+}

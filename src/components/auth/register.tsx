@@ -48,7 +48,6 @@ const Register = () => {
             await signup(formData);
 
         } catch (error) {
-            console.log(error);
         } finally {
             reset();
             setLoading(false);

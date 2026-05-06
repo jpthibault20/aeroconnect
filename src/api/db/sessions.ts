@@ -4,6 +4,10 @@ import { Club, flight_sessions, User, userRole } from '@prisma/client';
 import { differenceInMinutes, isBefore } from 'date-fns';
 import prisma from '../prisma';
 import { convertMinutesToHours } from '../global function/dateServeur';
+import { requireAuth } from './users';
+
+const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
+const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 export interface interfaceSessions {
     instructorId: string;
@@ -119,8 +123,16 @@ export const newSession = async (sessionData: interfaceSessions, instructor: Use
         return { error: "L'instructeur est obligatoire" };
     }
 
-    if (instructor.role === "MANAGER") {
-        return { error: "L'instructeur n'est pas valide" };
+    const auth = await requireAuth(MANAGEMENT_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
+    // ADMIN/OWNER/MANAGER peuvent créer pour n'importe quel instructeur du même club
+    const isManager = ADMIN_ROLES.includes(auth.user.role);
+    if (!isManager && auth.user.id !== instructor.id) {
+        return { error: "Non autorisé" };
+    }
+    if (auth.user.clubID !== instructor.clubID) {
+        return { error: "Non autorisé" };
     }
 
     const baseSessionDateStart = new Date(Date.UTC(
@@ -203,8 +215,7 @@ export const newSession = async (sessionData: interfaceSessions, instructor: Use
         }
 
         return { success: "Les sessions ont été créées !", sessions: createdSessions };
-    } catch (error) {
-        console.error('Error creating flight sessions:', error);
+    } catch {
         return { error: "Erreur lors de la création des sessions de vol" };
     }
 };
@@ -223,8 +234,7 @@ export const getAllSessions = async (clubID: string, monthSelected: Date) => {
         });
 
         return sessions;
-    } catch (error) {
-        console.error('Error getting flight sessions:', error);
+    } catch {
         return { error: "Erreur lors de la récupération des sessions de vol" };
     }
 
@@ -242,8 +252,7 @@ export const getAllFutureSessions = async (clubID: string) => {
         })
 
         return sessions;
-    } catch (error) {
-        console.error('Error getting flight sessions:', error);
+    } catch {
         return { error: "Erreur lors de la récupération des sessions de vol" };
     }
 
@@ -258,34 +267,36 @@ export const getPlanes = async (clubID: string) => {
         })
 
         return planes;
-    } catch (error) {
-        console.error('Error getting planes:', error);
+    } catch {
         return { error: "Erreur lors de la récupération des avions" };
     }
 
 };
 
 export const removeSessionsByID = async (sessionIDs: string[]) => {
+    const auth = await requireAuth(MANAGEMENT_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
     try {
-        // Supprimer les sessions après récupération des informations
         await prisma.flight_sessions.deleteMany({
             where: {
                 id: { in: sessionIDs },
+                clubID: auth.user.clubID as string,
             },
         });
 
-
-
         return { success: "Les sessions ont été supprimées !" };
-    } catch (error) {
-        console.error('Error deleting flight sessions:', error);
+    } catch {
         return { error: "Erreur lors de la suppression des sessions de vol" };
     }
 };
 
 export const removeStudentFromSessionID = async (session: flight_sessions, timeZoneOffset: number, club: Club, user: User) => {
+    const auth = await requireAuth();
+    if ('error' in auth) return { error: auth.error };
+
     try {
-        // Validation précoce 
+        // Validation précoce
         if (!session || !session.sessionDateStart || !session.studentID || !session.pilotID) {
             return { error: "Session introuvable ou incomplète." };
         }
@@ -325,8 +336,7 @@ export const removeStudentFromSessionID = async (session: flight_sessions, timeZ
         });
 
         return { success: "L'élève a été désinscrit de la session !" };
-    } catch (error) {
-        console.error('Error deleting flight session:', error);
+    } catch {
         return { error: "Erreur lors de la suppression de la session de vol" };
     }
 };
@@ -362,13 +372,15 @@ export const getSessionPlanes = async (sessionID: string) => {
 
 
         return planes; // Retourne le tableau d'avions avec `id` et `name`
-    } catch (error) {
-        console.error('Error getting session planes:', error);
+    } catch {
         return [];
     }
 };
 
 export const studentRegistration = async (session: flight_sessions, student: User, planeID: string, club: Club, localTimeOffset: number, studentComment: string) => {
+    const auth = await requireAuth();
+    if ('error' in auth) return { error: auth.error };
+
     if (!session || !student || !planeID || !club) {
         return { error: "Une erreur est survenue (E_00x: paramètres invalides)" };
     }
@@ -453,14 +465,17 @@ export const studentRegistration = async (session: flight_sessions, student: Use
         // Retour rapide de succès
         return { success: "Étudiant inscrit avec succès à la session." };
 
-    } catch (error) {
-        console.error("Erreur lors de l'inscription de l'étudiant :", error);
+    } catch {
         return { error: "Une erreur est survenue lors de l'inscription de l'étudiant." };
     }
 
 };
 
 export const getHoursByMonth = async (clubID: string) => {
+    const auth = await requireAuth(ADMIN_ROLES);
+    if ('error' in auth) return [];
+    if (auth.user.clubID !== clubID) return [];
+
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
@@ -500,6 +515,10 @@ export const getHoursByMonth = async (clubID: string) => {
 };
 
 export const getHoursByInstructor = async (clubID: string) => {
+    const auth = await requireAuth(ADMIN_ROLES);
+    if ('error' in auth) return [];
+    if (auth.user.clubID !== clubID) return [];
+
     const currentYear = new Date().getFullYear();
 
     const sessions = await prisma.flight_sessions.findMany({
@@ -540,6 +559,10 @@ export const getHoursByInstructor = async (clubID: string) => {
 };
 
 export const getHoursByPlane = async (clubID: string) => {
+    const auth = await requireAuth(ADMIN_ROLES);
+    if ('error' in auth) return [];
+    if (auth.user.clubID !== clubID) return [];
+
     const currentYear = new Date().getFullYear();
 
     const sessions = await prisma.flight_sessions.findMany({
@@ -584,6 +607,10 @@ export const getHoursByPlane = async (clubID: string) => {
 };
 
 export const getHoursByStudent = async (clubID: string) => {
+    const auth = await requireAuth(ADMIN_ROLES);
+    if ('error' in auth) return [];
+    if (auth.user.clubID !== clubID) return [];
+
     const currentYear = new Date().getFullYear();
 
     const [sessions, students] = await Promise.all([
@@ -642,8 +669,16 @@ export const updateCommentSession = async(session: flight_sessions, pilotComment
         return { error: "Une erreur est survenue (E_001: session is undefined)" };
     }
 
+    const auth = await requireAuth();
+    if ('error' in auth) return { error: auth.error };
+
+    const isManager = ADMIN_ROLES.includes(auth.user.role);
+    const isInvolved = auth.user.id === session.pilotID || auth.user.id === session.studentID;
+    if (!isManager && !isInvolved) {
+        return { error: "Permissions insuffisantes" };
+    }
+
     try {
-        // Mise à jour des commentaires
         await prisma.flight_sessions.update({
             where: { id: session.id },
             data: {
@@ -653,8 +688,7 @@ export const updateCommentSession = async(session: flight_sessions, pilotComment
         });
 
         return { success: "Les notes ont été mises à jour avec succès !" };
-    } catch (error) {
-        console.error('Error updating comment:', error);
+    } catch {
         return { error: "Erreur lors de la mise à jour des commentaires" };
     }
 };

@@ -15,7 +15,7 @@ import { IoIosWarning } from "react-icons/io"
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useCurrentClub } from '@/app/context/useCurrentClub'
-import { CircularProgress } from "@nextui-org/progress"
+import { CircularProgress } from "@heroui/progress"
 import {
     PlusIcon,
     CalendarIcon,
@@ -283,7 +283,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                 setIsPopoverOpen(false);
             }
         } catch (error) {
-            console.error(error);
             setError("Une erreur technique est survenue.");
         } finally {
             setLoading(false);

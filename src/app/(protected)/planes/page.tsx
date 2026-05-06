@@ -1,5 +1,3 @@
-'use server';
-
 import LoadingPage from '@/components/LoadingPage';
 import ServerPage from '@/components/plane/ServerPageComp';
 import React, { Suspense } from 'react';

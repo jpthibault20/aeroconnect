@@ -53,7 +53,6 @@ export const getFreePlanesUsers = (
 ) => {
     // Vérifier que les props sont valides
     if (!Array.isArray(usersProp) || !Array.isArray(planesProp)) {
-        console.error('Les données des utilisateurs ou des avions ne sont pas valides.');
         return { students: [], planes: [] };
     }
 

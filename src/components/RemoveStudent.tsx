@@ -96,7 +96,6 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
                 });
             }
         } catch (error) {
-            console.error(error);
             toast({
                 title: "Erreur technique",
                 description: "Impossible de retirer l'élève pour le moment.",

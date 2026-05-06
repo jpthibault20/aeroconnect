@@ -9,53 +9,62 @@ datasource db {
 }
 
 model User {
-  id            String   @id @unique @default(uuid())
-  email         String   @unique
-  clubID        String?
-  firstName     String
-  lastName      String
-  phone         String?
-  restricted    Boolean  @default(false)
-  role          userRole @default(USER)
-  country       String?
-  zipCode       String?
-  adress        String?
-  city          String?
-  clubIDRequest String?
-  classes       Int[]    @default([])
-  canSubscribeWithoutPlan Boolean @default(false)
+  id                      String   @id @unique @default(uuid())
+  email                   String   @unique
+  clubID                  String?
+  firstName               String
+  lastName                String
+  phone                   String?
+  restricted              Boolean  @default(false)
+  role                    userRole @default(USER)
+  country                 String?
+  zipCode                 String?
+  adress                  String?
+  city                    String?
+  clubIDRequest           String?
+  classes                 Int[]    @default([])
+  canSubscribeWithoutPlan Boolean  @default(false)
 }
 
 model flight_sessions {
-  id                      String      @id @unique @default(uuid())
+  id                      String          @id @unique @default(uuid())
   clubID                  String
-  sessionDateStart        DateTime    @db.Timestamptz(6)
+  sessionDateStart        DateTime        @db.Timestamptz(6)
   sessionDateDuration_min Int
-  flightType              flightType?
   pilotID                 String
   pilotFirstName          String
   pilotLastName           String
-  pilotComment            String?
   studentID               String?
   studentFirstName        String?
   studentLastName         String?
-  studentEmail            String?
-  studentPhone            String?
   student_type            flightType?
-  studentComment          String?
-  finalReccurence         DateTime?   @db.Timestamptz(6)
+  finalReccurence         DateTime?       @db.Timestamptz(6)
   planeID                 String[]
   studentPlaneID          String?
-  classes                 Int[]       @default([])
+  classes                 Int[]           @default([])
+  studentEmail            String?
+  studentPhone            String?
+  pilotComment            String?
+  studentComment          String?
+  endLocation             String?
+  hobbsEnd                Float?
+  hobbsStart              Float?
+  landings                Int?            @default(1)
+  startLocation           String?
+  flightType              NatureOfTheft?
+  natureOfTheft           NatureOfTheft[] @default([])
+  flightComment           String?
 }
 
 model planes {
-  id              String  @id @unique @default(uuid())
+  id              String            @id @unique @default(uuid())
   clubID          String
   name            String
   immatriculation String
-  operational     Boolean @default(true)
-  classes         Int     @default(3)
+  operational     Boolean           @default(true)
+  classes         Int               @default(3)
+  hobbsTotal      Float?            @default(0)
+  MaintenanceTask MaintenanceTask[]
 }
 
 model Club {
@@ -65,22 +74,36 @@ model Club {
   City                        String?
   Country                     String?
   ZipCode                     String?
+  defaultAirfield             String?
   OwnerId                     String[]
   DaysOn                      String[]
-  HoursOn                     Int[]
   SessionDurationMin          Int      @default(60)
   AvailableMinutes            String[] @default([])
+  HoursOn                     Int[]
   classes                     Int[]    @default([1, 2, 3, 4, 5, 6])
-  userCanSubscribe            Boolean  @default(true)
   preSubscribe                Boolean  @default(false)
-  timeDelaySubscribeminutes   Int      @default(0)
-  userCanUnsubscribe          Boolean  @default(true)
   preUnsubscribe              Boolean  @default(false)
+  timeDelaySubscribeminutes   Int      @default(0)
   timeDelayUnsubscribeminutes Int      @default(0)
+  userCanSubscribe            Boolean  @default(true)
+  userCanUnsubscribe          Boolean  @default(true)
   firstNameContact            String?
   lastNameContact             String?
-  phoneContact                String?
   mailContact                 String?
+  phoneContact                String?
+}
+
+model MaintenanceTask {
+  id                 String   @id
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+  title              String
+  intervalHours      Float?
+  intervalMonths     Int?
+  lastPerformedDate  DateTime
+  lastPerformedHobbs Float
+  planeId            String
+  planes             planes   @relation(fields: [planeId], references: [id], onDelete: Cascade)
 }
 
 enum userRole {
@@ -89,12 +112,88 @@ enum userRole {
   PILOT
   OWNER
   ADMIN
-  MANAGER
   INSTRUCTOR
+  MANAGER
 }
 
 enum flightType {
   FIRST_FLIGHT
   INITATION
   TRAINING
+}
+
+enum NatureOfTheft {
+  TRAINING
+  PRIVATE
+  SIGHTSEEING
+  DISCOVERY
+  EXAM
+}
+
+enum pilotFunction {
+  EP
+  P
+  I
+}
+
+enum flightNature {
+  INSTRUCTION
+  LOCAL
+  NAVIGATION
+  VLO
+  VLD
+  EXAM
+  FIRST_FLIGHT
+  BAPTEME
+  OTHER
+}
+
+model flight_logs {
+  id                  String         @id @default(uuid())
+  clubID              String
+  sessionID           String?
+
+  date                DateTime       @db.Date
+  planeID             String?
+  planeRegistration   String
+  planeName           String
+  planeClass          Int?
+
+  pilotID             String
+  pilotFirstName      String
+  pilotLastName       String
+  pilotFunction       pilotFunction
+
+  instructorID        String?
+  instructorFirstName String?
+  instructorLastName  String?
+  studentID           String?
+  studentFirstName    String?
+  studentLastName     String?
+
+  flightNature        flightNature
+  durationMinutes     Int
+  takeoffs            Int            @default(1)
+  landings            Int            @default(1)
+
+  timeDC              Int            @default(0)
+  timePIC             Int            @default(0)
+  timeInstructor      Int            @default(0)
+
+  departureAirfield   String?
+  arrivalAirfield     String?
+
+  hobbsStart          Float?
+  hobbsEnd            Float?
+  fuelAdded           Float?
+  oilAdded            Float?
+  anomalies           String?
+
+  pilotSigned         Boolean        @default(false)
+  pilotSignedAt       DateTime?      @db.Timestamptz(6)
+  remarks             String?
+
+  createdAt           DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime       @updatedAt @db.Timestamptz(6)
+  isManualEntry       Boolean        @default(false)
 }

@@ -1,4 +1,3 @@
-"use server"
 /**
  * @file Page.tsx
  * @brief A React component that serves as a container for the StudentsPage.

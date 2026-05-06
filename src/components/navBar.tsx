@@ -6,24 +6,39 @@ import { userRole } from '@prisma/client'
 import React, { useState, useEffect } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet'
 import { Button } from './ui/button'
-import { LogOut, Menu, X } from 'lucide-react'
+import { LogOut, Menu, X, ChevronDown } from 'lucide-react'
 import { signOut } from '@/app/auth/login/action'
+import { updateUserClub } from '@/api/db/users'
 import Link from 'next/link'
 import Image from 'next/image'
 import packageJson from "../../package.json";
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { getAllUserRequestedClubID } from "@/api/db/club";
-import { usePathname, useSearchParams } from 'next/navigation' // 1. Import du hook pour l'URL active
-import { cn } from '@/lib/utils' // 2. Import de cn pour gérer les classes conditionnelles
+import { usePathname, useSearchParams } from 'next/navigation'
+import { cn } from '@/lib/utils'
+import { Club } from '@prisma/client'
 
-const NavBar = () => {
+interface NavBarProps {
+    clubsProp: Club[]
+}
+
+const NavBar = ({ clubsProp }: NavBarProps) => {
     const { currentUser } = useCurrentUser()
     const [isOpen, setIsOpen] = useState(false)
     const [requestCount, setRequestCount] = useState(0);
-    const pathname = usePathname(); // 3. Récupération du chemin actuel
+    const pathname = usePathname();
     const [refreshTrigger, setRefreshTrigger] = React.useState(0);
     const searchParams = useSearchParams();
     const clubID = searchParams.get("clubID");
+    const [clubForAdmin, setClubForAdmin] = useState<string | null>(clubID);
 
     // --- EFFECT: Récupérer les notifications ---
     useEffect(() => {
@@ -42,7 +57,6 @@ const NavBar = () => {
                         setRequestCount(requests.length);
                     }
                 } catch (error) {
-                    console.error("Erreur lors du chargement des notifications:", error);
                 }
             }
         };
@@ -68,6 +82,15 @@ const NavBar = () => {
         };
 
     }, [clubID, currentUser, refreshTrigger]);
+
+    const handleClubChange = async (newClubID: string) => {
+        setClubForAdmin(newClubID);
+        setIsOpen(false);
+        if (currentUser?.id) {
+            await updateUserClub(currentUser.id, newClubID);
+            window.location.href = `/calendar?clubID=${newClubID}`;
+        }
+    };
 
     const filteredLinks = navigationLinks.filter(link =>
         link.roles.includes(currentUser?.role as userRole)
@@ -133,6 +156,38 @@ const NavBar = () => {
                             </div>
                         </div>
                     </SheetHeader>
+
+                    {/* --- SECTION ADMIN : SELECTEUR CLUB --- */}
+                    {currentUser?.role === userRole.ADMIN && (
+                        <div className="px-6 pb-4">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all text-left">
+                                        <div className="flex flex-col items-start overflow-hidden">
+                                            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Club actif</span>
+                                            <span className="font-semibold text-slate-800 text-sm truncate w-full">
+                                                {clubForAdmin || "Sélectionner"}
+                                            </span>
+                                        </div>
+                                        <ChevronDown size={16} className="text-slate-400 flex-shrink-0" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-[260px]">
+                                    <DropdownMenuLabel className="text-slate-500">Changer de club</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {clubsProp.map((club) => (
+                                        <DropdownMenuItem
+                                            key={club.id}
+                                            onClick={() => handleClubChange(club.id)}
+                                            className="cursor-pointer"
+                                        >
+                                            {club.id}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    )}
 
                     <div className="flex-1 px-4 overflow-hidden flex flex-col">
                         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest px-4 mb-2">Menu</h3>

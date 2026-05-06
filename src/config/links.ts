@@ -1,5 +1,5 @@
 import { userRole } from "@prisma/client";
-import { BetweenHorizontalStart, CalendarDays, Plane, GraduationCap, User, ChartLine } from 'lucide-react'
+import { BetweenHorizontalStart, BookOpen, CalendarDays, Plane, GraduationCap, User, ChartLine } from 'lucide-react'
 
 type Role = userRole
 
@@ -9,7 +9,7 @@ interface NavLink {
     icon: React.ElementType;
     roles: Role[];
 }
-export const indexLinkPlane = 3;
+export const indexLinkPlane = 4;
 export const indexLinkDashboard = 1;
 
 export const navigationLinks: NavLink[] = [
@@ -30,6 +30,12 @@ export const navigationLinks: NavLink[] = [
         path: "/flights",
         icon: BetweenHorizontalStart, // Icône JSX
         roles: ["USER", "STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"],
+    },
+    {
+        name: "Carnet de vol",
+        path: "/logbook",
+        icon: BookOpen,
+        roles: ["MANAGER", "OWNER", "ADMIN", "INSTRUCTOR", "STUDENT"],
     },
     {
         name: "Avions",

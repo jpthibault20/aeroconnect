@@ -4,6 +4,7 @@ import { flight_sessions, planes, User as PrismaUser } from '@prisma/client'
 import SessionPopup from '@/components/SessionPopup'
 import { useEffect, useState } from 'react'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
+import { formatSessionTime } from '@/api/global function/dateServeur'
 
 interface SessionProps {
     PlaneProps: planes[]
@@ -46,10 +47,7 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
     const isBooked = !!session.studentID;
     const noteCount = (session.pilotComment ? 1 : 0) + (session.studentComment ? 1 : 0);
 
-    // Formatage compact de l'heure
-    const formatTime = (date: Date) => {
-        return `${date.getUTCHours().toString().padStart(2, '0')}:${date.getUTCMinutes().toString().padStart(2, '0')}`;
-    };
+    const formatTime = formatSessionTime;
 
     return (
         <SessionPopup

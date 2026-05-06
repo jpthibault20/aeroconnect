@@ -7,7 +7,7 @@ import {
     ModalBody,
     ModalFooter,
     useDisclosure,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import InputClasses from '../InputClasses';
