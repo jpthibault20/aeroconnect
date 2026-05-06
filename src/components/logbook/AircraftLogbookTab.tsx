@@ -5,7 +5,6 @@ import { flight_logs, planes } from "@prisma/client";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
 import SignFlightLogButton from "./SignFlightLogButton";
 import LogbookFilter from "./LogbookFilter";
-import { dedupAircraftLogs } from "./dedupAircraftLogs";
 import { Button } from "@/components/ui/button";
 import {
     Select,
@@ -48,7 +47,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange 
     const [page, setPage] = useState(0);
 
     const planeLogs = useMemo(() => {
-        let filtered = dedupAircraftLogs(logsProp);
+        let filtered = logsProp;
         if (selectedPlaneID !== "ALL") {
             filtered = filtered.filter((l) => l.planeID === selectedPlaneID);
         }

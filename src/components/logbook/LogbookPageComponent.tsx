@@ -19,7 +19,7 @@ import { BookOpen, Plane, FileDown } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
 import { PilotLogbookDocument } from "@/components/pdf/exportPilotLogbook";
 import { AircraftLogbookDocument } from "@/components/pdf/exportAircraftLogbook";
-import { dedupAircraftLogs } from "./dedupAircraftLogs";
+import { mergeSessionLogs } from "./mergeSessionLogs";
 
 interface Props {
     logsProp: flight_logs[];
@@ -47,25 +47,25 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
         currentUser?.role === userRole.MANAGER ||
         currentUser?.role === userRole.INSTRUCTOR;
 
-    // Filter logs based on role
+    // Filter logs based on role, then merge each session's I+EP pair into a
+    // single row so a flight is counted once (totaux et compteur cohérents).
     const visibleLogs = useMemo(() => {
         if (!currentUser) return [];
+        let filtered: flight_logs[];
         if (
             currentUser.role === userRole.STUDENT ||
-            currentUser.role === userRole.PILOT
+            currentUser.role === userRole.PILOT ||
+            currentUser.role === userRole.INSTRUCTOR
         ) {
-            return logs.filter((l) => l.pilotID === currentUser.id);
+            // Carnet personnel : un seul log par vol (le sien). L'instructeur
+            // accède aux vols de ses élèves via le filtre nom (qui matche
+            // pilotID ou studentID).
+            filtered = logs.filter((l) => l.pilotID === currentUser.id);
+        } else {
+            // ADMIN / OWNER / MANAGER : tout le club
+            filtered = logs;
         }
-        if (currentUser.role === userRole.INSTRUCTOR) {
-            // Instructor sees own logs + logs where they are the instructor
-            return logs.filter(
-                (l) =>
-                    l.pilotID === currentUser.id ||
-                    l.instructorID === currentUser.id
-            );
-        }
-        // ADMIN / OWNER / MANAGER: see all
-        return logs;
+        return mergeSessionLogs(filtered);
     }, [logs, currentUser]);
 
     // Build year options from logs
@@ -98,7 +98,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                 filename = `carnet_de_vol_${currentUser.lastName}_${selectedYear}.pdf`;
             } else {
                 const plane = planesProp.find((p) => p.id === selectedPlaneForExport);
-                const planeLogs = dedupAircraftLogs(visibleLogs.filter((l) => l.planeID === selectedPlaneForExport));
+                const planeLogs = visibleLogs.filter((l) => l.planeID === selectedPlaneForExport);
                 blob = await pdf(
                     <AircraftLogbookDocument
                         logs={planeLogs}
