@@ -1,7 +1,7 @@
 {
   "name": "aeroconnect",
-  "version": "2.0",
-  "date": "Decembre 2025",
+  "version": "3.0",
+  "date": "Mai 2026",
   "description": "A Next.js app for managing flights and students",
   "private": true,
   "scripts": {
