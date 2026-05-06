@@ -68,11 +68,15 @@ const PilotLogbookTab = ({ logs: logsProp, users }: Props) => {
     // signature, pas de colonne "signé".
     const isStudent = currentUser?.role === userRole.STUDENT;
 
-    // Filter logs by selected pilot
+    // Filter logs by selected pilot — match aussi sur l'élève pour qu'un nom
+    // sélectionné dans la liste retrouve les vols où la personne était élève
+    // (et pas seulement pilote/instructeur).
     const pilotLogs = useMemo(() => {
         let filtered = logsProp;
         if (selectedPilotID !== "ALL") {
-            filtered = filtered.filter((l) => l.pilotID === selectedPilotID);
+            filtered = filtered.filter(
+                (l) => l.pilotID === selectedPilotID || l.studentID === selectedPilotID
+            );
         }
         if (natureFilter) {
             filtered = filtered.filter((l) => l.flightNature === natureFilter);
@@ -90,9 +94,13 @@ const PilotLogbookTab = ({ logs: logsProp, users }: Props) => {
     const goNext = useCallback(() => setPage((p) => Math.min(p + 1, totalPages - 1)), [totalPages]);
     const goPrev = useCallback(() => setPage((p) => Math.max(p - 1, 0)), []);
 
-    // Unique pilots from logs for dropdown
+    // Unique pilots + élèves from logs for dropdown
     const pilotsInLogs = useMemo(() => {
-        const ids = new Set(logsProp.map((l) => l.pilotID));
+        const ids = new Set<string>();
+        for (const l of logsProp) {
+            ids.add(l.pilotID);
+            if (l.studentID) ids.add(l.studentID);
+        }
         return users.filter((u) => ids.has(u.id));
     }, [logsProp, users]);
 
@@ -142,10 +150,10 @@ const PilotLogbookTab = ({ logs: logsProp, users }: Props) => {
                         onValueChange={setSelectedPilotID}
                     >
                         <SelectTrigger className="w-full sm:w-[220px] bg-white border-slate-200 focus:ring-[#774BBE]">
-                            <SelectValue placeholder="Tous les pilotes" />
+                            <SelectValue placeholder="Tous les pilotes / eleves" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL">Tous les pilotes</SelectItem>
+                            <SelectItem value="ALL">Tous les pilotes / eleves</SelectItem>
                             {pilotsInLogs.map((u) => (
                                 <SelectItem key={u.id} value={u.id}>
                                     {u.firstName} {u.lastName}

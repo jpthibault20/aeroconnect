@@ -22,7 +22,8 @@
       "Bash(npm view *)",
       "Bash(npm ls *)",
       "Bash(npm run *)",
-      "Bash(npx prisma *)"
+      "Bash(npx prisma *)",
+      "Bash(npx eslint *)"
     ]
   }
 }
