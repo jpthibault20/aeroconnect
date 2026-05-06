@@ -3,11 +3,13 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { flight_logs, User, userRole } from "@prisma/client";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
+import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
 import RunningTotalsCard from "./RunningTotalsCard";
 import SignFlightLogButton from "./SignFlightLogButton";
 import LogbookFilter from "./LogbookFilter";
 import CompleteFlightDialog from "./CompleteFlightDialog";
+import { getPlaneHobbs } from "@/api/db/logbook";
 import { Button } from "@/components/ui/button";
 import {
     Select,
@@ -46,18 +48,25 @@ const FUNCTION_BADGE: Record<string, { label: string; className: string }> = {
 
 const PilotLogbookTab = ({ logs: logsProp, users }: Props) => {
     const { currentUser } = useCurrentUser();
+    const { currentClub } = useCurrentClub();
+    const defaultAirfield = currentClub?.defaultAirfield ?? currentClub?.id ?? undefined;
     const [selectedPilotID, setSelectedPilotID] = useState<string>("ALL");
     const [natureFilter, setNatureFilter] = useState<string | undefined>(undefined);
 
     const [page, setPage] = useState(0);
     const [editingLog, setEditingLog] = useState<flight_logs | null>(null);
     const [editOpen, setEditOpen] = useState(false);
+    const [editDefaultHobbsStart, setEditDefaultHobbsStart] = useState<number | undefined>(undefined);
 
     const canSelectPilot =
         currentUser?.role === userRole.ADMIN ||
         currentUser?.role === userRole.OWNER ||
         currentUser?.role === userRole.MANAGER ||
         currentUser?.role === userRole.INSTRUCTOR;
+
+    // Élève : page d'information uniquement. Pas d'édition, pas de bouton de
+    // signature, pas de colonne "signé".
+    const isStudent = currentUser?.role === userRole.STUDENT;
 
     // Filter logs by selected pilot
     const pilotLogs = useMemo(() => {
@@ -89,16 +98,28 @@ const PilotLogbookTab = ({ logs: logsProp, users }: Props) => {
 
     const handleSigned = () => {};
 
-    const handleRowClick = useCallback((log: flight_logs) => {
+    const handleRowClick = useCallback(async (log: flight_logs) => {
+        // Lecture seule pour les élèves : ne pas ouvrir le dialog d'édition.
+        if (isStudent) return;
+
         setEditingLog(log);
+        setEditDefaultHobbsStart(undefined);
         setEditOpen(true);
-    }, []);
+
+        // Pré-remplir l'heure moteur de début avec le hobbsTotal courant de
+        // l'avion (cohérent avec la popup auto via PendingFlightsPrompt).
+        if (log.planeID && log.hobbsStart == null) {
+            const hobbs = await getPlaneHobbs(log.planeID);
+            if (hobbs != null) setEditDefaultHobbsStart(hobbs);
+        }
+    }, [isStudent]);
 
     const handleEditCompleted = useCallback((updated: flight_logs) => {
         // Met à jour la liste locale avec les nouvelles données
         // Le parent (LogbookPageComponent) devra être refreshé pour voir les changements persistés
         setEditOpen(false);
         setEditingLog(null);
+        setEditDefaultHobbsStart(undefined);
     }, []);
 
     const getCompanionName = (log: flight_logs): string => {
@@ -166,14 +187,23 @@ const PilotLogbookTab = ({ logs: logsProp, users }: Props) => {
                                     <th className="px-3 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Att.</th>
                                     <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Avec</th>
                                     <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Remarques</th>
-                                    <th className="px-3 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Signe</th>
+                                    {!isStudent && (
+                                        <th className="px-3 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Signe</th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                     {paginatedLogs.map((log) => {
                                         const badge = FUNCTION_BADGE[log.pilotFunction] ?? FUNCTION_BADGE["P"];
                                         return (
-                                            <tr key={log.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => handleRowClick(log)}>
+                                            <tr
+                                                key={log.id}
+                                                className={cn(
+                                                    "hover:bg-slate-50/50 transition-colors",
+                                                    !isStudent && "cursor-pointer"
+                                                )}
+                                                onClick={isStudent ? undefined : () => handleRowClick(log)}
+                                            >
                                                 <td className="px-3 py-3 text-slate-700 whitespace-nowrap">
                                                     {new Date(log.date).toLocaleDateString("fr-FR")}
                                                 </td>
@@ -218,12 +248,14 @@ const PilotLogbookTab = ({ logs: logsProp, users }: Props) => {
                                                 <td className="px-3 py-3 text-slate-500 text-xs max-w-[100px] truncate">
                                                     {log.remarks ?? "-"}
                                                 </td>
-                                                <td className="px-3 py-3 text-center">
-                                                    <SignFlightLogButton
-                                                        log={log}
-                                                        onSigned={handleSigned}
-                                                    />
-                                                </td>
+                                                {!isStudent && (
+                                                    <td className="px-3 py-3 text-center">
+                                                        <SignFlightLogButton
+                                                            log={log}
+                                                            onSigned={handleSigned}
+                                                        />
+                                                    </td>
+                                                )}
                                             </tr>
                                         );
                                     })}
@@ -256,18 +288,23 @@ const PilotLogbookTab = ({ logs: logsProp, users }: Props) => {
                             return (
                                 <div
                                     key={log.id}
-                                    className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3 cursor-pointer active:bg-slate-50"
-                                    onClick={() => handleRowClick(log)}
+                                    className={cn(
+                                        "bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3",
+                                        !isStudent && "cursor-pointer active:bg-slate-50"
+                                    )}
+                                    onClick={isStudent ? undefined : () => handleRowClick(log)}
                                 >
                                     {/* Top row: date + signed */}
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm font-medium text-slate-700">
                                             {new Date(log.date).toLocaleDateString("fr-FR")}
                                         </span>
-                                        <SignFlightLogButton
-                                            log={log}
-                                            onSigned={handleSigned}
-                                        />
+                                        {!isStudent && (
+                                            <SignFlightLogButton
+                                                log={log}
+                                                onSigned={handleSigned}
+                                            />
+                                        )}
                                     </div>
 
                                     {/* Aircraft + function */}
@@ -317,6 +354,8 @@ const PilotLogbookTab = ({ logs: logsProp, users }: Props) => {
                 open={editOpen}
                 onOpenChange={setEditOpen}
                 onCompleted={handleEditCompleted}
+                defaultHobbsStart={editDefaultHobbsStart}
+                defaultAirfield={defaultAirfield}
             />
         </div>
     );

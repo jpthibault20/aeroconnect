@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight, Clock } from 'lucide-react';
+import { formatSessionTime } from '@/api/global function/dateServeur';
 
 interface SessionDateProps {
     startDate: Date;
@@ -7,14 +8,7 @@ interface SessionDateProps {
 }
 
 const SessionDate = ({ startDate, endDate }: SessionDateProps) => {
-    // Fonction locale pour formater l'heure proprement (HH:MM)
-    // Cela évite d'importer une fonction externe et garantit le formatage 24h
-    const formatTime = (date: Date) => {
-        return new Date(date).toLocaleTimeString('fr-FR', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
+    const formatTime = formatSessionTime;
 
     return (
         <div className="flex items-center gap-4 pb-4 w-full">

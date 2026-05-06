@@ -6,6 +6,7 @@ import { flight_sessions, planes, User } from '@prisma/client';
 import { Clock, Plane, User as UserIcon, Users } from 'lucide-react';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { cn } from '@/lib/utils';
+import { formatSessionTime } from '@/api/global function/dateServeur';
 
 interface Props {
     sessions: flight_sessions[];
@@ -38,11 +39,8 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
     const timeString = useMemo(() => {
         if (!firstSession) return "";
         const start = firstSession.sessionDateStart;
-        const endTimestamp = new Date(start).getTime() + firstSession.sessionDateDuration_min * 60000;
-        const endDate = new Date(endTimestamp);
-        const format = (h: number, m: number) =>
-            `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-        return `${format(start.getUTCHours(), start.getUTCMinutes())} - ${format(endDate.getUTCHours(), endDate.getUTCMinutes())}`;
+        const endDate = new Date(new Date(start).getTime() + firstSession.sessionDateDuration_min * 60000);
+        return `${formatSessionTime(start)} - ${formatSessionTime(endDate)}`;
     }, [firstSession]);
 
     const planesString = useMemo(() => {

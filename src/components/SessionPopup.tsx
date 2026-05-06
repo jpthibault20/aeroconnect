@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
-import { Club, flight_logs, flight_sessions, planes, User } from "@prisma/client";
+import { Club, flight_logs, flight_sessions, planes, User, userRole } from "@prisma/client";
 import { Dialog } from "./ui/dialog";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import SessionHeader from "./SessionHeader";
@@ -334,6 +334,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     endDate.setMinutes(startDate.getMinutes() + sessions[0].sessionDateDuration_min);
 
     const pfIsSigned = postFlightLog?.pilotSigned ?? false;
+    const pfIsStudent = currentUser?.role === userRole.STUDENT;
+    const pfIsReadOnly = pfIsSigned || pfIsStudent;
 
     const postFlightCompanion = postFlightLog
         ? postFlightLog.pilotFunction === "I"
@@ -355,7 +357,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 {postFlightLog ? (
                     /* ─── MODE POST-VOL ─── */
                     (() => {
-                        const pfInputClass = pfIsSigned
+                        const pfInputClass = pfIsReadOnly
                             ? "bg-slate-100 border-slate-200 text-slate-500 cursor-default"
                             : "bg-slate-50 border-slate-200";
                         return (
@@ -391,7 +393,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                         </div>
 
                         {/* Body — scrollable, grisé si signé */}
-                        <div className={`p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0 ${pfIsSigned ? "opacity-60" : ""}`}>
+                        <div className={`p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0 ${pfIsReadOnly ? "opacity-60" : ""}`}>
                             {/* Aérodromes */}
                             <div className="space-y-3">
                                 <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
@@ -400,11 +402,11 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <Label className="text-slate-600 text-xs">Départ (OACI)</Label>
-                                        <Input value={pfDeparture} onChange={(e) => setPfDeparture(e.target.value.toUpperCase())} placeholder="LFXX" readOnly={pfIsSigned} className={`font-mono uppercase text-sm ${pfInputClass}`} />
+                                        <Input value={pfDeparture} onChange={(e) => setPfDeparture(e.target.value.toUpperCase())} placeholder="LFXX" readOnly={pfIsReadOnly} className={`font-mono uppercase text-sm ${pfInputClass}`} />
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-slate-600 text-xs">Arrivée (OACI)</Label>
-                                        <Input value={pfArrival} onChange={(e) => setPfArrival(e.target.value.toUpperCase())} placeholder="LFXX" readOnly={pfIsSigned} className={`font-mono uppercase text-sm ${pfInputClass}`} />
+                                        <Input value={pfArrival} onChange={(e) => setPfArrival(e.target.value.toUpperCase())} placeholder="LFXX" readOnly={pfIsReadOnly} className={`font-mono uppercase text-sm ${pfInputClass}`} />
                                     </div>
                                 </div>
                             </div>
@@ -417,11 +419,11 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <Label className="text-slate-600 text-xs">Décollages</Label>
-                                        <Input type="number" min={0} value={pfTakeoffs} onChange={(e) => setPfTakeoffs(parseInt(e.target.value) || 0)} readOnly={pfIsSigned} className={`text-sm ${pfInputClass}`} />
+                                        <Input type="number" min={0} value={pfTakeoffs} onChange={(e) => setPfTakeoffs(parseInt(e.target.value) || 0)} readOnly={pfIsReadOnly} className={`text-sm ${pfInputClass}`} />
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-slate-600 text-xs">Atterrissages</Label>
-                                        <Input type="number" min={0} value={pfLandings} onChange={(e) => setPfLandings(parseInt(e.target.value) || 0)} readOnly={pfIsSigned} className={`text-sm ${pfInputClass}`} />
+                                        <Input type="number" min={0} value={pfLandings} onChange={(e) => setPfLandings(parseInt(e.target.value) || 0)} readOnly={pfIsReadOnly} className={`text-sm ${pfInputClass}`} />
                                     </div>
                                 </div>
                             </div>
@@ -435,19 +437,19 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <Label className="text-slate-600 text-xs">Heures moteur début</Label>
-                                        <Input type="number" step="0.1" value={pfHobbsStart} onChange={(e) => setPfHobbsStart(e.target.value)} placeholder="0.0" readOnly={pfIsSigned} className={`font-mono text-sm ${pfInputClass}`} />
+                                        <Input type="number" step="0.1" value={pfHobbsStart} onChange={(e) => setPfHobbsStart(e.target.value)} placeholder="0.0" readOnly={pfIsReadOnly} className={`font-mono text-sm ${pfInputClass}`} />
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-slate-600 text-xs">Heures moteur fin</Label>
-                                        <Input type="number" step="0.1" value={pfHobbsEnd} onChange={(e) => setPfHobbsEnd(e.target.value)} placeholder="0.0" readOnly={pfIsSigned} className={`font-mono text-sm ${pfInputClass}`} />
+                                        <Input type="number" step="0.1" value={pfHobbsEnd} onChange={(e) => setPfHobbsEnd(e.target.value)} placeholder="0.0" readOnly={pfIsReadOnly} className={`font-mono text-sm ${pfInputClass}`} />
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-slate-600 text-xs">Carburant ajouté (L)</Label>
-                                        <Input type="number" step="0.1" value={pfFuel} onChange={(e) => setPfFuel(e.target.value)} placeholder="0.0" readOnly={pfIsSigned} className={`text-sm ${pfInputClass}`} />
+                                        <Input type="number" step="0.1" value={pfFuel} onChange={(e) => setPfFuel(e.target.value)} placeholder="0.0" readOnly={pfIsReadOnly} className={`text-sm ${pfInputClass}`} />
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-slate-600 text-xs">Huile ajoutée (L)</Label>
-                                        <Input type="number" step="0.01" value={pfOil} onChange={(e) => setPfOil(e.target.value)} placeholder="0.0" readOnly={pfIsSigned} className={`text-sm ${pfInputClass}`} />
+                                        <Input type="number" step="0.01" value={pfOil} onChange={(e) => setPfOil(e.target.value)} placeholder="0.0" readOnly={pfIsReadOnly} className={`text-sm ${pfInputClass}`} />
                                     </div>
                                 </div>
                             </div>
@@ -456,20 +458,20 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                             {/* Anomalies */}
                             <div className="space-y-1">
                                 <Label className="text-slate-600 text-xs">Anomalies constatées</Label>
-                                <Textarea value={pfAnomalies} onChange={(e) => setPfAnomalies(e.target.value)} placeholder="RAS" readOnly={pfIsSigned} className={`text-sm min-h-[60px] ${pfInputClass}`} />
+                                <Textarea value={pfAnomalies} onChange={(e) => setPfAnomalies(e.target.value)} placeholder="RAS" readOnly={pfIsReadOnly} className={`text-sm min-h-[60px] ${pfInputClass}`} />
                             </div>
 
                             {/* Remarques */}
                             <div className="space-y-1">
                                 <Label className="text-slate-600 text-xs">Remarques / observations</Label>
-                                <Textarea value={pfRemarks} onChange={(e) => setPfRemarks(e.target.value)} placeholder="Remarques sur le vol..." readOnly={pfIsSigned} className={`text-sm min-h-[60px] ${pfInputClass}`} />
+                                <Textarea value={pfRemarks} onChange={(e) => setPfRemarks(e.target.value)} placeholder="Remarques sur le vol..." readOnly={pfIsReadOnly} className={`text-sm min-h-[60px] ${pfInputClass}`} />
                             </div>
                         </div>
 
                         {/* Footer */}
                         <DialogFooter className={`${pfIsSigned ? "bg-emerald-50 border-emerald-100" : "bg-slate-50 border-slate-100"} p-4 sm:p-6 border-t flex-shrink-0 flex-col sm:flex-row gap-2`}>
-                            {pfIsSigned ? (
-                                <Button onClick={() => setIsOpen(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto">
+                            {pfIsReadOnly ? (
+                                <Button onClick={() => setIsOpen(false)} className={`${pfIsSigned ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-600 hover:bg-slate-700"} text-white w-full sm:w-auto`}>
                                     Fermer
                                 </Button>
                             ) : (

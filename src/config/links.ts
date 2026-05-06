@@ -35,7 +35,7 @@ export const navigationLinks: NavLink[] = [
         name: "Carnet de vol",
         path: "/logbook",
         icon: BookOpen,
-        roles: ["STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"],
+        roles: ["MANAGER", "OWNER", "ADMIN", "INSTRUCTOR", "STUDENT"],
     },
     {
         name: "Avions",

@@ -8,6 +8,11 @@ const LOGBOOK_ROLES: userRole[] = [
     userRole.PILOT, userRole.STUDENT, userRole.INSTRUCTOR,
     userRole.OWNER, userRole.ADMIN, userRole.MANAGER,
 ];
+// Rôles pouvant écrire (modifier/signer) un vol — STUDENT exclu
+const LOGBOOK_WRITE_ROLES: userRole[] = [
+    userRole.PILOT, userRole.INSTRUCTOR,
+    userRole.OWNER, userRole.ADMIN, userRole.MANAGER,
+];
 // Rôles pouvant voir/modifier les vols des autres pilotes
 const MANAGEMENT_ROLES: userRole[] = [
     userRole.OWNER, userRole.ADMIN, userRole.MANAGER,
@@ -23,7 +28,7 @@ const REGULATION_START = new Date("2025-07-01");
 // Date de mise en prod du carnet de vol : les vols antérieurs sont auto-créés
 // déjà signés (historique non sollicitable), les vols postérieurs déclenchent
 // la popup normale.
-const LEGACY_SIGNED_BEFORE = new Date("2026-05-02");
+const LEGACY_SIGNED_BEFORE = new Date("2026-05-06");
 
 export interface CreateFlightLogInput {
     clubID: string;
@@ -200,7 +205,7 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
 // ─── Modification ───
 
 export const updateFlightLog = async (logID: string, data: Partial<CreateFlightLogInput> & { hobbsStart?: number; hobbsEnd?: number; fuelAdded?: number; oilAdded?: number; anomalies?: string; remarks?: string }) => {
-    const auth = await requireAuth(LOGBOOK_ROLES);
+    const auth = await requireAuth(LOGBOOK_WRITE_ROLES);
     if ("error" in auth) return { error: auth.error };
 
     const existing = await prisma.flight_logs.findUnique({ where: { id: logID } });
@@ -258,7 +263,7 @@ export const updateFlightLog = async (logID: string, data: Partial<CreateFlightL
 // ─── Signature ───
 
 export const signFlightLog = async (logID: string) => {
-    const auth = await requireAuth(LOGBOOK_ROLES);
+    const auth = await requireAuth(LOGBOOK_WRITE_ROLES);
     if ("error" in auth) return { error: auth.error };
 
     const log = await prisma.flight_logs.findUnique({ where: { id: logID } });
@@ -273,9 +278,26 @@ export const signFlightLog = async (logID: string) => {
     }
 
     try {
-        await prisma.flight_logs.update({
-            where: { id: logID },
-            data: { pilotSigned: true, pilotSignedAt: new Date() },
+        const signedAt = new Date();
+        await prisma.$transaction(async (tx) => {
+            await tx.flight_logs.update({
+                where: { id: logID },
+                data: { pilotSigned: true, pilotSignedAt: signedAt },
+            });
+
+            // Quand l'instructeur signe son log "I", le log "EP" de l'élève
+            // de la même session est aussi signé : la signature de l'instructeur
+            // certifie l'entrée pédagogique de l'élève.
+            if (log.pilotFunction === "I" && log.sessionID) {
+                await tx.flight_logs.updateMany({
+                    where: {
+                        sessionID: log.sessionID,
+                        pilotFunction: "EP",
+                        pilotSigned: false,
+                    },
+                    data: { pilotSigned: true, pilotSignedAt: signedAt },
+                });
+            }
         });
         return { success: "Entrée signée" };
     } catch {
@@ -382,12 +404,23 @@ export const getIncompleteFlightLogs = async (pilotID: string, clubID: string) =
     }
 
     try {
+        // `flight_logs.date` est de type PG `DATE` (cf. schema.prisma : @db.Date) :
+        // l'heure est tronquée. Filtrer avec `lt: new Date()` rejette les vols
+        // du jour parce que la comparaison se fait au niveau date pure
+        // (`aujourd'hui < aujourd'hui` = false). On compare donc au début du
+        // lendemain. Les logs ne sont créés que pour des sessions déjà
+        // commencées (cf. autoCreateLogsFromSessions), donc un log daté
+        // d'aujourd'hui correspond bien à un vol passé.
+        const tomorrow = new Date();
+        tomorrow.setUTCHours(0, 0, 0, 0);
+        tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
         const logs = await prisma.flight_logs.findMany({
             where: {
                 pilotID,
                 clubID,
                 pilotSigned: false,
-                date: { lt: new Date() },
+                date: { lt: tomorrow },
                 pilotFunction: { not: "EP" },
             },
             orderBy: { date: "desc" },

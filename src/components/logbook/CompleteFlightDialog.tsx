@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { flight_logs } from "@prisma/client";
+import { flight_logs, userRole } from "@prisma/client";
 import { updateFlightLog, signFlightLog } from "@/api/db/logbook";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
 import { toast } from "@/hooks/use-toast";
+import { useCurrentUser } from "@/app/context/useCurrentUser";
 import {
     Dialog,
     DialogContent,
@@ -31,6 +32,8 @@ interface Props {
 }
 
 const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo, defaultAirfield, defaultHobbsStart }: Props) => {
+    const { currentUser } = useCurrentUser();
+    const isStudent = currentUser?.role === userRole.STUDENT;
     const [loading, setLoading] = useState(false);
     const [signing, setSigning] = useState(false);
 
@@ -61,6 +64,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
     }, [log, defaultAirfield, defaultHobbsStart]);
 
     const isSigned = log?.pilotSigned ?? false;
+    const isReadOnly = isSigned || isStudent;
 
     if (!log) return null;
 
@@ -148,7 +152,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
             ? `Élève : ${log.studentFirstName ?? ""} ${log.studentLastName ?? ""}`.trim()
             : "";
 
-    const inputClass = isSigned
+    const inputClass = isReadOnly
         ? "bg-slate-100 border-slate-200 text-slate-500 cursor-default"
         : "bg-slate-50 border-slate-200";
 
@@ -187,7 +191,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                 </div>
 
                 {/* Body — scrollable */}
-                <div className={`p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0 ${isSigned ? "opacity-60" : ""}`}>
+                <div className={`p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0 ${isReadOnly ? "opacity-60" : ""}`}>
                     {/* Aérodromes */}
                     <div className="space-y-3">
                         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
@@ -196,11 +200,11 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
                                 <Label className="text-slate-600 text-xs">Départ (OACI)</Label>
-                                <Input value={departureAirfield} onChange={(e) => setDepartureAirfield(e.target.value.toUpperCase())} placeholder="LFXX" readOnly={isSigned} className={`font-mono uppercase text-sm ${inputClass}`} />
+                                <Input value={departureAirfield} onChange={(e) => setDepartureAirfield(e.target.value.toUpperCase())} placeholder="LFXX" readOnly={isReadOnly} className={`font-mono uppercase text-sm ${inputClass}`} />
                             </div>
                             <div className="space-y-1">
                                 <Label className="text-slate-600 text-xs">Arrivée (OACI)</Label>
-                                <Input value={arrivalAirfield} onChange={(e) => setArrivalAirfield(e.target.value.toUpperCase())} placeholder="LFXX" readOnly={isSigned} className={`font-mono uppercase text-sm ${inputClass}`} />
+                                <Input value={arrivalAirfield} onChange={(e) => setArrivalAirfield(e.target.value.toUpperCase())} placeholder="LFXX" readOnly={isReadOnly} className={`font-mono uppercase text-sm ${inputClass}`} />
                             </div>
                         </div>
                     </div>
@@ -213,11 +217,11 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
                                 <Label className="text-slate-600 text-xs">Décollages</Label>
-                                <Input type="number" min={0} value={takeoffs} onChange={(e) => setTakeoffs(parseInt(e.target.value) || 0)} readOnly={isSigned} className={`text-sm ${inputClass}`} />
+                                <Input type="number" min={0} value={takeoffs} onChange={(e) => setTakeoffs(parseInt(e.target.value) || 0)} readOnly={isReadOnly} className={`text-sm ${inputClass}`} />
                             </div>
                             <div className="space-y-1">
                                 <Label className="text-slate-600 text-xs">Atterrissages</Label>
-                                <Input type="number" min={0} value={landings} onChange={(e) => setLandings(parseInt(e.target.value) || 0)} readOnly={isSigned} className={`text-sm ${inputClass}`} />
+                                <Input type="number" min={0} value={landings} onChange={(e) => setLandings(parseInt(e.target.value) || 0)} readOnly={isReadOnly} className={`text-sm ${inputClass}`} />
                             </div>
                         </div>
                     </div>
@@ -231,19 +235,19 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <Label className="text-slate-600 text-xs">Heures moteur début</Label>
-                                    <Input type="number" step="0.1" value={hobbsStart} onChange={(e) => setHobbsStart(e.target.value)} placeholder="0.0" readOnly={isSigned} className={`font-mono text-sm ${inputClass}`} />
+                                    <Input type="number" step="0.1" value={hobbsStart} onChange={(e) => setHobbsStart(e.target.value)} placeholder="0.0" readOnly={isReadOnly} className={`font-mono text-sm ${inputClass}`} />
                                 </div>
                                 <div className="space-y-1">
                                     <Label className="text-slate-600 text-xs">Heures moteur fin</Label>
-                                    <Input type="number" step="0.1" value={hobbsEnd} onChange={(e) => setHobbsEnd(e.target.value)} placeholder="0.0" readOnly={isSigned} className={`font-mono text-sm ${inputClass}`} />
+                                    <Input type="number" step="0.1" value={hobbsEnd} onChange={(e) => setHobbsEnd(e.target.value)} placeholder="0.0" readOnly={isReadOnly} className={`font-mono text-sm ${inputClass}`} />
                                 </div>
                                 <div className="space-y-1">
                                     <Label className="text-slate-600 text-xs">Carburant ajouté (L)</Label>
-                                    <Input type="number" step="0.1" value={fuelAdded} onChange={(e) => setFuelAdded(e.target.value)} placeholder="0.0" readOnly={isSigned} className={`text-sm ${inputClass}`} />
+                                    <Input type="number" step="0.1" value={fuelAdded} onChange={(e) => setFuelAdded(e.target.value)} placeholder="0.0" readOnly={isReadOnly} className={`text-sm ${inputClass}`} />
                                 </div>
                                 <div className="space-y-1">
                                     <Label className="text-slate-600 text-xs">Huile ajoutée (L)</Label>
-                                    <Input type="number" step="0.01" value={oilAdded} onChange={(e) => setOilAdded(e.target.value)} placeholder="0.0" readOnly={isSigned} className={`text-sm ${inputClass}`} />
+                                    <Input type="number" step="0.01" value={oilAdded} onChange={(e) => setOilAdded(e.target.value)} placeholder="0.0" readOnly={isReadOnly} className={`text-sm ${inputClass}`} />
                                 </div>
                             </div>
                         </div>
@@ -252,20 +256,20 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                     {/* Anomalies */}
                     <div className="space-y-1">
                         <Label className="text-slate-600 text-xs">Anomalies constatées</Label>
-                        <Textarea value={anomalies} onChange={(e) => setAnomalies(e.target.value)} placeholder="RAS" readOnly={isSigned} className={`text-sm min-h-[60px] ${inputClass}`} />
+                        <Textarea value={anomalies} onChange={(e) => setAnomalies(e.target.value)} placeholder="RAS" readOnly={isReadOnly} className={`text-sm min-h-[60px] ${inputClass}`} />
                     </div>
 
                     {/* Remarques */}
                     <div className="space-y-1">
                         <Label className="text-slate-600 text-xs">Remarques / observations</Label>
-                        <Textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Remarques sur le vol..." readOnly={isSigned} className={`text-sm min-h-[60px] ${inputClass}`} />
+                        <Textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Remarques sur le vol..." readOnly={isReadOnly} className={`text-sm min-h-[60px] ${inputClass}`} />
                     </div>
                 </div>
 
                 {/* Footer */}
                 <DialogFooter className={`${isSigned ? "bg-emerald-50 border-emerald-100" : "bg-slate-50 border-slate-100"} p-4 sm:p-6 border-t flex-shrink-0 rounded-b-xl sm:rounded-b-2xl flex-col sm:flex-row gap-2`}>
-                    {isSigned ? (
-                        <Button onClick={() => onOpenChange(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto">
+                    {isReadOnly ? (
+                        <Button onClick={() => onOpenChange(false)} className={`${isSigned ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-600 hover:bg-slate-700"} text-white w-full sm:w-auto`}>
                             Fermer
                         </Button>
                     ) : (

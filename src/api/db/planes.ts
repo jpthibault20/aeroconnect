@@ -192,6 +192,8 @@ export const updatePlane = async (plane: planes) => {
             return { error: 'Permissions insuffisantes' };
         }
 
+        const canEditHobbs = auth.user.role === userRole.OWNER || auth.user.role === userRole.ADMIN;
+
         await prisma.planes.update({
             where: { id: plane.id },
             data: {
@@ -199,7 +201,7 @@ export const updatePlane = async (plane: planes) => {
                 immatriculation: plane.immatriculation,
                 operational: plane.operational,
                 classes: plane.classes,
-                hobbsTotal: plane.hobbsTotal,
+                hobbsTotal: canEditHobbs ? plane.hobbsTotal : existing.hobbsTotal,
             }
         });
 
