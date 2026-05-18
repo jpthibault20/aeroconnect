@@ -21,6 +21,7 @@ interface Props {
     logs: flight_logs[];
     planes: planes[];
     onPlaneChange?: (planeID: string) => void;
+    onFilteredLogsChange?: (logs: flight_logs[]) => void;
 }
 
 const NATURE_LABELS: Record<string, string> = {
@@ -35,7 +36,7 @@ const NATURE_LABELS: Record<string, string> = {
     OTHER: "Autre",
 };
 
-const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange }: Props) => {
+const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange, onFilteredLogsChange }: Props) => {
     const [selectedPlaneID, setSelectedPlaneID] = useState<string>(
         planesList.length > 0 ? planesList[0].id : "NONE"
     );
@@ -43,6 +44,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange 
     useEffect(() => {
         onPlaneChange?.(selectedPlaneID);
     }, [selectedPlaneID, onPlaneChange]);
+
     const [natureFilter, setNatureFilter] = useState<string | undefined>(undefined);
     const [page, setPage] = useState(0);
 
@@ -57,6 +59,10 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange 
         setPage(0);
         return filtered;
     }, [logsProp, selectedPlaneID, natureFilter]);
+
+    useEffect(() => {
+        onFilteredLogsChange?.(planeLogs);
+    }, [planeLogs, onFilteredLogsChange]);
 
     const totalPages = Math.ceil(planeLogs.length / PAGE_SIZE);
     const paginatedLogs = useMemo(

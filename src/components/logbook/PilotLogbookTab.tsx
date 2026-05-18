@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { flight_logs, User, userRole } from "@prisma/client";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
@@ -23,9 +23,17 @@ import { Plane, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 50;
 
+export interface PilotExportInfo {
+    logs: flight_logs[];
+    pilotName: string;
+    // lastName du pilote sélectionné (undefined si "Tous"), pour le nom de fichier.
+    pilotLastName?: string;
+}
+
 interface Props {
     logs: flight_logs[];
     users: User[];
+    onExportInfoChange?: (info: PilotExportInfo) => void;
 }
 
 const NATURE_LABELS: Record<string, string> = {
@@ -46,7 +54,7 @@ const FUNCTION_BADGE: Record<string, { label: string; className: string }> = {
     I: { label: "I", className: "bg-purple-100 text-purple-700 border-purple-200" },
 };
 
-const PilotLogbookTab = ({ logs: logsProp, users }: Props) => {
+const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) => {
     const { currentUser } = useCurrentUser();
     const { currentClub } = useCurrentClub();
     const defaultAirfield = currentClub?.defaultAirfield ?? currentClub?.id ?? undefined;
@@ -84,6 +92,24 @@ const PilotLogbookTab = ({ logs: logsProp, users }: Props) => {
         setPage(0);
         return filtered;
     }, [logsProp, selectedPilotID, natureFilter]);
+
+    // Pilote sélectionné pour l'export (reflète la sélection du tab).
+    const exportSelectedPilot = useMemo(() => {
+        if (!canSelectPilot) return currentUser ?? null;
+        if (selectedPilotID === "ALL") return null;
+        return users.find((u) => u.id === selectedPilotID) ?? currentUser ?? null;
+    }, [canSelectPilot, selectedPilotID, users, currentUser]);
+
+    useEffect(() => {
+        const pilotName = exportSelectedPilot
+            ? `${exportSelectedPilot.lastName} ${exportSelectedPilot.firstName}`
+            : "Tous les pilotes / eleves";
+        onExportInfoChange?.({
+            logs: pilotLogs,
+            pilotName,
+            pilotLastName: exportSelectedPilot?.lastName,
+        });
+    }, [pilotLogs, exportSelectedPilot, onExportInfoChange]);
 
     const totalPages = Math.ceil(pilotLogs.length / PAGE_SIZE);
     const paginatedLogs = useMemo(

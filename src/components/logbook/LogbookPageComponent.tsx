@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { flight_logs, planes, User, userRole } from "@prisma/client";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
-import PilotLogbookTab from "./PilotLogbookTab";
+import PilotLogbookTab, { PilotExportInfo } from "./PilotLogbookTab";
 import AircraftLogbookTab from "./AircraftLogbookTab";
 import NewFlightLogDialog from "./NewFlightLogDialog";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,21 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
     const [selectedPlaneForExport, setSelectedPlaneForExport] = useState<string>("");
     const [exporting, setExporting] = useState(false);
 
+    // Données d'export remontées par chaque tab (= ce que voit l'utilisateur,
+    // filtres appliqués). Permet d'exporter exactement la vue courante.
+    const [pilotExportInfo, setPilotExportInfo] = useState<PilotExportInfo>({
+        logs: [],
+        pilotName: "",
+    });
+    const [aircraftExportLogs, setAircraftExportLogs] = useState<flight_logs[]>([]);
+
+    const handlePilotExportInfoChange = useCallback((info: PilotExportInfo) => {
+        setPilotExportInfo(info);
+    }, []);
+    const handleAircraftFilteredLogsChange = useCallback((logs: flight_logs[]) => {
+        setAircraftExportLogs(logs);
+    }, []);
+
     const handleCreated = (log: flight_logs) => {
         setLogs((prev) => [...prev, log]);
     };
@@ -87,27 +102,34 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
         setExporting(true);
         try {
             let blob: Blob;
+            const now = new Date();
+            const datestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+            // Sanitize : retire accents et remplace tout caractère non alphanum par "_".
+            const safe = (s: string) =>
+                s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]/g, "_");
             let filename: string;
 
             if (activeTab === "pilot") {
-                const pilotName = `${currentUser.lastName} ${currentUser.firstName}`;
-                const pilotLogs = visibleLogs.filter((l) => l.pilotID === currentUser.id);
+                const { logs: pilotLogs, pilotName, pilotLastName } = pilotExportInfo;
                 blob = await pdf(
                     <PilotLogbookDocument logs={pilotLogs} pilotName={pilotName} year={selectedYear} />
                 ).toBlob();
-                filename = `carnet_de_vol_pilote_${currentUser.lastName}_${selectedYear}.pdf`;
+                filename = pilotLastName
+                    ? `carnet_de_vol_pilote_${safe(pilotLastName)}_${datestamp}.pdf`
+                    : `carnet_de_vol_pilote_${datestamp}.pdf`;
             } else {
                 const plane = planesProp.find((p) => p.id === selectedPlaneForExport);
-                const planeLogs = visibleLogs.filter((l) => l.planeID === selectedPlaneForExport);
                 blob = await pdf(
                     <AircraftLogbookDocument
-                        logs={planeLogs}
+                        logs={aircraftExportLogs}
                         planeRegistration={plane?.immatriculation ?? ""}
                         planeName={plane?.name ?? ""}
                         year={selectedYear}
                     />
                 ).toBlob();
-                filename = `carnet_de_vol_machine_${plane?.immatriculation ?? "avion"}_${selectedYear}.pdf`;
+                filename = plane
+                    ? `carnet_de_vol_machine_${safe(plane.immatriculation)}_${datestamp}.pdf`
+                    : `carnet_de_vol_machine_${datestamp}.pdf`;
             }
 
             const url = URL.createObjectURL(blob);
@@ -123,7 +145,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
         } finally {
             setExporting(false);
         }
-    }, [activeTab, currentUser, visibleLogs, selectedYear, planesProp, selectedPlaneForExport]);
+    }, [activeTab, currentUser, selectedYear, planesProp, selectedPlaneForExport, pilotExportInfo, aircraftExportLogs]);
 
     return (
         <div className="h-full flex flex-col bg-slate-50 p-6 md:p-8 font-sans text-slate-800 overflow-hidden">
@@ -215,10 +237,19 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
             {/* Tab content */}
             <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
                 {activeTab === "pilot" && (
-                    <PilotLogbookTab logs={visibleLogs} users={usersProp} />
+                    <PilotLogbookTab
+                        logs={visibleLogs}
+                        users={usersProp}
+                        onExportInfoChange={handlePilotExportInfoChange}
+                    />
                 )}
                 {activeTab === "aircraft" && canSeeAircraftTab && (
-                    <AircraftLogbookTab logs={visibleLogs} planes={planesProp} onPlaneChange={setSelectedPlaneForExport} />
+                    <AircraftLogbookTab
+                        logs={visibleLogs}
+                        planes={planesProp}
+                        onPlaneChange={setSelectedPlaneForExport}
+                        onFilteredLogsChange={handleAircraftFilteredLogsChange}
+                    />
                 )}
             </div>
         </div>
