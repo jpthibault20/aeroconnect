@@ -72,7 +72,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange 
     };
 
     return (
-        <div className="flex flex-col h-full gap-6">
+        <div className="flex flex-col lg:h-full gap-6">
             {/* Controls bar */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <Select
