@@ -95,7 +95,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                 blob = await pdf(
                     <PilotLogbookDocument logs={pilotLogs} pilotName={pilotName} year={selectedYear} />
                 ).toBlob();
-                filename = `carnet_de_vol_${currentUser.lastName}_${selectedYear}.pdf`;
+                filename = `carnet_de_vol_pilote_${currentUser.lastName}_${selectedYear}.pdf`;
             } else {
                 const plane = planesProp.find((p) => p.id === selectedPlaneForExport);
                 const planeLogs = visibleLogs.filter((l) => l.planeID === selectedPlaneForExport);
@@ -107,7 +107,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                         year={selectedYear}
                     />
                 ).toBlob();
-                filename = `carnet_de_route_${plane?.immatriculation ?? "avion"}_${selectedYear}.pdf`;
+                filename = `carnet_de_vol_machine_${plane?.immatriculation ?? "avion"}_${selectedYear}.pdf`;
             }
 
             const url = URL.createObjectURL(blob);
@@ -195,7 +195,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                         )}
                     >
                         <BookOpen className="w-4 h-4" />
-                        Carnet de Vol
+                        Carnet de Vol Pilote
                     </button>
                     <button
                         onClick={() => setActiveTab("aircraft")}
@@ -207,7 +207,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                         )}
                     >
                         <Plane className="w-4 h-4" />
-                        Carnet de Route
+                        Carnet de Vol Machine
                     </button>
                 </div>
             )}

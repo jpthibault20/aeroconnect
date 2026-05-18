@@ -99,7 +99,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange 
             {planeLogs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-10 text-center bg-white rounded-xl border border-slate-200 shadow-sm">
                     <Plane className="w-10 h-10 text-slate-300 mb-2" />
-                    <p className="text-slate-500 font-medium">Aucune entree dans le carnet de route.</p>
+                    <p className="text-slate-500 font-medium">Aucune entree dans le carnet de vol machine.</p>
                 </div>
             ) : (
                 <>

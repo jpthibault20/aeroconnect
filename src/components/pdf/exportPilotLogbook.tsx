@@ -150,7 +150,7 @@ export const PilotLogbookDocument = ({ logs, pilotName, year }: Props) => {
         <Document>
             {pages.map((pageLogs, pageIdx) => (
                 <Page key={pageIdx} size="A4" orientation="landscape" style={styles.page}>
-                    <Text style={styles.title}>CARNET DE VOL</Text>
+                    <Text style={styles.title}>CARNET DE VOL PILOTE</Text>
                     <Text style={styles.subtitle}>
                         {pilotName} — {year} — Page {pageIdx + 1}/{pages.length}
                     </Text>

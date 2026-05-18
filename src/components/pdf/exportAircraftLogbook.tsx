@@ -133,7 +133,7 @@ export const AircraftLogbookDocument = ({ logs, planeRegistration, planeName, ye
         <Document>
             {pages.map((pageLogs, pageIdx) => (
                 <Page key={pageIdx} size="A4" orientation="landscape" style={styles.page}>
-                    <Text style={styles.title}>CARNET DE ROUTE</Text>
+                    <Text style={styles.title}>CARNET DE VOL MACHINE</Text>
                     <Text style={styles.subtitle}>
                         {planeRegistration} ({planeName}) — {year} — Page {pageIdx + 1}/{pages.length}
                     </Text>

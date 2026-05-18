@@ -93,7 +93,7 @@ export const getLogbookByPilot = async (pilotID: string, clubID: string, year?: 
         });
         return { success: true, logs };
     } catch {
-        return { error: "Erreur lors de la récupération du carnet de vol" };
+        return { error: "Erreur lors de la récupération du carnet de vol pilote" };
     }
 };
 
@@ -122,7 +122,7 @@ export const getLogbookByPlane = async (planeID: string, clubID: string, year?: 
         });
         return { success: true, logs };
     } catch {
-        return { error: "Erreur lors de la récupération du carnet de route" };
+        return { error: "Erreur lors de la récupération du carnet de vol machine" };
     }
 };
 
