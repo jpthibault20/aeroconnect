@@ -29,13 +29,11 @@ const SIGN_OVERRIDE_ROLES: userRole[] = [
     userRole.OWNER, userRole.ADMIN,
 ];
 
-// Date d'entrée en vigueur de l'arrêté du 17 février 2025
-const REGULATION_START = new Date("2025-07-01");
-
-// Date de mise en prod du carnet de vol : les vols antérieurs sont auto-créés
-// déjà signés (historique non sollicitable), les vols postérieurs déclenchent
-// la popup normale.
-const LEGACY_SIGNED_BEFORE = new Date("2026-05-06");
+// Seuil de prise en compte des sessions pour auto-création de logs. Calé sur la
+// date de déploiement de cette feature (2026-05-25) pour ne PAS importer la
+// masse historique : seules les sessions à partir de cette date génèrent un
+// log. Les sessions antérieures ne sont jamais auto-loguées (silently ignored).
+const REGULATION_START = new Date("2026-05-25");
 
 export interface CreateFlightLogInput {
     clubID: string;
@@ -629,11 +627,6 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
             const isNoPlane = session.studentPlaneID === "noPlane";
             const { nature, subType } = await mapFlightType(session.flightType ?? session.student_type ?? null);
 
-            const isLegacy = session.sessionDateStart < LEGACY_SIGNED_BEFORE;
-            const legacySignFields = isLegacy
-                ? { pilotSigned: true, pilotSignedAt: new Date() }
-                : {};
-
             const basePlane = {
                 planeID: isClassroom || isNoPlane ? null : session.studentPlaneID,
                 planeRegistration: planeInfo?.immatriculation ?? (isClassroom ? "THEORIQUE" : isNoPlane ? "PERSO" : "N/A"),
@@ -641,16 +634,8 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
                 planeClass: planeInfo?.classes ?? null,
             };
 
-            // Pour les logs legacy auto-signés (avant LEGACY_SIGNED_BEFORE) on
-            // calcule un hobbsStart/hobbsEnd virtuel à partir de la durée de
-            // session pour que les totaux historiques soient corrects. Pour les
-            // logs non-legacy on laisse les hobbs à null : ils seront remplis à
-            // la signature (cf. signFlightLog).
-            const hobbsStart = isLegacy ? (planeInfo?.hobbsTotal ?? null) : null;
-            const hobbsEnd = isLegacy && hobbsStart != null
-                ? Math.round((hobbsStart + session.sessionDateDuration_min / 60) * 10) / 10
-                : null;
-
+            // hobbsStart sera rempli à la signature (cf. signFlightLog) en
+            // lisant plane.hobbsTotal courant.
             // 1 seul log par session : l'instructeur, avec studentID rempli.
             // Le carnet de l'élève récupère ce log via studentID (cf.
             // getLogbookByPilot avec OR pilotID/studentID).
@@ -671,12 +656,11 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
                     instructionSubType: subType,
                     takeoffs: 1,
                     landings: 1,
-                    hobbsStart,
-                    hobbsEnd,
+                    hobbsStart: null,
+                    hobbsEnd: null,
                     departureAirfield: defaultAirfield,
                     arrivalAirfield: defaultAirfield,
                     isManualEntry: false,
-                    ...legacySignFields,
                 });
             }
         }

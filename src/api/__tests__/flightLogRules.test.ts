@@ -46,7 +46,9 @@ function canDeleteFlight(role: userRole, pilotSigned: boolean, authClubID: strin
 
 // --- Auto-création : filtrage sessions éligibles ---
 
-const REGULATION_START = new Date("2025-07-01");
+// Aligné sur la valeur prod (cf. src/api/db/logbook.ts) — fixée à la date de
+// déploiement de la feature pour ne pas backfill des sessions historiques.
+const REGULATION_START = new Date("2026-05-25");
 
 function isSessionEligibleForLog(sessionDate: Date, studentID: string | null, now: Date): boolean {
     return studentID !== null && sessionDate < now && sessionDate >= REGULATION_START;
@@ -305,18 +307,18 @@ describe("Règles du carnet de vol", () => {
     });
 
     describe("Éligibilité pour l'auto-création de logs", () => {
-        const now = new Date("2026-04-11T10:00:00Z");
+        const now = new Date("2026-08-15T10:00:00Z");
 
         it("session passée avec élève après la réglementation = éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2025-08-01"), "stu-1", now)).toBe(true);
+            expect(isSessionEligibleForLog(new Date("2026-06-15"), "stu-1", now)).toBe(true);
         });
 
         it("session passée SANS élève = non éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2025-08-01"), null, now)).toBe(false);
+            expect(isSessionEligibleForLog(new Date("2026-06-15"), null, now)).toBe(false);
         });
 
         it("session AVANT la date de réglementation = non éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2025-06-15"), "stu-1", now)).toBe(false);
+            expect(isSessionEligibleForLog(new Date("2026-03-15"), "stu-1", now)).toBe(false);
         });
 
         it("session future = non éligible", () => {
@@ -324,7 +326,7 @@ describe("Règles du carnet de vol", () => {
         });
 
         it("session exactement à la date de réglementation = éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2025-07-01"), "stu-1", now)).toBe(true);
+            expect(isSessionEligibleForLog(new Date("2026-05-25"), "stu-1", now)).toBe(true);
         });
     });
 
