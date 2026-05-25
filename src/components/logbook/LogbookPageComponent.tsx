@@ -198,7 +198,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                         variant="outline"
                         size="sm"
                         className="border-slate-200 text-slate-600 hover:bg-slate-100"
-                        disabled={exporting || (activeTab === "aircraft" && !selectedPlaneForExport)}
+                        disabled={exporting || (activeTab === "aircraft" && (!selectedPlaneForExport || selectedPlaneForExport === "ALL"))}
                         onClick={handleExportPDF}
                     >
                         <FileDown className="w-4 h-4 mr-2" />
