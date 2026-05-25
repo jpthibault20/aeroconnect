@@ -1,20 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { userRole } from "@prisma/client";
+import {
+    computeDurationMinutes,
+    computeFlightTimes,
+    derivePilotFunction,
+    isInstructorRole,
+    validateNatureSubType,
+    formatNature,
+} from "@/lib/logbookCalc";
 
 /**
  * Tests des règles du carnet de vol (flight_logs).
- * Logique extraite de logbook.ts.
+ * Logique extraite de logbook.ts + helpers logbookCalc.ts.
  */
-
-// --- Calcul des temps par fonction pilote ---
-
-function computeTimes(pilotFunction: string, durationMinutes: number) {
-    return {
-        timeDC: pilotFunction === "EP" ? durationMinutes : 0,
-        timePIC: pilotFunction === "P" ? durationMinutes : 0,
-        timeInstructor: pilotFunction === "I" ? durationMinutes : 0,
-    };
-}
 
 // --- Mapping planeID spéciaux ---
 
@@ -48,16 +46,15 @@ function canDeleteFlight(role: userRole, pilotSigned: boolean, authClubID: strin
 
 // --- Auto-création : filtrage sessions éligibles ---
 
-const REGULATION_START = new Date("2025-07-01");
+// Aligné sur la valeur prod (cf. src/api/db/logbook.ts) — fixée à la date de
+// déploiement de la feature pour ne pas backfill des sessions historiques.
+const REGULATION_START = new Date("2026-05-25");
 
 function isSessionEligibleForLog(sessionDate: Date, studentID: string | null, now: Date): boolean {
     return studentID !== null && sessionDate < now && sessionDate >= REGULATION_START;
 }
 
 // --- Auto-signature du log élève (EP) quand l'instructeur (I) signe ---
-//
-// Quand un instructeur signe son log de vol, on signe aussi le log "EP" (élève
-// pilote) de la même session. Cf. logbook.ts → signFlightLog.
 
 interface SignableLog {
     id: string;
@@ -67,10 +64,7 @@ interface SignableLog {
 }
 
 function shouldAlsoSignEPSibling(signedLog: SignableLog): boolean {
-    return (
-        signedLog.pilotFunction === "I" &&
-        signedLog.sessionID !== null
-    );
+    return signedLog.pilotFunction === "I" && signedLog.sessionID !== null;
 }
 
 function findEPSiblingsToSign(signedLog: SignableLog, allLogs: SignableLog[]): SignableLog[] {
@@ -85,11 +79,7 @@ function findEPSiblingsToSign(signedLog: SignableLog, allLogs: SignableLog[]): S
 }
 
 // --- Filtrage des vols incomplets (popup carnet de vol) ---
-//
-// `flight_logs.date` est une colonne PG `DATE` (cf. schema.prisma : @db.Date).
-// Postgres tronque l'heure → un vol stocké à 09:00Z est lu comme 00:00Z.
-// La popup doit donc utiliser `lt: tomorrow` (et NON `lt: now`), sinon les
-// vols du jour sont rejetés. Cf. logbook.ts → getIncompleteFlightLogs.
+
 function startOfTomorrowUTC(now: Date): Date {
     const t = new Date(now);
     t.setUTCHours(0, 0, 0, 0);
@@ -113,33 +103,137 @@ function isLogIncomplete(
 // --- Tests ---
 
 describe("Règles du carnet de vol", () => {
-    describe("Calcul des temps par fonction pilote", () => {
+    describe("Durée calculée depuis les heures moteur", () => {
+        it("hobbsEnd - hobbsStart converti en minutes", () => {
+            expect(computeDurationMinutes(100, 101.5)).toBe(90);
+        });
+
+        it("hobbsStart null → 0", () => {
+            expect(computeDurationMinutes(null, 101.5)).toBe(0);
+        });
+
+        it("hobbsEnd null → 0", () => {
+            expect(computeDurationMinutes(100, null)).toBe(0);
+        });
+
+        it("hobbsEnd <= hobbsStart → 0 (vol incohérent ou non commencé)", () => {
+            expect(computeDurationMinutes(100, 100)).toBe(0);
+            expect(computeDurationMinutes(100, 99)).toBe(0);
+        });
+
+        it("arrondi au plus proche", () => {
+            // 1.51h = 90.6min → arrondi à 91
+            expect(computeDurationMinutes(0, 1.51)).toBe(91);
+            // 1.005h = 60.3min → arrondi à 60
+            expect(computeDurationMinutes(0, 1.005)).toBe(60);
+        });
+    });
+
+    describe("Calcul des temps DC / CdB / Instructeur depuis hobbs + fonction", () => {
         it("EP (élève pilote) → tout en temps double commande", () => {
-            const times = computeTimes("EP", 90);
-            expect(times.timeDC).toBe(90);
-            expect(times.timePIC).toBe(0);
-            expect(times.timeInstructor).toBe(0);
+            const t = computeFlightTimes({ hobbsStart: 100, hobbsEnd: 101.5, pilotFunction: "EP" });
+            expect(t.durationMinutes).toBe(90);
+            expect(t.timeDC).toBe(90);
+            expect(t.timePIC).toBe(0);
+            expect(t.timeInstructor).toBe(0);
         });
 
         it("P (pilote) → tout en temps commandant de bord", () => {
-            const times = computeTimes("P", 60);
-            expect(times.timeDC).toBe(0);
-            expect(times.timePIC).toBe(60);
-            expect(times.timeInstructor).toBe(0);
+            const t = computeFlightTimes({ hobbsStart: 100, hobbsEnd: 101, pilotFunction: "P" });
+            expect(t.durationMinutes).toBe(60);
+            expect(t.timeDC).toBe(0);
+            expect(t.timePIC).toBe(60);
+            expect(t.timeInstructor).toBe(0);
         });
 
         it("I (instructeur) → tout en temps instructeur", () => {
-            const times = computeTimes("I", 120);
-            expect(times.timeDC).toBe(0);
-            expect(times.timePIC).toBe(0);
-            expect(times.timeInstructor).toBe(120);
+            const t = computeFlightTimes({ hobbsStart: 100, hobbsEnd: 102, pilotFunction: "I" });
+            expect(t.durationMinutes).toBe(120);
+            expect(t.timeDC).toBe(0);
+            expect(t.timePIC).toBe(0);
+            expect(t.timeInstructor).toBe(120);
         });
 
-        it("fonction inconnue → tous à 0", () => {
-            const times = computeTimes("X", 60);
-            expect(times.timeDC).toBe(0);
-            expect(times.timePIC).toBe(0);
-            expect(times.timeInstructor).toBe(0);
+        it("hobbs manquants → tous à 0 (vol pas encore complété)", () => {
+            const t = computeFlightTimes({ hobbsStart: null, hobbsEnd: null, pilotFunction: "P" });
+            expect(t.durationMinutes).toBe(0);
+            expect(t.timePIC).toBe(0);
+        });
+    });
+
+    describe("Déduction de pilotFunction depuis nature + rôle", () => {
+        it("nature CDB → fonction = P quel que soit le rôle", () => {
+            expect(derivePilotFunction("CDB", userRole.PILOT)).toBe("P");
+            expect(derivePilotFunction("CDB", userRole.INSTRUCTOR)).toBe("P");
+            expect(derivePilotFunction("CDB", userRole.STUDENT)).toBe("P");
+        });
+
+        it("nature INSTRUCTION + instructeur → fonction = I", () => {
+            expect(derivePilotFunction("INSTRUCTION", userRole.INSTRUCTOR)).toBe("I");
+            expect(derivePilotFunction("INSTRUCTION", userRole.OWNER)).toBe("I");
+            expect(derivePilotFunction("INSTRUCTION", userRole.ADMIN)).toBe("I");
+        });
+
+        it("nature INSTRUCTION + non-instructeur → fonction = EP", () => {
+            expect(derivePilotFunction("INSTRUCTION", userRole.STUDENT)).toBe("EP");
+            expect(derivePilotFunction("INSTRUCTION", userRole.PILOT)).toBe("EP");
+            expect(derivePilotFunction("INSTRUCTION", userRole.MANAGER)).toBe("EP");
+        });
+    });
+
+    describe("isInstructorRole", () => {
+        it("INSTRUCTOR / OWNER / ADMIN sont considérés comme instructeurs", () => {
+            expect(isInstructorRole(userRole.INSTRUCTOR)).toBe(true);
+            expect(isInstructorRole(userRole.OWNER)).toBe(true);
+            expect(isInstructorRole(userRole.ADMIN)).toBe(true);
+        });
+
+        it("STUDENT / PILOT / MANAGER / USER ne sont pas instructeurs", () => {
+            expect(isInstructorRole(userRole.STUDENT)).toBe(false);
+            expect(isInstructorRole(userRole.PILOT)).toBe(false);
+            expect(isInstructorRole(userRole.MANAGER)).toBe(false);
+            expect(isInstructorRole(userRole.USER)).toBe(false);
+        });
+    });
+
+    describe("Validation nature / sous-type", () => {
+        it("INSTRUCTION sans sous-type → erreur", () => {
+            const r = validateNatureSubType("INSTRUCTION", null);
+            expect(r.ok).toBe(false);
+        });
+
+        it("INSTRUCTION avec sous-type → ok", () => {
+            expect(validateNatureSubType("INSTRUCTION", "LOCAL").ok).toBe(true);
+            expect(validateNatureSubType("INSTRUCTION", "NAVIGATION").ok).toBe(true);
+            expect(validateNatureSubType("INSTRUCTION", "LACHE").ok).toBe(true);
+            expect(validateNatureSubType("INSTRUCTION", "BAPTEME").ok).toBe(true);
+            expect(validateNatureSubType("INSTRUCTION", "EXAM").ok).toBe(true);
+        });
+
+        it("CDB sans sous-type → ok", () => {
+            expect(validateNatureSubType("CDB", null).ok).toBe(true);
+        });
+
+        it("CDB avec sous-type → erreur (incohérent)", () => {
+            expect(validateNatureSubType("CDB", "LOCAL").ok).toBe(false);
+        });
+    });
+
+    describe("Formattage nature", () => {
+        it("CDB → 'CdB'", () => {
+            expect(formatNature("CDB", null)).toBe("CdB");
+        });
+
+        it("INSTRUCTION + sous-type → 'Instr. (Local)' etc.", () => {
+            expect(formatNature("INSTRUCTION", "LOCAL")).toBe("Instr. (Local)");
+            expect(formatNature("INSTRUCTION", "NAVIGATION")).toBe("Instr. (Navigation)");
+            expect(formatNature("INSTRUCTION", "LACHE")).toBe("Instr. (Lâché)");
+            expect(formatNature("INSTRUCTION", "BAPTEME")).toBe("Instr. (Baptême)");
+            expect(formatNature("INSTRUCTION", "EXAM")).toBe("Instr. (Examen)");
+        });
+
+        it("INSTRUCTION sans sous-type → 'Instruction'", () => {
+            expect(formatNature("INSTRUCTION", null)).toBe("Instruction");
         });
     });
 
@@ -175,13 +269,11 @@ describe("Règles du carnet de vol", () => {
 
     describe("Signature", () => {
         it("le pilote peut signer son propre vol non signé", () => {
-            const result = canSignFlight("pilot-1", "pilot-1", false);
-            expect(result.allowed).toBe(true);
+            expect(canSignFlight("pilot-1", "pilot-1", false).allowed).toBe(true);
         });
 
         it("un autre utilisateur ne peut PAS signer", () => {
-            const result = canSignFlight("other-user", "pilot-1", false);
-            expect(result.allowed).toBe(false);
+            expect(canSignFlight("other-user", "pilot-1", false).allowed).toBe(false);
         });
 
         it("un vol déjà signé ne peut PAS être re-signé", () => {
@@ -215,18 +307,18 @@ describe("Règles du carnet de vol", () => {
     });
 
     describe("Éligibilité pour l'auto-création de logs", () => {
-        const now = new Date("2026-04-11T10:00:00Z");
+        const now = new Date("2026-08-15T10:00:00Z");
 
         it("session passée avec élève après la réglementation = éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2025-08-01"), "stu-1", now)).toBe(true);
+            expect(isSessionEligibleForLog(new Date("2026-06-15"), "stu-1", now)).toBe(true);
         });
 
         it("session passée SANS élève = non éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2025-08-01"), null, now)).toBe(false);
+            expect(isSessionEligibleForLog(new Date("2026-06-15"), null, now)).toBe(false);
         });
 
         it("session AVANT la date de réglementation = non éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2025-06-15"), "stu-1", now)).toBe(false);
+            expect(isSessionEligibleForLog(new Date("2026-03-15"), "stu-1", now)).toBe(false);
         });
 
         it("session future = non éligible", () => {
@@ -234,7 +326,7 @@ describe("Règles du carnet de vol", () => {
         });
 
         it("session exactement à la date de réglementation = éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2025-07-01"), "stu-1", now)).toBe(true);
+            expect(isSessionEligibleForLog(new Date("2026-05-25"), "stu-1", now)).toBe(true);
         });
     });
 
@@ -276,8 +368,6 @@ describe("Règles du carnet de vol", () => {
         });
 
         it("pilote solo (P) ne déclenche PAS l'auto-signature", () => {
-            // Vol pilote sans élève → aucun log EP ne devrait exister, et même
-            // si un log EP traînait pour la même session, on ne le signe pas.
             const pilotSoloLog: SignableLog = {
                 id: "log-P-1",
                 sessionID: "session-1",
@@ -299,7 +389,7 @@ describe("Règles du carnet de vol", () => {
             expect(siblings).toHaveLength(0);
         });
 
-        it("plusieurs élèves dans la même session → tous signés (cas vol en double commande à plusieurs)", () => {
+        it("plusieurs élèves dans la même session → tous signés", () => {
             const studentLog2: SignableLog = {
                 id: "log-EP-1b",
                 sessionID: "session-1",
@@ -313,18 +403,13 @@ describe("Règles du carnet de vol", () => {
     });
 
     describe("Popup vols incomplets — filtrage cohérent avec PG DATE", () => {
-        // Régression : la colonne `flight_logs.date` est de type PG `DATE`,
-        // donc l'heure est tronquée en base. Filtrer avec `lt: new Date()`
-        // rejetait les vols du jour (`aujourd'hui < aujourd'hui` = false).
-        // Le fix : comparer à `startOfTomorrowUTC(now)`.
-
         const baseLog = {
             pilotSigned: false,
             pilotFunction: "I",
             pilotID: "pilot-1",
             clubID: "club-1",
         };
-        const now = new Date("2026-05-06T18:46:00.000Z"); // 20h46 CEST
+        const now = new Date("2026-05-06T18:46:00.000Z");
 
         it("vol du jour (date = aujourd'hui 00:00Z) → inclus dans la popup", () => {
             const log = { ...baseLog, date: new Date("2026-05-06T00:00:00.000Z") };
@@ -346,7 +431,7 @@ describe("Règles du carnet de vol", () => {
             expect(isLogIncomplete(log, "pilot-1", "club-1", now)).toBe(false);
         });
 
-        it("entrée élève (pilotFunction = EP) → exclue (pas pour la popup pilote)", () => {
+        it("entrée élève (pilotFunction = EP) → exclue", () => {
             const log = { ...baseLog, pilotFunction: "EP", date: new Date("2026-05-06T00:00:00.000Z") };
             expect(isLogIncomplete(log, "pilot-1", "club-1", now)).toBe(false);
         });
@@ -361,30 +446,11 @@ describe("Règles du carnet de vol", () => {
             expect(isLogIncomplete(log, "pilot-1", "club-1", now)).toBe(false);
         });
 
-        it("regression : `lt: now` (au lieu de `lt: tomorrow`) rejetterait le vol du jour", () => {
-            // C'est exactement le bug observé : log.date stocké comme DATE
-            // donc 00:00Z, et `< now` est faux quand on tronque PG côté DB.
-            // On simule la comparaison côté JS avec l'ancienne logique.
-            const logDate = new Date("2026-05-06T00:00:00.000Z");
-            const oldFilterIncluded = logDate < now; // l'ancienne logique JS marchait...
-            // ... mais côté Postgres, avec @db.Date, `now` est tronqué en
-            // '2026-05-06'::date, et la comparaison devient '2026-05-06' <
-            // '2026-05-06' = false. On simule ça :
-            const truncatedNow = new Date(now);
-            truncatedNow.setUTCHours(0, 0, 0, 0);
-            const sqlBehavior = logDate < truncatedNow;
-            expect(oldFilterIncluded).toBe(true); // JS pur OK
-            expect(sqlBehavior).toBe(false);      // mais SQL DATE rejette → bug
-            // Le nouveau filtre `lt: tomorrow` corrige :
-            expect(logDate < startOfTomorrowUTC(now)).toBe(true);
-        });
-
         it("startOfTomorrowUTC est strictement > tout instant d'aujourd'hui", () => {
             const tomorrow = startOfTomorrowUTC(now);
             expect(tomorrow > now).toBe(true);
             const endOfToday = new Date("2026-05-06T23:59:59.999Z");
             expect(tomorrow > endOfToday).toBe(true);
-            // et c'est exactement minuit le lendemain
             expect(tomorrow.toISOString()).toBe("2026-05-07T00:00:00.000Z");
         });
     });
