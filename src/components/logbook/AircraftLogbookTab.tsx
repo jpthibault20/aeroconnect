@@ -27,9 +27,7 @@ interface Props {
 }
 
 const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange, onFilteredLogsChange, onLogUpdated }: Props) => {
-    const [selectedPlaneID, setSelectedPlaneID] = useState<string>(
-        planesList.length > 0 ? planesList[0].id : "NONE"
-    );
+    const [selectedPlaneID, setSelectedPlaneID] = useState<string>("ALL");
 
     useEffect(() => {
         onPlaneChange?.(selectedPlaneID);
