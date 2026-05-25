@@ -1,40 +1,40 @@
 import { describe, it, expect } from "vitest";
 import { mapFlightType } from "../logbook";
 
-describe("mapFlightType", () => {
-    it("mappe TRAINING -> INSTRUCTION", async () => {
-        expect(await mapFlightType("TRAINING")).toBe("INSTRUCTION");
+describe("mapFlightType (compat. flight_sessions → flight_logs)", () => {
+    it("TRAINING → INSTRUCTION + LOCAL", async () => {
+        expect(await mapFlightType("TRAINING")).toEqual({ nature: "INSTRUCTION", subType: "LOCAL" });
     });
 
-    it("mappe PRIVATE -> LOCAL", async () => {
-        expect(await mapFlightType("PRIVATE")).toBe("LOCAL");
+    it("PRIVATE → CDB (sans sous-type)", async () => {
+        expect(await mapFlightType("PRIVATE")).toEqual({ nature: "CDB", subType: null });
     });
 
-    it("mappe SIGHTSEEING -> VLO", async () => {
-        expect(await mapFlightType("SIGHTSEEING")).toBe("VLO");
+    it("SIGHTSEEING → INSTRUCTION + LOCAL", async () => {
+        expect(await mapFlightType("SIGHTSEEING")).toEqual({ nature: "INSTRUCTION", subType: "LOCAL" });
     });
 
-    it("mappe DISCOVERY -> VLD", async () => {
-        expect(await mapFlightType("DISCOVERY")).toBe("VLD");
+    it("DISCOVERY → INSTRUCTION + BAPTEME", async () => {
+        expect(await mapFlightType("DISCOVERY")).toEqual({ nature: "INSTRUCTION", subType: "BAPTEME" });
     });
 
-    it("mappe EXAM -> EXAM", async () => {
-        expect(await mapFlightType("EXAM")).toBe("EXAM");
+    it("EXAM → INSTRUCTION + EXAM", async () => {
+        expect(await mapFlightType("EXAM")).toEqual({ nature: "INSTRUCTION", subType: "EXAM" });
     });
 
-    it("mappe FIRST_FLIGHT -> FIRST_FLIGHT", async () => {
-        expect(await mapFlightType("FIRST_FLIGHT")).toBe("FIRST_FLIGHT");
+    it("FIRST_FLIGHT → INSTRUCTION + BAPTEME", async () => {
+        expect(await mapFlightType("FIRST_FLIGHT")).toEqual({ nature: "INSTRUCTION", subType: "BAPTEME" });
     });
 
-    it("mappe INITATION -> BAPTEME", async () => {
-        expect(await mapFlightType("INITATION")).toBe("BAPTEME");
+    it("INITATION → INSTRUCTION + BAPTEME", async () => {
+        expect(await mapFlightType("INITATION")).toEqual({ nature: "INSTRUCTION", subType: "BAPTEME" });
     });
 
-    it("retourne INSTRUCTION par défaut pour null", async () => {
-        expect(await mapFlightType(null)).toBe("INSTRUCTION");
+    it("null → fallback INSTRUCTION + LOCAL", async () => {
+        expect(await mapFlightType(null)).toEqual({ nature: "INSTRUCTION", subType: "LOCAL" });
     });
 
-    it("retourne INSTRUCTION par défaut pour valeur inconnue", async () => {
-        expect(await mapFlightType("UNKNOWN")).toBe("INSTRUCTION");
+    it("valeur inconnue → fallback INSTRUCTION + LOCAL", async () => {
+        expect(await mapFlightType("UNKNOWN")).toEqual({ nature: "INSTRUCTION", subType: "LOCAL" });
     });
 });

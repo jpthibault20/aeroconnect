@@ -8,10 +8,10 @@ import { getIncompleteFlightLogs, autoCreateLogsFromSessions, getPlaneHobbs } fr
 import CompleteFlightDialog from "./CompleteFlightDialog";
 
 /**
- * Ce composant s'affiche automatiquement à l'ouverture de l'app
- * s'il y a des vols non signés pour l'utilisateur courant.
- * Il gère une file : quand l'utilisateur complète un vol,
- * le suivant s'affiche automatiquement.
+ * Popup automatique à l'ouverture de l'app si l'utilisateur a des vols non
+ * signés. File traitée chronologiquement : à chaque étape on lit le hobbsTotal
+ * frais de l'avion (post-signature précédente) pour proposer un hobbsStart à
+ * jour. La valeur est figée serveur-side à la signature (cf. signFlightLog).
  */
 const PendingFlightsPrompt = () => {
     const { currentUser } = useCurrentUser();
@@ -20,7 +20,7 @@ const PendingFlightsPrompt = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [open, setOpen] = useState(false);
     const [loaded, setLoaded] = useState(false);
-    const [planeHobbsMap, setPlaneHobbsMap] = useState<Record<string, number>>({});
+    const [currentHobbsStart, setCurrentHobbsStart] = useState<number | undefined>(undefined);
 
     // Charger les vols incomplets au montage
     useEffect(() => {
@@ -34,20 +34,6 @@ const PendingFlightsPrompt = () => {
             if ("error" in res || !res.logs) return;
 
             if (res.logs.length > 0) {
-                // Récupérer le hobbsTotal de chaque avion concerné
-                const uniquePlaneIDs = [...new Set(res.logs.map(l => l.planeID).filter((id): id is string => !!id))];
-                const hobbsEntries = await Promise.all(
-                    uniquePlaneIDs.map(async (id) => {
-                        const hobbs = await getPlaneHobbs(id);
-                        return [id, hobbs] as const;
-                    })
-                );
-                const hobbsMap: Record<string, number> = {};
-                for (const [id, hobbs] of hobbsEntries) {
-                    if (hobbs != null) hobbsMap[id] = hobbs;
-                }
-                setPlaneHobbsMap(hobbsMap);
-
                 setQueue(res.logs);
                 setCurrentIndex(0);
                 setOpen(true);
@@ -61,6 +47,23 @@ const PendingFlightsPrompt = () => {
     }, [currentUser?.id, currentClub?.id, loaded]);
 
     const currentLog = queue[currentIndex] ?? null;
+
+    // Refetch hobbs frais à chaque changement de vol courant (le hobbsTotal de
+    // l'avion a évolué si on vient de signer le vol précédent).
+    useEffect(() => {
+        if (!currentLog?.planeID) {
+            setCurrentHobbsStart(undefined);
+            return;
+        }
+        let cancelled = false;
+        getPlaneHobbs(currentLog.planeID).then((hobbs) => {
+            if (cancelled) return;
+            setCurrentHobbsStart(hobbs ?? undefined);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [currentLog?.id, currentLog?.planeID]);
 
     const handleCompleted = useCallback(() => {
         const nextIndex = currentIndex + 1;
@@ -85,7 +88,6 @@ const PendingFlightsPrompt = () => {
         : undefined;
 
     const defaultAirfield = currentClub?.id ?? undefined;
-    const defaultHobbsStart = currentLog.planeID ? planeHobbsMap[currentLog.planeID] : undefined;
 
     return (
         <CompleteFlightDialog
@@ -95,7 +97,7 @@ const PendingFlightsPrompt = () => {
             onCompleted={handleCompleted}
             queueInfo={queueInfo}
             defaultAirfield={defaultAirfield}
-            defaultHobbsStart={defaultHobbsStart}
+            defaultHobbsStart={currentHobbsStart}
         />
     );
 };

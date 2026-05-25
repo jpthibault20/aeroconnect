@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { flight_logs, userRole } from "@prisma/client";
 import { updateFlightLog, signFlightLog } from "@/api/db/logbook";
+import { computeFlightTimes, formatNatureLong } from "@/lib/logbookCalc";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
 import { toast } from "@/hooks/use-toast";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
@@ -41,12 +42,11 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
     const [arrivalAirfield, setArrivalAirfield] = useState("");
     const [takeoffs, setTakeoffs] = useState(1);
     const [landings, setLandings] = useState(1);
-    const [hobbsStart, setHobbsStart] = useState("");
+    const [hobbsStartDisplay, setHobbsStartDisplay] = useState("");
     const [hobbsEnd, setHobbsEnd] = useState("");
     const [fuelAdded, setFuelAdded] = useState("");
-    const [oilAdded, setOilAdded] = useState("");
-    const [anomalies, setAnomalies] = useState("RAS");
-    const [remarks, setRemarks] = useState("");
+    const [machineAnomalies, setMachineAnomalies] = useState("RAS");
+    const [personalObservation, setPersonalObservation] = useState("");
 
     useEffect(() => {
         if (log) {
@@ -54,12 +54,17 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
             setArrivalAirfield(log.arrivalAirfield ?? defaultAirfield ?? "");
             setTakeoffs(log.takeoffs);
             setLandings(log.landings);
-            setHobbsStart(log.hobbsStart != null ? String(log.hobbsStart) : defaultHobbsStart != null ? String(defaultHobbsStart) : "");
+            setHobbsStartDisplay(
+                log.hobbsStart != null
+                    ? String(log.hobbsStart)
+                    : defaultHobbsStart != null
+                        ? String(defaultHobbsStart)
+                        : ""
+            );
             setHobbsEnd(log.hobbsEnd != null ? String(log.hobbsEnd) : "");
             setFuelAdded(log.fuelAdded != null ? String(log.fuelAdded) : "");
-            setOilAdded(log.oilAdded != null ? String(log.oilAdded) : "");
-            setAnomalies(log.anomalies ?? "RAS");
-            setRemarks(log.remarks ?? "");
+            setMachineAnomalies(log.machineAnomalies ?? "RAS");
+            setPersonalObservation(log.personalObservation ?? "");
         }
     }, [log, defaultAirfield, defaultHobbsStart]);
 
@@ -71,18 +76,29 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
     // Vol sans machine (théorique ou perso)
     const hasPlane = !!log.planeID;
 
+    // Durée affichée : recalculée à la volée depuis les hobbs (saisis ou
+    // stockés). Si rien n'est saisi, on n'affiche pas de durée.
+    const previewTimes = computeFlightTimes({
+        hobbsStart: log.hobbsStart ?? (defaultHobbsStart ?? null),
+        hobbsEnd: hobbsEnd ? parseFloat(hobbsEnd) : (log.hobbsEnd ?? null),
+        pilotFunction: log.pilotFunction,
+    });
+
     const handleSave = async (andSign: boolean) => {
         if (hasPlane) {
+            const startVal = hobbsStartDisplay ? parseFloat(hobbsStartDisplay) : null;
+            const endVal = hobbsEnd ? parseFloat(hobbsEnd) : null;
+
             if (andSign) {
-                if (!hobbsStart || isNaN(parseFloat(hobbsStart))) {
+                if (startVal == null || isNaN(startVal)) {
                     toast({ title: "Erreur", description: "Les heures moteur de début sont obligatoires pour signer.", variant: "destructive" });
                     return;
                 }
-                if (!hobbsEnd || isNaN(parseFloat(hobbsEnd)) || parseFloat(hobbsEnd) <= parseFloat(hobbsStart)) {
+                if (endVal == null || isNaN(endVal) || endVal <= startVal) {
                     toast({ title: "Erreur", description: "Les heures moteur de fin doivent être supérieures à celles de début.", variant: "destructive" });
                     return;
                 }
-            } else if (hobbsStart && hobbsEnd && parseFloat(hobbsEnd) <= parseFloat(hobbsStart)) {
+            } else if (startVal != null && endVal != null && endVal <= startVal) {
                 toast({ title: "Erreur", description: "Les heures moteur de fin doivent être supérieures à celles de début.", variant: "destructive" });
                 return;
             }
@@ -97,12 +113,10 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                 arrivalAirfield: arrivalAirfield || undefined,
                 takeoffs,
                 landings,
-                hobbsStart: hobbsStart ? parseFloat(hobbsStart) : undefined,
                 hobbsEnd: hobbsEnd ? parseFloat(hobbsEnd) : undefined,
                 fuelAdded: fuelAdded ? parseFloat(fuelAdded) : undefined,
-                oilAdded: oilAdded ? parseFloat(oilAdded) : undefined,
-                anomalies: anomalies || "RAS",
-                remarks: remarks || undefined,
+                machineAnomalies: machineAnomalies || "RAS",
+                personalObservation: personalObservation || undefined,
             });
 
             if ("error" in res) {
@@ -129,12 +143,10 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                 arrivalAirfield: arrivalAirfield || null,
                 takeoffs,
                 landings,
-                hobbsStart: hobbsStart ? parseFloat(hobbsStart) : null,
                 hobbsEnd: hobbsEnd ? parseFloat(hobbsEnd) : null,
                 fuelAdded: fuelAdded ? parseFloat(fuelAdded) : null,
-                oilAdded: oilAdded ? parseFloat(oilAdded) : null,
-                anomalies: anomalies || null,
-                remarks: remarks || null,
+                machineAnomalies: machineAnomalies || null,
+                personalObservation: personalObservation || null,
                 pilotSigned: andSign ? true : log.pilotSigned,
                 pilotSignedAt: andSign ? new Date() : log.pilotSignedAt,
             });
@@ -175,7 +187,8 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                         <DialogDescription className="text-slate-500 ml-11 text-xs sm:text-sm">
                             {new Date(log.date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
                             {" — "}{log.planeName} ({log.planeRegistration})
-                            {" — "}{convertMinutesToHours(log.durationMinutes)}
+                            {" — "}{formatNatureLong(log.flightNature, log.instructionSubType)}
+                            {previewTimes.durationMinutes > 0 && <> — {convertMinutesToHours(previewTimes.durationMinutes)}</>}
                             {companion && <><br />{companion}</>}
                         </DialogDescription>
                     </DialogHeader>
@@ -199,12 +212,12 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                         </h3>
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
-                                <Label className="text-slate-600 text-xs">Départ (OACI)</Label>
-                                <Input value={departureAirfield} onChange={(e) => setDepartureAirfield(e.target.value.toUpperCase())} placeholder="LFXX" readOnly={isReadOnly} className={`font-mono uppercase text-sm ${inputClass}`} />
+                                <Label className="text-slate-600 text-xs">Départ</Label>
+                                <Input value={departureAirfield} onChange={(e) => setDepartureAirfield(e.target.value.toUpperCase())} placeholder="LFXXXX" maxLength={6} readOnly={isReadOnly} className={`font-mono uppercase text-sm ${inputClass}`} />
                             </div>
                             <div className="space-y-1">
-                                <Label className="text-slate-600 text-xs">Arrivée (OACI)</Label>
-                                <Input value={arrivalAirfield} onChange={(e) => setArrivalAirfield(e.target.value.toUpperCase())} placeholder="LFXX" readOnly={isReadOnly} className={`font-mono uppercase text-sm ${inputClass}`} />
+                                <Label className="text-slate-600 text-xs">Arrivée</Label>
+                                <Input value={arrivalAirfield} onChange={(e) => setArrivalAirfield(e.target.value.toUpperCase())} placeholder="LFXXXX" maxLength={6} readOnly={isReadOnly} className={`font-mono uppercase text-sm ${inputClass}`} />
                             </div>
                         </div>
                     </div>
@@ -235,34 +248,33 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <Label className="text-slate-600 text-xs">Heures moteur début</Label>
-                                    <Input type="number" step="0.1" value={hobbsStart} onChange={(e) => setHobbsStart(e.target.value)} placeholder="0.0" readOnly={isReadOnly} className={`font-mono text-sm ${inputClass}`} />
+                                    <Input type="number" step="0.1" value={hobbsStartDisplay} placeholder="—" readOnly className="bg-slate-100 border-slate-200 text-slate-500 cursor-default font-mono text-sm" />
+                                    {log.hobbsStart == null && !isReadOnly && (
+                                        <p className="text-[10px] text-slate-400 italic">Valeur lue sur l&apos;aéronef, figée à la signature.</p>
+                                    )}
                                 </div>
                                 <div className="space-y-1">
                                     <Label className="text-slate-600 text-xs">Heures moteur fin</Label>
                                     <Input type="number" step="0.1" value={hobbsEnd} onChange={(e) => setHobbsEnd(e.target.value)} placeholder="0.0" readOnly={isReadOnly} className={`font-mono text-sm ${inputClass}`} />
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-1 col-span-2">
                                     <Label className="text-slate-600 text-xs">Carburant ajouté (L)</Label>
                                     <Input type="number" step="0.1" value={fuelAdded} onChange={(e) => setFuelAdded(e.target.value)} placeholder="0.0" readOnly={isReadOnly} className={`text-sm ${inputClass}`} />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="text-slate-600 text-xs">Huile ajoutée (L)</Label>
-                                    <Input type="number" step="0.01" value={oilAdded} onChange={(e) => setOilAdded(e.target.value)} placeholder="0.0" readOnly={isReadOnly} className={`text-sm ${inputClass}`} />
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Anomalies */}
+                    {/* Anomalie machine */}
                     <div className="space-y-1">
-                        <Label className="text-slate-600 text-xs">Anomalies constatées</Label>
-                        <Textarea value={anomalies} onChange={(e) => setAnomalies(e.target.value)} placeholder="RAS" readOnly={isReadOnly} className={`text-sm min-h-[60px] ${inputClass}`} />
+                        <Label className="text-slate-600 text-xs">Anomalie machine</Label>
+                        <Textarea value={machineAnomalies} onChange={(e) => setMachineAnomalies(e.target.value)} placeholder="RAS" readOnly={isReadOnly} className={`text-sm min-h-[60px] ${inputClass}`} />
                     </div>
 
-                    {/* Remarques */}
+                    {/* Observation personnel */}
                     <div className="space-y-1">
-                        <Label className="text-slate-600 text-xs">Remarques / observations</Label>
-                        <Textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Remarques sur le vol..." readOnly={isReadOnly} className={`text-sm min-h-[60px] ${inputClass}`} />
+                        <Label className="text-slate-600 text-xs">Observation personnel</Label>
+                        <Textarea value={personalObservation} onChange={(e) => setPersonalObservation(e.target.value)} placeholder="Vos observations sur le vol..." readOnly={isReadOnly} className={`text-sm min-h-[60px] ${inputClass}`} />
                     </div>
                 </div>
 

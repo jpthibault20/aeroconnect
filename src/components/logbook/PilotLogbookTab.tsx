@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { flight_logs, User, userRole } from "@prisma/client";
+import { flight_logs, pilotFunction, User, userRole } from "@prisma/client";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
+import { computeFlightTimes, formatNature } from "@/lib/logbookCalc";
 import RunningTotalsCard from "./RunningTotalsCard";
 import SignFlightLogButton from "./SignFlightLogButton";
 import LogbookFilter from "./LogbookFilter";
@@ -28,6 +29,9 @@ export interface PilotExportInfo {
     pilotName: string;
     // lastName du pilote sélectionné (undefined si "Tous"), pour le nom de fichier.
     pilotLastName?: string;
+    // Pour calcul de la pilotFunction effective dans le PDF (EP si user est studentID).
+    // null en mode "ALL" pour un manager (on affiche la fonction stockée).
+    displayedPilotID?: string | null;
 }
 
 interface Props {
@@ -35,18 +39,6 @@ interface Props {
     users: User[];
     onExportInfoChange?: (info: PilotExportInfo) => void;
 }
-
-const NATURE_LABELS: Record<string, string> = {
-    INSTRUCTION: "Instruction",
-    LOCAL: "Local",
-    NAVIGATION: "Navigation",
-    VLO: "VLO",
-    VLD: "VLD",
-    EXAM: "Examen",
-    FIRST_FLIGHT: "1er vol",
-    BAPTEME: "Bapteme",
-    OTHER: "Autre",
-};
 
 const FUNCTION_BADGE: Record<string, { label: string; className: string }> = {
     EP: { label: "EP", className: "bg-blue-100 text-blue-700 border-blue-200" },
@@ -57,7 +49,7 @@ const FUNCTION_BADGE: Record<string, { label: string; className: string }> = {
 const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) => {
     const { currentUser } = useCurrentUser();
     const { currentClub } = useCurrentClub();
-    const defaultAirfield = currentClub?.defaultAirfield ?? currentClub?.id ?? undefined;
+    const defaultAirfield = currentClub?.id ?? undefined;
     const [selectedPilotID, setSelectedPilotID] = useState<string>("ALL");
     const [natureFilter, setNatureFilter] = useState<string | undefined>(undefined);
 
@@ -93,6 +85,26 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
         return filtered;
     }, [logsProp, selectedPilotID, natureFilter]);
 
+    // Pilote dont on regarde le carnet (pour calculer la fonction effective
+    // EP/P/I de chaque ligne). En mode "ALL" pour un manager, on garde la
+    // fonction stockée (vue brute). Pour un user simple, on prend currentUser.
+    const displayedPilotID: string | null = useMemo(() => {
+        if (selectedPilotID !== "ALL") return selectedPilotID;
+        if (canSelectPilot) return null;
+        return currentUser?.id ?? null;
+    }, [selectedPilotID, canSelectPilot, currentUser?.id]);
+
+    // 1 seul log par session d'instruction : si le pilote affiché est dans
+    // studentID, sa fonction effective est EP (pas la fonction stockée du log,
+    // qui est celle de l'instructeur).
+    const effectiveFunction = useCallback(
+        (log: flight_logs): pilotFunction => {
+            if (displayedPilotID && log.studentID === displayedPilotID) return "EP";
+            return log.pilotFunction;
+        },
+        [displayedPilotID]
+    );
+
     // Pilote sélectionné pour l'export (reflète la sélection du tab).
     const exportSelectedPilot = useMemo(() => {
         if (!canSelectPilot) return currentUser ?? null;
@@ -108,8 +120,9 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
             logs: pilotLogs,
             pilotName,
             pilotLastName: exportSelectedPilot?.lastName,
+            displayedPilotID,
         });
-    }, [pilotLogs, exportSelectedPilot, onExportInfoChange]);
+    }, [pilotLogs, exportSelectedPilot, displayedPilotID, onExportInfoChange]);
 
     const totalPages = Math.ceil(pilotLogs.length / PAGE_SIZE);
     const paginatedLogs = useMemo(
@@ -157,10 +170,15 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
     }, []);
 
     const getCompanionName = (log: flight_logs): string => {
-        if (log.pilotFunction === "EP" && log.instructorFirstName) {
+        const fn = effectiveFunction(log);
+        if (fn === "EP" && log.instructorFirstName) {
             return `${log.instructorFirstName} ${log.instructorLastName ?? ""}`.trim();
         }
-        if (log.pilotFunction === "I" && log.studentFirstName) {
+        if (fn === "EP" && log.pilotFirstName) {
+            // Pas d'instructorID stocké séparément : l'instructeur EST le pilotID du log
+            return `${log.pilotFirstName} ${log.pilotLastName ?? ""}`.trim();
+        }
+        if (fn === "I" && log.studentFirstName) {
             return `${log.studentFirstName} ${log.studentLastName ?? ""}`.trim();
         }
         return "";
@@ -192,7 +210,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
             </div>
 
             {/* Running totals */}
-            <RunningTotalsCard logs={pilotLogs} />
+            <RunningTotalsCard logs={pilotLogs} displayedPilotID={displayedPilotID} />
 
             {/* Content */}
             {pilotLogs.length === 0 ? (
@@ -220,7 +238,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
                                     <th className="px-3 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Dec.</th>
                                     <th className="px-3 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Att.</th>
                                     <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Avec</th>
-                                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Remarques</th>
+                                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Observation</th>
                                     {!isStudent && (
                                         <th className="px-3 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Signe</th>
                                     )}
@@ -228,7 +246,13 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                     {paginatedLogs.map((log) => {
-                                        const badge = FUNCTION_BADGE[log.pilotFunction] ?? FUNCTION_BADGE["P"];
+                                        const effFn = effectiveFunction(log);
+                                        const badge = FUNCTION_BADGE[effFn] ?? FUNCTION_BADGE["P"];
+                                        const times = computeFlightTimes({
+                                            hobbsStart: log.hobbsStart,
+                                            hobbsEnd: log.hobbsEnd,
+                                            pilotFunction: effFn,
+                                        });
                                         return (
                                             <tr
                                                 key={log.id}
@@ -254,19 +278,19 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
                                                     </span>
                                                 </td>
                                                 <td className="px-3 py-3 text-slate-600 whitespace-nowrap">
-                                                    {NATURE_LABELS[log.flightNature] ?? log.flightNature}
+                                                    {formatNature(log.flightNature, log.instructionSubType)}
                                                 </td>
                                                 <td className="px-3 py-3 text-right font-mono text-slate-700">
-                                                    {convertMinutesToHours(log.durationMinutes)}
+                                                    {times.durationMinutes > 0 ? convertMinutesToHours(times.durationMinutes) : "-"}
                                                 </td>
                                                 <td className="px-3 py-3 text-right font-mono text-slate-500">
-                                                    {log.timeDC > 0 ? convertMinutesToHours(log.timeDC) : "-"}
+                                                    {times.timeDC > 0 ? convertMinutesToHours(times.timeDC) : "-"}
                                                 </td>
                                                 <td className="px-3 py-3 text-right font-mono text-slate-500">
-                                                    {log.timePIC > 0 ? convertMinutesToHours(log.timePIC) : "-"}
+                                                    {times.timePIC > 0 ? convertMinutesToHours(times.timePIC) : "-"}
                                                 </td>
                                                 <td className="px-3 py-3 text-right font-mono text-slate-500">
-                                                    {log.timeInstructor > 0 ? convertMinutesToHours(log.timeInstructor) : "-"}
+                                                    {times.timeInstructor > 0 ? convertMinutesToHours(times.timeInstructor) : "-"}
                                                 </td>
                                                 <td className="px-3 py-3 font-mono text-xs text-slate-600 uppercase">
                                                     {log.departureAirfield ?? "-"}
@@ -280,7 +304,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
                                                     {getCompanionName(log) || "-"}
                                                 </td>
                                                 <td className="px-3 py-3 text-slate-500 text-xs max-w-[100px] truncate">
-                                                    {log.remarks ?? "-"}
+                                                    {log.personalObservation ?? "-"}
                                                 </td>
                                                 {!isStudent && (
                                                     <td className="px-3 py-3 text-center">
@@ -318,7 +342,13 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
                     {/* Mobile cards */}
                     <div className="lg:hidden flex flex-col gap-3 pb-20">
                         {paginatedLogs.map((log) => {
-                            const badge = FUNCTION_BADGE[log.pilotFunction] ?? FUNCTION_BADGE["P"];
+                            const effFn = effectiveFunction(log);
+                            const badge = FUNCTION_BADGE[effFn] ?? FUNCTION_BADGE["P"];
+                            const times = computeFlightTimes({
+                                hobbsStart: log.hobbsStart,
+                                hobbsEnd: log.hobbsEnd,
+                                pilotFunction: effFn,
+                            });
                             return (
                                 <div
                                     key={log.id}
@@ -355,10 +385,12 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
 
                                     {/* Stats row */}
                                     <div className="flex items-center gap-4 text-xs text-slate-500">
-                                        <span className="font-mono font-medium text-slate-700">
-                                            {convertMinutesToHours(log.durationMinutes)}
-                                        </span>
-                                        <span>{NATURE_LABELS[log.flightNature] ?? log.flightNature}</span>
+                                        {times.durationMinutes > 0 && (
+                                            <span className="font-mono font-medium text-slate-700">
+                                                {convertMinutesToHours(times.durationMinutes)}
+                                            </span>
+                                        )}
+                                        <span>{formatNature(log.flightNature, log.instructionSubType)}</span>
                                         {log.departureAirfield && (
                                             <span className="font-mono uppercase">
                                                 {log.departureAirfield}

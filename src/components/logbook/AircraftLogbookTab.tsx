@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { flight_logs, planes } from "@prisma/client";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
+import { computeFlightTimes, formatNature } from "@/lib/logbookCalc";
 import SignFlightLogButton from "./SignFlightLogButton";
 import LogbookFilter from "./LogbookFilter";
 import { Button } from "@/components/ui/button";
@@ -23,18 +24,6 @@ interface Props {
     onPlaneChange?: (planeID: string) => void;
     onFilteredLogsChange?: (logs: flight_logs[]) => void;
 }
-
-const NATURE_LABELS: Record<string, string> = {
-    INSTRUCTION: "Instruction",
-    LOCAL: "Local",
-    NAVIGATION: "Navigation",
-    VLO: "VLO",
-    VLD: "VLD",
-    EXAM: "Examen",
-    FIRST_FLIGHT: "1er vol",
-    BAPTEME: "Bapteme",
-    OTHER: "Autre",
-};
 
 const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange, onFilteredLogsChange }: Props) => {
     const [selectedPlaneID, setSelectedPlaneID] = useState<string>(
@@ -124,13 +113,14 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                     <th className="px-3 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Hobbs fin</th>
                                     <th className="px-3 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Att.</th>
                                     <th className="px-3 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Carburant</th>
-                                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Huile</th>
-                                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Anomalies</th>
-                                    <th className="px-3 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Signe</th>
+                                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Anomalie machine</th>
+                                    <th className="px-3 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Signé</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                    {paginatedLogs.map((log) => (
+                                    {paginatedLogs.map((log) => {
+                                        const times = computeFlightTimes(log);
+                                        return (
                                         <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
                                             <td className="px-3 py-3 text-slate-700 whitespace-nowrap font-medium">
                                                 {log.pilotFirstName} {log.pilotLastName}
@@ -145,10 +135,10 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                                 {log.arrivalAirfield ?? "-"}
                                             </td>
                                             <td className="px-3 py-3 text-right font-mono text-slate-700">
-                                                {convertMinutesToHours(log.durationMinutes)}
+                                                {times.durationMinutes > 0 ? convertMinutesToHours(times.durationMinutes) : "-"}
                                             </td>
                                             <td className="px-3 py-3 text-slate-600 whitespace-nowrap">
-                                                {NATURE_LABELS[log.flightNature] ?? log.flightNature}
+                                                {formatNature(log.flightNature, log.instructionSubType)}
                                             </td>
                                             <td className="px-3 py-3 text-right font-mono text-slate-500">
                                                 {log.hobbsStart != null ? log.hobbsStart.toFixed(1) : "-"}
@@ -160,17 +150,15 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                             <td className="px-3 py-3 text-right font-mono text-slate-500">
                                                 {log.fuelAdded != null ? `${log.fuelAdded.toFixed(1)}L` : "-"}
                                             </td>
-                                            <td className="px-3 py-3 text-right font-mono text-slate-500">
-                                                {log.oilAdded != null ? `${log.oilAdded.toFixed(2)}L` : "-"}
-                                            </td>
                                             <td className="px-3 py-3 text-slate-500 text-xs max-w-[120px] truncate">
-                                                {log.anomalies ?? "RAS"}
+                                                {log.machineAnomalies ?? "RAS"}
                                             </td>
                                             <td className="px-3 py-3 text-center">
                                                 <SignFlightLogButton log={log} onSigned={handleSigned} />
                                             </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                     </div>
@@ -195,7 +183,9 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
 
                     {/* Mobile cards */}
                     <div className="lg:hidden flex flex-col gap-3 pb-20">
-                        {paginatedLogs.map((log) => (
+                        {paginatedLogs.map((log) => {
+                            const times = computeFlightTimes(log);
+                            return (
                             <div
                                 key={log.id}
                                 className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3"
@@ -212,10 +202,12 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                 <div className="flex items-center gap-3 text-sm text-slate-500">
                                     <span>{new Date(log.date).toLocaleDateString("fr-FR")}</span>
                                     <span className="text-slate-300">|</span>
-                                    <span>{NATURE_LABELS[log.flightNature] ?? log.flightNature}</span>
-                                    <span className="ml-auto font-mono font-medium text-slate-700">
-                                        {convertMinutesToHours(log.durationMinutes)}
-                                    </span>
+                                    <span>{formatNature(log.flightNature, log.instructionSubType)}</span>
+                                    {times.durationMinutes > 0 && (
+                                        <span className="ml-auto font-mono font-medium text-slate-700">
+                                            {convertMinutesToHours(times.durationMinutes)}
+                                        </span>
+                                    )}
                                 </div>
 
                                 {/* Route */}
@@ -233,12 +225,13 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                         <span>Hobbs: {log.hobbsStart.toFixed(1)} → {log.hobbsEnd?.toFixed(1) ?? "?"}</span>
                                     )}
                                     {log.fuelAdded != null && <span>Carb: {log.fuelAdded.toFixed(1)}L</span>}
-                                    {log.anomalies && log.anomalies !== "RAS" && (
+                                    {log.machineAnomalies && log.machineAnomalies !== "RAS" && (
                                         <span className="text-amber-600 font-medium">Anomalie</span>
                                     )}
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </>
             )}

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 import { flight_logs } from '@prisma/client';
+import { computeFlightTimes, formatNature } from '@/lib/logbookCalc';
 
 interface Props {
     logs: flight_logs[];
@@ -9,18 +10,6 @@ interface Props {
     planeName: string;
     year: number;
 }
-
-const NATURE_LABELS: Record<string, string> = {
-    INSTRUCTION: "Instr.",
-    LOCAL: "Local",
-    NAVIGATION: "Nav.",
-    VLO: "VLO",
-    VLD: "VLD",
-    EXAM: "Exam.",
-    FIRST_FLIGHT: "1er vol",
-    BAPTEME: "Bapt.",
-    OTHER: "Autre",
-};
 
 const formatMin = (min: number): string => {
     const h = Math.floor(min / 60);
@@ -104,13 +93,12 @@ const columns = [
     { label: "Départ", width: "8%" },
     { label: "Arrivée", width: "8%" },
     { label: "Temps", width: "6%" },
-    { label: "Nature", width: "6%" },
+    { label: "Nature", width: "10%" },
     { label: "Hobbs déb.", width: "7%" },
     { label: "Hobbs fin", width: "7%" },
     { label: "Att.", width: "4%" },
     { label: "Carburant", width: "7%" },
-    { label: "Huile", width: "5%" },
-    { label: "Anomalies / RAS", width: "18%" },
+    { label: "Anomalie machine", width: "19%" },
     { label: "Signé", width: "4%" },
 ];
 
@@ -126,7 +114,7 @@ export const AircraftLogbookDocument = ({ logs, planeRegistration, planeName, ye
         pages.push([]);
     }
 
-    const totalMinutes = logs.reduce((acc, l) => acc + l.durationMinutes, 0);
+    const totalMinutes = logs.reduce((acc, l) => acc + computeFlightTimes(l).durationMinutes, 0);
     const totalLandings = logs.reduce((acc, l) => acc + l.landings, 0);
 
     return (
@@ -149,7 +137,9 @@ export const AircraftLogbookDocument = ({ logs, planeRegistration, planeName, ye
                         </View>
 
                         {/* Rows */}
-                        {pageLogs.map((log) => (
+                        {pageLogs.map((log) => {
+                            const t = computeFlightTimes(log);
+                            return (
                             <View key={log.id} style={styles.row}>
                                 <Text style={[styles.cell, { width: "14%", fontSize: 6, textAlign: "left" }]}>
                                     {log.pilotLastName} {(log.pilotFirstName ?? "").slice(0, 1)}.
@@ -157,17 +147,17 @@ export const AircraftLogbookDocument = ({ logs, planeRegistration, planeName, ye
                                 <Text style={[styles.cell, { width: "6%" }]}>{formatDate(log.date)}</Text>
                                 <Text style={[styles.cell, { width: "8%" }]}>{log.departureAirfield ?? ""}</Text>
                                 <Text style={[styles.cell, { width: "8%" }]}>{log.arrivalAirfield ?? ""}</Text>
-                                <Text style={[styles.cell, { width: "6%" }]}>{formatMin(log.durationMinutes)}</Text>
-                                <Text style={[styles.cell, { width: "6%" }]}>{NATURE_LABELS[log.flightNature] ?? ""}</Text>
+                                <Text style={[styles.cell, { width: "6%" }]}>{t.durationMinutes > 0 ? formatMin(t.durationMinutes) : ""}</Text>
+                                <Text style={[styles.cell, { width: "10%", fontSize: 6 }]}>{formatNature(log.flightNature, log.instructionSubType)}</Text>
                                 <Text style={[styles.cell, { width: "7%" }]}>{log.hobbsStart != null ? log.hobbsStart.toFixed(1) : ""}</Text>
                                 <Text style={[styles.cell, { width: "7%" }]}>{log.hobbsEnd != null ? log.hobbsEnd.toFixed(1) : ""}</Text>
                                 <Text style={[styles.cell, { width: "4%" }]}>{log.landings}</Text>
                                 <Text style={[styles.cell, { width: "7%" }]}>{log.fuelAdded != null ? `${log.fuelAdded}L` : ""}</Text>
-                                <Text style={[styles.cell, { width: "5%" }]}>{log.oilAdded != null ? `${log.oilAdded}L` : ""}</Text>
-                                <Text style={[styles.cell, { width: "18%", fontSize: 5.5, textAlign: "left" }]}>{log.anomalies ?? "RAS"}</Text>
+                                <Text style={[styles.cell, { width: "19%", fontSize: 5.5, textAlign: "left" }]}>{log.machineAnomalies ?? "RAS"}</Text>
                                 <Text style={[styles.cell, { width: "4%" }]}>{log.pilotSigned ? "✓" : ""}</Text>
                             </View>
-                        ))}
+                            );
+                        })}
 
                         {/* Totals on last page */}
                         {pageIdx === pages.length - 1 && (
@@ -177,13 +167,12 @@ export const AircraftLogbookDocument = ({ logs, planeRegistration, planeName, ye
                                 <Text style={[styles.cell, { width: "8%" }]}></Text>
                                 <Text style={[styles.cell, { width: "8%" }]}></Text>
                                 <Text style={[styles.cell, { width: "6%", fontWeight: "bold" }]}>{formatMin(totalMinutes)}</Text>
-                                <Text style={[styles.cell, { width: "6%" }]}></Text>
+                                <Text style={[styles.cell, { width: "10%" }]}></Text>
                                 <Text style={[styles.cell, { width: "7%" }]}></Text>
                                 <Text style={[styles.cell, { width: "7%" }]}></Text>
                                 <Text style={[styles.cell, { width: "4%" }]}>{totalLandings}</Text>
                                 <Text style={[styles.cell, { width: "7%" }]}></Text>
-                                <Text style={[styles.cell, { width: "5%" }]}></Text>
-                                <Text style={[styles.cell, { width: "18%" }]}></Text>
+                                <Text style={[styles.cell, { width: "19%" }]}></Text>
                                 <Text style={[styles.cell, { width: "4%" }]}></Text>
                             </View>
                         )}

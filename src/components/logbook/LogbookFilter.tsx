@@ -15,15 +15,8 @@ interface Props {
 }
 
 const NATURE_LABELS: Record<string, string> = {
+    CDB: "Commandant de bord",
     INSTRUCTION: "Instruction",
-    LOCAL: "Local",
-    NAVIGATION: "Navigation",
-    VLO: "VLO",
-    VLD: "VLD",
-    EXAM: "Examen",
-    FIRST_FLIGHT: "Premier vol",
-    BAPTEME: "Bapteme",
-    OTHER: "Autre",
 };
 
 const LogbookFilter = ({ onFilterChange }: Props) => {

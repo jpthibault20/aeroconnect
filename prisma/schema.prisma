@@ -137,23 +137,24 @@ enum pilotFunction {
 }
 
 enum flightNature {
+  CDB
   INSTRUCTION
+}
+
+enum instructionSubType {
   LOCAL
   NAVIGATION
-  VLO
-  VLD
-  EXAM
-  FIRST_FLIGHT
+  LACHE
   BAPTEME
-  OTHER
+  EXAM
 }
 
 model flight_logs {
-  id                  String         @id @default(uuid())
+  id                  String              @id @default(uuid())
   clubID              String
   sessionID           String?
 
-  date                DateTime       @db.Date
+  date                DateTime            @db.Date
   planeID             String?
   planeRegistration   String
   planeName           String
@@ -172,13 +173,9 @@ model flight_logs {
   studentLastName     String?
 
   flightNature        flightNature
-  durationMinutes     Int
-  takeoffs            Int            @default(1)
-  landings            Int            @default(1)
-
-  timeDC              Int            @default(0)
-  timePIC             Int            @default(0)
-  timeInstructor      Int            @default(0)
+  instructionSubType  instructionSubType?
+  takeoffs            Int                 @default(1)
+  landings            Int                 @default(1)
 
   departureAirfield   String?
   arrivalAirfield     String?
@@ -186,14 +183,13 @@ model flight_logs {
   hobbsStart          Float?
   hobbsEnd            Float?
   fuelAdded           Float?
-  oilAdded            Float?
-  anomalies           String?
+  machineAnomalies    String?
 
-  pilotSigned         Boolean        @default(false)
-  pilotSignedAt       DateTime?      @db.Timestamptz(6)
-  remarks             String?
+  pilotSigned         Boolean             @default(false)
+  pilotSignedAt       DateTime?           @db.Timestamptz(6)
+  personalObservation String?
 
-  createdAt           DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt           DateTime       @updatedAt @db.Timestamptz(6)
-  isManualEntry       Boolean        @default(false)
+  createdAt           DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime            @updatedAt @db.Timestamptz(6)
+  isManualEntry       Boolean             @default(false)
 }

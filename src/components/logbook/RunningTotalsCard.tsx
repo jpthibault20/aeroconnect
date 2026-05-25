@@ -3,26 +3,37 @@
 import React, { useMemo } from "react";
 import { flight_logs } from "@prisma/client";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
+import { computeFlightTimes } from "@/lib/logbookCalc";
 import { Clock, Compass, GraduationCap, Timer, PlaneLanding, PlaneTakeoff } from "lucide-react";
 
 interface Props {
     logs: flight_logs[];
+    // Pilote dont on cumule les heures : si fourni et qu'un log a
+    // studentID === displayedPilotID, la fonction effective est 'EP'.
+    // Sinon on prend la fonction stockée (vue brute pour un manager en "ALL").
+    displayedPilotID?: string | null;
 }
 
-const RunningTotalsCard = React.memo(({ logs }: Props) => {
+const RunningTotalsCard = React.memo(({ logs, displayedPilotID }: Props) => {
     const totals = useMemo(() => {
         let minutes = 0, dc = 0, pic = 0, instr = 0, tk = 0, ld = 0;
         for (let i = 0; i < logs.length; i++) {
             const l = logs[i];
-            minutes += l.durationMinutes;
-            dc += l.timeDC;
-            pic += l.timePIC;
-            instr += l.timeInstructor;
+            const effFn = displayedPilotID && l.studentID === displayedPilotID ? "EP" : l.pilotFunction;
+            const t = computeFlightTimes({
+                hobbsStart: l.hobbsStart,
+                hobbsEnd: l.hobbsEnd,
+                pilotFunction: effFn,
+            });
+            minutes += t.durationMinutes;
+            dc += t.timeDC;
+            pic += t.timePIC;
+            instr += t.timeInstructor;
             tk += l.takeoffs;
             ld += l.landings;
         }
         return { minutes, dc, pic, instr, tk, ld };
-    }, [logs]);
+    }, [logs, displayedPilotID]);
 
     const stats = [
         { label: "Total heures", value: convertMinutesToHours(totals.minutes), icon: Clock, color: "text-[#774BBE]", bg: "bg-purple-50", border: "border-purple-100" },

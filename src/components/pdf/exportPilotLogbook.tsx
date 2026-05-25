@@ -1,25 +1,17 @@
 "use client"
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
-import { flight_logs } from '@prisma/client';
+import { flight_logs, pilotFunction } from '@prisma/client';
+import { computeFlightTimes, formatNature } from '@/lib/logbookCalc';
 
 interface Props {
     logs: flight_logs[];
     pilotName: string;
     year: number;
+    // Pilote dont on génère le carnet (pour fonction effective EP si studentID).
+    // null/undefined = vue brute (manager en "ALL").
+    displayedPilotID?: string | null;
 }
-
-const NATURE_LABELS: Record<string, string> = {
-    INSTRUCTION: "Instr.",
-    LOCAL: "Local",
-    NAVIGATION: "Nav.",
-    VLO: "VLO",
-    VLD: "VLD",
-    EXAM: "Exam.",
-    FIRST_FLIGHT: "1er vol",
-    BAPTEME: "Bapt.",
-    OTHER: "Autre",
-};
 
 const FUNCTION_LABELS: Record<string, string> = {
     EP: "EP",
@@ -107,7 +99,7 @@ const columns = [
     { label: "Date", width: "6%" },
     { label: "Aéronef", width: "11%" },
     { label: "Fn", width: "4%" },
-    { label: "Nature", width: "6%" },
+    { label: "Nature", width: "10%" },
     { label: "Durée", width: "6%" },
     { label: "DC", width: "5.5%" },
     { label: "CdB", width: "5.5%" },
@@ -116,14 +108,14 @@ const columns = [
     { label: "Arrivée", width: "7%" },
     { label: "Déc.", width: "4%" },
     { label: "Att.", width: "4%" },
-    { label: "Avec", width: "14%" },
-    { label: "Remarques", width: "10.5%" },
+    { label: "Avec", width: "12%" },
+    { label: "Observation", width: "8.5%" },
     { label: "Signé", width: "4%" },
 ];
 
 const ROWS_PER_PAGE = 32;
 
-export const PilotLogbookDocument = ({ logs, pilotName, year }: Props) => {
+export const PilotLogbookDocument = ({ logs, pilotName, year, displayedPilotID }: Props) => {
     const pages: flight_logs[][] = [];
     for (let i = 0; i < logs.length; i += ROWS_PER_PAGE) {
         pages.push(logs.slice(i, i + ROWS_PER_PAGE));
@@ -133,16 +125,27 @@ export const PilotLogbookDocument = ({ logs, pilotName, year }: Props) => {
         pages.push([]);
     }
 
+    // Fonction effective d'un log pour le pilote affiché.
+    const effFn = (log: flight_logs): pilotFunction =>
+        displayedPilotID && log.studentID === displayedPilotID ? "EP" : log.pilotFunction;
+
     // Running totals
     const totals = logs.reduce(
-        (acc, log) => ({
-            duration: acc.duration + log.durationMinutes,
-            dc: acc.dc + log.timeDC,
-            pic: acc.pic + log.timePIC,
-            instr: acc.instr + log.timeInstructor,
-            takeoffs: acc.takeoffs + log.takeoffs,
-            landings: acc.landings + log.landings,
-        }),
+        (acc, log) => {
+            const t = computeFlightTimes({
+                hobbsStart: log.hobbsStart,
+                hobbsEnd: log.hobbsEnd,
+                pilotFunction: effFn(log),
+            });
+            return {
+                duration: acc.duration + t.durationMinutes,
+                dc: acc.dc + t.timeDC,
+                pic: acc.pic + t.timePIC,
+                instr: acc.instr + t.timeInstructor,
+                takeoffs: acc.takeoffs + log.takeoffs,
+                landings: acc.landings + log.landings,
+            };
+        },
         { duration: 0, dc: 0, pic: 0, instr: 0, takeoffs: 0, landings: 0 }
     );
 
@@ -166,31 +169,41 @@ export const PilotLogbookDocument = ({ logs, pilotName, year }: Props) => {
                         </View>
 
                         {/* Rows */}
-                        {pageLogs.map((log) => (
+                        {pageLogs.map((log) => {
+                            const fn = effFn(log);
+                            const t = computeFlightTimes({
+                                hobbsStart: log.hobbsStart,
+                                hobbsEnd: log.hobbsEnd,
+                                pilotFunction: fn,
+                            });
+                            // Si user est studentID → "Avec" = l'instructeur, qui est le pilotID du log
+                            // (plus de colonne instructor* séparée stockée pour les nouvelles entrées).
+                            const compagnon =
+                                fn === "EP"
+                                    ? `${log.instructorLastName ?? log.pilotLastName ?? ""} ${(log.instructorFirstName ?? log.pilotFirstName ?? "").slice(0, 1)}.`
+                                    : fn === "I"
+                                        ? `${log.studentLastName ?? ""} ${(log.studentFirstName ?? "").slice(0, 1)}.`
+                                        : "";
+                            return (
                             <View key={log.id} style={styles.row}>
                                 <Text style={[styles.cell, { width: "6%" }]}>{formatDate(log.date)}</Text>
                                 <Text style={[styles.cell, { width: "11%", fontSize: 6 }]}>{log.planeRegistration}</Text>
-                                <Text style={[styles.cell, { width: "4%" }]}>{FUNCTION_LABELS[log.pilotFunction] ?? ""}</Text>
-                                <Text style={[styles.cell, { width: "6%" }]}>{NATURE_LABELS[log.flightNature] ?? ""}</Text>
-                                <Text style={[styles.cell, { width: "6%" }]}>{formatMin(log.durationMinutes)}</Text>
-                                <Text style={[styles.cell, { width: "5.5%" }]}>{log.timeDC > 0 ? formatMin(log.timeDC) : ""}</Text>
-                                <Text style={[styles.cell, { width: "5.5%" }]}>{log.timePIC > 0 ? formatMin(log.timePIC) : ""}</Text>
-                                <Text style={[styles.cell, { width: "5.5%" }]}>{log.timeInstructor > 0 ? formatMin(log.timeInstructor) : ""}</Text>
+                                <Text style={[styles.cell, { width: "4%" }]}>{FUNCTION_LABELS[fn] ?? ""}</Text>
+                                <Text style={[styles.cell, { width: "10%", fontSize: 6 }]}>{formatNature(log.flightNature, log.instructionSubType)}</Text>
+                                <Text style={[styles.cell, { width: "6%" }]}>{t.durationMinutes > 0 ? formatMin(t.durationMinutes) : ""}</Text>
+                                <Text style={[styles.cell, { width: "5.5%" }]}>{t.timeDC > 0 ? formatMin(t.timeDC) : ""}</Text>
+                                <Text style={[styles.cell, { width: "5.5%" }]}>{t.timePIC > 0 ? formatMin(t.timePIC) : ""}</Text>
+                                <Text style={[styles.cell, { width: "5.5%" }]}>{t.timeInstructor > 0 ? formatMin(t.timeInstructor) : ""}</Text>
                                 <Text style={[styles.cell, { width: "7%" }]}>{log.departureAirfield ?? ""}</Text>
                                 <Text style={[styles.cell, { width: "7%" }]}>{log.arrivalAirfield ?? ""}</Text>
                                 <Text style={[styles.cell, { width: "4%" }]}>{log.takeoffs}</Text>
                                 <Text style={[styles.cell, { width: "4%" }]}>{log.landings}</Text>
-                                <Text style={[styles.cell, { width: "14%", fontSize: 6, textAlign: "left" }]}>
-                                    {log.pilotFunction === "EP"
-                                        ? `${log.instructorLastName ?? ""} ${(log.instructorFirstName ?? "").slice(0, 1)}.`
-                                        : log.pilotFunction === "I"
-                                            ? `${log.studentLastName ?? ""} ${(log.studentFirstName ?? "").slice(0, 1)}.`
-                                            : ""}
-                                </Text>
-                                <Text style={[styles.cell, { width: "10.5%", fontSize: 5.5, textAlign: "left" }]}>{log.remarks ?? ""}</Text>
+                                <Text style={[styles.cell, { width: "12%", fontSize: 6, textAlign: "left" }]}>{compagnon}</Text>
+                                <Text style={[styles.cell, { width: "8.5%", fontSize: 5.5, textAlign: "left" }]}>{log.personalObservation ?? ""}</Text>
                                 <Text style={[styles.cell, { width: "4%" }]}>{log.pilotSigned ? "✓" : ""}</Text>
                             </View>
-                        ))}
+                            );
+                        })}
 
                         {/* Totals on last page */}
                         {pageIdx === pages.length - 1 && (
@@ -198,7 +211,7 @@ export const PilotLogbookDocument = ({ logs, pilotName, year }: Props) => {
                                 <Text style={[styles.cell, { width: "6%" }]}>TOTAL</Text>
                                 <Text style={[styles.cell, { width: "11%" }]}></Text>
                                 <Text style={[styles.cell, { width: "4%" }]}></Text>
-                                <Text style={[styles.cell, { width: "6%" }]}></Text>
+                                <Text style={[styles.cell, { width: "10%" }]}></Text>
                                 <Text style={[styles.cell, { width: "6%", fontWeight: "bold" }]}>{formatMin(totals.duration)}</Text>
                                 <Text style={[styles.cell, { width: "5.5%" }]}>{totals.dc > 0 ? formatMin(totals.dc) : ""}</Text>
                                 <Text style={[styles.cell, { width: "5.5%" }]}>{totals.pic > 0 ? formatMin(totals.pic) : ""}</Text>
@@ -207,8 +220,8 @@ export const PilotLogbookDocument = ({ logs, pilotName, year }: Props) => {
                                 <Text style={[styles.cell, { width: "7%" }]}></Text>
                                 <Text style={[styles.cell, { width: "4%" }]}>{totals.takeoffs}</Text>
                                 <Text style={[styles.cell, { width: "4%" }]}>{totals.landings}</Text>
-                                <Text style={[styles.cell, { width: "14%" }]}></Text>
-                                <Text style={[styles.cell, { width: "10.5%" }]}></Text>
+                                <Text style={[styles.cell, { width: "12%" }]}></Text>
+                                <Text style={[styles.cell, { width: "8.5%" }]}></Text>
                                 <Text style={[styles.cell, { width: "4%" }]}></Text>
                             </View>
                         )}

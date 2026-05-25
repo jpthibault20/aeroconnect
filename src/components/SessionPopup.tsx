@@ -18,6 +18,8 @@ import { PiStudent } from "react-icons/pi";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import SessionPopupUpdate from "./SessionPopupUpdate";
 import { getFlightLogBySession, getPlaneHobbs, autoCreateLogsFromSessions, updateFlightLog, signFlightLog } from "@/api/db/logbook";
+import { computeFlightTimes, formatNatureLong } from "@/lib/logbookCalc";
+import { convertMinutesToHours } from "@/api/global function/dateServeur";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
@@ -66,9 +68,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     const [pfHobbsStart, setPfHobbsStart] = useState("");
     const [pfHobbsEnd, setPfHobbsEnd] = useState("");
     const [pfFuel, setPfFuel] = useState("");
-    const [pfOil, setPfOil] = useState("");
-    const [pfAnomalies, setPfAnomalies] = useState("RAS");
-    const [pfRemarks, setPfRemarks] = useState("");
+    const [pfMachineAnomalies, setPfMachineAnomalies] = useState("RAS");
+    const [pfPersonalObservation, setPfPersonalObservation] = useState("");
 
     const handleOpenPostFlight = async (flightSession: flight_sessions) => {
         if (currentClub?.id) {
@@ -104,9 +105,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
         setPfHobbsStart(hobbsDefault);
         setPfHobbsEnd(log.hobbsEnd != null ? String(log.hobbsEnd) : "");
         setPfFuel(log.fuelAdded != null ? String(log.fuelAdded) : "");
-        setPfOil(log.oilAdded != null ? String(log.oilAdded) : "");
-        setPfAnomalies(log.anomalies ?? "RAS");
-        setPfRemarks(log.remarks ?? "");
+        setPfMachineAnomalies(log.machineAnomalies ?? "RAS");
+        setPfPersonalObservation(log.personalObservation ?? "");
 
         setPostFlightLog(log);
     };
@@ -144,12 +144,10 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 arrivalAirfield: pfArrival || undefined,
                 takeoffs: pfTakeoffs,
                 landings: pfLandings,
-                hobbsStart: pfHobbsStart ? parseFloat(pfHobbsStart) : undefined,
                 hobbsEnd: pfHobbsEnd ? parseFloat(pfHobbsEnd) : undefined,
                 fuelAdded: pfFuel ? parseFloat(pfFuel) : undefined,
-                oilAdded: pfOil ? parseFloat(pfOil) : undefined,
-                anomalies: pfAnomalies || "RAS",
-                remarks: pfRemarks || undefined,
+                machineAnomalies: pfMachineAnomalies || "RAS",
+                personalObservation: pfPersonalObservation || undefined,
             });
 
             if ("error" in res) {
@@ -380,7 +378,15 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 <DialogDescription className="text-slate-500 ml-[5.5rem] text-xs sm:text-sm">
                                     {new Date(postFlightLog.date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
                                     {" — "}{postFlightLog.planeName} ({postFlightLog.planeRegistration})
-                                    {" — "}{`${Math.floor(postFlightLog.durationMinutes / 60)}h${String(postFlightLog.durationMinutes % 60).padStart(2, "0")}`}
+                                    {" — "}{formatNatureLong(postFlightLog.flightNature, postFlightLog.instructionSubType)}
+                                    {(() => {
+                                        const t = computeFlightTimes({
+                                            hobbsStart: postFlightLog.hobbsStart,
+                                            hobbsEnd: pfHobbsEnd ? parseFloat(pfHobbsEnd) : postFlightLog.hobbsEnd,
+                                            pilotFunction: postFlightLog.pilotFunction,
+                                        });
+                                        return t.durationMinutes > 0 ? <> — {convertMinutesToHours(t.durationMinutes)}</> : null;
+                                    })()}
                                     {postFlightCompanion && <><br />{postFlightCompanion}</>}
                                 </DialogDescription>
                             </DialogHeader>
@@ -401,12 +407,12 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 </h3>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
-                                        <Label className="text-slate-600 text-xs">Départ (OACI)</Label>
-                                        <Input value={pfDeparture} onChange={(e) => setPfDeparture(e.target.value.toUpperCase())} placeholder="LFXX" readOnly={pfIsReadOnly} className={`font-mono uppercase text-sm ${pfInputClass}`} />
+                                        <Label className="text-slate-600 text-xs">Départ</Label>
+                                        <Input value={pfDeparture} onChange={(e) => setPfDeparture(e.target.value.toUpperCase())} placeholder="LFXXXX" maxLength={6} readOnly={pfIsReadOnly} className={`font-mono uppercase text-sm ${pfInputClass}`} />
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="text-slate-600 text-xs">Arrivée (OACI)</Label>
-                                        <Input value={pfArrival} onChange={(e) => setPfArrival(e.target.value.toUpperCase())} placeholder="LFXX" readOnly={pfIsReadOnly} className={`font-mono uppercase text-sm ${pfInputClass}`} />
+                                        <Label className="text-slate-600 text-xs">Arrivée</Label>
+                                        <Input value={pfArrival} onChange={(e) => setPfArrival(e.target.value.toUpperCase())} placeholder="LFXXXX" maxLength={6} readOnly={pfIsReadOnly} className={`font-mono uppercase text-sm ${pfInputClass}`} />
                                     </div>
                                 </div>
                             </div>
@@ -437,34 +443,30 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <Label className="text-slate-600 text-xs">Heures moteur début</Label>
-                                        <Input type="number" step="0.1" value={pfHobbsStart} onChange={(e) => setPfHobbsStart(e.target.value)} placeholder="0.0" readOnly={pfIsReadOnly} className={`font-mono text-sm ${pfInputClass}`} />
+                                        <Input type="number" step="0.1" value={pfHobbsStart} placeholder="0.0" readOnly className="bg-slate-100 border-slate-200 text-slate-500 cursor-default font-mono text-sm" />
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-slate-600 text-xs">Heures moteur fin</Label>
                                         <Input type="number" step="0.1" value={pfHobbsEnd} onChange={(e) => setPfHobbsEnd(e.target.value)} placeholder="0.0" readOnly={pfIsReadOnly} className={`font-mono text-sm ${pfInputClass}`} />
                                     </div>
-                                    <div className="space-y-1">
+                                    <div className="space-y-1 col-span-2">
                                         <Label className="text-slate-600 text-xs">Carburant ajouté (L)</Label>
                                         <Input type="number" step="0.1" value={pfFuel} onChange={(e) => setPfFuel(e.target.value)} placeholder="0.0" readOnly={pfIsReadOnly} className={`text-sm ${pfInputClass}`} />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-slate-600 text-xs">Huile ajoutée (L)</Label>
-                                        <Input type="number" step="0.01" value={pfOil} onChange={(e) => setPfOil(e.target.value)} placeholder="0.0" readOnly={pfIsReadOnly} className={`text-sm ${pfInputClass}`} />
                                     </div>
                                 </div>
                             </div>
                             )}
 
-                            {/* Anomalies */}
+                            {/* Anomalie machine */}
                             <div className="space-y-1">
-                                <Label className="text-slate-600 text-xs">Anomalies constatées</Label>
-                                <Textarea value={pfAnomalies} onChange={(e) => setPfAnomalies(e.target.value)} placeholder="RAS" readOnly={pfIsReadOnly} className={`text-sm min-h-[60px] ${pfInputClass}`} />
+                                <Label className="text-slate-600 text-xs">Anomalie machine</Label>
+                                <Textarea value={pfMachineAnomalies} onChange={(e) => setPfMachineAnomalies(e.target.value)} placeholder="RAS" readOnly={pfIsReadOnly} className={`text-sm min-h-[60px] ${pfInputClass}`} />
                             </div>
 
-                            {/* Remarques */}
+                            {/* Observation personnel */}
                             <div className="space-y-1">
-                                <Label className="text-slate-600 text-xs">Remarques / observations</Label>
-                                <Textarea value={pfRemarks} onChange={(e) => setPfRemarks(e.target.value)} placeholder="Remarques sur le vol..." readOnly={pfIsReadOnly} className={`text-sm min-h-[60px] ${pfInputClass}`} />
+                                <Label className="text-slate-600 text-xs">Observation personnel</Label>
+                                <Textarea value={pfPersonalObservation} onChange={(e) => setPfPersonalObservation(e.target.value)} placeholder="Vos observations sur le vol..." readOnly={pfIsReadOnly} className={`text-sm min-h-[60px] ${pfInputClass}`} />
                             </div>
                         </div>
 

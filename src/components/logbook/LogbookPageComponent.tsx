@@ -47,8 +47,9 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
         currentUser?.role === userRole.MANAGER ||
         currentUser?.role === userRole.INSTRUCTOR;
 
-    // Filter logs based on role, then merge each session's I+EP pair into a
-    // single row so a flight is counted once (totaux et compteur cohérents).
+    // Filter logs based on role. Avec la nouvelle logique (1 log par session
+    // d'instruction, pilotID=instructeur + studentID=élève), un user simple
+    // doit voir les logs où il est pilote OU élève.
     const visibleLogs = useMemo(() => {
         if (!currentUser) return [];
         let filtered: flight_logs[];
@@ -57,14 +58,18 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
             currentUser.role === userRole.PILOT ||
             currentUser.role === userRole.INSTRUCTOR
         ) {
-            // Carnet personnel : un seul log par vol (le sien). L'instructeur
-            // accède aux vols de ses élèves via le filtre nom (qui matche
-            // pilotID ou studentID).
-            filtered = logs.filter((l) => l.pilotID === currentUser.id);
+            // Carnet personnel : vols où il est pilote (instructeur ou CDB)
+            // ou élève (studentID).
+            filtered = logs.filter(
+                (l) => l.pilotID === currentUser.id || l.studentID === currentUser.id
+            );
         } else {
             // ADMIN / OWNER / MANAGER : tout le club
             filtered = logs;
         }
+        // mergeSessionLogs est devenu quasi no-op avec la nouvelle logique
+        // (1 log par session) mais reste utile si la DB contient encore des
+        // anciens logs paires en cohabitation.
         return mergeSessionLogs(filtered);
     }, [logs, currentUser]);
 
@@ -110,9 +115,14 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
             let filename: string;
 
             if (activeTab === "pilot") {
-                const { logs: pilotLogs, pilotName, pilotLastName } = pilotExportInfo;
+                const { logs: pilotLogs, pilotName, pilotLastName, displayedPilotID } = pilotExportInfo;
                 blob = await pdf(
-                    <PilotLogbookDocument logs={pilotLogs} pilotName={pilotName} year={selectedYear} />
+                    <PilotLogbookDocument
+                        logs={pilotLogs}
+                        pilotName={pilotName}
+                        year={selectedYear}
+                        displayedPilotID={displayedPilotID}
+                    />
                 ).toBlob();
                 filename = pilotLastName
                     ? `carnet_de_vol_pilote_${safe(pilotLastName)}_${datestamp}.pdf`
