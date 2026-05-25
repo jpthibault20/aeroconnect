@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { flight_logs, planes, User, flightNature, instructionSubType, userRole } from "@prisma/client";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
-import { createFlightLog, CreateFlightLogInput, getPlaneHobbs } from "@/api/db/logbook";
+import { createFlightLog, CreateFlightLogInput, getPlaneHobbs, signFlightLog } from "@/api/db/logbook";
 import { isInstructorRole, INSTRUCTION_SUBTYPE_LABELS } from "@/lib/logbookCalc";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -33,6 +33,7 @@ import {
     BookOpen,
     Minus,
     Plus,
+    CheckCircle2,
 } from "lucide-react";
 
 interface Props {
@@ -76,6 +77,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
     const { currentClub } = useCurrentClub();
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [signing, setSigning] = useState(false);
     const [error, setError] = useState("");
 
     const today = new Date().toISOString().split("T")[0];
@@ -164,59 +166,30 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         setError("");
     };
 
-    const onConfirm = async () => {
-        setLoading(true);
+    const onConfirm = async (andSign: boolean) => {
+        if (andSign) setSigning(true);
+        else setLoading(true);
         setError("");
 
-        if (!currentUser) {
-            setError("Utilisateur non connecté.");
+        const fail = (msg: string) => {
+            setError(msg);
             setLoading(false);
-            return;
-        }
-        if (!form.date) {
-            setError("Veuillez saisir une date.");
-            setLoading(false);
-            return;
-        }
-        if (!form.planeID) {
-            setError("Veuillez sélectionner un aéronef.");
-            setLoading(false);
-            return;
-        }
-        if (!form.hobbsEnd || isNaN(parseFloat(form.hobbsEnd))) {
-            setError("Les heures moteur de fin sont obligatoires.");
-            setLoading(false);
-            return;
-        }
-        if (form.hobbsStart && parseFloat(form.hobbsEnd) <= parseFloat(form.hobbsStart)) {
-            setError("Les heures moteur de fin doivent être supérieures à celles de début.");
-            setLoading(false);
-            return;
-        }
-        if (form.nature === "INSTRUCTION" && !form.subType) {
-            setError("Veuillez sélectionner un sous-type d'instruction.");
-            setLoading(false);
-            return;
-        }
+            setSigning(false);
+        };
+
+        if (!currentUser) return fail("Utilisateur non connecté.");
+        if (!form.date) return fail("Veuillez saisir une date.");
+        if (!form.planeID) return fail("Veuillez sélectionner un aéronef.");
+        if (!form.hobbsEnd || isNaN(parseFloat(form.hobbsEnd))) return fail("Les heures moteur de fin sont obligatoires.");
+        if (form.hobbsStart && parseFloat(form.hobbsEnd) <= parseFloat(form.hobbsStart)) return fail("Les heures moteur de fin doivent être supérieures à celles de début.");
+        if (form.nature === "INSTRUCTION" && !form.subType) return fail("Veuillez sélectionner un sous-type d'instruction.");
         if (form.nature === "INSTRUCTION") {
-            if (userIsInstructor && !form.studentID) {
-                setError("Veuillez sélectionner l'élève associé.");
-                setLoading(false);
-                return;
-            }
-            if (!userIsInstructor && !form.instructorID) {
-                setError("Veuillez sélectionner l'instructeur.");
-                setLoading(false);
-                return;
-            }
+            if (userIsInstructor && !form.studentID) return fail("Veuillez sélectionner l'élève associé.");
+            if (!userIsInstructor && !form.instructorID) return fail("Veuillez sélectionner l'instructeur.");
         }
 
         const selectedPlane = planesList.find((p) => p.id === form.planeID);
-        if (!selectedPlane) {
-            setError("Aéronef introuvable.");
-            setLoading(false);
-            return;
-        }
+        if (!selectedPlane) return fail("Aéronef introuvable.");
 
         // pilotID = utilisateur connecté. La fonction (EP/P/I) est déduite
         // côté serveur à partir de la nature + du rôle de l'utilisateur.
@@ -278,20 +251,40 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
             const res = await createFlightLog(input);
             if ("error" in res) {
                 setError(res.error ?? "Erreur inconnue");
-            } else if (res.log) {
-                toast({
-                    title: "Entrée créée",
-                    description: "L'entrée de carnet a été enregistrée.",
-                    className: "bg-green-600 text-white border-none",
-                });
-                onCreated(res.log);
-                setOpen(false);
-                resetForm();
+                return;
             }
+            if (!res.log) return;
+
+            let finalLog = res.log;
+
+            if (andSign) {
+                const signRes = await signFlightLog(res.log.id);
+                if ("error" in signRes) {
+                    // L'entrée a bien été créée, mais la signature a échoué :
+                    // on remonte l'info en toast et on ferme tout de même.
+                    toast({
+                        title: "Entrée créée, signature échouée",
+                        description: signRes.error,
+                        variant: "destructive",
+                    });
+                } else {
+                    finalLog = { ...finalLog, pilotSigned: true, pilotSignedAt: new Date() };
+                }
+            }
+
+            toast({
+                title: andSign ? "Entrée créée et signée" : "Entrée créée",
+                description: andSign ? "Le vol a été enregistré et signé." : "L'entrée de carnet a été enregistrée.",
+                className: "bg-green-600 text-white border-none",
+            });
+            onCreated(finalLog);
+            setOpen(false);
+            resetForm();
         } catch {
             setError("Une erreur technique est survenue.");
         } finally {
             setLoading(false);
+            setSigning(false);
         }
     };
 
@@ -603,23 +596,41 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                         <Button
                             variant="ghost"
                             onClick={() => setOpen(false)}
-                            disabled={loading}
+                            disabled={loading || signing}
                             className="text-slate-500 hover:text-slate-700 hover:bg-slate-200 w-full sm:w-auto"
                         >
                             Annuler
                         </Button>
                         <Button
-                            onClick={onConfirm}
-                            disabled={loading}
-                            className="bg-[#774BBE] hover:bg-[#6538a5] text-white w-full sm:min-w-[140px] sm:w-auto"
+                            onClick={() => onConfirm(false)}
+                            disabled={loading || signing}
+                            variant="outline"
+                            className="border-slate-200 w-full sm:w-auto"
                         >
                             {loading ? (
                                 <div className="flex items-center gap-2 justify-center">
-                                    <Spinner size="small" className="w-4 h-4 text-white" />
+                                    <Spinner size="small" className="w-4 h-4" />
                                     <span>Création...</span>
                                 </div>
                             ) : (
                                 "Enregistrer"
+                            )}
+                        </Button>
+                        <Button
+                            onClick={() => onConfirm(true)}
+                            disabled={loading || signing}
+                            className="bg-[#774BBE] hover:bg-[#6538a5] text-white w-full sm:min-w-[140px] sm:w-auto"
+                        >
+                            {signing ? (
+                                <div className="flex items-center gap-2 justify-center">
+                                    <Spinner size="small" className="w-4 h-4 text-white" />
+                                    <span>Signature...</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span>Enregistrer et signer</span>
+                                </div>
                             )}
                         </Button>
                     </DialogFooter>
