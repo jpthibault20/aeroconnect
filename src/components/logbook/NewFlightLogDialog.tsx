@@ -5,7 +5,8 @@ import { flight_logs, planes, User, flightNature, instructionSubType, userRole }
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { createFlightLog, CreateFlightLogInput, getPlaneHobbs, signFlightLog } from "@/api/db/logbook";
-import { isInstructorRole, INSTRUCTION_SUBTYPE_LABELS } from "@/lib/logbookCalc";
+import { isInstructorRole, INSTRUCTION_SUBTYPE_LABELS, HobbsFormat } from "@/lib/logbookCalc";
+import { HobbsInput, HobbsFormatToggle } from "@/components/logbook/HobbsInput";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -90,6 +91,9 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
     const [loading, setLoading] = useState(false);
     const [signing, setSigning] = useState(false);
     const [hobbsStartUnlocked, setHobbsStartUnlocked] = useState(false);
+    // Format de saisie du compteur (HH:MM par défaut). N'affecte que l'UI : la
+    // valeur reste stockée en heures décimales canoniques.
+    const [hobbsFormat, setHobbsFormat] = useState<HobbsFormat>("HMS");
     const [error, setError] = useState("");
 
     const today = new Date().toISOString().split("T")[0];
@@ -611,21 +615,23 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
                     {/* Section 4: Machine */}
                     <div className="space-y-4">
-                        <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">
-                            Machine
-                        </h3>
+                        <div className="flex items-center justify-between gap-2">
+                            <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">
+                                Machine
+                            </h3>
+                            <HobbsFormatToggle format={hobbsFormat} onChange={setHobbsFormat} />
+                        </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label className="text-slate-600 text-sm">Heures moteur début</Label>
-                                <Input
-                                    type="number"
-                                    step="0.1"
-                                    value={form.hobbsStart}
-                                    onChange={(e) => updateField("hobbsStart", e.target.value)}
+                                <HobbsInput
+                                    format={hobbsFormat}
+                                    value={form.hobbsStart ? parseFloat(form.hobbsStart) : null}
+                                    onChange={(d) => updateField("hobbsStart", d != null ? String(d) : "")}
                                     readOnly={!hobbsStartUnlocked}
                                     placeholder="—"
-                                    className={
+                                    inputClassName={
                                         hobbsStartUnlocked
                                             ? "bg-slate-50 border-slate-200 focus:ring-[#774BBE] font-mono"
                                             : "bg-slate-100 border-slate-200 text-slate-500 cursor-default font-mono"
@@ -637,13 +643,11 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-slate-600 text-sm">Heures moteur fin <span className="text-red-500">*</span></Label>
-                                <Input
-                                    type="number"
-                                    step="0.1"
-                                    value={form.hobbsEnd}
-                                    onChange={(e) => updateField("hobbsEnd", e.target.value)}
-                                    placeholder="0.0"
-                                    className="bg-slate-50 border-slate-200 focus:ring-[#774BBE] font-mono"
+                                <HobbsInput
+                                    format={hobbsFormat}
+                                    value={form.hobbsEnd ? parseFloat(form.hobbsEnd) : null}
+                                    onChange={(d) => updateField("hobbsEnd", d != null ? String(d) : "")}
+                                    inputClassName="bg-slate-50 border-slate-200 focus:ring-[#774BBE] font-mono"
                                 />
                             </div>
                             {canEditHobbsStart && (

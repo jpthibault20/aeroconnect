@@ -5,7 +5,7 @@ import { flight_logs, pilotFunction, planes, User, userRole } from "@prisma/clie
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
-import { computeFlightTimes, formatNature } from "@/lib/logbookCalc";
+import { computeFlightTimesWithFallback, formatNature } from "@/lib/logbookCalc";
 import RunningTotalsCard from "./RunningTotalsCard";
 import SignFlightLogButton from "./SignFlightLogButton";
 import LogbookFilter from "./LogbookFilter";
@@ -139,12 +139,21 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
         return users.find((u) => u.id === selectedPilotID) ?? currentUser ?? null;
     }, [canSelectPilot, selectedPilotID, users, currentUser]);
 
+    // Hobbs courant par avion, pour estimer une durée provisoire des vols non
+    // signés (hobbsStart pas encore figé).
+    const planeHobbsMap = useMemo(() => {
+        const m = new Map<string, number | null>();
+        for (const p of planesList) m.set(p.id, p.hobbsTotal ?? null);
+        return m;
+    }, [planesList]);
+
     useEffect(() => {
         const pilotName = exportSelectedPilot
             ? `${exportSelectedPilot.lastName} ${exportSelectedPilot.firstName}`
             : "Tous les pilotes / eleves";
         onExportInfoChange?.({
-            logs: pilotLogs,
+            // Export officiel : on n'exporte que les vols signés (durée définitive).
+            logs: pilotLogs.filter((l) => l.pilotSigned),
             pilotName,
             pilotLastName: exportSelectedPilot?.lastName,
             displayedPilotID,
@@ -342,11 +351,10 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                     {paginatedLogs.map((log) => {
                                         const effFn = effectiveFunction(log);
                                         const badge = FUNCTION_BADGE[effFn] ?? FUNCTION_BADGE["P"];
-                                        const times = computeFlightTimes({
-                                            hobbsStart: log.hobbsStart,
-                                            hobbsEnd: log.hobbsEnd,
-                                            pilotFunction: effFn,
-                                        });
+                                        const times = computeFlightTimesWithFallback(
+                                            { hobbsStart: log.hobbsStart, hobbsEnd: log.hobbsEnd, pilotFunction: effFn },
+                                            log.planeID ? planeHobbsMap.get(log.planeID) : null
+                                        );
                                         const sameAirfield = log.departureAirfield && log.arrivalAirfield && log.departureAirfield === log.arrivalAirfield;
                                         const showTrajet = log.departureAirfield || log.arrivalAirfield;
                                         return (
@@ -377,16 +385,23 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                                         {badge.label}
                                                     </span>
                                                 </td>
-                                                <td className="px-2.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums text-slate-800 font-medium">
-                                                    {times.durationMinutes > 0 ? convertMinutesToHours(times.durationMinutes) : <span className="text-slate-300">-</span>}
+                                                <td className={cn(
+                                                    "px-2.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums font-medium",
+                                                    times.provisional ? "text-slate-400 italic" : "text-slate-800"
+                                                )}>
+                                                    {times.durationMinutes > 0 ? (
+                                                        <span title={times.provisional ? "Durée provisoire — définitive à la signature" : undefined}>
+                                                            {times.provisional ? "~" : ""}{convertMinutesToHours(times.durationMinutes)}
+                                                        </span>
+                                                    ) : <span className="text-slate-300">-</span>}
                                                 </td>
-                                                <td className="px-2.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums text-slate-600">
+                                                <td className={cn("px-2.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums", times.provisional ? "text-slate-400 italic" : "text-slate-600")}>
                                                     {times.timeDC > 0 ? convertMinutesToHours(times.timeDC) : <span className="text-slate-300">-</span>}
                                                 </td>
-                                                <td className="px-2.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums text-slate-600">
+                                                <td className={cn("px-2.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums", times.provisional ? "text-slate-400 italic" : "text-slate-600")}>
                                                     {times.timePIC > 0 ? convertMinutesToHours(times.timePIC) : <span className="text-slate-300">-</span>}
                                                 </td>
-                                                <td className="px-2.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums text-slate-600">
+                                                <td className={cn("px-2.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums", times.provisional ? "text-slate-400 italic" : "text-slate-600")}>
                                                     {times.timeInstructor > 0 ? convertMinutesToHours(times.timeInstructor) : <span className="text-slate-300">-</span>}
                                                 </td>
                                                 <td className="px-2.5 py-2.5 text-[13px] text-slate-600 whitespace-nowrap">
@@ -456,11 +471,10 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                         {paginatedLogs.map((log) => {
                             const effFn = effectiveFunction(log);
                             const badge = FUNCTION_BADGE[effFn] ?? FUNCTION_BADGE["P"];
-                            const times = computeFlightTimes({
-                                hobbsStart: log.hobbsStart,
-                                hobbsEnd: log.hobbsEnd,
-                                pilotFunction: effFn,
-                            });
+                            const times = computeFlightTimesWithFallback(
+                                { hobbsStart: log.hobbsStart, hobbsEnd: log.hobbsEnd, pilotFunction: effFn },
+                                log.planeID ? planeHobbsMap.get(log.planeID) : null
+                            );
                             const sameAirfield = log.departureAirfield && log.arrivalAirfield && log.departureAirfield === log.arrivalAirfield;
                             const companion = getCompanionName(log);
                             return (
@@ -495,8 +509,15 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                         <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold border", badge.className)}>
                                             {badge.label}
                                         </span>
-                                        <span className="ml-auto font-mono text-[13px] tabular-nums font-semibold text-slate-800">
-                                            {times.durationMinutes > 0 ? convertMinutesToHours(times.durationMinutes) : <span className="text-slate-300">--:--</span>}
+                                        <span className={cn(
+                                            "ml-auto font-mono text-[13px] tabular-nums font-semibold",
+                                            times.provisional ? "text-slate-400 italic" : "text-slate-800"
+                                        )}>
+                                            {times.durationMinutes > 0 ? (
+                                                <span title={times.provisional ? "Durée provisoire — définitive à la signature" : undefined}>
+                                                    {times.provisional ? "~" : ""}{convertMinutesToHours(times.durationMinutes)}
+                                                </span>
+                                            ) : <span className="text-slate-300">--:--</span>}
                                         </span>
                                     </div>
 

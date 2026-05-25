@@ -7,6 +7,11 @@ import {
     isInstructorRole,
     validateNatureSubType,
     formatNature,
+    decimalToHoursMinutes,
+    hoursMinutesToDecimal,
+    parseHobbsInput,
+    formatHobbsValue,
+    computeFlightTimesWithFallback,
 } from "@/lib/logbookCalc";
 
 /**
@@ -126,6 +131,121 @@ describe("Règles du carnet de vol", () => {
             expect(computeDurationMinutes(0, 1.51)).toBe(91);
             // 1.005h = 60.3min → arrondi à 60
             expect(computeDurationMinutes(0, 1.005)).toBe(60);
+        });
+    });
+
+    describe("Conversion format compteur HH:MM <-> heures décimales", () => {
+        it("décimal → heures + minutes", () => {
+            expect(decimalToHoursMinutes(123.5)).toEqual({ hours: 123, minutes: 30 });
+            expect(decimalToHoursMinutes(123.25)).toEqual({ hours: 123, minutes: 15 });
+            expect(decimalToHoursMinutes(0.1)).toEqual({ hours: 0, minutes: 6 });
+            expect(decimalToHoursMinutes(100)).toEqual({ hours: 100, minutes: 0 });
+        });
+
+        it("heures + minutes → décimal canonique", () => {
+            expect(hoursMinutesToDecimal(123, 30)).toBe(123.5);
+            expect(hoursMinutesToDecimal(123, 15)).toBe(123.25);
+            expect(hoursMinutesToDecimal(0, 6)).toBe(0.1);
+            // 18 min ≠ 30 min : c'est précisément le bug que le format HH:MM corrige.
+            expect(hoursMinutesToDecimal(123, 18)).toBe(123.3);
+        });
+
+        it("aller-retour stable à la minute près", () => {
+            for (const [h, m] of [[123, 30], [10, 5], [0, 59], [200, 1]] as const) {
+                const { hours, minutes } = decimalToHoursMinutes(hoursMinutesToDecimal(h, m));
+                expect({ hours, minutes }).toEqual({ hours: h, minutes: m });
+            }
+        });
+
+        it("une saisie HH:MM '123:30' donne la bonne durée vs '123:18'", () => {
+            // Vol de 30 min réel saisi en HH:MM puis converti en décimal.
+            const start = hoursMinutesToDecimal(123, 0); // 123,0
+            const end30 = hoursMinutesToDecimal(123, 30); // 123,5
+            expect(computeDurationMinutes(start, end30)).toBe(30);
+            const end18 = hoursMinutesToDecimal(123, 18); // 123,3
+            expect(computeDurationMinutes(start, end18)).toBe(18);
+        });
+    });
+
+    describe("Saisie hobbs popup (parseHobbsInput / formatHobbsValue)", () => {
+        it("HH:MM : séparateur libre , . : donnent le même résultat", () => {
+            for (const raw of ["123,30", "123.30", "123:30"]) {
+                expect(parseHobbsInput(raw, "HMS")).toEqual({ decimal: 123.5, minutesInvalid: false });
+            }
+        });
+
+        it("HH:MM : heures seules sans séparateur", () => {
+            expect(parseHobbsInput("123", "HMS")).toEqual({ decimal: 123, minutesInvalid: false });
+        });
+
+        it("HH:MM : chiffres après séparateur = minutes (pas une fraction)", () => {
+            expect(parseHobbsInput("123,5", "HMS").decimal).toBe(hoursMinutesToDecimal(123, 5));
+            expect(parseHobbsInput("123,50", "HMS").decimal).toBe(hoursMinutesToDecimal(123, 50));
+        });
+
+        it("HH:MM : minutes >= 60 signalées invalides (pas de valeur)", () => {
+            expect(parseHobbsInput("123,75", "HMS")).toEqual({ decimal: null, minutesInvalid: true });
+            expect(parseHobbsInput("123,60", "HMS").minutesInvalid).toBe(true);
+        });
+
+        it("HH:MM : saisie vide ou incohérente → pas de valeur", () => {
+            expect(parseHobbsInput("", "HMS")).toEqual({ decimal: null, minutesInvalid: false });
+            expect(parseHobbsInput("abc", "HMS")).toEqual({ decimal: null, minutesInvalid: false });
+        });
+
+        it("Décimal : la virgule est acceptée comme séparateur décimal", () => {
+            expect(parseHobbsInput("123,5", "DECIMAL").decimal).toBe(123.5);
+            expect(parseHobbsInput("123.5", "DECIMAL").decimal).toBe(123.5);
+        });
+
+        it("formatHobbsValue : décimal canonique -> affichage selon format", () => {
+            expect(formatHobbsValue(123.5, "HMS")).toBe("123:30");
+            expect(formatHobbsValue(123.5, "DECIMAL")).toBe("123.5");
+            expect(formatHobbsValue(null, "HMS")).toBe("");
+        });
+
+        it("aller-retour saisie HH:MM -> stockage -> ré-affichage", () => {
+            const stored = parseHobbsInput("123:30", "HMS").decimal;
+            expect(formatHobbsValue(stored, "HMS")).toBe("123:30");
+        });
+    });
+
+    describe("Durée provisoire des vols non signés (computeFlightTimesWithFallback)", () => {
+        it("hobbsStart figé : durée définitive, non provisoire", () => {
+            const t = computeFlightTimesWithFallback(
+                { hobbsStart: 100, hobbsEnd: 101.5, pilotFunction: "P" },
+                123 // hobbs avion ignoré car hobbsStart déjà figé
+            );
+            expect(t.durationMinutes).toBe(90);
+            expect(t.provisional).toBe(false);
+        });
+
+        it("hobbsStart null + hobbs avion fourni : durée provisoire estimée", () => {
+            const t = computeFlightTimesWithFallback(
+                { hobbsStart: null, hobbsEnd: 101.5, pilotFunction: "EP" },
+                100
+            );
+            expect(t.durationMinutes).toBe(90);
+            expect(t.timeDC).toBe(90);
+            expect(t.provisional).toBe(true);
+        });
+
+        it("hobbsStart null sans hobbs avion : pas de durée, pas provisoire", () => {
+            const t = computeFlightTimesWithFallback(
+                { hobbsStart: null, hobbsEnd: 101.5, pilotFunction: "P" },
+                null
+            );
+            expect(t.durationMinutes).toBe(0);
+            expect(t.provisional).toBe(false);
+        });
+
+        it("hobbs avion > hobbsEnd (incohérent) : durée 0, pas provisoire", () => {
+            const t = computeFlightTimesWithFallback(
+                { hobbsStart: null, hobbsEnd: 99, pilotFunction: "P" },
+                100
+            );
+            expect(t.durationMinutes).toBe(0);
+            expect(t.provisional).toBe(false);
         });
     });
 
