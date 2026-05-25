@@ -31,8 +31,8 @@ import { Spinner } from "@/components/ui/SpinnerVariants";
 import {
     PlusIcon,
     BookOpen,
-    ChevronDown,
-    ChevronUp,
+    Minus,
+    Plus,
 } from "lucide-react";
 
 interface Props {
@@ -59,8 +59,7 @@ interface FormData {
     planeID: string;
     nature: flightNature;
     subType: instructionSubType | "";
-    takeoffs: number;
-    landings: number;
+    movements: number;
     instructorID: string;
     studentID: string;
     departure: string;
@@ -78,7 +77,6 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [machineOpen, setMachineOpen] = useState(false);
 
     const today = new Date().toISOString().split("T")[0];
     const userIsInstructor = currentUser ? isInstructorRole(currentUser.role) : false;
@@ -88,8 +86,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         planeID: "",
         nature: "INSTRUCTION",
         subType: "LOCAL",
-        takeoffs: 1,
-        landings: 1,
+        movements: 1,
         instructorID: "",
         studentID: "",
         departure: currentClub?.id ?? "",
@@ -136,6 +133,11 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
     const showInstructionCompanion = form.nature === "INSTRUCTION";
 
+    // Gating : USER et STUDENT ne peuvent pas créer d'entrée manuelle (côté serveur
+    // bloqué par LOGBOOK_WRITE_ROLES, on cache aussi le bouton côté client).
+    const canCreate = !currentUser
+        || (currentUser.role !== userRole.USER && currentUser.role !== userRole.STUDENT);
+
     const updateField = <K extends keyof FormData>(key: K, value: FormData[K]) => {
         setForm((prev) => ({ ...prev, [key]: value }));
     };
@@ -160,7 +162,6 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
     const resetForm = () => {
         setForm(buildInitialForm());
         setError("");
-        setMachineOpen(false);
     };
 
     const onConfirm = async () => {
@@ -262,8 +263,8 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
             studentLastName,
             flightNature: form.nature,
             instructionSubType: form.nature === "INSTRUCTION" ? (form.subType as instructionSubType) : null,
-            takeoffs: form.takeoffs,
-            landings: form.landings,
+            takeoffs: form.movements,
+            landings: form.movements,
             departureAirfield: form.departure || undefined,
             arrivalAirfield: form.arrival || undefined,
             hobbsEnd: parseFloat(form.hobbsEnd),
@@ -293,6 +294,8 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
             setLoading(false);
         }
     };
+
+    if (!canCreate) return null;
 
     return (
         <Dialog
@@ -335,7 +338,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label className="text-slate-600 text-sm">Date</Label>
+                                <Label className="text-slate-600 text-sm">Date <span className="text-red-500">*</span></Label>
                                 <Input
                                     type="date"
                                     value={form.date}
@@ -345,7 +348,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-slate-600 text-sm">Aéronef</Label>
+                                <Label className="text-slate-600 text-sm">Aéronef <span className="text-red-500">*</span></Label>
                                 <Select
                                     value={form.planeID}
                                     onValueChange={(val) => updateField("planeID", val)}
@@ -394,7 +397,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
                             {form.nature === "INSTRUCTION" && (
                                 <div className="space-y-2">
-                                    <Label className="text-slate-600 text-sm">Sous-type</Label>
+                                    <Label className="text-slate-600 text-sm">Sous-type <span className="text-red-500">*</span></Label>
                                     <Select
                                         value={form.subType || ""}
                                         onValueChange={(val) => updateField("subType", val as instructionSubType)}
@@ -414,26 +417,18 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                             )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-slate-600 text-sm">Décollages</Label>
-                                <Input
-                                    type="number"
-                                    min={0}
-                                    value={form.takeoffs}
-                                    onChange={(e) => updateField("takeoffs", parseInt(e.target.value) || 0)}
-                                    className="bg-slate-50 border-slate-200 focus:ring-[#774BBE]"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-slate-600 text-sm">Atterrissages</Label>
-                                <Input
-                                    type="number"
-                                    min={0}
-                                    value={form.landings}
-                                    onChange={(e) => updateField("landings", parseInt(e.target.value) || 0)}
-                                    className="bg-slate-50 border-slate-200 focus:ring-[#774BBE]"
-                                />
+                        <div className="space-y-3 flex flex-col items-center">
+                            <Label className="text-slate-600 text-sm">Atterrissage / Décollage</Label>
+                            <div className="inline-flex h-10 items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                                <button type="button" disabled={form.movements <= 1} onClick={() => updateField("movements", Math.max(1, form.movements - 1))} className="flex w-10 items-center justify-center text-slate-600 hover:bg-slate-50 active:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors">
+                                    <Minus className="w-4 h-4" />
+                                </button>
+                                <div className="flex min-w-[3rem] items-center justify-center border-x border-slate-200 bg-slate-50/60 px-2 text-base font-semibold text-[#774BBE] tabular-nums">
+                                    {form.movements}
+                                </div>
+                                <button type="button" onClick={() => updateField("movements", form.movements + 1)} className="flex w-10 items-center justify-center text-slate-600 hover:bg-slate-50 active:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors">
+                                    <Plus className="w-4 h-4" />
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -449,7 +444,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
                                 {userIsInstructor ? (
                                     <div className="space-y-2">
-                                        <Label className="text-slate-600 text-sm">Élève</Label>
+                                        <Label className="text-slate-600 text-sm">Élève <span className="text-red-500">*</span></Label>
                                         <Select
                                             value={form.studentID}
                                             onValueChange={(val) => updateField("studentID", val)}
@@ -468,7 +463,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
-                                        <Label className="text-slate-600 text-sm">Instructeur</Label>
+                                        <Label className="text-slate-600 text-sm">Instructeur <span className="text-red-500">*</span></Label>
                                         <Select
                                             value={form.instructorID}
                                             onValueChange={(val) => updateField("instructorID", val)}
@@ -544,7 +539,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                                 <p className="text-xs text-slate-400">Lu automatiquement depuis l&apos;aéronef.</p>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-slate-600 text-sm">Heures moteur fin</Label>
+                                <Label className="text-slate-600 text-sm">Heures moteur fin <span className="text-red-500">*</span></Label>
                                 <Input
                                     type="number"
                                     step="0.1"
@@ -554,59 +549,45 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                                     className="bg-slate-50 border-slate-200 focus:ring-[#774BBE] font-mono"
                                 />
                             </div>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={() => setMachineOpen(!machineOpen)}
-                            className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors"
-                        >
-                            Plus de détails
-                            {machineOpen ? (
-                                <ChevronUp className="w-4 h-4" />
-                            ) : (
-                                <ChevronDown className="w-4 h-4" />
-                            )}
-                        </button>
-
-                        {machineOpen && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                                <div className="space-y-2">
-                                    <Label className="text-slate-600 text-sm">Carburant (L)</Label>
-                                    <Input
-                                        type="number"
-                                        step="0.1"
-                                        value={form.fuel}
-                                        onChange={(e) => updateField("fuel", e.target.value)}
-                                        className="bg-slate-50 border-slate-200 focus:ring-[#774BBE]"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-slate-600 text-sm">Anomalie machine</Label>
-                                    <Textarea
-                                        value={form.machineAnomalies}
-                                        onChange={(e) => updateField("machineAnomalies", e.target.value)}
-                                        placeholder="RAS"
-                                        className="bg-slate-50 border-slate-200 focus:border-[#774BBE] min-h-[60px] text-sm"
-                                    />
-                                </div>
+                            <div className="space-y-2 col-span-2">
+                                <Label className="text-slate-600 text-sm">Carburant ajouté (L)</Label>
+                                <Input
+                                    type="number"
+                                    step="0.1"
+                                    value={form.fuel}
+                                    onChange={(e) => updateField("fuel", e.target.value)}
+                                    placeholder="0.0"
+                                    className="bg-slate-50 border-slate-200 focus:ring-[#774BBE]"
+                                />
                             </div>
-                        )}
+                        </div>
                     </div>
 
                     <div className="h-px bg-slate-100 w-full" />
 
-                    {/* Section 5: Observation personnel */}
+                    {/* Section 5: Observations */}
                     <div className="space-y-4">
                         <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">
-                            Observation personnel
+                            Observations
                         </h3>
-                        <Textarea
-                            value={form.personalObservation}
-                            onChange={(e) => updateField("personalObservation", e.target.value)}
-                            placeholder="Vos observations sur le vol..."
-                            className="bg-slate-50 border-slate-200 focus:border-[#774BBE] min-h-[60px] text-sm"
-                        />
+                        <div className="space-y-2">
+                            <Label className="text-slate-600 text-sm">Anomalie machine</Label>
+                            <Textarea
+                                value={form.machineAnomalies}
+                                onChange={(e) => updateField("machineAnomalies", e.target.value)}
+                                placeholder="RAS"
+                                className="bg-slate-50 border-slate-200 focus:ring-[#774BBE] min-h-[60px] text-sm"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-slate-600 text-sm">Observation personnel</Label>
+                            <Textarea
+                                value={form.personalObservation}
+                                onChange={(e) => updateField("personalObservation", e.target.value)}
+                                placeholder="Vos observations sur le vol..."
+                                className="bg-slate-50 border-slate-200 focus:ring-[#774BBE] min-h-[60px] text-sm"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -618,7 +599,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                         </div>
                     )}
 
-                    <DialogFooter className="flex-col sm:flex-row justify-end gap-3 sm:gap-0">
+                    <DialogFooter className="flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                         <Button
                             variant="ghost"
                             onClick={() => setOpen(false)}
