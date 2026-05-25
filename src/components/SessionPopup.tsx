@@ -18,7 +18,8 @@ import { PiStudent } from "react-icons/pi";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import SessionPopupUpdate from "./SessionPopupUpdate";
 import { getFlightLogBySession, getPlaneHobbs, autoCreateLogsFromSessions, updateFlightLog, signFlightLog } from "@/api/db/logbook";
-import { computeFlightTimes, formatNatureLong } from "@/lib/logbookCalc";
+import { computeFlightTimes, formatNatureLong, HobbsFormat } from "@/lib/logbookCalc";
+import { HobbsInput, HobbsFormatToggle } from "@/components/logbook/HobbsInput";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
@@ -67,6 +68,9 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     const [pfLandings, setPfLandings] = useState(1);
     const [pfHobbsStart, setPfHobbsStart] = useState("");
     const [pfHobbsEnd, setPfHobbsEnd] = useState("");
+    // Format de saisie du compteur (HH:MM par défaut). N'affecte que l'UI : la
+    // valeur reste stockée en heures décimales canoniques.
+    const [pfHobbsFormat, setPfHobbsFormat] = useState<HobbsFormat>("HMS");
     const [pfFuel, setPfFuel] = useState("");
     const [pfMachineAnomalies, setPfMachineAnomalies] = useState("RAS");
     const [pfPersonalObservation, setPfPersonalObservation] = useState("");
@@ -437,17 +441,34 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                             {/* Machine — masqué si pas d'avion */}
                             {!!postFlightLog.planeID && (
                             <div className="space-y-3">
-                                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                                    <Gauge className="w-3.5 h-3.5" /> Machine
-                                </h3>
+                                <div className="flex items-center justify-between gap-2">
+                                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                        <Gauge className="w-3.5 h-3.5" /> Machine
+                                    </h3>
+                                    {!pfIsReadOnly && (
+                                        <HobbsFormatToggle format={pfHobbsFormat} onChange={setPfHobbsFormat} />
+                                    )}
+                                </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <Label className="text-slate-600 text-xs">Heures moteur début</Label>
-                                        <Input type="number" step="0.1" value={pfHobbsStart} placeholder="0.0" readOnly className="bg-slate-100 border-slate-200 text-slate-500 cursor-default font-mono text-sm" />
+                                        <HobbsInput
+                                            format={pfHobbsFormat}
+                                            value={pfHobbsStart ? parseFloat(pfHobbsStart) : null}
+                                            onChange={() => { /* lecture seule : figé sur l'aéronef */ }}
+                                            readOnly
+                                            inputClassName="bg-slate-100 border-slate-200 text-slate-500 cursor-default font-mono text-sm"
+                                        />
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-slate-600 text-xs">Heures moteur fin</Label>
-                                        <Input type="number" step="0.1" value={pfHobbsEnd} onChange={(e) => setPfHobbsEnd(e.target.value)} placeholder="0.0" readOnly={pfIsReadOnly} className={`font-mono text-sm ${pfInputClass}`} />
+                                        <HobbsInput
+                                            format={pfHobbsFormat}
+                                            value={pfHobbsEnd ? parseFloat(pfHobbsEnd) : null}
+                                            onChange={(d) => setPfHobbsEnd(d != null ? String(d) : "")}
+                                            readOnly={pfIsReadOnly}
+                                            inputClassName={`font-mono text-sm ${pfInputClass}`}
+                                        />
                                     </div>
                                     <div className="space-y-1 col-span-2">
                                         <Label className="text-slate-600 text-xs">Carburant ajouté (L)</Label>

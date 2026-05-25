@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { flight_logs, userRole } from "@prisma/client";
 import { updateFlightLog, signFlightLog } from "@/api/db/logbook";
-import { computeFlightTimes, formatNatureLong } from "@/lib/logbookCalc";
+import { computeFlightTimes, formatNatureLong, HobbsFormat } from "@/lib/logbookCalc";
+import { HobbsInput, HobbsFormatToggle } from "@/components/logbook/HobbsInput";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
 import { toast } from "@/hooks/use-toast";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
@@ -48,6 +49,9 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
     const [hobbsStartDisplay, setHobbsStartDisplay] = useState("");
     const [hobbsStartUnlocked, setHobbsStartUnlocked] = useState(false);
     const [hobbsEnd, setHobbsEnd] = useState("");
+    // Format de saisie du compteur (HH:MM par défaut). N'affecte que l'UI : la
+    // valeur reste stockée en heures décimales canoniques.
+    const [hobbsFormat, setHobbsFormat] = useState<HobbsFormat>("HMS");
     const [fuelAdded, setFuelAdded] = useState("");
     const [machineAnomalies, setMachineAnomalies] = useState("RAS");
     const [personalObservation, setPersonalObservation] = useState("");
@@ -274,20 +278,24 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                         <>
                             <div className="h-px bg-slate-100 w-full" />
                             <div className="space-y-4">
-                                <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">
-                                    Machine
-                                </h3>
+                                <div className="flex items-center justify-between gap-2">
+                                    <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">
+                                        Machine
+                                    </h3>
+                                    {!isReadOnly && (
+                                        <HobbsFormatToggle format={hobbsFormat} onChange={setHobbsFormat} />
+                                    )}
+                                </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label className="text-slate-600 text-sm">Heures moteur début</Label>
-                                        <Input
-                                            type="number"
-                                            step="0.1"
-                                            value={hobbsStartDisplay}
-                                            onChange={(e) => setHobbsStartDisplay(e.target.value)}
-                                            placeholder="—"
+                                        <HobbsInput
+                                            format={hobbsFormat}
+                                            value={hobbsStartDisplay ? parseFloat(hobbsStartDisplay) : null}
+                                            onChange={(d) => setHobbsStartDisplay(d != null ? String(d) : "")}
                                             readOnly={!hobbsStartUnlocked || isReadOnly}
-                                            className={
+                                            placeholder="—"
+                                            inputClassName={
                                                 hobbsStartUnlocked && !isReadOnly
                                                     ? "bg-slate-50 border-slate-200 focus:ring-[#774BBE] font-mono text-sm"
                                                     : "bg-slate-100 border-slate-200 text-slate-500 cursor-default font-mono text-sm"
@@ -299,7 +307,13 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-slate-600 text-sm">Heures moteur fin</Label>
-                                        <Input type="number" step="0.1" value={hobbsEnd} onChange={(e) => setHobbsEnd(e.target.value)} placeholder="0.0" readOnly={isReadOnly} className={`font-mono text-sm ${inputClass}`} />
+                                        <HobbsInput
+                                            format={hobbsFormat}
+                                            value={hobbsEnd ? parseFloat(hobbsEnd) : null}
+                                            onChange={(d) => setHobbsEnd(d != null ? String(d) : "")}
+                                            readOnly={isReadOnly}
+                                            inputClassName={`font-mono text-sm ${inputClass}`}
+                                        />
                                     </div>
                                     {canEditHobbsStart && !isReadOnly && (
                                         <div className="col-span-2 space-y-2">

@@ -19,6 +19,8 @@ const RunningTotalsCard = React.memo(({ logs, displayedPilotID }: Props) => {
         let minutes = 0, dc = 0, pic = 0, instr = 0, tk = 0, ld = 0;
         for (let i = 0; i < logs.length; i++) {
             const l = logs[i];
+            // Totaux officiels : on ne compte que les vols signés (durée figée).
+            if (!l.pilotSigned) continue;
             const effFn = displayedPilotID && l.studentID === displayedPilotID ? "EP" : l.pilotFunction;
             const t = computeFlightTimes({
                 hobbsStart: l.hobbsStart,
