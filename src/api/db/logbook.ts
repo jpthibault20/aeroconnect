@@ -60,6 +60,9 @@ export interface CreateFlightLogInput {
     landings: number;
     departureAirfield?: string;
     arrivalAirfield?: string;
+    // Override de hobbsStart : ignoré sauf si le créateur est OWNER/ADMIN.
+    // Par défaut, le serveur lit plane.hobbsTotal courant.
+    hobbsStart?: number;
     hobbsEnd?: number;
     fuelAdded?: number;
     machineAnomalies?: string;
@@ -72,6 +75,7 @@ export interface UpdateFlightLogInput {
     arrivalAirfield?: string;
     takeoffs?: number;
     landings?: number;
+    hobbsStart?: number;
     hobbsEnd?: number;
     fuelAdded?: number;
     machineAnomalies?: string;
@@ -180,8 +184,10 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
     }
     const pilotFunction = derivePilotFunction(data.flightNature, pilotRole);
 
-    // hobbsStart est lu côté serveur depuis plane.hobbsTotal : la valeur saisie
-    // par le client est ignorée pour interdire toute manipulation.
+    // hobbsStart est lu côté serveur depuis plane.hobbsTotal pour interdire
+    // toute manipulation. Exception : OWNER/ADMIN peuvent l'override (mauvaise
+    // pratique mais utile pour corriger une erreur de saisie).
+    const canEditHobbsStart = SIGN_OVERRIDE_ROLES.includes(auth.user.role);
     let hobbsStart: number | null = null;
     if (data.planeID) {
         const plane = await prisma.planes.findUnique({
@@ -191,6 +197,9 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
         if (!plane) return { error: "Aéronef introuvable" };
         if (plane.clubID !== data.clubID) return { error: "Permissions insuffisantes" };
         hobbsStart = plane.hobbsTotal ?? null;
+    }
+    if (canEditHobbsStart && data.hobbsStart !== undefined) {
+        hobbsStart = data.hobbsStart;
     }
 
     if (data.hobbsEnd != null && hobbsStart != null && data.hobbsEnd <= hobbsStart) {
@@ -275,7 +284,15 @@ export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput)
     const natureCheck = validateNatureSubType(nextNature, nextSubType);
     if (!natureCheck.ok) return { error: natureCheck.error };
 
-    if (data.hobbsEnd != null && existing.hobbsStart != null && data.hobbsEnd <= existing.hobbsStart) {
+    // hobbsStart : modification réservée à OWNER/ADMIN (mauvaise pratique, mais
+    // utile pour corriger une erreur de saisie). Si fourni par un autre rôle,
+    // on l'ignore silencieusement (le client est censé bloquer le champ).
+    const canEditHobbsStart = SIGN_OVERRIDE_ROLES.includes(auth.user.role);
+    const nextHobbsStart = canEditHobbsStart && data.hobbsStart !== undefined
+        ? data.hobbsStart
+        : existing.hobbsStart;
+
+    if (data.hobbsEnd != null && nextHobbsStart != null && data.hobbsEnd <= nextHobbsStart) {
         return { error: "Les heures moteur de fin doivent être supérieures à celles de début" };
     }
 
@@ -285,6 +302,7 @@ export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput)
             data: {
                 ...(data.departureAirfield !== undefined && { departureAirfield: data.departureAirfield }),
                 ...(data.arrivalAirfield !== undefined && { arrivalAirfield: data.arrivalAirfield }),
+                ...(canEditHobbsStart && data.hobbsStart !== undefined && { hobbsStart: data.hobbsStart }),
                 ...(data.hobbsEnd !== undefined && { hobbsEnd: data.hobbsEnd }),
                 ...(data.fuelAdded !== undefined && { fuelAdded: data.fuelAdded }),
                 ...(data.machineAnomalies !== undefined && { machineAnomalies: data.machineAnomalies }),

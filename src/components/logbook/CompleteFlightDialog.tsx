@@ -19,8 +19,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Spinner } from "@/components/ui/SpinnerVariants";
-import { FileText, CheckCircle2, ShieldCheck, Minus, Plus, Info } from "lucide-react";
+import { FileText, CheckCircle2, ShieldCheck, Minus, Plus, Info, AlertTriangle } from "lucide-react";
 
 interface Props {
     log: flight_logs | null;
@@ -35,6 +36,8 @@ interface Props {
 const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo, defaultAirfield, defaultHobbsStart }: Props) => {
     const { currentUser } = useCurrentUser();
     const isStudent = currentUser?.role === userRole.STUDENT;
+    const canEditHobbsStart =
+        currentUser?.role === userRole.OWNER || currentUser?.role === userRole.ADMIN;
     const [loading, setLoading] = useState(false);
     const [signing, setSigning] = useState(false);
     const [error, setError] = useState("");
@@ -43,6 +46,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
     const [arrivalAirfield, setArrivalAirfield] = useState("");
     const [movements, setMovements] = useState(1);
     const [hobbsStartDisplay, setHobbsStartDisplay] = useState("");
+    const [hobbsStartUnlocked, setHobbsStartUnlocked] = useState(false);
     const [hobbsEnd, setHobbsEnd] = useState("");
     const [fuelAdded, setFuelAdded] = useState("");
     const [machineAnomalies, setMachineAnomalies] = useState("RAS");
@@ -64,6 +68,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
             setFuelAdded(log.fuelAdded != null ? String(log.fuelAdded) : "");
             setMachineAnomalies(log.machineAnomalies ?? "RAS");
             setPersonalObservation(log.personalObservation ?? "");
+            setHobbsStartUnlocked(false);
         }
     }, [log, defaultAirfield, defaultHobbsStart]);
 
@@ -108,11 +113,16 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
         else setLoading(true);
 
         try {
+            const overrideHobbsStart =
+                canEditHobbsStart && hobbsStartUnlocked && hobbsStartDisplay
+                    ? parseFloat(hobbsStartDisplay)
+                    : undefined;
             const res = await updateFlightLog(log.id, {
                 departureAirfield: departureAirfield || undefined,
                 arrivalAirfield: arrivalAirfield || undefined,
                 takeoffs: movements,
                 landings: movements,
+                hobbsStart: overrideHobbsStart,
                 hobbsEnd: hobbsEnd ? parseFloat(hobbsEnd) : undefined,
                 fuelAdded: fuelAdded ? parseFloat(fuelAdded) : undefined,
                 machineAnomalies: machineAnomalies || "RAS",
@@ -143,6 +153,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                 arrivalAirfield: arrivalAirfield || null,
                 takeoffs: movements,
                 landings: movements,
+                hobbsStart: overrideHobbsStart != null ? overrideHobbsStart : log.hobbsStart,
                 hobbsEnd: hobbsEnd ? parseFloat(hobbsEnd) : null,
                 fuelAdded: fuelAdded ? parseFloat(fuelAdded) : null,
                 machineAnomalies: machineAnomalies || null,
@@ -269,8 +280,20 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label className="text-slate-600 text-sm">Heures moteur début</Label>
-                                        <Input type="number" step="0.1" value={hobbsStartDisplay} placeholder="—" readOnly className="bg-slate-100 border-slate-200 text-slate-500 cursor-default font-mono text-sm" />
-                                        {log.hobbsStart == null && !isReadOnly && (
+                                        <Input
+                                            type="number"
+                                            step="0.1"
+                                            value={hobbsStartDisplay}
+                                            onChange={(e) => setHobbsStartDisplay(e.target.value)}
+                                            placeholder="—"
+                                            readOnly={!hobbsStartUnlocked || isReadOnly}
+                                            className={
+                                                hobbsStartUnlocked && !isReadOnly
+                                                    ? "bg-slate-50 border-slate-200 focus:ring-[#774BBE] font-mono text-sm"
+                                                    : "bg-slate-100 border-slate-200 text-slate-500 cursor-default font-mono text-sm"
+                                            }
+                                        />
+                                        {log.hobbsStart == null && !isReadOnly && !hobbsStartUnlocked && (
                                             <p className="text-xs text-slate-400 italic">Valeur lue sur l&apos;aéronef, figée à la signature.</p>
                                         )}
                                     </div>
@@ -278,6 +301,29 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                                         <Label className="text-slate-600 text-sm">Heures moteur fin</Label>
                                         <Input type="number" step="0.1" value={hobbsEnd} onChange={(e) => setHobbsEnd(e.target.value)} placeholder="0.0" readOnly={isReadOnly} className={`font-mono text-sm ${inputClass}`} />
                                     </div>
+                                    {canEditHobbsStart && !isReadOnly && (
+                                        <div className="col-span-2 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Checkbox
+                                                    id="unlock-hobbs-start"
+                                                    checked={hobbsStartUnlocked}
+                                                    onCheckedChange={(c) => setHobbsStartUnlocked(c === true)}
+                                                />
+                                                <Label htmlFor="unlock-hobbs-start" className="text-slate-600 text-sm cursor-pointer">
+                                                    Modifier l&apos;heure moteur de début (admin)
+                                                </Label>
+                                            </div>
+                                            {hobbsStartUnlocked && (
+                                                <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-md">
+                                                    <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                                    <p className="text-xs text-red-700">
+                                                        Mauvaise pratique : l&apos;heure de début doit normalement refléter le hobbs courant de l&apos;aéronef.
+                                                        Ne modifier qu&apos;en cas d&apos;erreur de saisie avérée.
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     <div className="space-y-2 col-span-2">
                                         <Label className="text-slate-600 text-sm">Carburant ajouté (L)</Label>
                                         <Input type="number" step="0.1" value={fuelAdded} onChange={(e) => setFuelAdded(e.target.value)} placeholder="0.0" readOnly={isReadOnly} className={`text-sm ${inputClass}`} />

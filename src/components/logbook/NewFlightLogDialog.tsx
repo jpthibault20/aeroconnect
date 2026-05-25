@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     Select,
     SelectContent,
@@ -35,6 +36,7 @@ import {
     Minus,
     Plus,
     CheckCircle2,
+    AlertTriangle,
 } from "lucide-react";
 
 interface Props {
@@ -82,9 +84,12 @@ interface FormData {
 const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => {
     const { currentUser } = useCurrentUser();
     const { currentClub } = useCurrentClub();
+    const canEditHobbsStart =
+        currentUser?.role === userRole.OWNER || currentUser?.role === userRole.ADMIN;
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [signing, setSigning] = useState(false);
+    const [hobbsStartUnlocked, setHobbsStartUnlocked] = useState(false);
     const [error, setError] = useState("");
 
     const today = new Date().toISOString().split("T")[0];
@@ -175,6 +180,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
     const resetForm = () => {
         setForm(buildInitialForm());
         setError("");
+        setHobbsStartUnlocked(false);
     };
 
     const onConfirm = async (andSign: boolean) => {
@@ -260,6 +266,10 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
             landings: form.movements,
             departureAirfield: form.departure || undefined,
             arrivalAirfield: form.arrival || undefined,
+            hobbsStart:
+                canEditHobbsStart && hobbsStartUnlocked && form.hobbsStart
+                    ? parseFloat(form.hobbsStart)
+                    : undefined,
             hobbsEnd: parseFloat(form.hobbsEnd),
             fuelAdded: form.fuel ? parseFloat(form.fuel) : undefined,
             machineAnomalies: form.machineAnomalies || undefined,
@@ -612,11 +622,18 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                                     type="number"
                                     step="0.1"
                                     value={form.hobbsStart}
-                                    readOnly
+                                    onChange={(e) => updateField("hobbsStart", e.target.value)}
+                                    readOnly={!hobbsStartUnlocked}
                                     placeholder="—"
-                                    className="bg-slate-100 border-slate-200 text-slate-500 cursor-default font-mono"
+                                    className={
+                                        hobbsStartUnlocked
+                                            ? "bg-slate-50 border-slate-200 focus:ring-[#774BBE] font-mono"
+                                            : "bg-slate-100 border-slate-200 text-slate-500 cursor-default font-mono"
+                                    }
                                 />
-                                <p className="text-xs text-slate-400">Lu automatiquement depuis l&apos;aéronef.</p>
+                                {!hobbsStartUnlocked && (
+                                    <p className="text-xs text-slate-400">Lu automatiquement depuis l&apos;aéronef.</p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-slate-600 text-sm">Heures moteur fin <span className="text-red-500">*</span></Label>
@@ -629,6 +646,29 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                                     className="bg-slate-50 border-slate-200 focus:ring-[#774BBE] font-mono"
                                 />
                             </div>
+                            {canEditHobbsStart && (
+                                <div className="col-span-2 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox
+                                            id="unlock-hobbs-start-new"
+                                            checked={hobbsStartUnlocked}
+                                            onCheckedChange={(c) => setHobbsStartUnlocked(c === true)}
+                                        />
+                                        <Label htmlFor="unlock-hobbs-start-new" className="text-slate-600 text-sm cursor-pointer">
+                                            Modifier l&apos;heure moteur de début (admin)
+                                        </Label>
+                                    </div>
+                                    {hobbsStartUnlocked && (
+                                        <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-md">
+                                            <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                            <p className="text-xs text-red-700">
+                                                Mauvaise pratique : l&apos;heure de début doit normalement refléter le hobbs courant de l&apos;aéronef.
+                                                Ne modifier qu&apos;en cas d&apos;erreur de saisie avérée.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div className="space-y-2 col-span-2">
                                 <Label className="text-slate-600 text-sm">Carburant ajouté (L)</Label>
                                 <Input
