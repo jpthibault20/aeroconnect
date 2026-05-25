@@ -23,9 +23,10 @@ interface Props {
     planes: planes[];
     onPlaneChange?: (planeID: string) => void;
     onFilteredLogsChange?: (logs: flight_logs[]) => void;
+    onLogUpdated?: (updated: flight_logs) => void;
 }
 
-const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange, onFilteredLogsChange }: Props) => {
+const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange, onFilteredLogsChange, onLogUpdated }: Props) => {
     const [selectedPlaneID, setSelectedPlaneID] = useState<string>(
         planesList.length > 0 ? planesList[0].id : "NONE"
     );
@@ -62,9 +63,9 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
     const goNext = useCallback(() => setPage((p) => Math.min(p + 1, totalPages - 1)), [totalPages]);
     const goPrev = useCallback(() => setPage((p) => Math.max(p - 1, 0)), []);
 
-    const handleSigned = () => {
-        // Parent handles refresh
-    };
+    const handleSigned = useCallback((updated: flight_logs) => {
+        onLogUpdated?.(updated);
+    }, [onLogUpdated]);
 
     return (
         <div className="flex flex-col lg:h-full gap-6">

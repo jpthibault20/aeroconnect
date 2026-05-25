@@ -38,6 +38,7 @@ interface Props {
     logs: flight_logs[];
     users: User[];
     onExportInfoChange?: (info: PilotExportInfo) => void;
+    onLogUpdated?: (updated: flight_logs) => void;
 }
 
 const FUNCTION_BADGE: Record<string, { label: string; className: string }> = {
@@ -46,7 +47,7 @@ const FUNCTION_BADGE: Record<string, { label: string; className: string }> = {
     I: { label: "I", className: "bg-purple-100 text-purple-700 border-purple-200" },
 };
 
-const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) => {
+const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange, onLogUpdated }: Props) => {
     const { currentUser } = useCurrentUser();
     const { currentClub } = useCurrentClub();
     const defaultAirfield = currentClub?.id ?? undefined;
@@ -143,7 +144,9 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
         return users.filter((u) => ids.has(u.id));
     }, [logsProp, users]);
 
-    const handleSigned = () => {};
+    const handleSigned = useCallback((updated: flight_logs) => {
+        onLogUpdated?.(updated);
+    }, [onLogUpdated]);
 
     const handleRowClick = useCallback(async (log: flight_logs) => {
         // Lecture seule pour les élèves : ne pas ouvrir le dialog d'édition.
@@ -162,12 +165,11 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
     }, [isStudent]);
 
     const handleEditCompleted = useCallback((updated: flight_logs) => {
-        // Met à jour la liste locale avec les nouvelles données
-        // Le parent (LogbookPageComponent) devra être refreshé pour voir les changements persistés
+        onLogUpdated?.(updated);
         setEditOpen(false);
         setEditingLog(null);
         setEditDefaultHobbsStart(undefined);
-    }, []);
+    }, [onLogUpdated]);
 
     const getCompanionName = (log: flight_logs): string => {
         const fn = effectiveFunction(log);
@@ -311,6 +313,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, onExportInfoChange }: Props) =
                                                         <SignFlightLogButton
                                                             log={log}
                                                             onSigned={handleSigned}
+                                                            onTriggerEdit={() => handleRowClick(log)}
                                                         />
                                                     </td>
                                                 )}

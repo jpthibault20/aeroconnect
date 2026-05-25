@@ -102,6 +102,10 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
         setLogs((prev) => [...prev, log]);
     };
 
+    const handleLogUpdated = useCallback((updated: flight_logs) => {
+        setLogs((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+    }, []);
+
     const handleExportPDF = useCallback(async () => {
         if (!currentUser) return;
         setExporting(true);
@@ -251,6 +255,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                         logs={visibleLogs}
                         users={usersProp}
                         onExportInfoChange={handlePilotExportInfoChange}
+                        onLogUpdated={handleLogUpdated}
                     />
                 )}
                 {activeTab === "aircraft" && canSeeAircraftTab && (
@@ -259,6 +264,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                         planes={planesProp}
                         onPlaneChange={setSelectedPlaneForExport}
                         onFilteredLogsChange={handleAircraftFilteredLogsChange}
+                        onLogUpdated={handleLogUpdated}
                     />
                 )}
             </div>

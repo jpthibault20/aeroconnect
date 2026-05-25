@@ -11,10 +11,15 @@ import { CheckCircle2, Clock } from "lucide-react";
 
 interface Props {
     log: flight_logs;
-    onSigned: () => void;
+    onSigned: (updated: flight_logs) => void;
+    // Si fourni, le clic sur le bouton "Signer" délègue à ce callback (typiquement
+    // pour ouvrir la popup de complétion qui validera puis signera) au lieu de
+    // signer directement. Indépendamment, le clic est stop-propagé pour éviter
+    // tout double-déclenchement avec un onClick parent (row click).
+    onTriggerEdit?: () => void;
 }
 
-const SignFlightLogButton = React.memo(({ log, onSigned }: Props) => {
+const SignFlightLogButton = React.memo(({ log, onSigned, onTriggerEdit }: Props) => {
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
 
@@ -40,7 +45,12 @@ const SignFlightLogButton = React.memo(({ log, onSigned }: Props) => {
         );
     }
 
-    const handleSign = async () => {
+    const handleSign = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (onTriggerEdit) {
+            onTriggerEdit();
+            return;
+        }
         setLoading(true);
         try {
             const res = await signFlightLog(log.id);
@@ -56,7 +66,7 @@ const SignFlightLogButton = React.memo(({ log, onSigned }: Props) => {
                     description: "Votre signature a ete enregistree.",
                     className: "bg-green-600 text-white border-none",
                 });
-                onSigned();
+                onSigned({ ...log, pilotSigned: true, pilotSignedAt: new Date() });
             }
         } catch {
             toast({
