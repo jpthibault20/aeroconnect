@@ -254,6 +254,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                     <PilotLogbookTab
                         logs={visibleLogs}
                         users={usersProp}
+                        planes={planesProp}
                         onExportInfoChange={handlePilotExportInfoChange}
                         onLogUpdated={handleLogUpdated}
                     />

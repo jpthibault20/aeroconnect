@@ -5,9 +5,8 @@ import { flight_logs } from "@prisma/client";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { signFlightLog } from "@/api/db/logbook";
 import { toast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/SpinnerVariants";
-import { CheckCircle2, Clock } from "lucide-react";
+import { Check, Clock, PenLine } from "lucide-react";
 
 interface Props {
     log: flight_logs;
@@ -23,25 +22,27 @@ const SignFlightLogButton = React.memo(({ log, onSigned, onTriggerEdit }: Props)
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
 
+    // Gabarit pill commun : même hauteur, même padding, même rythme — seules
+    // couleur + icône changent pour différencier les 3 états.
+    const pillBase = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap";
+
     if (log.pilotSigned) {
         return (
-            <div className="flex items-center gap-1.5 text-green-600">
-                <CheckCircle2 className="w-4 h-4" />
-                <span className="text-xs font-medium">
-                    {log.pilotSignedAt
-                        ? new Date(log.pilotSignedAt).toLocaleDateString("fr-FR")
-                        : "Signe"}
-                </span>
-            </div>
+            <span className={`${pillBase} bg-emerald-50 text-emerald-700 border-emerald-200`}>
+                <Check className="w-3 h-3" />
+                {log.pilotSignedAt
+                    ? new Date(log.pilotSignedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })
+                    : "Signé"}
+            </span>
         );
     }
 
     if (currentUser?.id !== log.pilotID) {
         return (
-            <div className="flex items-center gap-1.5 text-amber-500">
-                <Clock className="w-4 h-4" />
-                <span className="text-xs font-medium">En attente</span>
-            </div>
+            <span className={`${pillBase} bg-slate-50 text-slate-500 border-slate-200`}>
+                <Clock className="w-3 h-3" />
+                En attente
+            </span>
         );
     }
 
@@ -79,15 +80,15 @@ const SignFlightLogButton = React.memo(({ log, onSigned, onTriggerEdit }: Props)
     };
 
     return (
-        <Button
-            variant="outline"
-            size="sm"
+        <button
+            type="button"
             onClick={handleSign}
             disabled={loading}
-            className="text-xs border-amber-200 text-amber-600 hover:bg-amber-50 hover:text-amber-700 h-7 px-2"
+            className={`${pillBase} bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 transition-colors disabled:opacity-50`}
         >
-            {loading ? <Spinner size="small" className="w-3 h-3" /> : "Signer"}
-        </Button>
+            {loading ? <Spinner size="small" className="w-3 h-3" /> : <PenLine className="w-3 h-3" />}
+            Signer
+        </button>
     );
 });
 

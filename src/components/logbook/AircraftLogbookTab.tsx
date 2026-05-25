@@ -2,11 +2,16 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { flight_logs, planes } from "@prisma/client";
+import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
 import { computeFlightTimes, formatNature } from "@/lib/logbookCalc";
+import { getPlaneHobbs } from "@/api/db/logbook";
 import SignFlightLogButton from "./SignFlightLogButton";
 import LogbookFilter from "./LogbookFilter";
+import CompleteFlightDialog from "./CompleteFlightDialog";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -14,7 +19,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Plane, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plane, BookOpen, ChevronLeft, ChevronRight, ArrowRight, RotateCw, ArrowUp, ArrowDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 50;
 
@@ -27,13 +33,22 @@ interface Props {
 }
 
 const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange, onFilteredLogsChange, onLogUpdated }: Props) => {
+    const { currentClub } = useCurrentClub();
+    const defaultAirfield = currentClub?.id ?? undefined;
     const [selectedPlaneID, setSelectedPlaneID] = useState<string>("ALL");
+
+    const [editingLog, setEditingLog] = useState<flight_logs | null>(null);
+    const [editOpen, setEditOpen] = useState(false);
+    const [editDefaultHobbsStart, setEditDefaultHobbsStart] = useState<number | undefined>(undefined);
 
     useEffect(() => {
         onPlaneChange?.(selectedPlaneID);
     }, [selectedPlaneID, onPlaneChange]);
 
     const [natureFilter, setNatureFilter] = useState<string | undefined>(undefined);
+    const [onlyUnsigned, setOnlyUnsigned] = useState(false);
+    const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+    const [filtersKey, setFiltersKey] = useState(0);
     const [page, setPage] = useState(0);
 
     const planeLogs = useMemo(() => {
@@ -44,9 +59,20 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
         if (natureFilter) {
             filtered = filtered.filter((l) => l.flightNature === natureFilter);
         }
+        if (onlyUnsigned) {
+            filtered = filtered.filter((l) => !l.pilotSigned);
+        }
+        const sorted = [...filtered].sort((a, b) => {
+            const da = new Date(a.date).getTime();
+            const db = new Date(b.date).getTime();
+            return sortDir === "desc" ? db - da : da - db;
+        });
+        return sorted;
+    }, [logsProp, selectedPlaneID, natureFilter, onlyUnsigned, sortDir]);
+
+    useEffect(() => {
         setPage(0);
-        return filtered;
-    }, [logsProp, selectedPlaneID, natureFilter]);
+    }, [selectedPlaneID, natureFilter, onlyUnsigned, sortDir]);
 
     useEffect(() => {
         onFilteredLogsChange?.(planeLogs);
@@ -65,10 +91,30 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
         onLogUpdated?.(updated);
     }, [onLogUpdated]);
 
+    const handleRowClick = useCallback(async (log: flight_logs) => {
+        setEditingLog(log);
+        setEditDefaultHobbsStart(undefined);
+        setEditOpen(true);
+
+        // Pré-remplir l'heure moteur de début avec le hobbsTotal courant de
+        // l'avion (cohérent avec PilotLogbookTab et la popup post-session).
+        if (log.planeID && log.hobbsStart == null) {
+            const hobbs = await getPlaneHobbs(log.planeID);
+            if (hobbs != null) setEditDefaultHobbsStart(hobbs);
+        }
+    }, []);
+
+    const handleEditCompleted = useCallback((updated: flight_logs) => {
+        onLogUpdated?.(updated);
+        setEditOpen(false);
+        setEditingLog(null);
+        setEditDefaultHobbsStart(undefined);
+    }, [onLogUpdated]);
+
     return (
         <div className="flex flex-col lg:h-full gap-6">
             {/* Controls bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
                 <Select
                     value={selectedPlaneID}
                     onValueChange={(val) => { setSelectedPlaneID(val); onPlaneChange?.(val); }}
@@ -86,74 +132,162 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                     </SelectContent>
                 </Select>
 
-                <LogbookFilter onFilterChange={(f) => setNatureFilter(f.nature)} />
+                <LogbookFilter key={filtersKey} onFilterChange={(f) => setNatureFilter(f.nature)} />
+
+                <div className="flex items-center gap-2 px-3 h-9 bg-white border border-slate-200 rounded-md">
+                    <Switch
+                        id="aircraft-only-unsigned"
+                        checked={onlyUnsigned}
+                        onCheckedChange={setOnlyUnsigned}
+                        className="data-[state=checked]:bg-[#774BBE]"
+                    />
+                    <Label htmlFor="aircraft-only-unsigned" className="text-sm text-slate-600 cursor-pointer whitespace-nowrap">
+                        À signer
+                    </Label>
+                </div>
             </div>
 
             {/* Content */}
             {planeLogs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-10 text-center bg-white rounded-xl border border-slate-200 shadow-sm">
-                    <Plane className="w-10 h-10 text-slate-300 mb-2" />
-                    <p className="text-slate-500 font-medium">Aucune entree dans le carnet de vol machine.</p>
+                <div className="flex flex-col items-center justify-center py-16 px-6 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center mb-4">
+                        <Plane className="w-8 h-8 text-[#774BBE]" />
+                    </div>
+                    {logsProp.length === 0 ? (
+                        <>
+                            <p className="text-slate-800 font-semibold mb-1">Aucun vol enregistré</p>
+                            <p className="text-slate-500 text-sm max-w-sm">
+                                Les vols apparaîtront ici dès qu&apos;une session sera complétée sur l&apos;un de vos aéronefs.
+                            </p>
+                        </>
+                    ) : (
+                        <>
+                            <p className="text-slate-800 font-semibold mb-1">Aucun vol pour ces filtres</p>
+                            <p className="text-slate-500 text-sm max-w-sm mb-4">
+                                Essayez d&apos;élargir la sélection pour voir des résultats.
+                            </p>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    setSelectedPlaneID("ALL");
+                                    setNatureFilter(undefined);
+                                    setOnlyUnsigned(false);
+                                    setFiltersKey((k) => k + 1);
+                                }}
+                                className="border-slate-200"
+                            >
+                                Réinitialiser les filtres
+                            </Button>
+                        </>
+                    )}
                 </div>
             ) : (
                 <>
                     {/* Desktop table */}
                     <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 bg-white border border-slate-200 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-y-auto">
-                        <table className="w-full text-sm">
-                            <thead className="sticky top-0 z-10 bg-slate-50">
-                                <tr className="border-b border-slate-100">
-                                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Pilote</th>
-                                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Depart</th>
-                                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Arrivee</th>
-                                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Temps</th>
-                                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Nature</th>
-                                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Hobbs deb.</th>
-                                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Hobbs fin</th>
-                                    <th className="px-3 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Att.</th>
-                                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Carburant</th>
-                                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Anomalie machine</th>
-                                    <th className="px-3 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Signé</th>
+                        <table className="w-full">
+                            <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_0_rgba(15,23,42,0.06)]">
+                                <tr>
+                                    <th className="pl-4 pr-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
+                                            className="inline-flex items-center gap-1 hover:text-slate-700 transition-colors"
+                                        >
+                                            Date
+                                            {sortDir === "desc"
+                                                ? <ArrowDown className="w-3 h-3" />
+                                                : <ArrowUp className="w-3 h-3" />
+                                            }
+                                        </button>
+                                    </th>
+                                    <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Pilote</th>
+                                    <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Nature</th>
+                                    <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Trajet</th>
+                                    <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Durée</th>
+                                    <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Hobbs</th>
+                                    <th className="px-2.5 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Mouv.</th>
+                                    <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Carb.</th>
+                                    <th className="px-2.5 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Anom.</th>
+                                    <th className="px-2.5 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Signé</th>
+                                    <th className="w-6"></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody>
                                     {paginatedLogs.map((log) => {
                                         const times = computeFlightTimes(log);
+                                        const hasAnomaly = log.machineAnomalies && log.machineAnomalies.trim() !== "" && log.machineAnomalies.trim().toUpperCase() !== "RAS";
+                                        const sameAirfield = log.departureAirfield && log.arrivalAirfield && log.departureAirfield === log.arrivalAirfield;
+                                        const showTrajet = log.departureAirfield || log.arrivalAirfield;
                                         return (
-                                        <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-3 py-3 text-slate-700 whitespace-nowrap font-medium">
-                                                {log.pilotFirstName} {log.pilotLastName}
-                                            </td>
-                                            <td className="px-3 py-3 text-slate-700 whitespace-nowrap">
+                                        <tr
+                                            key={log.id}
+                                            className="transition-colors even:bg-slate-50/40 hover:bg-purple-50/40 cursor-pointer"
+                                            onClick={() => handleRowClick(log)}
+                                        >
+                                            <td className={cn(
+                                                "pl-4 pr-2.5 py-2.5 text-[13px] text-slate-800 font-medium whitespace-nowrap border-l-4",
+                                                log.pilotSigned ? "border-l-transparent" : "border-l-amber-300"
+                                            )}>
                                                 {new Date(log.date).toLocaleDateString("fr-FR")}
                                             </td>
-                                            <td className="px-3 py-3 font-mono text-xs text-slate-600 uppercase">
-                                                {log.departureAirfield ?? "-"}
+                                            <td className="px-2.5 py-2.5 text-[13px] text-slate-800 font-medium whitespace-nowrap">
+                                                {log.pilotFirstName} {log.pilotLastName}
                                             </td>
-                                            <td className="px-3 py-3 font-mono text-xs text-slate-600 uppercase">
-                                                {log.arrivalAirfield ?? "-"}
-                                            </td>
-                                            <td className="px-3 py-3 text-right font-mono text-slate-700">
-                                                {times.durationMinutes > 0 ? convertMinutesToHours(times.durationMinutes) : "-"}
-                                            </td>
-                                            <td className="px-3 py-3 text-slate-600 whitespace-nowrap">
+                                            <td className="px-2.5 py-2.5 text-[13px] text-slate-600 whitespace-nowrap">
                                                 {formatNature(log.flightNature, log.instructionSubType)}
                                             </td>
-                                            <td className="px-3 py-3 text-right font-mono text-slate-500">
-                                                {log.hobbsStart != null ? log.hobbsStart.toFixed(1) : "-"}
+                                            <td className="px-2.5 py-2.5 font-mono text-[12px] tabular-nums uppercase text-slate-600 whitespace-nowrap">
+                                                {showTrajet ? (
+                                                    sameAirfield ? (
+                                                        <span className="inline-flex items-center gap-1">
+                                                            {log.departureAirfield}
+                                                            <RotateCw className="w-3 h-3 text-slate-400" />
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-0.5">
+                                                            {log.departureAirfield ?? "—"}
+                                                            <ArrowRight className="w-3 h-3 text-slate-300 mx-0.5" />
+                                                            {log.arrivalAirfield ?? "—"}
+                                                        </span>
+                                                    )
+                                                ) : (
+                                                    <span className="text-slate-300">-</span>
+                                                )}
                                             </td>
-                                            <td className="px-3 py-3 text-right font-mono text-slate-500">
-                                                {log.hobbsEnd != null ? log.hobbsEnd.toFixed(1) : "-"}
+                                            <td className="px-2.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums text-slate-800 font-medium">
+                                                {times.durationMinutes > 0 ? convertMinutesToHours(times.durationMinutes) : <span className="text-slate-300">-</span>}
                                             </td>
-                                            <td className="px-3 py-3 text-center text-slate-600">{log.landings}</td>
-                                            <td className="px-3 py-3 text-right font-mono text-slate-500">
-                                                {log.fuelAdded != null ? `${log.fuelAdded.toFixed(1)}L` : "-"}
+                                            <td className="px-2.5 py-2.5 text-right font-mono text-[12px] tabular-nums text-slate-600 whitespace-nowrap">
+                                                {log.hobbsStart != null && log.hobbsEnd != null ? (
+                                                    <span className="inline-flex items-center gap-0.5">
+                                                        {log.hobbsStart.toFixed(1)}
+                                                        <ArrowRight className="w-3 h-3 text-slate-300 mx-0.5" />
+                                                        {log.hobbsEnd.toFixed(1)}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-300">-</span>
+                                                )}
                                             </td>
-                                            <td className="px-3 py-3 text-slate-500 text-xs max-w-[120px] truncate">
-                                                {log.machineAnomalies ?? "RAS"}
+                                            <td className="px-2.5 py-2.5 text-center font-mono text-[12.5px] tabular-nums text-slate-600">{log.landings}</td>
+                                            <td className="px-2.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums text-slate-600">
+                                                {log.fuelAdded != null ? `${log.fuelAdded.toFixed(1)}L` : <span className="text-slate-300">-</span>}
                                             </td>
-                                            <td className="px-3 py-3 text-center">
-                                                <SignFlightLogButton log={log} onSigned={handleSigned} />
+                                            <td className="px-2.5 py-2.5 text-center">
+                                                <span
+                                                    className={cn(
+                                                        "inline-block w-2 h-2 rounded-full",
+                                                        hasAnomaly ? "bg-red-500 ring-2 ring-red-100" : "bg-emerald-400"
+                                                    )}
+                                                    title={hasAnomaly ? log.machineAnomalies! : "RAS"}
+                                                />
+                                            </td>
+                                            <td className="px-2.5 py-2.5 text-center">
+                                                <SignFlightLogButton log={log} onSigned={handleSigned} onTriggerEdit={() => handleRowClick(log)} />
+                                            </td>
+                                            <td className="pr-3 py-2.5 text-right">
+                                                <ChevronRight className="w-3.5 h-3.5 text-slate-300 inline" />
                                             </td>
                                         </tr>
                                         );
@@ -184,48 +318,76 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                     <div className="lg:hidden flex flex-col gap-3 pb-20">
                         {paginatedLogs.map((log) => {
                             const times = computeFlightTimes(log);
+                            const hasAnomaly = log.machineAnomalies && log.machineAnomalies.trim() !== "" && log.machineAnomalies.trim().toUpperCase() !== "RAS";
+                            const sameAirfield = log.departureAirfield && log.arrivalAirfield && log.departureAirfield === log.arrivalAirfield;
                             return (
                             <div
                                 key={log.id}
-                                className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3"
+                                className={cn(
+                                    "bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2.5 border-l-4 cursor-pointer active:bg-slate-50",
+                                    log.pilotSigned ? "border-l-slate-200" : "border-l-amber-300"
+                                )}
+                                onClick={() => handleRowClick(log)}
                             >
-                                {/* Top row */}
-                                <div className="flex items-center justify-between">
-                                    <span className="font-medium text-slate-800">
-                                        {log.pilotFirstName} {log.pilotLastName}
+                                {/* Ligne 1 : date + statut signé */}
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-sm font-semibold text-slate-800">
+                                        {new Date(log.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                                     </span>
                                     <SignFlightLogButton log={log} onSigned={handleSigned} />
                                 </div>
 
-                                {/* Date + nature */}
-                                <div className="flex items-center gap-3 text-sm text-slate-500">
-                                    <span>{new Date(log.date).toLocaleDateString("fr-FR")}</span>
-                                    <span className="text-slate-300">|</span>
+                                {/* Ligne 2 : pilote + durée */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-slate-700 truncate">
+                                        {log.pilotFirstName} {log.pilotLastName}
+                                    </span>
+                                    <span className="ml-auto font-mono text-[13px] tabular-nums font-semibold text-slate-800">
+                                        {times.durationMinutes > 0 ? convertMinutesToHours(times.durationMinutes) : <span className="text-slate-300">--:--</span>}
+                                    </span>
+                                </div>
+
+                                {/* Ligne 3 : nature + trajet */}
+                                <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
                                     <span>{formatNature(log.flightNature, log.instructionSubType)}</span>
-                                    {times.durationMinutes > 0 && (
-                                        <span className="ml-auto font-mono font-medium text-slate-700">
-                                            {convertMinutesToHours(times.durationMinutes)}
-                                        </span>
+                                    {log.departureAirfield && (
+                                        <>
+                                            <span className="text-slate-300">•</span>
+                                            <span className="font-mono tabular-nums uppercase inline-flex items-center gap-1">
+                                                {sameAirfield ? (
+                                                    <>
+                                                        {log.departureAirfield}
+                                                        <RotateCw className="w-3 h-3 text-slate-400" />
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        {log.departureAirfield}
+                                                        <ArrowRight className="w-3 h-3 text-slate-300" />
+                                                        {log.arrivalAirfield ?? "—"}
+                                                    </>
+                                                )}
+                                            </span>
+                                        </>
                                     )}
                                 </div>
 
-                                {/* Route */}
-                                {(log.departureAirfield || log.arrivalAirfield) && (
-                                    <div className="flex items-center gap-2 text-xs font-mono text-slate-500 uppercase">
-                                        <span>{log.departureAirfield ?? "?"}</span>
-                                        <span className="text-slate-300">&rarr;</span>
-                                        <span>{log.arrivalAirfield ?? "?"}</span>
-                                    </div>
-                                )}
-
-                                {/* Machine stats */}
-                                <div className="flex items-center gap-4 text-xs text-slate-400">
-                                    {log.hobbsStart != null && (
-                                        <span>Hobbs: {log.hobbsStart.toFixed(1)} → {log.hobbsEnd?.toFixed(1) ?? "?"}</span>
+                                {/* Ligne 4 : hobbs + carb + anomalie */}
+                                <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
+                                    {log.hobbsStart != null && log.hobbsEnd != null && (
+                                        <span className="font-mono tabular-nums">
+                                            Hobbs: <span className="text-slate-600">{log.hobbsStart.toFixed(1)} → {log.hobbsEnd.toFixed(1)}</span>
+                                        </span>
                                     )}
-                                    {log.fuelAdded != null && <span>Carb: {log.fuelAdded.toFixed(1)}L</span>}
-                                    {log.machineAnomalies && log.machineAnomalies !== "RAS" && (
-                                        <span className="text-amber-600 font-medium">Anomalie</span>
+                                    {log.fuelAdded != null && (
+                                        <span className="font-mono tabular-nums">
+                                            Carb: <span className="text-slate-600">{log.fuelAdded.toFixed(1)}L</span>
+                                        </span>
+                                    )}
+                                    {hasAnomaly && (
+                                        <span className="inline-flex items-center gap-1 text-red-600 font-medium">
+                                            <span className="inline-block w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-100" />
+                                            Anomalie
+                                        </span>
                                     )}
                                 </div>
                             </div>
@@ -234,6 +396,16 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                     </div>
                 </>
             )}
+
+            {/* Dialog d'édition au clic sur une ligne */}
+            <CompleteFlightDialog
+                log={editingLog}
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                onCompleted={handleEditCompleted}
+                defaultHobbsStart={editDefaultHobbsStart}
+                defaultAirfield={defaultAirfield}
+            />
         </div>
     );
 };
