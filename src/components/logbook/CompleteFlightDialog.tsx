@@ -189,6 +189,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                             {" — "}{log.planeName} ({log.planeRegistration})
                             {" — "}{formatNatureLong(log.flightNature, log.instructionSubType)}
                             {previewTimes.durationMinutes > 0 && <> — {convertMinutesToHours(previewTimes.durationMinutes)}</>}
+                            <br />Pilote : {log.pilotFirstName} {log.pilotLastName}
                             {companion && <><br />{companion}</>}
                         </DialogDescription>
                     </DialogHeader>
