@@ -54,6 +54,8 @@ export interface CreateFlightLogInput {
     studentID?: string;
     studentFirstName?: string;
     studentLastName?: string;
+    studentEmail?: string;
+    studentPhone?: string;
     flightNature: flightNature;
     instructionSubType?: instructionSubType | null;
     takeoffs: number;
@@ -217,6 +219,8 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
                 studentID: data.studentID,
                 studentFirstName: data.studentFirstName,
                 studentLastName: data.studentLastName,
+                studentEmail: data.studentEmail,
+                studentPhone: data.studentPhone,
                 flightNature: data.flightNature,
                 instructionSubType: data.instructionSubType ?? null,
                 takeoffs: data.takeoffs,

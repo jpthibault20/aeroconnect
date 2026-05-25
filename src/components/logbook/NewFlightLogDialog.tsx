@@ -6,6 +6,7 @@ import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { createFlightLog, CreateFlightLogInput, getPlaneHobbs, signFlightLog } from "@/api/db/logbook";
 import { isInstructorRole, INSTRUCTION_SUBTYPE_LABELS } from "@/lib/logbookCalc";
+import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import {
     Dialog,
@@ -63,6 +64,12 @@ interface FormData {
     movements: number;
     instructorID: string;
     studentID: string;
+    // Mode "passager externe" (uniquement pour BAPTÊME) : si studentMode === "external",
+    // on ignore studentID et on lit les 3 champs ci-dessous à la place.
+    studentMode: "club" | "external";
+    externalFirstName: string;
+    externalLastName: string;
+    externalEmail: string;
     departure: string;
     arrival: string;
     hobbsStart: string;
@@ -91,6 +98,10 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         movements: 1,
         instructorID: "",
         studentID: "",
+        studentMode: "club",
+        externalFirstName: "",
+        externalLastName: "",
+        externalEmail: "",
         departure: currentClub?.id ?? "",
         arrival: currentClub?.id ?? "",
         hobbsStart: "",
@@ -183,8 +194,10 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         if (!form.hobbsEnd || isNaN(parseFloat(form.hobbsEnd))) return fail("Les heures moteur de fin sont obligatoires.");
         if (form.hobbsStart && parseFloat(form.hobbsEnd) <= parseFloat(form.hobbsStart)) return fail("Les heures moteur de fin doivent être supérieures à celles de début.");
         if (form.nature === "INSTRUCTION" && !form.subType) return fail("Veuillez sélectionner un sous-type d'instruction.");
+        const isExternalBapteme =
+            userIsInstructor && form.subType === "BAPTEME" && form.studentMode === "external";
         if (form.nature === "INSTRUCTION") {
-            if (userIsInstructor && !form.studentID) return fail("Veuillez sélectionner l'élève associé.");
+            if (userIsInstructor && !isExternalBapteme && !form.studentID) return fail("Veuillez sélectionner l'élève associé.");
             if (!userIsInstructor && !form.instructorID) return fail("Veuillez sélectionner l'instructeur.");
         }
 
@@ -199,9 +212,15 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         let studentID: string | undefined;
         let studentFirstName: string | undefined;
         let studentLastName: string | undefined;
+        let studentEmail: string | undefined;
 
         if (form.nature === "INSTRUCTION") {
-            if (userIsInstructor && form.studentID) {
+            if (isExternalBapteme) {
+                // Passager externe (baptême) : pas d'ID, on persiste les champs saisis.
+                studentFirstName = form.externalFirstName || undefined;
+                studentLastName = form.externalLastName || undefined;
+                studentEmail = form.externalEmail || undefined;
+            } else if (userIsInstructor && form.studentID) {
                 const stud = users.find((u) => u.id === form.studentID);
                 if (stud) {
                     studentID = stud.id;
@@ -234,6 +253,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
             studentID,
             studentFirstName,
             studentLastName,
+            studentEmail,
             flightNature: form.nature,
             instructionSubType: form.nature === "INSTRUCTION" ? (form.subType as instructionSubType) : null,
             takeoffs: form.movements,
@@ -436,23 +456,90 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                                 </h3>
 
                                 {userIsInstructor ? (
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-600 text-sm">Élève <span className="text-red-500">*</span></Label>
-                                        <Select
-                                            value={form.studentID}
-                                            onValueChange={(val) => updateField("studentID", val)}
-                                        >
-                                            <SelectTrigger className="bg-slate-50 border-slate-200 focus:ring-[#774BBE]">
-                                                <SelectValue placeholder="Sélectionner un élève" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {students.map((u) => (
-                                                    <SelectItem key={u.id} value={u.id}>
-                                                        {u.firstName} {u.lastName}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                    <div className="space-y-4">
+                                        {/* Toggle club / externe — visible uniquement pour BAPTÊME */}
+                                        {form.subType === "BAPTEME" && (
+                                            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateField("studentMode", "club")}
+                                                    className={cn(
+                                                        "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                                                        form.studentMode === "club"
+                                                            ? "bg-white text-[#774BBE] shadow-sm"
+                                                            : "text-slate-500 hover:text-slate-700"
+                                                    )}
+                                                >
+                                                    Élève du club
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateField("studentMode", "external")}
+                                                    className={cn(
+                                                        "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                                                        form.studentMode === "external"
+                                                            ? "bg-white text-[#774BBE] shadow-sm"
+                                                            : "text-slate-500 hover:text-slate-700"
+                                                    )}
+                                                >
+                                                    Passager externe
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {form.subType === "BAPTEME" && form.studentMode === "external" ? (
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label className="text-slate-600 text-sm">Prénom</Label>
+                                                        <Input
+                                                            value={form.externalFirstName ?? ""}
+                                                            onChange={(e) => updateField("externalFirstName", e.target.value)}
+                                                            placeholder="Prénom du passager"
+                                                            className="bg-slate-50 border-slate-200 focus:ring-[#774BBE]"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-slate-600 text-sm">Nom</Label>
+                                                        <Input
+                                                            value={form.externalLastName ?? ""}
+                                                            onChange={(e) => updateField("externalLastName", e.target.value)}
+                                                            placeholder="Nom du passager"
+                                                            className="bg-slate-50 border-slate-200 focus:ring-[#774BBE]"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-slate-600 text-sm">Email</Label>
+                                                    <Input
+                                                        type="email"
+                                                        value={form.externalEmail ?? ""}
+                                                        onChange={(e) => updateField("externalEmail", e.target.value)}
+                                                        placeholder="email@exemple.com"
+                                                        className="bg-slate-50 border-slate-200 focus:ring-[#774BBE]"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                <Label className="text-slate-600 text-sm">Élève <span className="text-red-500">*</span></Label>
+                                                <Select
+                                                    value={form.studentID}
+                                                    onValueChange={(val) => updateField("studentID", val)}
+                                                >
+                                                    <SelectTrigger className="bg-slate-50 border-slate-200 focus:ring-[#774BBE]">
+                                                        <SelectValue placeholder="Sélectionner un élève" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {students.map((u) => (
+                                                            <SelectItem key={u.id} value={u.id}>
+                                                                {u.firstName} {u.lastName}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="space-y-2">

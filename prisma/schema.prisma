@@ -171,6 +171,8 @@ model flight_logs {
   studentID           String?
   studentFirstName    String?
   studentLastName     String?
+  studentEmail        String?
+  studentPhone        String?
 
   flightNature        flightNature
   instructionSubType  instructionSubType?

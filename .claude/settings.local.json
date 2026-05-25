@@ -26,7 +26,9 @@
       "Bash(npx eslint *)",
       "PowerShell(npm run *)",
       "PowerShell(npx next lint --dir src 2>&1 | Select-Object -Last 60)",
-      "PowerShell(Get-Process *)"
+      "PowerShell(Get-Process *)",
+      "Bash(tasklist)",
+      "Bash(findstr /I \"node\")"
     ]
   }
 }
