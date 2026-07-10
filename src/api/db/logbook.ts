@@ -335,7 +335,15 @@ export const signFlightLog = async (logID: string) => {
     if (!log) return { error: "Entrée introuvable" };
 
     if (auth.user.id !== log.pilotID) {
-        return { error: "Seul le pilote concerné peut signer" };
+        // Saisie déléguée (provisoire) : le président/admin signe pour le compte
+        // du pilote — cas d'usage : l'élève a un bug sur son app et ne peut pas
+        // signer lui-même. Restreint aux SIGN_OVERRIDE_ROLES et au même club.
+        if (!SIGN_OVERRIDE_ROLES.includes(auth.user.role)) {
+            return { error: "Seul le pilote concerné peut signer" };
+        }
+        if (log.clubID !== auth.user.clubID) {
+            return { error: "Permissions insuffisantes" };
+        }
     }
 
     if (log.pilotSigned) {
