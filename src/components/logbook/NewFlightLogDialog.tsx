@@ -176,8 +176,10 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
     const showInstructionCompanion = form.nature === "INSTRUCTION";
 
-    // Gating : USER et STUDENT ne peuvent pas créer d'entrée manuelle (côté serveur
-    // bloqué par LOGBOOK_WRITE_ROLES, on cache aussi le bouton côté client).
+    // Gating : USER et STUDENT ne peuvent pas créer d'entrée manuelle. L'élève
+    // vole toujours avec un instructeur (session auto-loguée), il ne saisit ni ne
+    // signe. Le PILOT et les rôles de gestion peuvent saisir. Côté serveur, la
+    // création est bornée à LOGBOOK_ROLES + contrôle « pour soi-même ».
     const canCreate = !currentUser
         || (currentUser.role !== userRole.USER && currentUser.role !== userRole.STUDENT);
 

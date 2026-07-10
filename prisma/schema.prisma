@@ -64,7 +64,25 @@ model planes {
   operational     Boolean           @default(true)
   classes         Int               @default(3)
   hobbsTotal      Float?            @default(0)
+  // Propriétaire physique de la machine. null => machine du club (propriétaire =
+  // le club). Renseigné => machine privée, visible seulement par le
+  // propriétaire, le président (OWNER) et l'admin (ADMIN).
+  ownerID         String?
+  // Usages d'une machine du club (instruction / location / usage club). Vide
+  // pour une machine privée : la nature « privée » est portée par ownerID, pas
+  // par un tag. INSTRUCTION/LOCATION/CLUB et « privé » sont mutuellement exclusifs.
+  usageTypes      MachineUsage[]    @default([])
+  // Historique des interventions de maintenance, stocké en JSON directement sur
+  // la machine pour garder un lien indestructible machine <-> maintenance.
+  // Forme : MaintenanceIntervention[] (cf. src/schemas/maintenance.ts).
+  maintenanceHistory Json?
   MaintenanceTask MaintenanceTask[]
+}
+
+enum MachineUsage {
+  INSTRUCTION
+  LOCATION
+  CLUB
 }
 
 model Club {

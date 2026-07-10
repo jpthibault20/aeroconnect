@@ -14,6 +14,9 @@ import { clearCache } from '@/lib/cache'
 import { DropDownClasse } from './DropDownClasse'
 import { cn } from '@/lib/utils'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
+import { MachineUsage } from '@prisma/client'
+import { USAGE_OPTIONS } from './usageLabels'
+import { isPrivatePlane } from '@/lib/planeVisibility'
 
 interface props {
     children: React.ReactNode
@@ -28,8 +31,20 @@ interface props {
 const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setPlanes, planes }: props) => {
     const { currentUser } = useCurrentUser();
     const canEditHobbs = currentUser?.role === userRole.OWNER || currentUser?.role === userRole.ADMIN;
+    // Les usages ne concernent que les machines du club (une machine privée n'a
+    // pas d'usage : sa nature est portée par le propriétaire).
+    const isPrivate = isPrivatePlane(plane);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    const toggleUsage = (usage: MachineUsage) => {
+        setPlane((prev) => ({
+            ...prev,
+            usageTypes: prev.usageTypes.includes(usage)
+                ? prev.usageTypes.filter((u) => u !== usage)
+                : [...prev.usageTypes, usage],
+        }));
+    };
 
     const onClickUpdatePlane = async () => {
         setLoading(true);
@@ -130,6 +145,34 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                     setPlaneProp={setPlane}
                                 />
                             </div>
+
+                            {/* Usages — uniquement pour une machine du club */}
+                            {!isPrivate && (
+                                <div className="space-y-2">
+                                    <Label className="text-slate-700 font-medium">Usages de la machine</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {USAGE_OPTIONS.map((opt) => {
+                                            const selected = plane.usageTypes.includes(opt.value);
+                                            return (
+                                                <button
+                                                    key={opt.value}
+                                                    type="button"
+                                                    disabled={loading}
+                                                    onClick={() => toggleUsage(opt.value)}
+                                                    className={cn(
+                                                        "rounded-full border px-3 py-1.5 text-sm transition-colors",
+                                                        selected
+                                                            ? "border-[#774BBE] bg-[#774BBE]/10 text-[#774BBE] font-medium"
+                                                            : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                    )}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Heures moteur — modifiable uniquement par OWNER/ADMIN */}
                             {canEditHobbs && (

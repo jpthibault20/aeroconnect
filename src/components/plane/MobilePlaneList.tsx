@@ -10,8 +10,10 @@ import UpdatePlanes from './UpdatePlanes'; // Ton composant d'édition
 import { Switch } from '@/components/ui/switch';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban } from 'lucide-react';
+import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { canManagePlane, isPrivatePlane } from '@/lib/planeVisibility';
+import { usageLabel } from './usageLabels';
 
 interface Props {
     planesList: planes[];
@@ -57,15 +59,18 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes }: CardProps) => {
     const [showPopup, setShowPopup] = useState(false);
     const [planeState, setPlaneState] = useState<planes>(initialPlane);
 
-    // --- Permissions (Identiques au Tableau) ---
-    const canManage = currentUser?.role === userRole.OWNER ||
-        currentUser?.role === userRole.ADMIN ||
-        currentUser?.role === userRole.MANAGER;
+    // --- Permissions (par machine, identiques au Tableau) ---
+    const canManage = currentUser ? canManagePlane(planeState, currentUser) : false;
 
     const canViewStatus = canManage ||
+        currentUser?.role === userRole.OWNER ||
+        currentUser?.role === userRole.ADMIN ||
+        currentUser?.role === userRole.MANAGER ||
         currentUser?.role === userRole.STUDENT ||
         currentUser?.role === userRole.PILOT ||
         currentUser?.role === userRole.INSTRUCTOR;
+
+    const isPrivate = isPrivatePlane(planeState);
 
     // --- Actions ---
     const onClickDeletePlane = async () => {
@@ -146,6 +151,20 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes }: CardProps) => {
                             <span className="font-mono text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200 mt-1 inline-block">
                                 {planeState.immatriculation}
                             </span>
+                            <div className="flex flex-wrap items-center gap-1 mt-1">
+                                {isPrivate ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
+                                        <Lock className="w-3 h-3" />
+                                        Privé
+                                    </span>
+                                ) : (
+                                    planeState.usageTypes.map((u) => (
+                                        <span key={u} className="inline-flex items-center text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200 rounded-full px-2 py-0.5">
+                                            {usageLabel(u)}
+                                        </span>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </div>
 

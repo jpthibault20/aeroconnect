@@ -28,7 +28,9 @@
       "PowerShell(npx next lint --dir src 2>&1 | Select-Object -Last 60)",
       "PowerShell(Get-Process *)",
       "Bash(tasklist)",
-      "Bash(findstr /I \"node\")"
+      "Bash(findstr /I \"node\")",
+      "PowerShell(Get-CimInstance *)",
+      "PowerShell(Stop-Process *)"
     ]
   }
 }

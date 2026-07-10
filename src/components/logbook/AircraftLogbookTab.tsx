@@ -27,12 +27,15 @@ const PAGE_SIZE = 50;
 interface Props {
     logs: flight_logs[];
     planes: planes[];
+    // Lecture seule : un membre non gestionnaire (ex : élève propriétaire)
+    // consulte le carnet de route de SA machine mais ne peut ni éditer ni signer.
+    readOnly?: boolean;
     onPlaneChange?: (planeID: string) => void;
     onFilteredLogsChange?: (logs: flight_logs[]) => void;
     onLogUpdated?: (updated: flight_logs) => void;
 }
 
-const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange, onFilteredLogsChange, onLogUpdated }: Props) => {
+const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = false, onPlaneChange, onFilteredLogsChange, onLogUpdated }: Props) => {
     const { currentClub } = useCurrentClub();
     const defaultAirfield = currentClub?.id ?? undefined;
     const [selectedPlaneID, setSelectedPlaneID] = useState<string>("ALL");
@@ -92,6 +95,8 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
     }, [onLogUpdated]);
 
     const handleRowClick = useCallback(async (log: flight_logs) => {
+        // Lecture seule : pas d'ouverture du dialog d'édition.
+        if (readOnly) return;
         setEditingLog(log);
         setEditDefaultHobbsStart(undefined);
         setEditOpen(true);
@@ -102,7 +107,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
             const hobbs = await getPlaneHobbs(log.planeID);
             if (hobbs != null) setEditDefaultHobbsStart(hobbs);
         }
-    }, []);
+    }, [readOnly]);
 
     const handleEditCompleted = useCallback((updated: flight_logs) => {
         onLogUpdated?.(updated);
@@ -223,8 +228,11 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                         return (
                                         <tr
                                             key={log.id}
-                                            className="transition-colors even:bg-slate-50/40 hover:bg-purple-50/40 cursor-pointer"
-                                            onClick={() => handleRowClick(log)}
+                                            className={cn(
+                                                "transition-colors even:bg-slate-50/40",
+                                                !readOnly && "hover:bg-purple-50/40 cursor-pointer"
+                                            )}
+                                            onClick={readOnly ? undefined : () => handleRowClick(log)}
                                         >
                                             <td className={cn(
                                                 "pl-4 pr-2.5 py-2.5 text-[13px] text-slate-800 font-medium whitespace-nowrap border-l-4",
@@ -284,10 +292,12 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                                 />
                                             </td>
                                             <td className="px-2.5 py-2.5 text-center">
-                                                <SignFlightLogButton log={log} onSigned={handleSigned} onTriggerEdit={() => handleRowClick(log)} />
+                                                {!readOnly && (
+                                                    <SignFlightLogButton log={log} onSigned={handleSigned} onTriggerEdit={() => handleRowClick(log)} />
+                                                )}
                                             </td>
                                             <td className="pr-3 py-2.5 text-right">
-                                                <ChevronRight className="w-3.5 h-3.5 text-slate-300 inline" />
+                                                {!readOnly && <ChevronRight className="w-3.5 h-3.5 text-slate-300 inline" />}
                                             </td>
                                         </tr>
                                         );
@@ -324,17 +334,18 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                             <div
                                 key={log.id}
                                 className={cn(
-                                    "bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2.5 border-l-4 cursor-pointer active:bg-slate-50",
+                                    "bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2.5 border-l-4",
+                                    !readOnly && "cursor-pointer active:bg-slate-50",
                                     log.pilotSigned ? "border-l-slate-200" : "border-l-amber-300"
                                 )}
-                                onClick={() => handleRowClick(log)}
+                                onClick={readOnly ? undefined : () => handleRowClick(log)}
                             >
                                 {/* Ligne 1 : date + statut signé */}
                                 <div className="flex items-center justify-between gap-2">
                                     <span className="text-sm font-semibold text-slate-800">
                                         {new Date(log.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                                     </span>
-                                    <SignFlightLogButton log={log} onSigned={handleSigned} />
+                                    {!readOnly && <SignFlightLogButton log={log} onSigned={handleSigned} />}
                                 </div>
 
                                 {/* Ligne 2 : pilote + durée */}
@@ -397,15 +408,17 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                 </>
             )}
 
-            {/* Dialog d'édition au clic sur une ligne */}
-            <CompleteFlightDialog
-                log={editingLog}
-                open={editOpen}
-                onOpenChange={setEditOpen}
-                onCompleted={handleEditCompleted}
-                defaultHobbsStart={editDefaultHobbsStart}
-                defaultAirfield={defaultAirfield}
-            />
+            {/* Dialog d'édition au clic sur une ligne (jamais en lecture seule) */}
+            {!readOnly && (
+                <CompleteFlightDialog
+                    log={editingLog}
+                    open={editOpen}
+                    onOpenChange={setEditOpen}
+                    onCompleted={handleEditCompleted}
+                    defaultHobbsStart={editDefaultHobbsStart}
+                    defaultAirfield={defaultAirfield}
+                />
+            )}
         </div>
     );
 };

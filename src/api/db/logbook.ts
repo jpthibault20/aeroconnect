@@ -15,7 +15,8 @@ const LOGBOOK_ROLES: userRole[] = [
     userRole.PILOT, userRole.STUDENT, userRole.INSTRUCTOR,
     userRole.OWNER, userRole.ADMIN, userRole.MANAGER,
 ];
-// Rôles pouvant écrire (modifier/signer) un vol — STUDENT exclu
+// Rôles pouvant écrire (modifier/signer) un vol — STUDENT exclu (l'élève vole
+// toujours avec un instructeur : c'est l'instructeur qui saisit et signe).
 const LOGBOOK_WRITE_ROLES: userRole[] = [
     userRole.PILOT, userRole.INSTRUCTOR,
     userRole.OWNER, userRole.ADMIN, userRole.MANAGER,

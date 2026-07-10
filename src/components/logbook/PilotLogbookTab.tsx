@@ -75,7 +75,8 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
         currentUser?.role === userRole.INSTRUCTOR;
 
     // Élève : page d'information uniquement. Pas d'édition, pas de bouton de
-    // signature, pas de colonne "signé".
+    // signature, pas de colonne "signé". L'élève vole toujours avec un
+    // instructeur : c'est l'instructeur qui saisit et signe le vol.
     const isStudent = currentUser?.role === userRole.STUDENT;
 
     // Filter logs by selected pilot — match aussi sur l'élève pour qu'un nom

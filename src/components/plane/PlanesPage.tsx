@@ -9,9 +9,10 @@ import React, { useState } from 'react';
 import TableComponent from './TableComponent';
 import MobilePlaneList from './MobilePlaneList'; // <-- IMPORT DU NOUVEAU COMPOSANT
 import { useCurrentUser } from '@/app/context/useCurrentUser';
-import { planes, userRole } from '@prisma/client';
+import { planes } from '@prisma/client';
 import NewPlane from './NewPlane';
 import Header from './Header';
+import { canCreateAnyPlane } from '@/lib/planeVisibility';
 
 interface Props {
     PlanesProps: planes[];
@@ -21,9 +22,9 @@ const PlanesPage = ({ PlanesProps }: Props) => {
     const { currentUser } = useCurrentUser();
     const [planesList, setPlanes] = useState<planes[]>(PlanesProps);
 
-    const canEdit = currentUser?.role === userRole.ADMIN ||
-        currentUser?.role === userRole.OWNER ||
-        currentUser?.role === userRole.MANAGER;
+    // Tout membre (sauf le rôle USER de base) peut ajouter au moins une machine
+    // privée ; les gestionnaires peuvent en plus créer des machines du club.
+    const canCreate = !!currentUser && canCreateAnyPlane(currentUser.role);
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
@@ -35,7 +36,7 @@ const PlanesPage = ({ PlanesProps }: Props) => {
                     <Header planesLenght={planesList.length} />
                 </div>
 
-                {canEdit && (
+                {canCreate && (
                     <div className="shrink-0 w-full md:w-auto">
                         <NewPlane setPlanes={setPlanes} />
                     </div>

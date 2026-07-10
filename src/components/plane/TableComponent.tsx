@@ -4,6 +4,7 @@ import TableRowComponent from './TableRowComponent';
 import { planes, userRole } from '@prisma/client';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Plane } from 'lucide-react';
+import { canManagePlane } from '@/lib/planeVisibility';
 
 interface Props {
     planes: planes[] | undefined;
@@ -13,13 +14,16 @@ interface Props {
 const TableComponent = ({ planes, setPlanes }: Props) => {
     const { currentUser } = useCurrentUser();
 
-    // Logique de permission centralisée pour rendre le JSX plus propre
-    // On définit qui peut voir les colonnes "Actions" et "État" (si différent)
-    const canManage = currentUser?.role === userRole.OWNER ||
-        currentUser?.role === userRole.ADMIN ||
-        currentUser?.role === userRole.MANAGER;
+    // La colonne "Actions" s'affiche dès que l'utilisateur peut gérer au moins
+    // une machine de la liste (une machine club s'il est gestionnaire, ou sa
+    // propre machine privée).
+    const canManage = !!currentUser &&
+        !!planes?.some((p) => canManagePlane(p, currentUser));
 
     const canViewStatus = canManage ||
+        currentUser?.role === userRole.OWNER ||
+        currentUser?.role === userRole.ADMIN ||
+        currentUser?.role === userRole.MANAGER ||
         currentUser?.role === userRole.STUDENT ||
         currentUser?.role === userRole.PILOT ||
         currentUser?.role === userRole.INSTRUCTOR;

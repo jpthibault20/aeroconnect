@@ -35,6 +35,9 @@ const makePlane = (overrides: Partial<planes> = {}): planes => ({
     operational: true,
     classes: 3,
     hobbsTotal: 1200,
+    ownerID: null,
+    usageTypes: [],
+    maintenanceHistory: null,
     ...overrides,
 });
 

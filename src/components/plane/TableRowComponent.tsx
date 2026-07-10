@@ -15,8 +15,10 @@ import UpdatePlanes from './UpdatePlanes';
 import { Button } from '../ui/button';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Pencil, Trash2, Plane as PlaneIcon, CheckCircle2, Ban } from 'lucide-react';
+import { Pencil, Trash2, Plane as PlaneIcon, CheckCircle2, Ban, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { canManagePlane, isPrivatePlane } from '@/lib/planeVisibility';
+import { usageLabel } from './usageLabels';
 
 interface Props {
     plane: planes;
@@ -31,14 +33,21 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
     const [planeState, setPlaneState] = useState<planes>(plane);
 
     // --- Permissions Logic ---
-    const canManage = currentUser?.role === userRole.OWNER ||
-        currentUser?.role === userRole.ADMIN ||
-        currentUser?.role === userRole.MANAGER;
+    // Gestion par machine : rôles de gestion sur les machines du club ;
+    // propriétaire (+ président/admin) sur une machine privée.
+    const canManage = currentUser
+        ? canManagePlane(planeState, currentUser)
+        : false;
 
     const canViewStatus = canManage ||
+        currentUser?.role === userRole.OWNER ||
+        currentUser?.role === userRole.ADMIN ||
+        currentUser?.role === userRole.MANAGER ||
         currentUser?.role === userRole.STUDENT ||
         currentUser?.role === userRole.PILOT ||
         currentUser?.role === userRole.INSTRUCTOR;
+
+    const isPrivate = isPrivatePlane(planeState);
 
     // --- Actions ---
 
@@ -118,7 +127,23 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
 
             {/* 2. Name Column */}
             <TableCell className="font-medium text-slate-900 pl-4">
-                {planeState.name}
+                <div className="flex flex-col gap-1">
+                    <span>{planeState.name}</span>
+                    <div className="flex flex-wrap items-center gap-1">
+                        {isPrivate ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
+                                <Lock className="w-3 h-3" />
+                                Privé
+                            </span>
+                        ) : (
+                            planeState.usageTypes.map((u) => (
+                                <span key={u} className="inline-flex items-center text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200 rounded-full px-2 py-0.5">
+                                    {usageLabel(u)}
+                                </span>
+                            ))
+                        )}
+                    </div>
+                </div>
             </TableCell>
 
             {/* 3. Immatriculation Column (Monospace Font) */}

@@ -18,11 +18,14 @@ import { Spinner } from '../ui/SpinnerVariants';
 import { createPlane } from '@/api/db/planes';
 import { toast } from '@/hooks/use-toast';
 import { IoIosWarning } from 'react-icons/io';
-import { IoMdAdd } from 'react-icons/io'; // Ou PlusIcon de lucide-react
-import { Plane } from 'lucide-react'; // Icône pour le header
-import { planes } from '@prisma/client';
+import { IoMdAdd } from 'react-icons/io';
+import { Plane, Lock, Users } from 'lucide-react';
+import { MachineUsage, planes, userRole } from '@prisma/client';
 import { DropDownClasse } from './DropDownClasse';
 import { clearCache } from '@/lib/cache';
+import { CLUB_PLANE_MANAGE_ROLES } from '@/lib/planeVisibility';
+import { USAGE_OPTIONS } from './usageLabels';
+import { cn } from '@/lib/utils';
 
 interface Props {
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
@@ -34,17 +37,41 @@ const NewPlane = ({ setPlanes }: Props) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const initialPlaneState = {
+    // Seuls les rôles de gestion peuvent créer une machine DU CLUB. Les autres
+    // membres (STUDENT/PILOT/INSTRUCTOR) ne créent que des machines privées.
+    const isManagement = !!currentUser && CLUB_PLANE_MANAGE_ROLES.includes(currentUser.role);
+
+    const initialPlaneState: planes = {
         id: "",
         name: "",
         immatriculation: "",
         clubID: currentUser?.clubID ?? "",
         classes: 3,
         operational: true,
-        hobbsTotal: null
+        hobbsTotal: null,
+        ownerID: null,
+        usageTypes: [],
+        maintenanceHistory: null,
     };
 
     const [plane, setPlane] = useState<planes>(initialPlaneState);
+    // 'club' = machine du club (gestionnaires) ; 'private' = machine perso.
+    const [kind, setKind] = useState<"club" | "private">(isManagement ? "club" : "private");
+
+    const resetForm = () => {
+        setPlane(initialPlaneState);
+        setKind(isManagement ? "club" : "private");
+        setError("");
+    };
+
+    const toggleUsage = (usage: MachineUsage) => {
+        setPlane((prev) => ({
+            ...prev,
+            usageTypes: prev.usageTypes.includes(usage)
+                ? prev.usageTypes.filter((u) => u !== usage)
+                : [...prev.usageTypes, usage],
+        }));
+    };
 
     const onSubmit = async () => {
         if (!currentUser) {
@@ -57,15 +84,25 @@ const NewPlane = ({ setPlanes }: Props) => {
             return;
         }
 
+        if (kind === "club" && plane.usageTypes.length === 0) {
+            setError("Sélectionnez au moins un usage pour la machine du club");
+            return;
+        }
+
         try {
             setLoading(true);
-            const planeData = { ...plane, clubID: currentUser.clubID as string };
-            const res = await createPlane(planeData);
+            const res = await createPlane({
+                clubID: currentUser.clubID as string,
+                name: plane.name,
+                immatriculation: plane.immatriculation,
+                classes: plane.classes,
+                kind,
+                usageTypes: kind === "club" ? plane.usageTypes : [],
+            });
 
             if (res.error) {
                 setError(res.error);
             } else if (res.success) {
-                setError("");
                 toast({
                     title: "Succès",
                     description: res.success,
@@ -74,11 +111,11 @@ const NewPlane = ({ setPlanes }: Props) => {
                 setIsOpen(false);
                 setPlanes(res.planes);
                 clearCache(`planes:${currentUser.clubID}`);
-                setPlane(initialPlaneState);
+                resetForm();
             } else {
                 setError("Une erreur inconnue est survenue.");
             }
-        } catch (error) {
+        } catch {
             setError("Une erreur est survenue lors de l'envoi des données.");
         } finally {
             setLoading(false);
@@ -86,7 +123,7 @@ const NewPlane = ({ setPlanes }: Props) => {
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
                 <Button className="bg-[#774BBE] hover:bg-[#6538a5] text-white shadow-md gap-2 transition-colors">
                     <IoMdAdd className="w-5 h-5" />
@@ -94,27 +131,71 @@ const NewPlane = ({ setPlanes }: Props) => {
                 </Button>
             </DialogTrigger>
 
-            {/* Structure identique à NewSession: p-0 gap-0 pour gérer le layout manuellement */}
             <DialogContent className="w-[95%] sm:max-w-[500px] max-h-[85vh] p-0 gap-0 bg-white rounded-xl sm:rounded-2xl border-none shadow-2xl flex flex-col">
 
                 {/* --- Header Fixe (Gris) --- */}
                 <div className="bg-slate-50 p-4 sm:p-6 border-b border-slate-100 flex-shrink-0 rounded-t-xl sm:rounded-t-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2">
-                            {/* Icône encadrée comme dans NewSession */}
                             <div className="p-2 bg-[#774BBE]/10 rounded-lg">
                                 <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-[#774BBE]" />
                             </div>
                             Nouvel appareil
                         </DialogTitle>
                         <DialogDescription className="text-slate-500 ml-11 text-xs sm:text-sm">
-                            Ajoutez un avion à la flotte du club.
+                            {isManagement
+                                ? "Ajoutez une machine du club ou une machine privée."
+                                : "Ajoutez votre machine privée pour le suivi de son carnet."}
                         </DialogDescription>
                     </DialogHeader>
                 </div>
 
                 {/* --- Corps Scrollable --- */}
                 <div className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-grow">
+
+                    {/* Section 0: Type de machine (seulement pour les gestionnaires) */}
+                    {isManagement && (
+                        <div className="space-y-4">
+                            <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                                Type de machine
+                            </h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setKind("club")}
+                                    className={cn(
+                                        "flex items-center gap-2 rounded-lg border p-3 text-sm transition-colors",
+                                        kind === "club"
+                                            ? "border-[#774BBE] bg-[#774BBE]/5 text-[#774BBE] font-medium"
+                                            : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                                    )}
+                                >
+                                    <Users className="w-4 h-4" />
+                                    Machine du club
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setKind("private")}
+                                    className={cn(
+                                        "flex items-center gap-2 rounded-lg border p-3 text-sm transition-colors",
+                                        kind === "private"
+                                            ? "border-amber-500 bg-amber-50 text-amber-700 font-medium"
+                                            : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                                    )}
+                                >
+                                    <Lock className="w-4 h-4" />
+                                    Machine privée
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {!isManagement && (
+                        <div className="flex items-center gap-2 text-amber-700 bg-amber-50 p-3 rounded-md text-sm border border-amber-100">
+                            <Lock className="w-4 h-4 flex-shrink-0" />
+                            <span>Machine privée : visible uniquement par vous, le président et l&apos;admin.</span>
+                        </div>
+                    )}
 
                     {/* Section 1: Identification */}
                     <div className="space-y-4">
@@ -158,18 +239,43 @@ const NewPlane = ({ setPlanes }: Props) => {
                         </h3>
                         <div className="space-y-2">
                             <Label className="text-slate-600 text-sm font-medium">Classe de l&apos;appareil</Label>
-                            {/* Assure-toi que DropDownClasse a un style cohérent (w-full, border-slate-200, etc.) */}
                             <DropDownClasse
                                 planeProp={plane}
                                 setPlaneProp={setPlane}
                             />
                         </div>
+
+                        {/* Usages : uniquement pour une machine du club */}
+                        {kind === "club" && (
+                            <div className="space-y-2">
+                                <Label className="text-slate-600 text-sm font-medium">Usages de la machine</Label>
+                                <div className="flex flex-wrap gap-2">
+                                    {USAGE_OPTIONS.map((opt) => {
+                                        const selected = plane.usageTypes.includes(opt.value);
+                                        return (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                onClick={() => toggleUsage(opt.value)}
+                                                className={cn(
+                                                    "rounded-full border px-3 py-1.5 text-sm transition-colors",
+                                                    selected
+                                                        ? "border-[#774BBE] bg-[#774BBE]/10 text-[#774BBE] font-medium"
+                                                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                )}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* --- Footer Fixe (Gris) --- */}
                 <div className="bg-slate-50 p-4 sm:p-6 border-t border-slate-100 flex flex-col gap-4 flex-shrink-0 rounded-b-xl sm:rounded-b-2xl">
-                    {/* Gestion des erreurs style Alert */}
                     {error && (
                         <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-md text-sm border border-red-100">
                             <IoIosWarning className="w-5 h-5 flex-shrink-0" />

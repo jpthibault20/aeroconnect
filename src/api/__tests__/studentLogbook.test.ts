@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { userRole } from "@prisma/client";
 import { navigationLinks } from "@/config/links";
+import { LOGBOOK_PAGE_ROLES, canSeeAircraftLogbook } from "@/lib/logbookPermissions";
 
 /**
  * Tests pour le carnet de vol côté élève (STUDENT).
@@ -17,10 +18,8 @@ import { navigationLinks } from "@/config/links";
  * le contrat sans dépendre de fichiers Next.js (page.tsx, composants client).
  */
 
-// --- Constantes reproduites depuis app/(protected)/logbook/page.tsx ---
-const LOGBOOK_PAGE_ALLOWED_ROLES: userRole[] = [
-    userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR, userRole.STUDENT,
-];
+// Rôles autorisés sur la page /logbook — importés du vrai code (source unique).
+const LOGBOOK_PAGE_ALLOWED_ROLES: userRole[] = LOGBOOK_PAGE_ROLES;
 
 // --- Predicates reproduits depuis LogbookPageComponent.tsx & PilotLogbookTab.tsx ---
 
@@ -33,13 +32,11 @@ function canManage(role: userRole | undefined): boolean {
     );
 }
 
+// Onglet carnet de route : on s'appuie sur le vrai code. Sans machine privée
+// (cas par défaut ici), seul un rôle de gestion y a accès. Le cas « élève
+// propriétaire d'une machine privée » est couvert dans roleCapabilities.test.ts.
 function canSeeAircraftTab(role: userRole | undefined): boolean {
-    return (
-        role === userRole.ADMIN ||
-        role === userRole.OWNER ||
-        role === userRole.MANAGER ||
-        role === userRole.INSTRUCTOR
-    );
+    return canSeeAircraftLogbook(role);
 }
 
 function canSelectPilot(role: userRole | undefined): boolean {
@@ -85,11 +82,8 @@ describe("Carnet de vol — accès et visibilité élève (STUDENT)", () => {
             expect(LOGBOOK_PAGE_ALLOWED_ROLES).not.toContain(userRole.USER);
         });
 
-        it("PILOT n'est pas dans les rôles autorisés de la page", () => {
-            // PILOT a le LOGBOOK_ROLES côté API mais la page ne les laisse pas
-            // pour l'instant ; on verrouille la liste actuelle pour éviter une
-            // régression silencieuse.
-            expect(LOGBOOK_PAGE_ALLOWED_ROLES).not.toContain(userRole.PILOT);
+        it("PILOT a désormais accès à la page (saisies manuelles de son carnet)", () => {
+            expect(LOGBOOK_PAGE_ALLOWED_ROLES).toContain(userRole.PILOT);
         });
 
         it("tous les rôles de gestion sont autorisés", () => {
@@ -169,7 +163,7 @@ describe("Carnet de vol — accès et visibilité élève (STUDENT)", () => {
             expect(canManage(userRole.STUDENT)).toBe(false);
         });
 
-        it("ne voit pas l'onglet 'Carnet de Route' (avion)", () => {
+        it("sans machine privée, ne voit pas l'onglet 'Carnet de Route' (avion)", () => {
             expect(canSeeAircraftTab(userRole.STUDENT)).toBe(false);
         });
 
