@@ -206,7 +206,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                     <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Nature</th>
                                     <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Trajet</th>
                                     <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Durée</th>
-                                    <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Hobbs</th>
+                                    <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Heure moteur</th>
                                     <th className="px-2.5 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Mouv.</th>
                                     <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Carb.</th>
                                     <th className="px-2.5 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Anom.</th>
@@ -375,7 +375,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                 <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
                                     {log.hobbsStart != null && log.hobbsEnd != null && (
                                         <span className="font-mono tabular-nums">
-                                            Hobbs: <span className="text-slate-600">{log.hobbsStart.toFixed(1)} → {log.hobbsEnd.toFixed(1)}</span>
+                                            Heure moteur: <span className="text-slate-600">{log.hobbsStart.toFixed(1)} → {log.hobbsEnd.toFixed(1)}</span>
                                         </span>
                                     )}
                                     {log.fuelAdded != null && (
