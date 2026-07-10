@@ -328,6 +328,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                     <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">DC</th>
                                     <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">CdB</th>
                                     <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Instr</th>
+                                    <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">H. moteur</th>
                                     <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Nature</th>
                                     <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Trajet</th>
                                     <th className="px-2.5 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Mouv.</th>
@@ -388,6 +389,9 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                                 </td>
                                                 <td className="px-2.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums text-slate-600">
                                                     {times.timeInstructor > 0 ? convertMinutesToHours(times.timeInstructor) : <span className="text-slate-300">-</span>}
+                                                </td>
+                                                <td className="px-2.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums text-slate-600">
+                                                    {log.hobbsEnd != null ? log.hobbsEnd.toFixed(1) : <span className="text-slate-300">-</span>}
                                                 </td>
                                                 <td className="px-2.5 py-2.5 text-[13px] text-slate-600 whitespace-nowrap">
                                                     {formatNature(log.flightNature, log.instructionSubType)}
@@ -520,6 +524,12 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                                         </>
                                                     )}
                                                 </span>
+                                            </>
+                                        )}
+                                        {log.hobbsEnd != null && (
+                                            <>
+                                                <span className="text-slate-300">•</span>
+                                                <span className="font-mono tabular-nums">H. moteur {log.hobbsEnd.toFixed(1)}</span>
                                             </>
                                         )}
                                     </div>
