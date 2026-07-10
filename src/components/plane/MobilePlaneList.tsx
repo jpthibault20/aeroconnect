@@ -10,7 +10,7 @@ import UpdatePlanes from './UpdatePlanes'; // Ton composant d'édition
 import { Switch } from '@/components/ui/switch';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock } from 'lucide-react';
+import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { canManagePlane, isPrivatePlane } from '@/lib/planeVisibility';
 import { usageLabel } from './usageLabels';
@@ -171,6 +171,17 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes }: CardProps) => {
                     {/* Badge de Classe (En haut à droite) */}
                     <span className="text-[10px] uppercase font-bold text-slate-400 border border-slate-100 px-2 py-1 rounded-full">
                         {getClasseLabel()}
+                    </span>
+                </div>
+
+                {/* Heures moteur */}
+                <div className="flex items-center justify-between px-1">
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600">
+                        <Gauge className="w-4 h-4 text-slate-400" />
+                        Heures moteur
+                    </span>
+                    <span className="font-mono text-sm font-semibold text-slate-800">
+                        {planeState.hobbsTotal != null ? `${planeState.hobbsTotal}h` : "—"}
                     </span>
                 </div>
 

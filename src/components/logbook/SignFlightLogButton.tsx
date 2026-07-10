@@ -7,6 +7,7 @@ import { signFlightLog } from "@/api/db/logbook";
 import { toast } from "@/hooks/use-toast";
 import { Spinner } from "@/components/ui/SpinnerVariants";
 import { Check, Clock, PenLine } from "lucide-react";
+import { signButtonState } from "@/lib/logbookDisplay";
 
 interface Props {
     log: flight_logs;
@@ -16,9 +17,12 @@ interface Props {
     // signer directement. Indépendamment, le clic est stop-propagé pour éviter
     // tout double-déclenchement avec un onClick parent (row click).
     onTriggerEdit?: () => void;
+    // Lecture seule : afficher le STATUT (signé / en attente) sans jamais proposer
+    // l'action "Signer" (ex : un élève qui consulte le carnet de route de sa machine).
+    readOnly?: boolean;
 }
 
-const SignFlightLogButton = React.memo(({ log, onSigned, onTriggerEdit }: Props) => {
+const SignFlightLogButton = React.memo(({ log, onSigned, onTriggerEdit, readOnly = false }: Props) => {
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
 
@@ -26,7 +30,9 @@ const SignFlightLogButton = React.memo(({ log, onSigned, onTriggerEdit }: Props)
     // couleur + icône changent pour différencier les 3 états.
     const pillBase = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap";
 
-    if (log.pilotSigned) {
+    const state = signButtonState(log, currentUser?.id, readOnly);
+
+    if (state === "signed") {
         return (
             <span className={`${pillBase} bg-emerald-50 text-emerald-700 border-emerald-200`}>
                 <Check className="w-3 h-3" />
@@ -37,7 +43,9 @@ const SignFlightLogButton = React.memo(({ log, onSigned, onTriggerEdit }: Props)
         );
     }
 
-    if (currentUser?.id !== log.pilotID) {
+    // Non signé mais non signable (lecture seule, ou l'utilisateur n'est pas le
+    // pilote du vol) : statut "En attente", sans action.
+    if (state === "pending") {
         return (
             <span className={`${pillBase} bg-slate-50 text-slate-500 border-slate-200`}>
                 <Clock className="w-3 h-3" />
