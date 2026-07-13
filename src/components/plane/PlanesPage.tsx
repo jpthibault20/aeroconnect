@@ -5,7 +5,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import TableComponent from './TableComponent';
 import MobilePlaneList from './MobilePlaneList'; // <-- IMPORT DU NOUVEAU COMPOSANT
 import { useCurrentUser } from '@/app/context/useCurrentUser';
@@ -13,6 +13,8 @@ import { planes } from '@prisma/client';
 import NewPlane from './NewPlane';
 import Header from './Header';
 import { canCreateAnyPlane } from '@/lib/planeVisibility';
+import { getMaintenanceAlerts } from '@/api/db/maintenance';
+import { MAINTENANCE_ALERTS_EVENT } from '@/lib/maintenanceEvents';
 
 interface Props {
     PlanesProps: planes[];
@@ -24,10 +26,29 @@ interface Props {
 const PlanesPage = ({ PlanesProps, ownerNames }: Props) => {
     const { currentUser } = useCurrentUser();
     const [planesList, setPlanes] = useState<planes[]>(PlanesProps);
+    // IDs des avions ayant au moins un rappel de maintenance en retard (parmi
+    // ceux dont l'utilisateur voit la maintenance).
+    const [overduePlaneIDs, setOverduePlaneIDs] = useState<string[]>([]);
 
     // Tout membre (sauf le rôle USER de base) peut ajouter au moins une machine
     // privée ; les gestionnaires peuvent en plus créer des machines du club.
     const canCreate = !!currentUser && canCreateAnyPlane(currentUser.role);
+
+    const fetchOverdue = useCallback(async () => {
+        if (!currentUser?.clubID) return;
+        try {
+            const res = await getMaintenanceAlerts(currentUser.clubID);
+            setOverduePlaneIDs(res.overduePlaneIDs);
+        } catch {
+        }
+    }, [currentUser?.clubID]);
+
+    useEffect(() => {
+        fetchOverdue();
+        // Recalcul après toute modification de maintenance (via la modale).
+        window.addEventListener(MAINTENANCE_ALERTS_EVENT, fetchOverdue);
+        return () => window.removeEventListener(MAINTENANCE_ALERTS_EVENT, fetchOverdue);
+    }, [fetchOverdue]);
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
@@ -51,13 +72,13 @@ const PlanesPage = ({ PlanesProps, ownerNames }: Props) => {
             {/* 1. VUE DESKTOP (Tableau) : Cachée sur mobile */}
             <div className="hidden md:block flex-1 bg-white border border-slate-200 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden flex-col h-full">
                 <div className="flex-1 overflow-auto">
-                    <TableComponent planes={planesList} setPlanes={setPlanes} ownerNames={ownerNames} />
+                    <TableComponent planes={planesList} setPlanes={setPlanes} ownerNames={ownerNames} overduePlaneIDs={overduePlaneIDs} />
                 </div>
             </div>
 
             {/* 2. VUE MOBILE (Cartes) : Visible uniquement sur mobile */}
             <div className="block md:hidden pb-10">
-                <MobilePlaneList planesList={planesList} setPlanes={setPlanes} ownerNames={ownerNames} />
+                <MobilePlaneList planesList={planesList} setPlanes={setPlanes} ownerNames={ownerNames} overduePlaneIDs={overduePlaneIDs} />
             </div>
 
         </div>

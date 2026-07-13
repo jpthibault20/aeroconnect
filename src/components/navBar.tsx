@@ -22,6 +22,8 @@ import {
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { getAllUserRequestedClubID } from "@/api/db/club";
+import { getMaintenanceAlerts } from "@/api/db/maintenance";
+import { MAINTENANCE_ALERTS_EVENT } from "@/lib/maintenanceEvents";
 import { usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Club } from '@prisma/client'
@@ -34,6 +36,7 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
     const { currentUser } = useCurrentUser()
     const [isOpen, setIsOpen] = useState(false)
     const [requestCount, setRequestCount] = useState(0);
+    const [maintenanceCount, setMaintenanceCount] = useState(0);
     const pathname = usePathname();
     const [refreshTrigger, setRefreshTrigger] = React.useState(0);
     const searchParams = useSearchParams();
@@ -83,6 +86,23 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
 
     }, [clubID, currentUser, refreshTrigger]);
 
+    // --- EFFECT: Rappels de maintenance en retard ---
+    useEffect(() => {
+        if (!clubID) return;
+
+        const fetchAlerts = async () => {
+            try {
+                const res = await getMaintenanceAlerts(clubID);
+                setMaintenanceCount(res.count);
+            } catch {
+            }
+        };
+
+        fetchAlerts();
+        window.addEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
+        return () => window.removeEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
+    }, [clubID, currentUser]);
+
     const handleClubChange = async (newClubID: string) => {
         setClubForAdmin(newClubID);
         setIsOpen(false);
@@ -118,7 +138,7 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                     >
                         {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
 
-                        {!isOpen && requestCount > 0 && (
+                        {!isOpen && (requestCount > 0 || maintenanceCount > 0) && (
                             <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
                         )}
 
@@ -194,7 +214,13 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                         <ScrollArea className="flex-1 pr-2 -mr-2">
                             <div className="space-y-1 pb-4">
                                 {filteredLinks.map((item) => {
-                                    const showBadge = (item.name === "Membres" || item.name === "Club") && requestCount > 0;
+                                    const badgeCount =
+                                        item.name === "Club" || item.name === "Membres"
+                                            ? requestCount
+                                            : item.name === "Avions"
+                                                ? maintenanceCount
+                                                : 0;
+                                    const showBadge = badgeCount > 0;
 
                                     // 4. Déterminer si le lien est actif
                                     const isActive = pathname === item.path;
@@ -226,7 +252,7 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
 
                                             {showBadge && (
                                                 <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-500 px-2 text-xs font-bold text-white shadow-sm">
-                                                    {requestCount}
+                                                    {badgeCount}
                                                 </span>
                                             )}
                                         </Link>

@@ -10,18 +10,20 @@ import UpdatePlanes from './UpdatePlanes'; // Ton composant d'édition
 import { Switch } from '@/components/ui/switch';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, User } from 'lucide-react';
+import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, User, Wrench, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { canManagePlane, isPrivatePlane } from '@/lib/planeVisibility';
+import { canManagePlane, canAccessMaintenance, isPrivatePlane } from '@/lib/planeVisibility';
 import { usageLabel } from './usageLabels';
+import MaintenanceDialog from './maintenance/MaintenanceDialog';
 
 interface Props {
     planesList: planes[];
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
     ownerNames?: Record<string, string>;
+    overduePlaneIDs?: string[];
 }
 
-const MobilePlaneList = ({ planesList, setPlanes, ownerNames }: Props) => {
+const MobilePlaneList = ({ planesList, setPlanes, ownerNames, overduePlaneIDs }: Props) => {
     if (planesList.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center p-8 text-center bg-white rounded-xl border border-slate-200 shadow-sm mt-4">
@@ -41,6 +43,7 @@ const MobilePlaneList = ({ planesList, setPlanes, ownerNames }: Props) => {
                     setPlanes={setPlanes}
                     allPlanes={planesList}
                     ownerNames={ownerNames}
+                    isOverdue={!!overduePlaneIDs?.includes(plane.id)}
                 />
             ))}
         </div>
@@ -54,16 +57,19 @@ interface CardProps {
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
     allPlanes: planes[];
     ownerNames?: Record<string, string>;
+    isOverdue?: boolean;
 }
 
-const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames }: CardProps) => {
+const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOverdue }: CardProps) => {
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
+    const [showMaintenance, setShowMaintenance] = useState(false);
     const [planeState, setPlaneState] = useState<planes>(initialPlane);
 
     // --- Permissions (par machine, identiques au Tableau) ---
     const canManage = currentUser ? canManagePlane(planeState, currentUser) : false;
+    const canMaintenance = currentUser ? canAccessMaintenance(planeState, currentUser) : false;
 
     // Président (OWNER) et admin voient le propriétaire des machines privées.
     const canViewOwner =
@@ -136,7 +142,10 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames }: Car
     };
 
     return (
-        <Card className="border-slate-200 shadow-sm overflow-hidden bg-white">
+        <Card className={cn(
+            "shadow-sm overflow-hidden bg-white border-l-4",
+            isOverdue ? "border-slate-200 border-l-red-400" : "border-slate-200 border-l-transparent"
+        )}>
             <CardContent className="p-4 space-y-4">
 
                 {/* Header: Icon, Name, Immat */}
@@ -160,6 +169,12 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames }: Car
                                 {planeState.immatriculation}
                             </span>
                             <div className="flex flex-wrap items-center gap-1 mt-1">
+                                {isOverdue && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-red-100 text-red-700 border border-red-200 rounded-full px-2 py-0.5">
+                                        <AlertTriangle className="w-3 h-3" />
+                                        Révision en retard
+                                    </span>
+                                )}
                                 {isPrivate ? (
                                     <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
                                         <Lock className="w-3 h-3" />
@@ -241,9 +256,32 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames }: Car
                     </div>
                 )}
 
+                {/* Bouton Maintenance (accès plus large que la gestion) */}
+                {canMaintenance && (
+                    <div className="pt-2 border-t border-slate-100">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowMaintenance(true)}
+                            className={cn(
+                                "w-full",
+                                isOverdue
+                                    ? "border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                                    : "border-slate-200 text-slate-700 hover:bg-purple-50 hover:text-[#774BBE] hover:border-purple-200"
+                            )}
+                        >
+                            <Wrench className="w-4 h-4 mr-2" />
+                            Maintenance
+                            {isOverdue && <AlertTriangle className="w-4 h-4 ml-2" />}
+                        </Button>
+                    </div>
+                )}
+
                 {/* Actions Footer */}
                 {canManage && (
-                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                    <div className={cn(
+                        "grid grid-cols-2 gap-3 pt-2",
+                        !canMaintenance && "border-t border-slate-100"
+                    )}>
                         {/* Edit Button */}
                         <UpdatePlanes
                             showPopup={showPopup}
@@ -275,6 +313,14 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames }: Car
                             </Button>
                         </AlertConfirmDeleted>
                     </div>
+                )}
+
+                {canMaintenance && (
+                    <MaintenanceDialog
+                        plane={planeState}
+                        open={showMaintenance}
+                        onOpenChange={setShowMaintenance}
+                    />
                 )}
             </CardContent>
         </Card>

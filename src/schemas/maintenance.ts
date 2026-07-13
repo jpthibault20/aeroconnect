@@ -49,6 +49,46 @@ export type MaintenanceIntervention = z.infer<typeof maintenanceInterventionSche
 
 export const maintenanceHistorySchema = z.array(maintenanceInterventionSchema);
 
+// ─── Entrées de formulaire (validées côté client ET serveur) ───
+
+/**
+ * Saisie d'une intervention (les champs dénormalisés id/auteur/createdAt sont
+ * ajoutés côté serveur ; on ne valide ici que ce que l'utilisateur saisit).
+ */
+export const interventionInputSchema = z.object({
+    date: z.string().min(1, "Date requise"),
+    type: z.string().min(1, "Type requis"),
+    description: z.string().min(1, "Description requise"),
+    comment: z.string().optional(),
+    // Heures moteur au moment de l'intervention (peut être vide => null).
+    engineHours: z.number().nullable(),
+    // Rappel éventuellement clôturé par cette intervention (réinitialise son
+    // compteur). undefined => aucune association.
+    taskID: z.string().optional(),
+});
+
+export type InterventionInput = z.infer<typeof interventionInputSchema>;
+
+/**
+ * Saisie d'un rappel récurrent (MaintenanceTask). Au moins une borne
+ * (heures OU mois) est requise — validé par `refine`.
+ */
+export const taskInputSchema = z
+    .object({
+        title: z.string().min(1, "Intitulé requis"),
+        intervalHours: z.number().positive().nullable(),
+        intervalMonths: z.number().int().positive().nullable(),
+        // Référence de départ du compteur (dernière réalisation connue).
+        lastPerformedDate: z.string().min(1, "Date de référence requise"),
+        lastPerformedHobbs: z.number(),
+    })
+    .refine((d) => d.intervalHours != null || d.intervalMonths != null, {
+        message: "Renseignez une périodicité en heures et/ou en mois",
+        path: ["intervalHours"],
+    });
+
+export type TaskInput = z.infer<typeof taskInputSchema>;
+
 /**
  * Parse en toute sécurité le JSON `planes.maintenanceHistory` en tableau typé.
  * Retourne [] si null / invalide (jamais d'exception côté lecture).

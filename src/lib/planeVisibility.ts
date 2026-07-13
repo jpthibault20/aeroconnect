@@ -126,6 +126,29 @@ export function canManagePlane(plane: Pick<planes, "ownerID">, user: Viewer): bo
     return CLUB_PLANE_MANAGE_ROLES.includes(user.role);
 }
 
+// Rôles qui voient/gèrent la maintenance d'une machine DU CLUB : instructeurs +
+// gestion (manager, président, admin). PILOT / STUDENT / USER n'y ont pas accès
+// (même s'ils voient la fiche de l'avion).
+export const MAINTENANCE_CLUB_ROLES: userRole[] = [
+    userRole.INSTRUCTOR,
+    userRole.MANAGER,
+    userRole.OWNER,
+    userRole.ADMIN,
+];
+
+/**
+ * Accès au suivi de maintenance d'une machine. « Voir = gérer » (décidé avec le
+ * client : quiconque voit la section peut aussi ajouter/modifier) :
+ *  - machine privée : propriétaire + président (OWNER) + admin (ADMIN) ;
+ *  - machine du club : instructeurs + manager + président + admin.
+ */
+export function canAccessMaintenance(plane: Pick<planes, "ownerID">, user: Viewer): boolean {
+    if (isPrivatePlane(plane)) {
+        return plane.ownerID === user.id || PRIVATE_PLANE_OVERSIGHT_ROLES.includes(user.role);
+    }
+    return MAINTENANCE_CLUB_ROLES.includes(user.role);
+}
+
 /**
  * Filtre une liste de machines selon la visibilité pour l'utilisateur courant.
  */

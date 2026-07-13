@@ -15,10 +15,11 @@ import UpdatePlanes from './UpdatePlanes';
 import { Button } from '../ui/button';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Pencil, Trash2, Plane as PlaneIcon, CheckCircle2, Ban, Lock } from 'lucide-react';
+import { Pencil, Trash2, Plane as PlaneIcon, CheckCircle2, Ban, Lock, Wrench, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { canManagePlane, isPrivatePlane } from '@/lib/planeVisibility';
+import { canManagePlane, canAccessMaintenance, isPrivatePlane } from '@/lib/planeVisibility';
 import { usageLabel } from './usageLabels';
+import MaintenanceDialog from './maintenance/MaintenanceDialog';
 
 interface Props {
     plane: planes;
@@ -27,12 +28,15 @@ interface Props {
     // Affichage de la colonne "Propriétaire" (président/admin uniquement).
     canViewOwner?: boolean;
     ownerNames?: Record<string, string>;
+    // Au moins un rappel de maintenance en retard sur cette machine.
+    isOverdue?: boolean;
 }
 
-const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames }: Props) => {
+const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames, isOverdue }: Props) => {
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
+    const [showMaintenance, setShowMaintenance] = useState(false);
     const [planeState, setPlaneState] = useState<planes>(plane);
 
     // --- Permissions Logic ---
@@ -40,6 +44,12 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames 
     // propriétaire (+ président/admin) sur une machine privée.
     const canManage = currentUser
         ? canManagePlane(planeState, currentUser)
+        : false;
+
+    // Accès au suivi de maintenance (plus large que la gestion : un instructeur
+    // voit la maintenance des machines club sans pouvoir gérer l'avion).
+    const canMaintenance = currentUser
+        ? canAccessMaintenance(planeState, currentUser)
         : false;
 
     const canViewStatus = canManage ||
@@ -116,7 +126,10 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames 
     };
 
     return (
-        <TableRow className="group hover:bg-slate-50 transition-colors">
+        <TableRow className={cn(
+            "group transition-colors",
+            isOverdue ? "bg-red-50/50 hover:bg-red-50" : "hover:bg-slate-50"
+        )}>
 
             {/* 1. Icon Column */}
             <TableCell className="text-center py-4">
@@ -133,6 +146,12 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames 
                 <div className="flex flex-col gap-1">
                     <span>{planeState.name}</span>
                     <div className="flex flex-wrap items-center gap-1">
+                        {isOverdue && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-red-100 text-red-700 border border-red-200 rounded-full px-2 py-0.5">
+                                <AlertTriangle className="w-3 h-3" />
+                                Révision en retard
+                            </span>
+                        )}
                         {isPrivate ? (
                             <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
                                 <Lock className="w-3 h-3" />
@@ -216,39 +235,69 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames 
             )}
 
             {/* 6. Actions Column */}
-            {canManage && (
+            {(canManage || canMaintenance) && (
                 <TableCell className="text-right pr-4">
                     <div className="flex items-center justify-end gap-1 opacity-100  transition-opacity">
 
-                        {/* Edit Button */}
-                        <UpdatePlanes
-                            showPopup={showPopup}
-                            setShowPopup={setShowPopup}
-                            plane={planeState}
-                            setPlane={setPlaneState}
-                            setPlanes={setPlanes}
-                            planes={planes}
-                        >
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-purple-600 hover:bg-purple-50">
-                                <Pencil className="w-4 h-4" />
+                        {/* Maintenance Button */}
+                        {canMaintenance && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowMaintenance(true)}
+                                className={cn(
+                                    "h-8 w-8",
+                                    isOverdue
+                                        ? "text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        : "text-slate-500 hover:text-[#774BBE] hover:bg-purple-50"
+                                )}
+                                title={isOverdue ? "Maintenance — révision en retard" : "Maintenance"}
+                            >
+                                <Wrench className="w-4 h-4" />
                             </Button>
-                        </UpdatePlanes>
+                        )}
 
-                        {/* Delete Button */}
-                        <AlertConfirmDeleted
-                            title={`Supprimer ${planeState.name} ?`}
-                            description="Cette action est irréversible. L'avion sera retiré de la base de données."
-                            cancel="Annuler"
-                            confirm="Supprimer définitivement"
-                            confirmAction={onClickDeletePlane}
-                            loading={loading}
-                        >
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50">
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
-                        </AlertConfirmDeleted>
+                        {canManage && (
+                            <>
+                                {/* Edit Button */}
+                                <UpdatePlanes
+                                    showPopup={showPopup}
+                                    setShowPopup={setShowPopup}
+                                    plane={planeState}
+                                    setPlane={setPlaneState}
+                                    setPlanes={setPlanes}
+                                    planes={planes}
+                                >
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-purple-600 hover:bg-purple-50">
+                                        <Pencil className="w-4 h-4" />
+                                    </Button>
+                                </UpdatePlanes>
+
+                                {/* Delete Button */}
+                                <AlertConfirmDeleted
+                                    title={`Supprimer ${planeState.name} ?`}
+                                    description="Cette action est irréversible. L'avion sera retiré de la base de données."
+                                    cancel="Annuler"
+                                    confirm="Supprimer définitivement"
+                                    confirmAction={onClickDeletePlane}
+                                    loading={loading}
+                                >
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50">
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </AlertConfirmDeleted>
+                            </>
+                        )}
                     </div>
                 </TableCell>
+            )}
+
+            {canMaintenance && (
+                <MaintenanceDialog
+                    plane={planeState}
+                    open={showMaintenance}
+                    onOpenChange={setShowMaintenance}
+                />
             )}
         </TableRow>
     );

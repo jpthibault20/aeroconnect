@@ -4,15 +4,16 @@ import TableRowComponent from './TableRowComponent';
 import { planes, userRole } from '@prisma/client';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Plane } from 'lucide-react';
-import { canManagePlane } from '@/lib/planeVisibility';
+import { canManagePlane, canAccessMaintenance } from '@/lib/planeVisibility';
 
 interface Props {
     planes: planes[] | undefined;
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
     ownerNames?: Record<string, string>;
+    overduePlaneIDs?: string[];
 }
 
-const TableComponent = ({ planes, setPlanes, ownerNames }: Props) => {
+const TableComponent = ({ planes, setPlanes, ownerNames, overduePlaneIDs }: Props) => {
     const { currentUser } = useCurrentUser();
 
     // Président (OWNER) et admin voient toutes les machines du club : on leur
@@ -26,6 +27,11 @@ const TableComponent = ({ planes, setPlanes, ownerNames }: Props) => {
     // propre machine privée).
     const canManage = !!currentUser &&
         !!planes?.some((p) => canManagePlane(p, currentUser));
+
+    // La colonne « Actions » apparaît aussi pour les accès maintenance (ex. un
+    // instructeur voit la maintenance des machines club sans pouvoir gérer l'avion).
+    const canShowActions = !!currentUser &&
+        !!planes?.some((p) => canManagePlane(p, currentUser) || canAccessMaintenance(p, currentUser));
 
     const canViewStatus = canManage ||
         currentUser?.role === userRole.OWNER ||
@@ -87,7 +93,7 @@ const TableComponent = ({ planes, setPlanes, ownerNames }: Props) => {
                             )}
 
                             {/* Colonne Actions */}
-                            {canManage && (
+                            {canShowActions && (
                                 <TableHead className={`${headerClass} text-right pr-6`}>
                                 </TableHead>
                             )}
@@ -104,6 +110,7 @@ const TableComponent = ({ planes, setPlanes, ownerNames }: Props) => {
                                     setPlanes={setPlanes}
                                     canViewOwner={canViewOwner}
                                     ownerNames={ownerNames}
+                                    isOverdue={!!overduePlaneIDs?.includes(plane.id)}
                                 />
                             ))
                         ) : (
