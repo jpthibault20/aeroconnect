@@ -9,10 +9,17 @@ import { canManagePlane } from '@/lib/planeVisibility';
 interface Props {
     planes: planes[] | undefined;
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
+    ownerNames?: Record<string, string>;
 }
 
-const TableComponent = ({ planes, setPlanes }: Props) => {
+const TableComponent = ({ planes, setPlanes, ownerNames }: Props) => {
     const { currentUser } = useCurrentUser();
+
+    // Président (OWNER) et admin voient toutes les machines du club : on leur
+    // indique le propriétaire de chaque machine (colonne dédiée).
+    const canViewOwner =
+        currentUser?.role === userRole.OWNER ||
+        currentUser?.role === userRole.ADMIN;
 
     // La colonne "Actions" s'affiche dès que l'utilisateur peut gérer au moins
     // une machine de la liste (une machine club s'il est gestionnaire, ou sa
@@ -49,6 +56,13 @@ const TableComponent = ({ planes, setPlanes }: Props) => {
                             <TableHead className={`${headerClass} pl-4`}>
                                 Nom
                             </TableHead>
+
+                            {/* Colonne Propriétaire (président/admin uniquement) */}
+                            {canViewOwner && (
+                                <TableHead className={`${headerClass} pl-4`}>
+                                    Propriétaire
+                                </TableHead>
+                            )}
 
                             {/* Colonne Immatriculation */}
                             <TableHead className={`${headerClass} text-center`}>
@@ -88,12 +102,14 @@ const TableComponent = ({ planes, setPlanes }: Props) => {
                                     plane={plane}
                                     planes={planes}
                                     setPlanes={setPlanes}
+                                    canViewOwner={canViewOwner}
+                                    ownerNames={ownerNames}
                                 />
                             ))
                         ) : (
                             // État vide (Empty State)
                             <TableRow>
-                                <td colSpan={6} className="h-32 text-center text-slate-400 bg-slate-50/50">
+                                <td colSpan={8} className="h-32 text-center text-slate-400 bg-slate-50/50">
                                     <div className="flex flex-col items-center justify-center gap-2">
                                         <Plane className="w-8 h-8 text-slate-200" />
                                         <p>Aucun appareil dans la flotte.</p>

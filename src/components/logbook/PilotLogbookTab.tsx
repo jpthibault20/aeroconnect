@@ -6,6 +6,7 @@ import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
 import { computeFlightTimes, formatNature } from "@/lib/logbookCalc";
+import { shouldShowStudent } from "@/lib/logbookDisplay";
 import RunningTotalsCard from "./RunningTotalsCard";
 import SignFlightLogButton from "./SignFlightLogButton";
 import LogbookFilter from "./LogbookFilter";
@@ -198,20 +199,9 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
         setEditDefaultHobbsStart(undefined);
     }, [onLogUpdated]);
 
-    const getCompanionName = (log: flight_logs): string => {
-        const fn = effectiveFunction(log);
-        if (fn === "EP" && log.instructorFirstName) {
-            return `${log.instructorFirstName} ${log.instructorLastName ?? ""}`.trim();
-        }
-        if (fn === "EP" && log.pilotFirstName) {
-            // Pas d'instructorID stocké séparément : l'instructeur EST le pilotID du log
-            return `${log.pilotFirstName} ${log.pilotLastName ?? ""}`.trim();
-        }
-        if (fn === "I" && log.studentFirstName) {
-            return `${log.studentFirstName} ${log.studentLastName ?? ""}`.trim();
-        }
-        return "";
-    };
+    // Nom affiché "Prénom Nom" à partir des champs dénormalisés du log.
+    const fullName = (first?: string | null, last?: string | null): string =>
+        `${first ?? ""} ${last ?? ""}`.trim();
 
     return (
         <div className="flex flex-col lg:h-full gap-6">
@@ -332,8 +322,8 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                     <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">H. moteur</th>
                                     <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Nature</th>
                                     <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Trajet</th>
-                                    <th className="px-2.5 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Mouv.</th>
-                                    <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Avec</th>
+                                    <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Pilote</th>
+                                    <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Élèves</th>
                                     {!isStudent && (
                                         <th className="px-2.5 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Signé</th>
                                     )}
@@ -415,9 +405,13 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                                         <span className="text-slate-300">-</span>
                                                     )}
                                                 </td>
-                                                <td className="px-2.5 py-2.5 text-center font-mono text-[12.5px] tabular-nums text-slate-600">{log.landings}</td>
-                                                <td className="px-2.5 py-2.5 text-[13px] text-slate-600 max-w-[140px] truncate">
-                                                    {getCompanionName(log) || <span className="text-slate-300">-</span>}
+                                                <td className="px-2.5 py-2.5 text-[13px] text-slate-700 max-w-[160px] truncate">
+                                                    {fullName(log.pilotFirstName, log.pilotLastName) || <span className="text-slate-300">-</span>}
+                                                </td>
+                                                <td className="px-2.5 py-2.5 text-[13px] text-slate-600 max-w-[160px] truncate">
+                                                    {shouldShowStudent(log)
+                                                        ? fullName(log.studentFirstName, log.studentLastName)
+                                                        : <span className="text-slate-300">-</span>}
                                                 </td>
                                                 {!isStudent && (
                                                     <td className="px-2.5 py-2.5 text-center">
@@ -467,7 +461,6 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                 pilotFunction: effFn,
                             });
                             const sameAirfield = log.departureAirfield && log.arrivalAirfield && log.departureAirfield === log.arrivalAirfield;
-                            const companion = getCompanionName(log);
                             return (
                                 <div
                                     key={log.id}
@@ -535,12 +528,17 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                         )}
                                     </div>
 
-                                    {/* Ligne 4 : compagnon (conditionnelle) */}
-                                    {companion && (
-                                        <div className="text-xs text-slate-400">
-                                            Avec : <span className="text-slate-600">{companion}</span>
+                                    {/* Ligne 4 : pilote + élève */}
+                                    <div className="text-xs text-slate-400 space-y-0.5">
+                                        <div>
+                                            Pilote : <span className="text-slate-600">{fullName(log.pilotFirstName, log.pilotLastName) || "-"}</span>
                                         </div>
-                                    )}
+                                        {shouldShowStudent(log) && (
+                                            <div>
+                                                Élève : <span className="text-slate-600">{fullName(log.studentFirstName, log.studentLastName)}</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             );
                         })}

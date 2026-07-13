@@ -10,7 +10,7 @@ import UpdatePlanes from './UpdatePlanes'; // Ton composant d'édition
 import { Switch } from '@/components/ui/switch';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge } from 'lucide-react';
+import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { canManagePlane, isPrivatePlane } from '@/lib/planeVisibility';
 import { usageLabel } from './usageLabels';
@@ -18,9 +18,10 @@ import { usageLabel } from './usageLabels';
 interface Props {
     planesList: planes[];
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
+    ownerNames?: Record<string, string>;
 }
 
-const MobilePlaneList = ({ planesList, setPlanes }: Props) => {
+const MobilePlaneList = ({ planesList, setPlanes, ownerNames }: Props) => {
     if (planesList.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center p-8 text-center bg-white rounded-xl border border-slate-200 shadow-sm mt-4">
@@ -39,6 +40,7 @@ const MobilePlaneList = ({ planesList, setPlanes }: Props) => {
                     initialPlane={plane}
                     setPlanes={setPlanes}
                     allPlanes={planesList}
+                    ownerNames={ownerNames}
                 />
             ))}
         </div>
@@ -51,9 +53,10 @@ interface CardProps {
     initialPlane: planes;
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
     allPlanes: planes[];
+    ownerNames?: Record<string, string>;
 }
 
-const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes }: CardProps) => {
+const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames }: CardProps) => {
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
@@ -61,6 +64,11 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes }: CardProps) => {
 
     // --- Permissions (par machine, identiques au Tableau) ---
     const canManage = currentUser ? canManagePlane(planeState, currentUser) : false;
+
+    // Président (OWNER) et admin voient le propriétaire des machines privées.
+    const canViewOwner =
+        currentUser?.role === userRole.OWNER ||
+        currentUser?.role === userRole.ADMIN;
 
     const canViewStatus = canManage ||
         currentUser?.role === userRole.OWNER ||
@@ -173,6 +181,21 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes }: CardProps) => {
                         {getClasseLabel()}
                     </span>
                 </div>
+
+                {/* Propriétaire (président/admin uniquement) */}
+                {canViewOwner && (
+                    <div className="flex items-center justify-between px-1">
+                        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600">
+                            <User className="w-4 h-4 text-slate-400" />
+                            Propriétaire
+                        </span>
+                        <span className="text-sm font-semibold text-slate-800">
+                            {isPrivate
+                                ? (planeState.ownerID && ownerNames?.[planeState.ownerID]) || "—"
+                                : "Club"}
+                        </span>
+                    </div>
+                )}
 
                 {/* Heures moteur */}
                 <div className="flex items-center justify-between px-1">

@@ -16,9 +16,12 @@ import { canCreateAnyPlane } from '@/lib/planeVisibility';
 
 interface Props {
     PlanesProps: planes[];
+    // Map ownerID -> "Prénom Nom", fournie uniquement pour président/admin
+    // (les seuls à voir les machines privées des autres membres).
+    ownerNames?: Record<string, string>;
 }
 
-const PlanesPage = ({ PlanesProps }: Props) => {
+const PlanesPage = ({ PlanesProps, ownerNames }: Props) => {
     const { currentUser } = useCurrentUser();
     const [planesList, setPlanes] = useState<planes[]>(PlanesProps);
 
@@ -48,13 +51,13 @@ const PlanesPage = ({ PlanesProps }: Props) => {
             {/* 1. VUE DESKTOP (Tableau) : Cachée sur mobile */}
             <div className="hidden md:block flex-1 bg-white border border-slate-200 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden flex-col h-full">
                 <div className="flex-1 overflow-auto">
-                    <TableComponent planes={planesList} setPlanes={setPlanes} />
+                    <TableComponent planes={planesList} setPlanes={setPlanes} ownerNames={ownerNames} />
                 </div>
             </div>
 
             {/* 2. VUE MOBILE (Cartes) : Visible uniquement sur mobile */}
             <div className="block md:hidden pb-10">
-                <MobilePlaneList planesList={planesList} setPlanes={setPlanes} />
+                <MobilePlaneList planesList={planesList} setPlanes={setPlanes} ownerNames={ownerNames} />
             </div>
 
         </div>

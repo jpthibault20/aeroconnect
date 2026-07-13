@@ -30,7 +30,8 @@
       "Bash(tasklist)",
       "Bash(findstr /I \"node\")",
       "PowerShell(Get-CimInstance *)",
-      "PowerShell(Stop-Process *)"
+      "PowerShell(Stop-Process *)",
+      "Bash(npx --yes tsc --noEmit --skipLibCheck --esModuleInterop --moduleResolution node --module esnext --target es2020 prisma/seed-current-month.ts)"
     ]
   }
 }

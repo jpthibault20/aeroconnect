@@ -335,10 +335,15 @@ export const signFlightLog = async (logID: string) => {
     const log = await prisma.flight_logs.findUnique({ where: { id: logID } });
     if (!log) return { error: "Entrée introuvable" };
 
+    // Un vol d'instruction est encadré, saisi ET signé par son instructeur, qui
+    // EST le pilotID du log (studentID = élève). Le contrôle pilotID ci-dessous
+    // garantit donc qu'un instructeur ne peut signer QUE les vols qu'il a
+    // lui-même encadrés : il ne peut pas signer le vol d'un autre pilote ou d'un
+    // autre instructeur (le rôle INSTRUCTOR n'est pas dans SIGN_OVERRIDE_ROLES).
     if (auth.user.id !== log.pilotID) {
-        // Saisie déléguée (provisoire) : le président/admin signe pour le compte
-        // du pilote — cas d'usage : l'élève a un bug sur son app et ne peut pas
-        // signer lui-même. Restreint aux SIGN_OVERRIDE_ROLES et au même club.
+        // Saisie déléguée (provisoire) : seuls président/admin (SIGN_OVERRIDE_ROLES)
+        // du même club peuvent signer pour le compte du pilote — cas d'usage :
+        // l'élève a un bug sur son app et ne peut pas signer lui-même.
         if (!SIGN_OVERRIDE_ROLES.includes(auth.user.role)) {
             return { error: "Seul le pilote concerné peut signer" };
         }

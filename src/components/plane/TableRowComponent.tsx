@@ -24,9 +24,12 @@ interface Props {
     plane: planes;
     planes: planes[];
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
+    // Affichage de la colonne "Propriétaire" (président/admin uniquement).
+    canViewOwner?: boolean;
+    ownerNames?: Record<string, string>;
 }
 
-const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
+const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames }: Props) => {
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
@@ -146,7 +149,20 @@ const TableRowComponent = ({ plane, planes, setPlanes }: Props) => {
                 </div>
             </TableCell>
 
-            {/* 3. Immatriculation Column (Monospace Font) */}
+            {/* 3. Propriétaire Column (président/admin uniquement) */}
+            {canViewOwner && (
+                <TableCell className="pl-4 text-slate-600">
+                    {isPrivate ? (
+                        <span className="text-sm">
+                            {(planeState.ownerID && ownerNames?.[planeState.ownerID]) || "—"}
+                        </span>
+                    ) : (
+                        <span className="text-xs text-slate-400">Club</span>
+                    )}
+                </TableCell>
+            )}
+
+            {/* 4. Immatriculation Column (Monospace Font) */}
             <TableCell className="text-center">
                 <span className="font-mono text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200">
                     {planeState.immatriculation}

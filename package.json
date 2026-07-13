@@ -13,6 +13,7 @@
     "migrate:prod": "prisma migrate deploy",
     "postbuild": "npm run migrate:prod",
     "email": "email dev",
+    "seed:month": "npx --yes tsx prisma/seed-current-month.ts",
     "test": "vitest",
     "test:run": "vitest run"
   },
