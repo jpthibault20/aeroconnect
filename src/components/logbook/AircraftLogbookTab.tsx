@@ -21,18 +21,23 @@ import {
 } from "@/components/ui/select";
 import { Plane, BookOpen, ChevronLeft, ChevronRight, ArrowRight, RotateCw, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { shouldShowStudent } from "@/lib/logbookDisplay";
 
 const PAGE_SIZE = 50;
 
 interface Props {
     logs: flight_logs[];
     planes: planes[];
+    // Lecture seule : un membre non gestionnaire (ex : élève propriétaire)
+    // consulte le carnet de route de SA machine mais ne peut ni éditer ni signer.
+    readOnly?: boolean;
     onPlaneChange?: (planeID: string) => void;
     onFilteredLogsChange?: (logs: flight_logs[]) => void;
     onLogUpdated?: (updated: flight_logs) => void;
+    onLogDeleted?: (deleted: flight_logs) => void;
 }
 
-const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange, onFilteredLogsChange, onLogUpdated }: Props) => {
+const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = false, onPlaneChange, onFilteredLogsChange, onLogUpdated, onLogDeleted }: Props) => {
     const { currentClub } = useCurrentClub();
     const defaultAirfield = currentClub?.id ?? undefined;
     const [selectedPlaneID, setSelectedPlaneID] = useState<string>("ALL");
@@ -101,6 +106,8 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
     }, [onLogUpdated]);
 
     const handleRowClick = useCallback(async (log: flight_logs) => {
+        // Lecture seule : pas d'ouverture du dialog d'édition.
+        if (readOnly) return;
         setEditingLog(log);
         setEditDefaultHobbsStart(undefined);
         setEditOpen(true);
@@ -111,7 +118,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
             const hobbs = await getPlaneHobbs(log.planeID);
             if (hobbs != null) setEditDefaultHobbsStart(hobbs);
         }
-    }, []);
+    }, [readOnly]);
 
     const handleEditCompleted = useCallback((updated: flight_logs) => {
         onLogUpdated?.(updated);
@@ -119,6 +126,13 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
         setEditingLog(null);
         setEditDefaultHobbsStart(undefined);
     }, [onLogUpdated]);
+
+    const handleEditDeleted = useCallback((deleted: flight_logs) => {
+        onLogDeleted?.(deleted);
+        setEditOpen(false);
+        setEditingLog(null);
+        setEditDefaultHobbsStart(undefined);
+    }, [onLogDeleted]);
 
     return (
         <div className="flex flex-col lg:h-full gap-6">
@@ -211,11 +225,12 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                             }
                                         </button>
                                     </th>
+                                    <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Machine</th>
                                     <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Pilote</th>
                                     <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Nature</th>
                                     <th className="px-2.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Trajet</th>
                                     <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Durée</th>
-                                    <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Hobbs</th>
+                                    <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Heure moteur</th>
                                     <th className="px-2.5 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Mouv.</th>
                                     <th className="px-2.5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Carb.</th>
                                     <th className="px-2.5 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">Anom.</th>
@@ -235,8 +250,11 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                         return (
                                         <tr
                                             key={log.id}
-                                            className="transition-colors even:bg-slate-50/40 hover:bg-purple-50/40 cursor-pointer"
-                                            onClick={() => handleRowClick(log)}
+                                            className={cn(
+                                                "transition-colors even:bg-slate-50/40",
+                                                !readOnly && "hover:bg-purple-50/40 cursor-pointer"
+                                            )}
+                                            onClick={readOnly ? undefined : () => handleRowClick(log)}
                                         >
                                             <td className={cn(
                                                 "pl-4 pr-2.5 py-2.5 text-[13px] text-slate-800 font-medium whitespace-nowrap border-l-4",
@@ -244,8 +262,25 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                             )}>
                                                 {new Date(log.date).toLocaleDateString("fr-FR")}
                                             </td>
-                                            <td className="px-2.5 py-2.5 text-[13px] text-slate-800 font-medium whitespace-nowrap">
-                                                {log.pilotFirstName} {log.pilotLastName}
+                                            <td className="px-2.5 py-2.5 whitespace-nowrap">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-[13px] font-medium text-slate-800">{log.planeName}</span>
+                                                    <span className="font-mono text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
+                                                        {log.planeRegistration}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-2.5 py-2.5 whitespace-nowrap">
+                                                <div className="flex flex-col leading-tight">
+                                                    <span className="text-[13px] text-slate-800 font-medium">
+                                                        {log.pilotFirstName} {log.pilotLastName}
+                                                    </span>
+                                                    {shouldShowStudent(log) && (
+                                                        <span className="text-[11px] text-slate-500">
+                                                            Élève : {log.studentFirstName} {log.studentLastName}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-2.5 py-2.5 text-[13px] text-slate-600 whitespace-nowrap">
                                                 {formatNature(log.flightNature, log.instructionSubType)}
@@ -303,10 +338,15 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                                 />
                                             </td>
                                             <td className="px-2.5 py-2.5 text-center">
-                                                <SignFlightLogButton log={log} onSigned={handleSigned} onTriggerEdit={() => handleRowClick(log)} />
+                                                <SignFlightLogButton
+                                                    log={log}
+                                                    onSigned={handleSigned}
+                                                    onTriggerEdit={readOnly ? undefined : () => handleRowClick(log)}
+                                                    readOnly={readOnly}
+                                                />
                                             </td>
                                             <td className="pr-3 py-2.5 text-right">
-                                                <ChevronRight className="w-3.5 h-3.5 text-slate-300 inline" />
+                                                {!readOnly && <ChevronRight className="w-3.5 h-3.5 text-slate-300 inline" />}
                                             </td>
                                         </tr>
                                         );
@@ -346,24 +386,43 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                             <div
                                 key={log.id}
                                 className={cn(
-                                    "bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2.5 border-l-4 cursor-pointer active:bg-slate-50",
+                                    "bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2.5 border-l-4",
+                                    !readOnly && "cursor-pointer active:bg-slate-50",
                                     log.pilotSigned ? "border-l-slate-200" : "border-l-amber-300"
                                 )}
-                                onClick={() => handleRowClick(log)}
+                                onClick={readOnly ? undefined : () => handleRowClick(log)}
                             >
                                 {/* Ligne 1 : date + statut signé */}
                                 <div className="flex items-center justify-between gap-2">
                                     <span className="text-sm font-semibold text-slate-800">
                                         {new Date(log.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                                     </span>
-                                    <SignFlightLogButton log={log} onSigned={handleSigned} />
+                                    <SignFlightLogButton log={log} onSigned={handleSigned} readOnly={readOnly} />
                                 </div>
 
-                                {/* Ligne 2 : pilote + durée */}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-slate-700 truncate">
-                                        {log.pilotFirstName} {log.pilotLastName}
+                                {/* Machine : nom + immatriculation */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-800">
+                                        <Plane className="w-3.5 h-3.5 text-[#774BBE]" />
+                                        {log.planeName}
                                     </span>
+                                    <span className="font-mono text-[11px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
+                                        {log.planeRegistration}
+                                    </span>
+                                </div>
+
+                                {/* Ligne 2 : pilote (+ élève si instruction) + durée */}
+                                <div className="flex items-center gap-2">
+                                    <div className="flex flex-col leading-tight min-w-0">
+                                        <span className="text-sm font-medium text-slate-700 truncate">
+                                            {log.pilotFirstName} {log.pilotLastName}
+                                        </span>
+                                        {shouldShowStudent(log) && (
+                                            <span className="text-xs text-slate-500 truncate">
+                                                Élève : {log.studentFirstName} {log.studentLastName}
+                                            </span>
+                                        )}
+                                    </div>
                                     <span className={cn(
                                         "ml-auto font-mono text-[13px] tabular-nums font-semibold",
                                         times.provisional ? "text-slate-400 italic" : "text-slate-800"
@@ -404,7 +463,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                                 <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
                                     {log.hobbsStart != null && log.hobbsEnd != null && (
                                         <span className="font-mono tabular-nums">
-                                            Hobbs: <span className="text-slate-600">{log.hobbsStart.toFixed(1)} → {log.hobbsEnd.toFixed(1)}</span>
+                                            Heure moteur: <span className="text-slate-600">{log.hobbsStart.toFixed(1)} → {log.hobbsEnd.toFixed(1)}</span>
                                         </span>
                                     )}
                                     {log.fuelAdded != null && (
@@ -426,15 +485,18 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, onPlaneChange,
                 </>
             )}
 
-            {/* Dialog d'édition au clic sur une ligne */}
-            <CompleteFlightDialog
-                log={editingLog}
-                open={editOpen}
-                onOpenChange={setEditOpen}
-                onCompleted={handleEditCompleted}
-                defaultHobbsStart={editDefaultHobbsStart}
-                defaultAirfield={defaultAirfield}
-            />
+            {/* Dialog d'édition au clic sur une ligne (jamais en lecture seule) */}
+            {!readOnly && (
+                <CompleteFlightDialog
+                    log={editingLog}
+                    open={editOpen}
+                    onOpenChange={setEditOpen}
+                    onCompleted={handleEditCompleted}
+                    onDeleted={handleEditDeleted}
+                    defaultHobbsStart={editDefaultHobbsStart}
+                    defaultAirfield={defaultAirfield}
+                />
+            )}
         </div>
     );
 };

@@ -95,6 +95,7 @@ const PendingFlightsPrompt = () => {
             open={open}
             onOpenChange={handleOpenChange}
             onCompleted={handleCompleted}
+            onDeleted={handleCompleted}
             queueInfo={queueInfo}
             defaultAirfield={defaultAirfield}
             defaultHobbsStart={currentHobbsStart}

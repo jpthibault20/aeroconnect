@@ -15,7 +15,8 @@ const LOGBOOK_ROLES: userRole[] = [
     userRole.PILOT, userRole.STUDENT, userRole.INSTRUCTOR,
     userRole.OWNER, userRole.ADMIN, userRole.MANAGER,
 ];
-// Rôles pouvant écrire (modifier/signer) un vol — STUDENT exclu
+// Rôles pouvant écrire (modifier/signer) un vol — STUDENT exclu (l'élève vole
+// toujours avec un instructeur : c'est l'instructeur qui saisit et signe).
 const LOGBOOK_WRITE_ROLES: userRole[] = [
     userRole.PILOT, userRole.INSTRUCTOR,
     userRole.OWNER, userRole.ADMIN, userRole.MANAGER,
@@ -334,8 +335,21 @@ export const signFlightLog = async (logID: string) => {
     const log = await prisma.flight_logs.findUnique({ where: { id: logID } });
     if (!log) return { error: "Entrée introuvable" };
 
+    // Un vol d'instruction est encadré, saisi ET signé par son instructeur, qui
+    // EST le pilotID du log (studentID = élève). Le contrôle pilotID ci-dessous
+    // garantit donc qu'un instructeur ne peut signer QUE les vols qu'il a
+    // lui-même encadrés : il ne peut pas signer le vol d'un autre pilote ou d'un
+    // autre instructeur (le rôle INSTRUCTOR n'est pas dans SIGN_OVERRIDE_ROLES).
     if (auth.user.id !== log.pilotID) {
-        return { error: "Seul le pilote concerné peut signer" };
+        // Saisie déléguée (provisoire) : seuls président/admin (SIGN_OVERRIDE_ROLES)
+        // du même club peuvent signer pour le compte du pilote — cas d'usage :
+        // l'élève a un bug sur son app et ne peut pas signer lui-même.
+        if (!SIGN_OVERRIDE_ROLES.includes(auth.user.role)) {
+            return { error: "Seul le pilote concerné peut signer" };
+        }
+        if (log.clubID !== auth.user.clubID) {
+            return { error: "Permissions insuffisantes" };
+        }
     }
 
     if (log.pilotSigned) {
@@ -388,7 +402,7 @@ export const signFlightLog = async (logID: string) => {
 // ─── Suppression ───
 
 export const deleteFlightLog = async (logID: string) => {
-    const auth = await requireAuth([userRole.OWNER, userRole.ADMIN]);
+    const auth = await requireAuth(LOGBOOK_WRITE_ROLES);
     if ("error" in auth) return { error: auth.error };
 
     const log = await prisma.flight_logs.findUnique({ where: { id: logID } });
@@ -396,8 +410,21 @@ export const deleteFlightLog = async (logID: string) => {
 
     if (log.clubID !== auth.user.clubID) return { error: "Permissions insuffisantes" };
 
+    // Un vol signé est verrouillé : jamais supprimable ici (même OWNER/ADMIN
+    // doivent d'abord le dé-signer via un flux dédié).
     if (log.pilotSigned) {
         return { error: "Impossible de supprimer une entrée signée" };
+    }
+
+    // Qui peut supprimer un vol NON signé :
+    //  - OWNER/ADMIN : n'importe quel vol de leur club ;
+    //  - le pilote du vol lui-même : son propre vol. Cas d'usage principal :
+    //    une séance dont l'élève ne s'est pas présenté génère un log auto-créé
+    //    que l'instructeur (= pilotID du log) doit pouvoir supprimer au lieu de
+    //    le signer.
+    const canOverride = SIGN_OVERRIDE_ROLES.includes(auth.user.role);
+    if (!canOverride && auth.user.id !== log.pilotID) {
+        return { error: "Permissions insuffisantes" };
     }
 
     try {

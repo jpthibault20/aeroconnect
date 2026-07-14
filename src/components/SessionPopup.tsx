@@ -10,6 +10,7 @@ import PlaneSelect from "./PlaneSelect";
 import SubmitButton from "./SubmitButton";
 import { toast } from "@/hooks/use-toast";
 import { filterPilotePlane } from "@/api/popupCalendar";
+import { filterBookablePlanes } from "@/lib/planeVisibility";
 import { studentRegistration } from "@/api/db/sessions";
 import { sendNotificationBooking, sendStudentNotificationBooking } from "@/lib/mail";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
@@ -180,7 +181,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
         }
     };
 
-    const filterdPlanes = planesProp.filter((p) => currentUser?.classes.includes(p.classes))
+    // Machines réservables : visibilité (club + sa propre privée) ∩ classe autorisée.
+    const filterdPlanes = currentUser ? filterBookablePlanes(planesProp, currentUser) : [];
 
     // --- 1. LOGIC & EFFECTS (Inchangés pour garantir le fonctionnement) ---
     useEffect(() => {
@@ -230,7 +232,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
     useEffect(() => {
         let updatedPlanes;
-        const classroomPlane = { id: "classroomSession", name: "Théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3, hobbsTotal: null };
+        const classroomPlane = { id: "classroomSession", name: "Théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3, hobbsTotal: null, ownerID: null, usageTypes: [], maintenanceHistory: null };
 
         if (instructor === "nothing") {
             updatedPlanes = allPlanes;

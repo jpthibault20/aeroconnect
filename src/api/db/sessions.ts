@@ -5,6 +5,7 @@ import { differenceInMinutes, isBefore } from 'date-fns';
 import prisma from '../prisma';
 import { convertMinutesToHours } from '../global function/dateServeur';
 import { requireAuth } from './users';
+import { canViewPlane } from '@/lib/planeVisibility';
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
 const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
@@ -417,6 +418,13 @@ export const studentRegistration = async (session: flight_sessions, student: Use
 
         if (planeID != "classroomSession" && planeID !== "noPlane" && !plane?.operational) {
             return { error: "L'avion est désactivé par l'administrateur du club." };
+        }
+
+        // Défense en profondeur : une machine privée ne peut être réservée que
+        // par son propriétaire (ou le président/admin). L'UI ne la montre déjà
+        // pas aux autres, mais on bloque aussi côté serveur.
+        if (plane && !canViewPlane(plane, student)) {
+            return { error: "Cette machine privée ne vous appartient pas." };
         }
 
         if (!session || session.clubID !== student.clubID) {
