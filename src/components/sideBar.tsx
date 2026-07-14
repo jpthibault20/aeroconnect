@@ -22,6 +22,8 @@ import { updateUserClub } from "@/api/db/users";
 import packageJson from "../../package.json";
 import { cn } from "@/lib/utils";
 import { getAllUserRequestedClubID } from "@/api/db/club";
+import { getMaintenanceAlerts } from "@/api/db/maintenance";
+import { MAINTENANCE_ALERTS_EVENT } from "@/lib/maintenanceEvents";
 
 interface props {
     clubsProp: Club[]
@@ -39,6 +41,8 @@ const SideBar = ({ clubsProp }: props) => {
 
     // Nouvel état pour le nombre de demandes en attente
     const [requestCount, setRequestCount] = React.useState(0);
+    // Nombre d'avions ayant au moins un rappel de maintenance en retard.
+    const [maintenanceCount, setMaintenanceCount] = React.useState(0);
 
     // --- EFFECT: Récupérer les demandes en attente ---
     useEffect(() => {
@@ -82,6 +86,25 @@ const SideBar = ({ clubsProp }: props) => {
         };
 
     }, [clubID, currentUser, refreshTrigger]);
+
+    // --- EFFECT: Récupérer les rappels de maintenance en retard ---
+    useEffect(() => {
+        if (!clubID) return;
+
+        const fetchAlerts = async () => {
+            try {
+                const res = await getMaintenanceAlerts(clubID);
+                setMaintenanceCount(res.count);
+            } catch {
+            }
+        };
+
+        fetchAlerts();
+
+        // Recalcul quand la maintenance change (ajout/suppression rappel/intervention).
+        window.addEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
+        return () => window.removeEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
+    }, [clubID, currentUser]);
 
     const handleNavigation = (href: string) => {
         router.push(href);
@@ -174,8 +197,15 @@ const SideBar = ({ clubsProp }: props) => {
                                 const IconComponent = link.icon;
                                 const isActive = pathname === link.path;
 
-                                // Vérifie si c'est l'onglet "Membres" (ou le nom que tu utilises) pour afficher la notif
-                                const showBadge = (link.name === "Membres" || link.name === "Club") && requestCount > 0;
+                                // Badge par onglet : demandes en attente pour "Club",
+                                // rappels de maintenance en retard pour "Avions".
+                                const badgeCount =
+                                    link.name === "Club" || link.name === "Membres"
+                                        ? requestCount
+                                        : link.name === "Avions"
+                                            ? maintenanceCount
+                                            : 0;
+                                const showBadge = badgeCount > 0;
 
                                 return (
                                     <Link
@@ -201,7 +231,7 @@ const SideBar = ({ clubsProp }: props) => {
                                             {/* --- BULLE DE NOTIFICATION --- */}
                                             {showBadge && (
                                                 <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-sm ring-2 ring-[#1A1B1E] animate-in zoom-in-50 duration-300">
-                                                    {requestCount}
+                                                    {badgeCount}
                                                 </span>
                                             )}
                                         </span>

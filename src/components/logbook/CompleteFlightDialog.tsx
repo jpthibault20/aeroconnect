@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { flight_logs, userRole } from "@prisma/client";
-import { updateFlightLog, signFlightLog } from "@/api/db/logbook";
+import { updateFlightLog, signFlightLog, deleteFlightLog } from "@/api/db/logbook";
 import { computeFlightTimes, formatNatureLong, HobbsFormat } from "@/lib/logbookCalc";
 import { HobbsInput, HobbsFormatToggle } from "@/components/logbook/HobbsInput";
 import { convertMinutesToHours } from "@/api/global function/dateServeur";
@@ -21,26 +21,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/SpinnerVariants";
-import { FileText, CheckCircle2, ShieldCheck, Minus, Plus, Info, AlertTriangle } from "lucide-react";
+import { FileText, CheckCircle2, ShieldCheck, Minus, Plus, Info, AlertTriangle, Trash2 } from "lucide-react";
 
 interface Props {
     log: flight_logs | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onCompleted: (updated: flight_logs) => void;
+    // Appelé après une suppression réussie (retire la ligne côté parent / avance
+    // la file des vols en attente). Le bouton "Supprimer" n'apparaît que si fourni.
+    onDeleted?: (deleted: flight_logs) => void;
     queueInfo?: string;
     defaultAirfield?: string;
     defaultHobbsStart?: number;
 }
 
-const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo, defaultAirfield, defaultHobbsStart }: Props) => {
+const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted, queueInfo, defaultAirfield, defaultHobbsStart }: Props) => {
     const { currentUser } = useCurrentUser();
     const isStudent = currentUser?.role === userRole.STUDENT;
     const canEditHobbsStart =
         currentUser?.role === userRole.OWNER || currentUser?.role === userRole.ADMIN;
     const [loading, setLoading] = useState(false);
     const [signing, setSigning] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [error, setError] = useState("");
 
     const [departureAirfield, setDepartureAirfield] = useState("");
@@ -172,6 +187,32 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
             setSigning(false);
         }
     };
+
+    const handleDelete = async () => {
+        setError("");
+        setDeleting(true);
+        try {
+            const res = await deleteFlightLog(log.id);
+            if ("error" in res) {
+                toast({ title: "Erreur", description: res.error, variant: "destructive" });
+                return;
+            }
+            toast({
+                title: "Vol supprimé",
+                className: "bg-green-600 text-white border-none",
+            });
+            setConfirmDeleteOpen(false);
+            onDeleted?.(log);
+        } catch {
+            toast({ title: "Erreur technique", variant: "destructive" });
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    // Suppression possible pour un vol non signé, si le parent a fourni un
+    // callback (le contrôle d'autorisation réel est fait côté serveur).
+    const canDelete = !!onDeleted && !isSigned && !isStudent;
 
     const companion = log.pilotFunction === "EP"
         ? `Instructeur : ${log.instructorFirstName ?? ""} ${log.instructorLastName ?? ""}`.trim()
@@ -380,13 +421,24 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                             </Button>
                         ) : (
                             <>
-                                <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={loading || signing} className="text-slate-500 hover:text-slate-700 hover:bg-slate-200 w-full sm:w-auto">
+                                {canDelete && (
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => setConfirmDeleteOpen(true)}
+                                        disabled={loading || signing || deleting}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto sm:mr-auto"
+                                    >
+                                        <Trash2 className="w-4 h-4 sm:mr-2" />
+                                        <span>Supprimer</span>
+                                    </Button>
+                                )}
+                                <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={loading || signing || deleting} className="text-slate-500 hover:text-slate-700 hover:bg-slate-200 w-full sm:w-auto">
                                     Annuler
                                 </Button>
-                                <Button onClick={() => handleSave(false)} disabled={loading || signing} variant="outline" className="border-slate-200 w-full sm:w-auto">
+                                <Button onClick={() => handleSave(false)} disabled={loading || signing || deleting} variant="outline" className="border-slate-200 w-full sm:w-auto">
                                     {loading ? <Spinner className="w-4 h-4" /> : "Enregistrer"}
                                 </Button>
-                                <Button onClick={() => handleSave(true)} disabled={loading || signing} className="bg-[#774BBE] hover:bg-[#6538a5] text-white w-full sm:w-auto sm:min-w-[140px]">
+                                <Button onClick={() => handleSave(true)} disabled={loading || signing || deleting} className="bg-[#774BBE] hover:bg-[#6538a5] text-white w-full sm:w-auto sm:min-w-[140px]">
                                     {signing ? (
                                         <div className="flex items-center gap-2"><Spinner className="w-4 h-4 text-white" /><span>Signature...</span></div>
                                     ) : (
@@ -399,6 +451,33 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, queueInfo,
                 </div>
 
             </DialogContent>
+
+            {/* Confirmation de suppression */}
+            <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Supprimer ce vol ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Cette entrée de carnet sera définitivement supprimée. À utiliser
+                            lorsque le vol n&apos;a pas eu lieu (par exemple un élève absent).
+                            Cette action est irréversible.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleting}>Annuler</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDelete();
+                            }}
+                            disabled={deleting}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                            {deleting ? <Spinner className="w-4 h-4 text-white" /> : "Supprimer"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Dialog>
     );
 };

@@ -4,10 +4,16 @@ import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 import { flight_logs } from '@prisma/client';
 import { computeFlightTimes, formatNature } from '@/lib/logbookCalc';
 
-interface Props {
-    logs: flight_logs[];
+// Une section = le carnet de route d'UNE machine (registration + logs).
+export interface AircraftLogbookSection {
     planeRegistration: string;
     planeName: string;
+    logs: flight_logs[];
+}
+
+interface Props {
+    // Une ou plusieurs machines (export « Tous les aéronefs » = plusieurs sections).
+    sections: AircraftLogbookSection[];
     year: number;
 }
 
@@ -104,12 +110,14 @@ const columns = [
 
 const ROWS_PER_PAGE = 32;
 
-export const AircraftLogbookDocument = ({ logs, planeRegistration, planeName, year }: Props) => {
+// Construit les <Page> d'une machine (une section).
+const renderSectionPages = (section: AircraftLogbookSection, year: number, keyPrefix: string) => {
+    const { planeRegistration, planeName, logs } = section;
+
     const pages: flight_logs[][] = [];
     for (let i = 0; i < logs.length; i += ROWS_PER_PAGE) {
         pages.push(logs.slice(i, i + ROWS_PER_PAGE));
     }
-
     if (pages.length === 0) {
         pages.push([]);
     }
@@ -117,73 +125,84 @@ export const AircraftLogbookDocument = ({ logs, planeRegistration, planeName, ye
     const totalMinutes = logs.reduce((acc, l) => acc + computeFlightTimes(l).durationMinutes, 0);
     const totalLandings = logs.reduce((acc, l) => acc + l.landings, 0);
 
+    return pages.map((pageLogs, pageIdx) => (
+        <Page key={`${keyPrefix}-${pageIdx}`} size="A4" orientation="landscape" style={styles.page}>
+            <Text style={styles.title}>CARNET DE VOL MACHINE</Text>
+            <Text style={styles.subtitle}>
+                {planeRegistration} ({planeName}) — {year} — Page {pageIdx + 1}/{pages.length}
+            </Text>
+
+            <View style={styles.table}>
+                {/* Header */}
+                <View style={styles.headerRow}>
+                    {columns.map((col) => (
+                        <Text key={col.label} style={[styles.cell, { width: col.width, fontWeight: "bold", fontSize: 6.5 }]}>
+                            {col.label}
+                        </Text>
+                    ))}
+                </View>
+
+                {/* Rows */}
+                {pageLogs.map((log) => {
+                    const t = computeFlightTimes(log);
+                    return (
+                        <View key={log.id} style={styles.row}>
+                            <Text style={[styles.cell, { width: "14%", fontSize: 6, textAlign: "left" }]}>
+                                {log.pilotLastName} {(log.pilotFirstName ?? "").slice(0, 1)}.
+                            </Text>
+                            <Text style={[styles.cell, { width: "6%" }]}>{formatDate(log.date)}</Text>
+                            <Text style={[styles.cell, { width: "8%" }]}>{log.departureAirfield ?? ""}</Text>
+                            <Text style={[styles.cell, { width: "8%" }]}>{log.arrivalAirfield ?? ""}</Text>
+                            <Text style={[styles.cell, { width: "6%" }]}>{t.durationMinutes > 0 ? formatMin(t.durationMinutes) : ""}</Text>
+                            <Text style={[styles.cell, { width: "10%", fontSize: 6 }]}>{formatNature(log.flightNature, log.instructionSubType)}</Text>
+                            <Text style={[styles.cell, { width: "7%" }]}>{log.hobbsStart != null ? log.hobbsStart.toFixed(1) : ""}</Text>
+                            <Text style={[styles.cell, { width: "7%" }]}>{log.hobbsEnd != null ? log.hobbsEnd.toFixed(1) : ""}</Text>
+                            <Text style={[styles.cell, { width: "4%" }]}>{log.landings}</Text>
+                            <Text style={[styles.cell, { width: "7%" }]}>{log.fuelAdded != null ? `${log.fuelAdded}L` : ""}</Text>
+                            <Text style={[styles.cell, { width: "19%", fontSize: 5.5, textAlign: "left" }]}>{log.machineAnomalies ?? "RAS"}</Text>
+                            <Text style={[styles.cell, { width: "4%" }]}>{log.pilotSigned ? "✓" : ""}</Text>
+                        </View>
+                    );
+                })}
+
+                {/* Totals on last page of the section */}
+                {pageIdx === pages.length - 1 && (
+                    <View style={styles.totalRow}>
+                        <Text style={[styles.cell, { width: "14%" }]}>TOTAL</Text>
+                        <Text style={[styles.cell, { width: "6%" }]}></Text>
+                        <Text style={[styles.cell, { width: "8%" }]}></Text>
+                        <Text style={[styles.cell, { width: "8%" }]}></Text>
+                        <Text style={[styles.cell, { width: "6%", fontWeight: "bold" }]}>{formatMin(totalMinutes)}</Text>
+                        <Text style={[styles.cell, { width: "10%" }]}></Text>
+                        <Text style={[styles.cell, { width: "7%" }]}></Text>
+                        <Text style={[styles.cell, { width: "7%" }]}></Text>
+                        <Text style={[styles.cell, { width: "4%" }]}>{totalLandings}</Text>
+                        <Text style={[styles.cell, { width: "7%" }]}></Text>
+                        <Text style={[styles.cell, { width: "19%" }]}></Text>
+                        <Text style={[styles.cell, { width: "4%" }]}></Text>
+                    </View>
+                )}
+            </View>
+
+            <View style={styles.footer}>
+                <Text>Généré par AeroConnect — {new Date().toLocaleDateString("fr-FR")}</Text>
+                <Text>Arrêté du 17 février 2025 — Art. 5.3.3</Text>
+            </View>
+        </Page>
+    ));
+};
+
+export const AircraftLogbookDocument = ({ sections, year }: Props) => {
+    // Au moins une section pour toujours produire un PDF valide (non vide).
+    const safeSections = sections.length > 0
+        ? sections
+        : [{ planeRegistration: "", planeName: "", logs: [] }];
+
     return (
         <Document>
-            {pages.map((pageLogs, pageIdx) => (
-                <Page key={pageIdx} size="A4" orientation="landscape" style={styles.page}>
-                    <Text style={styles.title}>CARNET DE VOL MACHINE</Text>
-                    <Text style={styles.subtitle}>
-                        {planeRegistration} ({planeName}) — {year} — Page {pageIdx + 1}/{pages.length}
-                    </Text>
-
-                    <View style={styles.table}>
-                        {/* Header */}
-                        <View style={styles.headerRow}>
-                            {columns.map((col) => (
-                                <Text key={col.label} style={[styles.cell, { width: col.width, fontWeight: "bold", fontSize: 6.5 }]}>
-                                    {col.label}
-                                </Text>
-                            ))}
-                        </View>
-
-                        {/* Rows */}
-                        {pageLogs.map((log) => {
-                            const t = computeFlightTimes(log);
-                            return (
-                            <View key={log.id} style={styles.row}>
-                                <Text style={[styles.cell, { width: "14%", fontSize: 6, textAlign: "left" }]}>
-                                    {log.pilotLastName} {(log.pilotFirstName ?? "").slice(0, 1)}.
-                                </Text>
-                                <Text style={[styles.cell, { width: "6%" }]}>{formatDate(log.date)}</Text>
-                                <Text style={[styles.cell, { width: "8%" }]}>{log.departureAirfield ?? ""}</Text>
-                                <Text style={[styles.cell, { width: "8%" }]}>{log.arrivalAirfield ?? ""}</Text>
-                                <Text style={[styles.cell, { width: "6%" }]}>{t.durationMinutes > 0 ? formatMin(t.durationMinutes) : ""}</Text>
-                                <Text style={[styles.cell, { width: "10%", fontSize: 6 }]}>{formatNature(log.flightNature, log.instructionSubType)}</Text>
-                                <Text style={[styles.cell, { width: "7%" }]}>{log.hobbsStart != null ? log.hobbsStart.toFixed(1) : ""}</Text>
-                                <Text style={[styles.cell, { width: "7%" }]}>{log.hobbsEnd != null ? log.hobbsEnd.toFixed(1) : ""}</Text>
-                                <Text style={[styles.cell, { width: "4%" }]}>{log.landings}</Text>
-                                <Text style={[styles.cell, { width: "7%" }]}>{log.fuelAdded != null ? `${log.fuelAdded}L` : ""}</Text>
-                                <Text style={[styles.cell, { width: "19%", fontSize: 5.5, textAlign: "left" }]}>{log.machineAnomalies ?? "RAS"}</Text>
-                                <Text style={[styles.cell, { width: "4%" }]}>{log.pilotSigned ? "✓" : ""}</Text>
-                            </View>
-                            );
-                        })}
-
-                        {/* Totals on last page */}
-                        {pageIdx === pages.length - 1 && (
-                            <View style={styles.totalRow}>
-                                <Text style={[styles.cell, { width: "14%" }]}>TOTAL</Text>
-                                <Text style={[styles.cell, { width: "6%" }]}></Text>
-                                <Text style={[styles.cell, { width: "8%" }]}></Text>
-                                <Text style={[styles.cell, { width: "8%" }]}></Text>
-                                <Text style={[styles.cell, { width: "6%", fontWeight: "bold" }]}>{formatMin(totalMinutes)}</Text>
-                                <Text style={[styles.cell, { width: "10%" }]}></Text>
-                                <Text style={[styles.cell, { width: "7%" }]}></Text>
-                                <Text style={[styles.cell, { width: "7%" }]}></Text>
-                                <Text style={[styles.cell, { width: "4%" }]}>{totalLandings}</Text>
-                                <Text style={[styles.cell, { width: "7%" }]}></Text>
-                                <Text style={[styles.cell, { width: "19%" }]}></Text>
-                                <Text style={[styles.cell, { width: "4%" }]}></Text>
-                            </View>
-                        )}
-                    </View>
-
-                    <View style={styles.footer}>
-                        <Text>Généré par AeroConnect — {new Date().toLocaleDateString("fr-FR")}</Text>
-                        <Text>Arrêté du 17 février 2025 — Art. 5.3.3</Text>
-                    </View>
-                </Page>
-            ))}
+            {safeSections.flatMap((section, idx) =>
+                renderSectionPages(section, year, `s${idx}`)
+            )}
         </Document>
     );
 };

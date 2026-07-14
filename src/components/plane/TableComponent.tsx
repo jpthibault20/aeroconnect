@@ -4,22 +4,39 @@ import TableRowComponent from './TableRowComponent';
 import { planes, userRole } from '@prisma/client';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Plane } from 'lucide-react';
+import { canManagePlane, canAccessMaintenance } from '@/lib/planeVisibility';
 
 interface Props {
     planes: planes[] | undefined;
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
+    ownerNames?: Record<string, string>;
+    overduePlaneIDs?: string[];
 }
 
-const TableComponent = ({ planes, setPlanes }: Props) => {
+const TableComponent = ({ planes, setPlanes, ownerNames, overduePlaneIDs }: Props) => {
     const { currentUser } = useCurrentUser();
 
-    // Logique de permission centralisée pour rendre le JSX plus propre
-    // On définit qui peut voir les colonnes "Actions" et "État" (si différent)
-    const canManage = currentUser?.role === userRole.OWNER ||
-        currentUser?.role === userRole.ADMIN ||
-        currentUser?.role === userRole.MANAGER;
+    // Président (OWNER) et admin voient toutes les machines du club : on leur
+    // indique le propriétaire de chaque machine (colonne dédiée).
+    const canViewOwner =
+        currentUser?.role === userRole.OWNER ||
+        currentUser?.role === userRole.ADMIN;
+
+    // La colonne "Actions" s'affiche dès que l'utilisateur peut gérer au moins
+    // une machine de la liste (une machine club s'il est gestionnaire, ou sa
+    // propre machine privée).
+    const canManage = !!currentUser &&
+        !!planes?.some((p) => canManagePlane(p, currentUser));
+
+    // La colonne « Actions » apparaît aussi pour les accès maintenance (ex. un
+    // instructeur voit la maintenance des machines club sans pouvoir gérer l'avion).
+    const canShowActions = !!currentUser &&
+        !!planes?.some((p) => canManagePlane(p, currentUser) || canAccessMaintenance(p, currentUser));
 
     const canViewStatus = canManage ||
+        currentUser?.role === userRole.OWNER ||
+        currentUser?.role === userRole.ADMIN ||
+        currentUser?.role === userRole.MANAGER ||
         currentUser?.role === userRole.STUDENT ||
         currentUser?.role === userRole.PILOT ||
         currentUser?.role === userRole.INSTRUCTOR;
@@ -46,6 +63,13 @@ const TableComponent = ({ planes, setPlanes }: Props) => {
                                 Nom
                             </TableHead>
 
+                            {/* Colonne Propriétaire (président/admin uniquement) */}
+                            {canViewOwner && (
+                                <TableHead className={`${headerClass} pl-4`}>
+                                    Propriétaire
+                                </TableHead>
+                            )}
+
                             {/* Colonne Immatriculation */}
                             <TableHead className={`${headerClass} text-center`}>
                                 Immatriculation
@@ -69,7 +93,7 @@ const TableComponent = ({ planes, setPlanes }: Props) => {
                             )}
 
                             {/* Colonne Actions */}
-                            {canManage && (
+                            {canShowActions && (
                                 <TableHead className={`${headerClass} text-right pr-6`}>
                                 </TableHead>
                             )}
@@ -84,12 +108,15 @@ const TableComponent = ({ planes, setPlanes }: Props) => {
                                     plane={plane}
                                     planes={planes}
                                     setPlanes={setPlanes}
+                                    canViewOwner={canViewOwner}
+                                    ownerNames={ownerNames}
+                                    isOverdue={!!overduePlaneIDs?.includes(plane.id)}
                                 />
                             ))
                         ) : (
                             // État vide (Empty State)
                             <TableRow>
-                                <td colSpan={6} className="h-32 text-center text-slate-400 bg-slate-50/50">
+                                <td colSpan={8} className="h-32 text-center text-slate-400 bg-slate-50/50">
                                     <div className="flex flex-col items-center justify-center gap-2">
                                         <Plane className="w-8 h-8 text-slate-200" />
                                         <p>Aucun appareil dans la flotte.</p>

@@ -4,6 +4,8 @@ import InitialLoading from '@/components/InitialLoading';
 import NoClubID from '@/components/NoClubID';
 import prisma from '@/api/prisma';
 import { autoCreateLogsFromSessions } from '@/api/db/logbook';
+import { getUser } from '@/api/db/users';
+import { filterVisiblePlanes } from '@/lib/planeVisibility';
 
 interface PageProps {
     ClubIDprop: string | string[] | undefined;
@@ -37,10 +39,17 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             // Table flight_logs peut ne pas exister si la migration n'est pas faite
         }
 
-        const [planes, users] = await Promise.all([
+        const [allPlanes, users, auth] = await Promise.all([
             prisma.planes.findMany({ where: { clubID } }),
             prisma.user.findMany({ where: { clubID } }),
+            getUser(),
         ]);
+
+        // Masque les machines privées des autres membres (le sélecteur de saisie
+        // manuelle et l'onglet machine ne doivent montrer que les machines du
+        // club + la machine privée du membre courant).
+        const currentUser = 'user' in auth ? auth.user : null;
+        const planes = currentUser ? filterVisiblePlanes(allPlanes, currentUser) : [];
 
         return (
             <InitialLoading className="h-full w-full bg-gray-100" clubIDURL={clubID}>

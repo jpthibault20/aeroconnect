@@ -1,6 +1,6 @@
 {
   "name": "aeroconnect",
-  "version": "3.1",
+  "version": "3.2",
   "date": "Mai 2026",
   "description": "A Next.js app for managing flights and students",
   "private": true,
@@ -13,6 +13,7 @@
     "migrate:prod": "prisma migrate deploy",
     "postbuild": "npm run migrate:prod",
     "email": "email dev",
+    "seed:month": "npx --yes tsx prisma/seed-current-month.ts",
     "test": "vitest",
     "test:run": "vitest run"
   },

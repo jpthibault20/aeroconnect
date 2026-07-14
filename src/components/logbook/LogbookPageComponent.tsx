@@ -20,6 +20,8 @@ import { pdf } from "@react-pdf/renderer";
 import { PilotLogbookDocument } from "@/components/pdf/exportPilotLogbook";
 import { AircraftLogbookDocument } from "@/components/pdf/exportAircraftLogbook";
 import { mergeSessionLogs } from "./mergeSessionLogs";
+import { canAddManualLogEntry, canSeeAircraftLogbook, isLogbookReadOnly } from "@/lib/logbookPermissions";
+import { groupLogsByMachine, canExportAircraftLogbook } from "@/lib/logbookDisplay";
 
 interface Props {
     logsProp: flight_logs[];
@@ -35,17 +37,21 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
     const [activeTab, setActiveTab] = useState<Tab>("pilot");
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
-    const canManage =
-        currentUser?.role === userRole.ADMIN ||
-        currentUser?.role === userRole.OWNER ||
-        currentUser?.role === userRole.MANAGER ||
-        currentUser?.role === userRole.INSTRUCTOR;
+    // Saisie manuelle : rôles de gestion + PILOT (pour son propre carnet). Pas
+    // le STUDENT (il vole avec instructeur, ses vols sont auto-logués).
+    const canAddManualEntry = canAddManualLogEntry(currentUser?.role);
 
-    const canSeeAircraftTab =
-        currentUser?.role === userRole.ADMIN ||
-        currentUser?.role === userRole.OWNER ||
-        currentUser?.role === userRole.MANAGER ||
-        currentUser?.role === userRole.INSTRUCTOR;
+    // Un membre propriétaire d'une machine privée peut consulter le carnet de
+    // route de SA machine (en lecture seule s'il n'est pas gestionnaire).
+    const ownsPrivatePlane =
+        !!currentUser && planesProp.some((p) => p.ownerID === currentUser.id);
+    const canSeeAircraftTab = canSeeAircraftLogbook(currentUser?.role, { ownsPrivatePlane });
+    const aircraftReadOnly = isLogbookReadOnly(currentUser?.role);
+    // Avions proposés dans le carnet de route : le gestionnaire voit toute la
+    // flotte visible ; un membre non gestionnaire ne voit QUE ses machines.
+    const aircraftPlanes = aircraftReadOnly && currentUser
+        ? planesProp.filter((p) => p.ownerID === currentUser.id)
+        : planesProp;
 
     // Filter logs based on role. Avec la nouvelle logique (1 log par session
     // d'instruction, pilotID=instructeur + studentID=élève), un user simple
@@ -106,6 +112,10 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
         setLogs((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
     }, []);
 
+    const handleLogDeleted = useCallback((deleted: flight_logs) => {
+        setLogs((prev) => prev.filter((l) => l.id !== deleted.id));
+    }, []);
+
     const handleExportPDF = useCallback(async () => {
         if (!currentUser) return;
         setExporting(true);
@@ -132,18 +142,33 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                     ? `carnet_de_vol_pilote_${safe(pilotLastName)}_${datestamp}.pdf`
                     : `carnet_de_vol_pilote_${datestamp}.pdf`;
             } else {
-                const plane = planesProp.find((p) => p.id === selectedPlaneForExport);
-                blob = await pdf(
-                    <AircraftLogbookDocument
-                        logs={aircraftExportLogs}
-                        planeRegistration={plane?.immatriculation ?? ""}
-                        planeName={plane?.name ?? ""}
-                        year={selectedYear}
-                    />
-                ).toBlob();
-                filename = plane
-                    ? `carnet_de_vol_machine_${safe(plane.immatriculation)}_${datestamp}.pdf`
-                    : `carnet_de_vol_machine_${datestamp}.pdf`;
+                // Carnet de route machine. Un aéronef précis => une section ;
+                // « Tous les aéronefs » => une section par machine (regroupées
+                // depuis les champs dénormalisés du log, robustes aux suppressions).
+                if (selectedPlaneForExport && selectedPlaneForExport !== "ALL") {
+                    const plane = planesProp.find((p) => p.id === selectedPlaneForExport);
+                    const registration = plane?.immatriculation ?? aircraftExportLogs[0]?.planeRegistration ?? "";
+                    blob = await pdf(
+                        <AircraftLogbookDocument
+                            sections={[{
+                                planeRegistration: registration,
+                                planeName: plane?.name ?? aircraftExportLogs[0]?.planeName ?? "",
+                                logs: aircraftExportLogs,
+                            }]}
+                            year={selectedYear}
+                        />
+                    ).toBlob();
+                    filename = registration
+                        ? `carnet_de_vol_machine_${safe(registration)}_${datestamp}.pdf`
+                        : `carnet_de_vol_machine_${datestamp}.pdf`;
+                } else {
+                    // « Tous les aéronefs » : une section PDF par machine.
+                    const sections = groupLogsByMachine(aircraftExportLogs);
+                    blob = await pdf(
+                        <AircraftLogbookDocument sections={sections} year={selectedYear} />
+                    ).toBlob();
+                    filename = `carnet_de_vol_machines_${datestamp}.pdf`;
+                }
             }
 
             const url = URL.createObjectURL(blob);
@@ -198,7 +223,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                         variant="outline"
                         size="sm"
                         className="border-slate-200 text-slate-600 hover:bg-slate-100"
-                        disabled={exporting || (activeTab === "aircraft" && (!selectedPlaneForExport || selectedPlaneForExport === "ALL"))}
+                        disabled={exporting || (activeTab === "aircraft" && !canExportAircraftLogbook(aircraftExportLogs))}
                         onClick={handleExportPDF}
                     >
                         <FileDown className="w-4 h-4 mr-2" />
@@ -208,7 +233,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                     <div className="h-6 w-[1px] bg-slate-200 mx-1" />
 
                     {/* New entry button */}
-                    {canManage && (
+                    {canAddManualEntry && (
                         <NewFlightLogDialog
                             planes={planesProp}
                             users={usersProp}
@@ -257,15 +282,18 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                         planes={planesProp}
                         onExportInfoChange={handlePilotExportInfoChange}
                         onLogUpdated={handleLogUpdated}
+                        onLogDeleted={handleLogDeleted}
                     />
                 )}
                 {activeTab === "aircraft" && canSeeAircraftTab && (
                     <AircraftLogbookTab
                         logs={visibleLogs}
-                        planes={planesProp}
+                        planes={aircraftPlanes}
+                        readOnly={aircraftReadOnly}
                         onPlaneChange={setSelectedPlaneForExport}
                         onFilteredLogsChange={handleAircraftFilteredLogsChange}
                         onLogUpdated={handleLogUpdated}
+                        onLogDeleted={handleLogDeleted}
                     />
                 )}
             </div>

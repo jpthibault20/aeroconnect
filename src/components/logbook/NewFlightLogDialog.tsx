@@ -87,6 +87,12 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
     const { currentClub } = useCurrentClub();
     const canEditHobbsStart =
         currentUser?.role === userRole.OWNER || currentUser?.role === userRole.ADMIN;
+    // Saisie pour le compte d'un autre pilote / élève : réservé au président
+    // (OWNER) et à l'admin. Cas d'usage : un élève ne peut pas saisir ses heures
+    // (bug sur son app), un responsable le fait à sa place. L'entrée est créée
+    // NON signée — seul le pilote concerné pourra la signer depuis son carnet.
+    const canActForOthers =
+        currentUser?.role === userRole.OWNER || currentUser?.role === userRole.ADMIN;
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [signing, setSigning] = useState(false);
@@ -95,9 +101,22 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
     // valeur reste stockée en heures décimales canoniques.
     const [hobbsFormat, setHobbsFormat] = useState<HobbsFormat>("HMS");
     const [error, setError] = useState("");
+    // "" => saisie pour soi-même. Sinon, id du pilote / élève ciblé.
+    const [actingUserID, setActingUserID] = useState<string>("");
 
     const today = new Date().toISOString().split("T")[0];
-    const userIsInstructor = currentUser ? isInstructorRole(currentUser.role) : false;
+
+    // Pilote / élève pour le compte duquel on saisit (défaut : soi-même). Le
+    // président/admin peut en choisir un autre via le sélecteur en tête de
+    // formulaire ; sinon actingUser === currentUser.
+    const actingUser = useMemo(
+        () => (actingUserID ? users.find((u) => u.id === actingUserID) ?? currentUser : currentUser),
+        [actingUserID, users, currentUser]
+    );
+    const actingForSelf = !actingUserID || actingUserID === currentUser?.id;
+    // La fonction (EP/P/I) et la logique instructeur/élève suivent le rôle du
+    // pilote ciblé, pas celui du responsable qui saisit.
+    const userIsInstructor = actingUser ? isInstructorRole(actingUser.role) : false;
 
     const buildInitialForm = (): FormData => ({
         date: today,
@@ -152,11 +171,19 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         () => users.filter((u) => u.role === userRole.STUDENT || u.role === userRole.PILOT),
         [users]
     );
+    // Candidats à la saisie déléguée : tout le monde sauf les simples USER
+    // (qui n'ont pas de carnet de vol).
+    const actingCandidates = useMemo(
+        () => users.filter((u) => u.role !== userRole.USER),
+        [users]
+    );
 
     const showInstructionCompanion = form.nature === "INSTRUCTION";
 
-    // Gating : USER et STUDENT ne peuvent pas créer d'entrée manuelle (côté serveur
-    // bloqué par LOGBOOK_WRITE_ROLES, on cache aussi le bouton côté client).
+    // Gating : USER et STUDENT ne peuvent pas créer d'entrée manuelle. L'élève
+    // vole toujours avec un instructeur (session auto-loguée), il ne saisit ni ne
+    // signe. Le PILOT et les rôles de gestion peuvent saisir. Côté serveur, la
+    // création est bornée à LOGBOOK_ROLES + contrôle « pour soi-même ».
     const canCreate = !currentUser
         || (currentUser.role !== userRole.USER && currentUser.role !== userRole.STUDENT);
 
@@ -185,6 +212,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         setForm(buildInitialForm());
         setError("");
         setHobbsStartUnlocked(false);
+        setActingUserID("");
     };
 
     const onConfirm = async (andSign: boolean) => {
@@ -199,6 +227,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         };
 
         if (!currentUser) return fail("Utilisateur non connecté.");
+        if (!actingUser) return fail("Pilote concerné introuvable.");
         if (!form.date) return fail("Veuillez saisir une date.");
         if (!form.planeID) return fail("Veuillez sélectionner un aéronef.");
         if (!form.hobbsEnd || isNaN(parseFloat(form.hobbsEnd))) return fail("Les heures moteur de fin sont obligatoires.");
@@ -214,8 +243,9 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         const selectedPlane = planesList.find((p) => p.id === form.planeID);
         if (!selectedPlane) return fail("Aéronef introuvable.");
 
-        // pilotID = utilisateur connecté. La fonction (EP/P/I) est déduite
-        // côté serveur à partir de la nature + du rôle de l'utilisateur.
+        // pilotID = pilote ciblé (soi-même par défaut, ou un autre en saisie
+        // déléguée président/admin). La fonction (EP/P/I) est déduite côté
+        // serveur à partir de la nature + du rôle de ce pilote.
         let instructorID: string | undefined;
         let instructorFirstName: string | undefined;
         let instructorLastName: string | undefined;
@@ -254,9 +284,9 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
             planeRegistration: selectedPlane.immatriculation,
             planeName: selectedPlane.name,
             planeClass: selectedPlane.classes,
-            pilotID: currentUser.id,
-            pilotFirstName: currentUser.firstName,
-            pilotLastName: currentUser.lastName,
+            pilotID: actingUser.id,
+            pilotFirstName: actingUser.firstName,
+            pilotLastName: actingUser.lastName,
             instructorID,
             instructorFirstName,
             instructorLastName,
@@ -357,6 +387,53 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
                 {/* Scrollable content */}
                 <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 overflow-y-auto flex-grow">
+                    {/* Section 0 : saisie déléguée (président / admin) */}
+                    {canActForOthers && (
+                        <div className="space-y-2">
+                            <Label className="text-slate-600 text-sm">Saisir pour le pilote / élève</Label>
+                            <Select
+                                value={actingUserID || currentUser?.id || ""}
+                                onValueChange={(val) => {
+                                    // "moi" = currentUser => on repasse en saisie perso ("").
+                                    setActingUserID(val === currentUser?.id ? "" : val);
+                                    // Le rôle du pilote ciblé peut basculer la branche
+                                    // instructeur/élève : on réinitialise les champs personnel.
+                                    updateField("instructorID", "");
+                                    updateField("studentID", "");
+                                    updateField("studentMode", "club");
+                                }}
+                            >
+                                <SelectTrigger className="bg-slate-50 border-slate-200 focus:ring-[#774BBE]">
+                                    <SelectValue placeholder="Sélectionner" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {currentUser && (
+                                        <SelectItem value={currentUser.id}>
+                                            Moi ({currentUser.firstName} {currentUser.lastName})
+                                        </SelectItem>
+                                    )}
+                                    {actingCandidates
+                                        .filter((u) => u.id !== currentUser?.id)
+                                        .map((u) => (
+                                            <SelectItem key={u.id} value={u.id}>
+                                                {u.firstName} {u.lastName}
+                                            </SelectItem>
+                                        ))}
+                                </SelectContent>
+                            </Select>
+                            {!actingForSelf && (
+                                <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
+                                    <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                    <p className="text-xs text-amber-700">
+                                        Saisie pour le compte de {actingUser?.firstName} {actingUser?.lastName}.
+                                        L&apos;entrée sera créée <strong>et signée</strong> directement au nom
+                                        de ce pilote.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Section 1: Vol */}
                     <div className="space-y-4">
                         <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">
@@ -732,21 +809,27 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                         >
                             Annuler
                         </Button>
-                        <Button
-                            onClick={() => onConfirm(false)}
-                            disabled={loading || signing}
-                            variant="outline"
-                            className="border-slate-200 w-full sm:w-auto"
-                        >
-                            {loading ? (
-                                <div className="flex items-center gap-2 justify-center">
-                                    <Spinner size="small" className="w-4 h-4" />
-                                    <span>Création...</span>
-                                </div>
-                            ) : (
-                                "Enregistrer"
-                            )}
-                        </Button>
+                        {/* Enregistrement sans signature : uniquement en saisie pour
+                            soi-même (l'utilisateur signera plus tard depuis son carnet). */}
+                        {actingForSelf && (
+                            <Button
+                                onClick={() => onConfirm(false)}
+                                disabled={loading || signing}
+                                variant="outline"
+                                className="border-slate-200 w-full sm:w-auto"
+                            >
+                                {loading ? (
+                                    <div className="flex items-center gap-2 justify-center">
+                                        <Spinner size="small" className="w-4 h-4" />
+                                        <span>Création...</span>
+                                    </div>
+                                ) : (
+                                    "Enregistrer"
+                                )}
+                            </Button>
+                        )}
+                        {/* Enregistrer + signer. En saisie déléguée (président/admin),
+                            c'est la seule option : le vol est signé au nom du pilote. */}
                         <Button
                             onClick={() => onConfirm(true)}
                             disabled={loading || signing}

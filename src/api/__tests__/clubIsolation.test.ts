@@ -150,17 +150,30 @@ describe("Isolation inter-clubs", () => {
     });
 
     describe("Suppression de vols (deleteFlightLog)", () => {
-        it("seuls OWNER/ADMIN peuvent supprimer", () => {
-            const canDelete = (role: userRole) => [userRole.OWNER, userRole.ADMIN].includes(role);
-            expect(canDelete(userRole.OWNER)).toBe(true);
-            expect(canDelete(userRole.ADMIN)).toBe(true);
-            expect(canDelete(userRole.MANAGER)).toBe(false);
-            expect(canDelete(userRole.INSTRUCTOR)).toBe(false);
+        // Règle serveur : OWNER/ADMIN peuvent supprimer n'importe quel vol non
+        // signé du club ; sinon un pilote peut supprimer SON propre vol non signé
+        // (cas d'usage : instructeur dont l'élève ne s'est pas présenté).
+        const canDelete = (role: userRole, userID: string, logPilotID: string) =>
+            [userRole.OWNER, userRole.ADMIN].includes(role) || userID === logPilotID;
+
+        it("OWNER/ADMIN peuvent supprimer n'importe quel vol du club", () => {
+            expect(canDelete(userRole.OWNER, "u1", "other")).toBe(true);
+            expect(canDelete(userRole.ADMIN, "u1", "other")).toBe(true);
+        });
+
+        it("le pilote du vol peut supprimer son propre vol (ex: élève no-show)", () => {
+            expect(canDelete(userRole.INSTRUCTOR, "instr-1", "instr-1")).toBe(true);
+            expect(canDelete(userRole.PILOT, "p1", "p1")).toBe(true);
+        });
+
+        it("un pilote ne peut PAS supprimer le vol d'un autre", () => {
+            expect(canDelete(userRole.INSTRUCTOR, "instr-1", "instr-2")).toBe(false);
+            expect(canDelete(userRole.MANAGER, "m1", "other")).toBe(false);
         });
 
         it("un vol signé ne peut PAS être supprimé", () => {
             const pilotSigned = true;
-            expect(pilotSigned).toBe(true); // la suppression sera bloquée
+            expect(pilotSigned).toBe(true); // la suppression sera bloquée en amont
         });
     });
 
