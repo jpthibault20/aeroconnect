@@ -43,6 +43,7 @@ interface Props {
     planes: planes[];
     onExportInfoChange?: (info: PilotExportInfo) => void;
     onLogUpdated?: (updated: flight_logs) => void;
+    onLogDeleted?: (deleted: flight_logs) => void;
 }
 
 const FUNCTION_BADGE: Record<string, { label: string; className: string }> = {
@@ -51,7 +52,7 @@ const FUNCTION_BADGE: Record<string, { label: string; className: string }> = {
     I: { label: "I", className: "bg-purple-100 text-purple-700 border-purple-200" },
 };
 
-const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportInfoChange, onLogUpdated }: Props) => {
+const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportInfoChange, onLogUpdated, onLogDeleted }: Props) => {
     const { currentUser } = useCurrentUser();
     const { currentClub } = useCurrentClub();
     const defaultAirfield = currentClub?.id ?? undefined;
@@ -198,6 +199,13 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
         setEditingLog(null);
         setEditDefaultHobbsStart(undefined);
     }, [onLogUpdated]);
+
+    const handleEditDeleted = useCallback((deleted: flight_logs) => {
+        onLogDeleted?.(deleted);
+        setEditOpen(false);
+        setEditingLog(null);
+        setEditDefaultHobbsStart(undefined);
+    }, [onLogDeleted]);
 
     // Nom affiché "Prénom Nom" à partir des champs dénormalisés du log.
     const fullName = (first?: string | null, last?: string | null): string =>
@@ -552,6 +560,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                 open={editOpen}
                 onOpenChange={setEditOpen}
                 onCompleted={handleEditCompleted}
+                onDeleted={handleEditDeleted}
                 defaultHobbsStart={editDefaultHobbsStart}
                 defaultAirfield={defaultAirfield}
             />

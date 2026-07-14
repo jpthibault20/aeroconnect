@@ -34,9 +34,10 @@ interface Props {
     onPlaneChange?: (planeID: string) => void;
     onFilteredLogsChange?: (logs: flight_logs[]) => void;
     onLogUpdated?: (updated: flight_logs) => void;
+    onLogDeleted?: (deleted: flight_logs) => void;
 }
 
-const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = false, onPlaneChange, onFilteredLogsChange, onLogUpdated }: Props) => {
+const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = false, onPlaneChange, onFilteredLogsChange, onLogUpdated, onLogDeleted }: Props) => {
     const { currentClub } = useCurrentClub();
     const defaultAirfield = currentClub?.id ?? undefined;
     const [selectedPlaneID, setSelectedPlaneID] = useState<string>("ALL");
@@ -116,6 +117,13 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = fal
         setEditingLog(null);
         setEditDefaultHobbsStart(undefined);
     }, [onLogUpdated]);
+
+    const handleEditDeleted = useCallback((deleted: flight_logs) => {
+        onLogDeleted?.(deleted);
+        setEditOpen(false);
+        setEditingLog(null);
+        setEditDefaultHobbsStart(undefined);
+    }, [onLogDeleted]);
 
     return (
         <div className="flex flex-col lg:h-full gap-6">
@@ -455,6 +463,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = fal
                     open={editOpen}
                     onOpenChange={setEditOpen}
                     onCompleted={handleEditCompleted}
+                    onDeleted={handleEditDeleted}
                     defaultHobbsStart={editDefaultHobbsStart}
                     defaultAirfield={defaultAirfield}
                 />
