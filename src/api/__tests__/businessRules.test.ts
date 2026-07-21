@@ -61,6 +61,7 @@ const makeSession = (overrides: Partial<flight_sessions> = {}): flight_sessions 
     classes: null,
     flightComment: null,
     natureOfTheft: [],
+    logDismissed: false,
     ...overrides,
 });
 
@@ -168,6 +169,18 @@ describe("Auto-création des flight_logs", () => {
         const eligible = [sessionWithStudent, sessionWithout].filter(s => s.studentID !== null);
         expect(eligible).toHaveLength(1);
         expect(eligible[0].studentID).toBe("stu-1");
+    });
+
+    it("une session dont le log a été supprimé (logDismissed) ne doit pas être re-loguée", () => {
+        // autoCreateLogsFromSessions filtre : logDismissed: false.
+        // Cas d'usage : élève absent, l'instructeur supprime le log auto-créé —
+        // il ne doit pas réapparaître au prochain rendu du carnet.
+        const normale = makeSession({ id: "s1", studentID: "stu-1" });
+        const ecartee = makeSession({ id: "s2", studentID: "stu-2", logDismissed: true });
+
+        const eligible = [normale, ecartee].filter(s => s.studentID !== null && !s.logDismissed);
+        expect(eligible).toHaveLength(1);
+        expect(eligible[0].id).toBe("s1");
     });
 });
 

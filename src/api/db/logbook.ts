@@ -428,7 +428,19 @@ export const deleteFlightLog = async (logID: string) => {
     }
 
     try {
-        await prisma.flight_logs.delete({ where: { id: logID } });
+        // Un log auto-créé est reconstruit depuis sa session à chaque passage
+        // dans autoCreateLogsFromSessions : sans marquage, la suppression est
+        // annulée au prochain rendu du carnet. On écarte donc la séance de la
+        // synchro (la réservation elle-même reste au calendrier).
+        await prisma.$transaction(async (tx) => {
+            await tx.flight_logs.delete({ where: { id: logID } });
+            if (log.sessionID && !log.isManualEntry) {
+                await tx.flight_sessions.updateMany({
+                    where: { id: log.sessionID, clubID: auth.user.clubID as string },
+                    data: { logDismissed: true },
+                });
+            }
+        });
         return { success: "Entrée supprimée" };
     } catch {
         return { error: "Erreur lors de la suppression" };
@@ -597,6 +609,7 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
                 where: {
                     clubID,
                     studentID: { not: null },
+                    logDismissed: false,
                     sessionDateStart: { lt: new Date(), gte: REGULATION_START },
                 },
             }),
@@ -615,6 +628,9 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
             where: {
                 clubID,
                 studentID: { not: null },
+                // Séances dont le log auto-créé a été supprimé (élève absent) :
+                // ne jamais les re-loguer (cf. deleteFlightLog).
+                logDismissed: false,
                 sessionDateStart: {
                     lt: new Date(),
                     gte: REGULATION_START,

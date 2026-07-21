@@ -162,8 +162,11 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp, onO
                                     </ShowCommentSession>
                                 </div>
 
-                                {/* Bouton post-vol pour sessions passées avec élève */}
-                                {isPastSession(s) && s.studentID && isAuthorized && onOpenPostFlight && (
+                                {/* Bouton post-vol pour sessions passées avec élève.
+                                    Masqué si la séance a été écartée du carnet
+                                    (log auto-créé supprimé, ex. élève absent) :
+                                    il n'y a plus rien à compléter. */}
+                                {isPastSession(s) && s.studentID && !s.logDismissed && isAuthorized && onOpenPostFlight && (
                                     <button
                                         onClick={() => onOpenPostFlight(s)}
                                         className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#774BBE]/10 text-[#774BBE] hover:bg-[#774BBE]/20 rounded-lg text-xs font-medium transition-colors"
