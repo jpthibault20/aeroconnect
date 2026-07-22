@@ -54,6 +54,10 @@ model flight_sessions {
   flightType              NatureOfTheft?
   natureOfTheft           NatureOfTheft[] @default([])
   flightComment           String?
+  // Séance écartée du carnet de vol : posé quand un log auto-créé est supprimé
+  // (typiquement un élève qui ne s'est pas présenté). Empêche
+  // autoCreateLogsFromSessions de recréer le log au prochain passage.
+  logDismissed            Boolean         @default(false)
 }
 
 model planes {
