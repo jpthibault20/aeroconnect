@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { flightNature, instructionSubType, userRole } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
@@ -252,6 +253,10 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
             });
         }
 
+        // Invalide le cache RSC de la page carnet : sans ça, une navigation SPA
+        // (ou une ré-ouverture de l'app) vers /logbook resservirait la version
+        // en cache et l'entrée n'apparaîtrait qu'après un rechargement manuel.
+        revalidatePath("/logbook");
         return { success: "Entrée de carnet créée avec succès", log };
     } catch {
         return { error: "Erreur lors de la création de l'entrée" };
@@ -320,6 +325,7 @@ export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput)
         // L'avancement de plane.hobbsTotal se fait à la signature (signFlightLog)
         // ou à la création manuelle (createFlightLog).
 
+        revalidatePath("/logbook");
         return { success: "Entrée mise à jour", log: updated };
     } catch {
         return { error: "Erreur lors de la mise à jour" };
@@ -393,6 +399,7 @@ export const signFlightLog = async (logID: string) => {
                 });
             }
         });
+        revalidatePath("/logbook");
         return { success: "Entrée signée" };
     } catch {
         return { error: "Erreur lors de la signature" };
@@ -441,6 +448,7 @@ export const deleteFlightLog = async (logID: string) => {
                 });
             }
         });
+        revalidatePath("/logbook");
         return { success: "Entrée supprimée" };
     } catch {
         return { error: "Erreur lors de la suppression" };

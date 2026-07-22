@@ -32,7 +32,8 @@
       "PowerShell(Get-CimInstance *)",
       "PowerShell(Stop-Process *)",
       "Bash(npx --yes tsc --noEmit --skipLibCheck --esModuleInterop --moduleResolution node --module esnext --target es2020 prisma/seed-current-month.ts)",
-      "PowerShell($paths = @\\(\"$env:ProgramFiles\\\\nodejs\\\\node.exe\", \"$env:LOCALAPPDATA\\\\nvs\", \"$env:APPDATA\\\\nvm\", \"$env:LOCALAPPDATA\\\\Programs\\\\nodejs\\\\node.exe\"\\); foreach \\($p in $paths\\) { if \\(Test-Path $p\\) { $p } })"
+      "PowerShell($paths = @\\(\"$env:ProgramFiles\\\\nodejs\\\\node.exe\", \"$env:LOCALAPPDATA\\\\nvs\", \"$env:APPDATA\\\\nvm\", \"$env:LOCALAPPDATA\\\\Programs\\\\nodejs\\\\node.exe\"\\); foreach \\($p in $paths\\) { if \\(Test-Path $p\\) { $p } })",
+      "Bash(echo \"---exit:$?---\")"
     ]
   }
 }
