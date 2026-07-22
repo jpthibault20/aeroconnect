@@ -41,12 +41,39 @@ function canSignFlight(authUserID: string, logPilotID: string, pilotSigned: bool
 
 // --- Suppression ---
 
-function canDeleteFlight(role: userRole, pilotSigned: boolean, authClubID: string, logClubID: string): { allowed: boolean; reason?: string } {
-    const DELETE_ROLES = [userRole.OWNER, userRole.ADMIN];
-    if (!DELETE_ROLES.includes(role)) return { allowed: false, reason: "Permissions insuffisantes" };
-    if (authClubID !== logClubID) return { allowed: false, reason: "Club différent" };
+// Miroir fidèle de deleteFlightLog (src/api/db/logbook.ts). Ordre des contrôles :
+//  1. requireAuth(LOGBOOK_WRITE_ROLES) — STUDENT et USER exclus du gate d'écriture.
+//  2. isolation club — le vol doit appartenir au club de l'utilisateur.
+//  3. vol signé → verrouillé, jamais supprimable ici (même OWNER/ADMIN).
+//  4. sinon : OWNER/ADMIN suppriment n'importe quel vol non signé du club ;
+//     tout autre rôle autorisé ne peut supprimer QUE son propre vol
+//     (auth.user.id === log.pilotID) — cas d'usage : l'instructeur supprime le
+//     log auto-créé d'une séance où l'élève ne s'est pas présenté.
+const WRITE_ROLES = [userRole.PILOT, userRole.INSTRUCTOR, userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+const OVERRIDE_ROLES = [userRole.OWNER, userRole.ADMIN];
+
+function canDeleteFlightLog(
+    role: userRole,
+    authUserID: string,
+    logPilotID: string,
+    pilotSigned: boolean,
+    authClubID: string,
+    logClubID: string
+): { allowed: boolean; reason?: string } {
+    if (!WRITE_ROLES.includes(role)) return { allowed: false, reason: "Permissions insuffisantes" };
+    if (authClubID !== logClubID) return { allowed: false, reason: "Permissions insuffisantes" };
     if (pilotSigned) return { allowed: false, reason: "Impossible de supprimer une entrée signée" };
+    const canOverride = OVERRIDE_ROLES.includes(role);
+    if (!canOverride && authUserID !== logPilotID) return { allowed: false, reason: "Permissions insuffisantes" };
     return { allowed: true };
+}
+
+// Effet de bord de la suppression : une séance dont le log auto-créé est
+// supprimé (élève absent) doit être écartée de la synchro (logDismissed=true)
+// pour ne pas être re-loguée au prochain autoCreateLogsFromSessions. Les entrées
+// manuelles (isManualEntry) et les logs sans session ne marquent rien.
+function shouldDismissSession(sessionID: string | null, isManualEntry: boolean): boolean {
+    return sessionID !== null && !isManualEntry;
 }
 
 // --- Auto-création : filtrage sessions éligibles ---
@@ -403,26 +430,105 @@ describe("Règles du carnet de vol", () => {
         });
     });
 
-    describe("Suppression de vol", () => {
-        it("OWNER peut supprimer un vol non signé de son club", () => {
-            expect(canDeleteFlight(userRole.OWNER, false, "club-1", "club-1").allowed).toBe(true);
+    describe("Suppression d'un vol NON signé", () => {
+        // Contexte commun : un vol non signé du club-1 appartenant à pilot-1.
+        const UNSIGNED = false;
+
+        describe("OWNER / ADMIN (override) — n'importe quel vol non signé du club", () => {
+            it("OWNER supprime un vol non signé d'un autre pilote de son club", () => {
+                const r = canDeleteFlightLog(userRole.OWNER, "owner-1", "pilot-1", UNSIGNED, "club-1", "club-1");
+                expect(r.allowed).toBe(true);
+            });
+
+            it("ADMIN supprime un vol non signé d'un autre pilote de son club", () => {
+                const r = canDeleteFlightLog(userRole.ADMIN, "admin-1", "pilot-1", UNSIGNED, "club-1", "club-1");
+                expect(r.allowed).toBe(true);
+            });
         });
 
-        it("ADMIN peut supprimer un vol non signé de son club", () => {
-            expect(canDeleteFlight(userRole.ADMIN, false, "club-1", "club-1").allowed).toBe(true);
+        describe("Pilote propriétaire du vol — son propre vol non signé", () => {
+            it("l'instructeur supprime le log auto-créé d'une séance (élève absent)", () => {
+                // Cas d'usage principal : pilotID du log = instructeur.
+                const r = canDeleteFlightLog(userRole.INSTRUCTOR, "instr-1", "instr-1", UNSIGNED, "club-1", "club-1");
+                expect(r.allowed).toBe(true);
+            });
+
+            it("un PILOT supprime son propre vol non signé", () => {
+                const r = canDeleteFlightLog(userRole.PILOT, "pilot-1", "pilot-1", UNSIGNED, "club-1", "club-1");
+                expect(r.allowed).toBe(true);
+            });
+
+            it("un MANAGER supprime son propre vol non signé (mais pas ceux des autres)", () => {
+                expect(canDeleteFlightLog(userRole.MANAGER, "mgr-1", "mgr-1", UNSIGNED, "club-1", "club-1").allowed).toBe(true);
+                const other = canDeleteFlightLog(userRole.MANAGER, "mgr-1", "pilot-1", UNSIGNED, "club-1", "club-1");
+                expect(other.allowed).toBe(false);
+                expect(other.reason).toBe("Permissions insuffisantes");
+            });
         });
 
-        it("MANAGER ne peut PAS supprimer (seuls OWNER/ADMIN)", () => {
-            expect(canDeleteFlight(userRole.MANAGER, false, "club-1", "club-1").allowed).toBe(false);
+        describe("Refus", () => {
+            it("un pilote ne peut PAS supprimer le vol non signé d'un AUTRE pilote", () => {
+                const r = canDeleteFlightLog(userRole.PILOT, "pilot-2", "pilot-1", UNSIGNED, "club-1", "club-1");
+                expect(r.allowed).toBe(false);
+                expect(r.reason).toBe("Permissions insuffisantes");
+            });
+
+            it("un INSTRUCTOR ne peut PAS supprimer le vol non signé d'un autre instructeur", () => {
+                const r = canDeleteFlightLog(userRole.INSTRUCTOR, "instr-2", "instr-1", UNSIGNED, "club-1", "club-1");
+                expect(r.allowed).toBe(false);
+            });
+
+            it("STUDENT est hors du gate d'écriture — ne peut PAS supprimer, même son propre vol", () => {
+                const r = canDeleteFlightLog(userRole.STUDENT, "stu-1", "stu-1", UNSIGNED, "club-1", "club-1");
+                expect(r.allowed).toBe(false);
+                expect(r.reason).toBe("Permissions insuffisantes");
+            });
+
+            it("USER est hors du gate d'écriture — ne peut PAS supprimer", () => {
+                const r = canDeleteFlightLog(userRole.USER, "user-1", "user-1", UNSIGNED, "club-1", "club-1");
+                expect(r.allowed).toBe(false);
+            });
+
+            it("ne peut PAS supprimer un vol non signé d'un AUTRE club (même OWNER)", () => {
+                const r = canDeleteFlightLog(userRole.OWNER, "owner-1", "pilot-1", UNSIGNED, "club-1", "club-2");
+                expect(r.allowed).toBe(false);
+                expect(r.reason).toBe("Permissions insuffisantes");
+            });
+
+            it("l'isolation club est vérifiée AVANT le statut signé", () => {
+                // Un vol d'un autre club renvoie le refus club, pas le refus signé.
+                const r = canDeleteFlightLog(userRole.OWNER, "owner-1", "pilot-1", true, "club-1", "club-2");
+                expect(r.reason).toBe("Permissions insuffisantes");
+            });
         });
 
-        it("personne ne peut supprimer un vol signé", () => {
-            expect(canDeleteFlight(userRole.OWNER, true, "club-1", "club-1").allowed).toBe(false);
-            expect(canDeleteFlight(userRole.ADMIN, true, "club-1", "club-1").allowed).toBe(false);
+        describe("Vol signé — verrouillé (contraste avec le non signé)", () => {
+            it("OWNER ne peut PAS supprimer un vol signé de son club", () => {
+                const r = canDeleteFlightLog(userRole.OWNER, "owner-1", "pilot-1", true, "club-1", "club-1");
+                expect(r.allowed).toBe(false);
+                expect(r.reason).toBe("Impossible de supprimer une entrée signée");
+            });
+
+            it("le pilote ne peut PAS supprimer son propre vol une fois signé", () => {
+                const r = canDeleteFlightLog(userRole.PILOT, "pilot-1", "pilot-1", true, "club-1", "club-1");
+                expect(r.allowed).toBe(false);
+                expect(r.reason).toBe("Impossible de supprimer une entrée signée");
+            });
         });
 
-        it("ne peut PAS supprimer un vol d'un autre club", () => {
-            expect(canDeleteFlight(userRole.ADMIN, false, "club-1", "club-2").allowed).toBe(false);
+        describe("Effet de bord : écarter la séance de la synchro (logDismissed)", () => {
+            it("log auto-créé lié à une séance → la séance est écartée", () => {
+                expect(shouldDismissSession("session-1", false)).toBe(true);
+            });
+
+            it("entrée manuelle liée à une séance → aucune séance écartée", () => {
+                expect(shouldDismissSession("session-1", true)).toBe(false);
+            });
+
+            it("log sans session (saisie manuelle libre) → aucune séance écartée", () => {
+                expect(shouldDismissSession(null, true)).toBe(false);
+                expect(shouldDismissSession(null, false)).toBe(false);
+            });
         });
     });
 
