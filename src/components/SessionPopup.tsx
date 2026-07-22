@@ -77,6 +77,11 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     const [pfPersonalObservation, setPfPersonalObservation] = useState("");
 
     const handleOpenPostFlight = async (flightSession: flight_sessions) => {
+        // Séance écartée du carnet : le bouton est masqué (cf.
+        // SessionPopupUpdate), on ne peut y arriver qu'avec une liste de
+        // sessions périmée. On sort sans message : il n'y a rien d'anormal.
+        if (flightSession.logDismissed) return;
+
         if (currentClub?.id) {
             await autoCreateLogsFromSessions(currentClub.id);
         }

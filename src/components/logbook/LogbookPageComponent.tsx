@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { flight_logs, planes, User, userRole } from "@prisma/client";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import PilotLogbookTab, { PilotExportInfo } from "./PilotLogbookTab";
@@ -35,6 +35,19 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const [logs, setLogs] = useState<flight_logs[]>(logsProp);
     const [activeTab, setActiveTab] = useState<Tab>("pilot");
+
+    // Resynchronise l'état local avec les données serveur à chaque nouveau
+    // rendu RSC (revalidatePath après une mutation, ou vol complété via la
+    // popup globale PendingFlightsPrompt montée dans le layout). Sans ça,
+    // useState reste figé sur le premier rendu et les changements n'appa-
+    // raissent qu'après un rechargement manuel de la page. logsProp ne change
+    // de référence que lorsque le serveur renvoie de nouvelles données, donc
+    // cet effet ne se déclenche pas sur les simples re-rendus client (filtres,
+    // pagination…). Les mises à jour optimistes (onCreated/onDeleted/…) restent
+    // valides : le rafraîchissement serveur qui suit porte la même donnée.
+    useEffect(() => {
+        setLogs(logsProp);
+    }, [logsProp]);
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
     // Saisie manuelle : rôles de gestion + PILOT (pour son propre carnet). Pas
