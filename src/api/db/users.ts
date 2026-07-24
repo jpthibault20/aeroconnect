@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { userRole } from '@prisma/client'
 import { User } from '@prisma/client'
 import prisma from '../prisma';
+import { resolveBaptemeHold } from './baptemeHold';
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
@@ -161,6 +162,13 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
 
         if (session.clubID !== auth.user.clubID) {
             return { error: "Permissions insuffisantes." };
+        }
+
+        // Un créneau tenu par une demande de baptême en attente ne peut pas être
+        // attribué à un élève / invité tant que le hold n'est pas levé.
+        const holdState = await resolveBaptemeHold(sessionID);
+        if (holdState.held) {
+            return { error: "Ce créneau est réservé pour un baptême en attente de validation." };
         }
 
         if (student.planeId != "classroomSession" && student.planeId != "noPlane" && !plane?.operational) {

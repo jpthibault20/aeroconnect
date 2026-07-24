@@ -23,7 +23,9 @@ import packageJson from "../../package.json";
 import { cn } from "@/lib/utils";
 import { getAllUserRequestedClubID } from "@/api/db/club";
 import { getMaintenanceAlerts } from "@/api/db/maintenance";
+import { getPendingBaptemeCount } from "@/api/db/bapteme";
 import { MAINTENANCE_ALERTS_EVENT } from "@/lib/maintenanceEvents";
+import { BAPTEME_REQUESTS_EVENT } from "@/lib/baptemeEvents";
 
 interface props {
     clubsProp: Club[]
@@ -43,6 +45,8 @@ const SideBar = ({ clubsProp }: props) => {
     const [requestCount, setRequestCount] = React.useState(0);
     // Nombre d'avions ayant au moins un rappel de maintenance en retard.
     const [maintenanceCount, setMaintenanceCount] = React.useState(0);
+    // Nombre de demandes de baptême en attente que l'utilisateur peut traiter.
+    const [baptemeCount, setBaptemeCount] = React.useState(0);
 
     // --- EFFECT: Récupérer les demandes en attente ---
     useEffect(() => {
@@ -104,6 +108,25 @@ const SideBar = ({ clubsProp }: props) => {
         // Recalcul quand la maintenance change (ajout/suppression rappel/intervention).
         window.addEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
         return () => window.removeEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
+    }, [clubID, currentUser]);
+
+    // --- EFFECT: Récupérer les baptêmes en attente ---
+    useEffect(() => {
+        if (!clubID) return;
+
+        const fetchBaptemes = async () => {
+            try {
+                const res = await getPendingBaptemeCount(clubID);
+                setBaptemeCount(res.count);
+            } catch {
+            }
+        };
+
+        fetchBaptemes();
+
+        // Recalcul quand une demande de baptême est validée/refusée.
+        window.addEventListener(BAPTEME_REQUESTS_EVENT, fetchBaptemes);
+        return () => window.removeEventListener(BAPTEME_REQUESTS_EVENT, fetchBaptemes);
     }, [clubID, currentUser]);
 
     const handleNavigation = (href: string) => {
@@ -197,11 +220,11 @@ const SideBar = ({ clubsProp }: props) => {
                                 const IconComponent = link.icon;
                                 const isActive = pathname === link.path;
 
-                                // Badge par onglet : demandes en attente pour "Club",
-                                // rappels de maintenance en retard pour "Avions".
+                                // Badge par onglet : demandes d'adhésion + baptêmes en
+                                // attente pour "Club", rappels de maintenance pour "Avions".
                                 const badgeCount =
                                     link.name === "Club" || link.name === "Membres"
-                                        ? requestCount
+                                        ? requestCount + baptemeCount
                                         : link.name === "Avions"
                                             ? maintenanceCount
                                             : 0;

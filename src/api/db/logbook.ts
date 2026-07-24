@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { flightNature, instructionSubType, userRole } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
+import { BAPTEME_HOLD_STUDENT_ID } from "@/lib/bapteme";
 import {
     computeDurationMinutes,
     computeFlightTimes,
@@ -617,6 +618,8 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
                 where: {
                     clubID,
                     studentID: { not: null },
+                    // Un hold de baptême en attente ne doit jamais générer de log.
+                    NOT: { studentID: BAPTEME_HOLD_STUDENT_ID },
                     logDismissed: false,
                     sessionDateStart: { lt: new Date(), gte: REGULATION_START },
                 },
@@ -636,6 +639,9 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
             where: {
                 clubID,
                 studentID: { not: null },
+                // Un hold de baptême en attente (studentID sentinelle) n'est pas un
+                // vol réel : jamais de log tant qu'il n'est pas confirmé.
+                NOT: { studentID: BAPTEME_HOLD_STUDENT_ID },
                 // Séances dont le log auto-créé a été supprimé (élève absent) :
                 // ne jamais les re-loguer (cf. deleteFlightLog).
                 logDismissed: false,

@@ -23,7 +23,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { getAllUserRequestedClubID } from "@/api/db/club";
 import { getMaintenanceAlerts } from "@/api/db/maintenance";
+import { getPendingBaptemeCount } from "@/api/db/bapteme";
 import { MAINTENANCE_ALERTS_EVENT } from "@/lib/maintenanceEvents";
+import { BAPTEME_REQUESTS_EVENT } from "@/lib/baptemeEvents";
 import { usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Club } from '@prisma/client'
@@ -37,6 +39,7 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
     const [isOpen, setIsOpen] = useState(false)
     const [requestCount, setRequestCount] = useState(0);
     const [maintenanceCount, setMaintenanceCount] = useState(0);
+    const [baptemeCount, setBaptemeCount] = useState(0);
     const pathname = usePathname();
     const [refreshTrigger, setRefreshTrigger] = React.useState(0);
     const searchParams = useSearchParams();
@@ -103,6 +106,23 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
         return () => window.removeEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
     }, [clubID, currentUser]);
 
+    // --- EFFECT: Baptêmes en attente ---
+    useEffect(() => {
+        if (!clubID) return;
+
+        const fetchBaptemes = async () => {
+            try {
+                const res = await getPendingBaptemeCount(clubID);
+                setBaptemeCount(res.count);
+            } catch {
+            }
+        };
+
+        fetchBaptemes();
+        window.addEventListener(BAPTEME_REQUESTS_EVENT, fetchBaptemes);
+        return () => window.removeEventListener(BAPTEME_REQUESTS_EVENT, fetchBaptemes);
+    }, [clubID, currentUser]);
+
     const handleClubChange = async (newClubID: string) => {
         setClubForAdmin(newClubID);
         setIsOpen(false);
@@ -138,7 +158,7 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                     >
                         {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
 
-                        {!isOpen && (requestCount > 0 || maintenanceCount > 0) && (
+                        {!isOpen && (requestCount > 0 || maintenanceCount > 0 || baptemeCount > 0) && (
                             <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
                         )}
 
@@ -216,7 +236,7 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                                 {filteredLinks.map((item) => {
                                     const badgeCount =
                                         item.name === "Club" || item.name === "Membres"
-                                            ? requestCount
+                                            ? requestCount + baptemeCount
                                             : item.name === "Avions"
                                                 ? maintenanceCount
                                                 : 0;

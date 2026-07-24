@@ -1,6 +1,10 @@
 "use server"
 import prisma from "@/api/prisma";
 import AcceptedToClub from "@/emails/AcceptedToClub";
+import BaptemeClientConfirmed from "@/emails/BaptemeClientConfirmed";
+import BaptemeClientReceived from "@/emails/BaptemeClientReceived";
+import BaptemeClientRejected from "@/emails/BaptemeClientRejected";
+import BaptemePilotNotification from "@/emails/BaptemePilotNotification";
 import MagicLinkEmail from "@/emails/MagicLink";
 import NotificationBookingPilote from "@/emails/NotificationBookingPilote";
 import NotificationBookingStudent from "@/emails/NotificationBookingStudent";
@@ -266,3 +270,171 @@ export const sendNotificationUpdateNoteHandler = async ({ receiver, pilote, stud
   }
 
 }
+
+// ─── Baptêmes (réservation publique) ───
+
+interface BaptemeClientContact {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+
+// Notifie le pilote assigné (ou la gestion) qu'un baptême attend sa validation.
+// L'échec d'envoi ne doit pas casser la création de la demande => try/catch.
+export const sendBaptemePilotNotification = async (
+  pilotEmail: string,
+  startDate: Date,
+  endDate: Date,
+  clubID: string,
+  planeName: string,
+  client: BaptemeClientContact,
+  comment: string | null,
+  validationLink: string
+) => {
+  if (!pilotEmail) return;
+  try {
+    const clubData = await getClubData(clubID);
+    if (!clubData || !clubData.name) return;
+    const { name, adress } = clubData;
+
+    await resend.emails.send({
+      from: senderMailAdress,
+      to: pilotEmail,
+      subject: "Un nouveau baptême attend votre validation",
+      react: BaptemePilotNotification({
+        startDate: formattedDate(startDate),
+        endDate: formattedDate(endDate),
+        clubName: name,
+        clubAdress: adress as clubAdressType,
+        planeName,
+        clientFirstName: client.firstName,
+        clientLastName: client.lastName,
+        clientEmail: client.email,
+        clientPhone: client.phone,
+        comment,
+        validationLink,
+      }),
+    });
+  } catch {
+    // silently fail - email is non-critical
+  }
+};
+
+// Accusé « demande reçue » envoyé au client juste après sa soumission.
+export const sendBaptemeClientReceived = async (
+  email: string,
+  firstName: string,
+  startDate: Date,
+  endDate: Date,
+  clubID: string,
+  planeName: string
+) => {
+  if (!email) return;
+  try {
+    const clubData = await getClubData(clubID);
+    if (!clubData || !clubData.name) return;
+    const { name, adress } = clubData;
+
+    await resend.emails.send({
+      from: senderMailAdress,
+      to: email,
+      subject: "Votre demande de baptême a bien été reçue",
+      react: BaptemeClientReceived({
+        firstName,
+        startDate: formattedDate(startDate),
+        endDate: formattedDate(endDate),
+        planeName,
+        clubName: name,
+        clubAdress: adress as clubAdressType,
+      }),
+    });
+  } catch {
+    // silently fail - email is non-critical
+  }
+};
+
+// Email de confirmation soigné envoyé au client après validation par le club.
+export const sendBaptemeClientConfirmed = async (
+  email: string,
+  firstName: string,
+  startDate: Date,
+  endDate: Date,
+  clubID: string,
+  planeName: string
+) => {
+  if (!email) return;
+  try {
+    const club = await prisma.club.findUnique({
+      where: { id: clubID },
+      select: {
+        Name: true,
+        Country: true,
+        ZipCode: true,
+        City: true,
+        Address: true,
+        defaultAirfield: true,
+        phoneContact: true,
+        mailContact: true,
+      },
+    });
+    if (!club || !club.Name) return;
+
+    await resend.emails.send({
+      from: senderMailAdress,
+      to: email,
+      subject: "Votre vol baptême est confirmé !",
+      react: BaptemeClientConfirmed({
+        firstName,
+        startDate: formattedDate(startDate),
+        endDate: formattedDate(endDate),
+        planeName,
+        clubName: club.Name,
+        clubAdress: {
+          countrie: club.Country,
+          zipCode: club.ZipCode,
+          city: club.City,
+          adress: club.Address,
+        },
+        airfield: club.defaultAirfield,
+        phoneContact: club.phoneContact,
+        mailContact: club.mailContact,
+      }),
+    });
+  } catch {
+    // silently fail - email is non-critical
+  }
+};
+
+// Email courtois de refus, invitant le client à choisir un autre créneau.
+export const sendBaptemeClientRejected = async (
+  email: string,
+  firstName: string,
+  startDate: Date,
+  endDate: Date,
+  clubID: string,
+  bookingLink: string | null
+) => {
+  if (!email) return;
+  try {
+    const clubData = await getClubData(clubID);
+    if (!clubData || !clubData.name) return;
+    const { name, adress } = clubData;
+
+    await resend.emails.send({
+      from: senderMailAdress,
+      to: email,
+      subject: "À propos de votre demande de baptême",
+      react: BaptemeClientRejected({
+        firstName,
+        startDate: formattedDate(startDate),
+        endDate: formattedDate(endDate),
+        clubName: name,
+        clubAdress: adress as clubAdressType,
+        bookingLink,
+      }),
+    });
+  } catch {
+    // silently fail - email is non-critical
+  }
+};

@@ -1,10 +1,11 @@
 "use server";
 
-import { Club, flight_sessions, User, userRole } from '@prisma/client';
+import { Club, flight_sessions, NatureOfTheft, User, userRole } from '@prisma/client';
 import { differenceInMinutes, isBefore } from 'date-fns';
 import prisma from '../prisma';
 import { convertMinutesToHours } from '../global function/dateServeur';
 import { requireAuth } from './users';
+import { resolveBaptemeHold } from './baptemeHold';
 import { canViewPlane } from '@/lib/planeVisibility';
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
@@ -22,6 +23,9 @@ export interface interfaceSessions {
     planeId: string[];
     classes: number[];
     comment: string;
+    // Types de vol du créneau (sélection multiple). DISCOVERY marque un créneau
+    // baptême, exposé au public via le lien de réservation.
+    natureOfTheft: NatureOfTheft[];
 }
 
 export const checkSessionDate = async (sessionData: interfaceSessions, user: User | undefined) => {
@@ -208,6 +212,7 @@ export const newSession = async (sessionData: interfaceSessions, instructor: Use
                             student_type: null,
                             planeID: sessionData.planeId,
                             classes: sessionData.classes,
+                            natureOfTheft: sessionData.natureOfTheft,
                         }
                     })
                 )
@@ -454,6 +459,20 @@ export const studentRegistration = async (session: flight_sessions, student: Use
         );
         if (conflictingSession) {
             return { error: "Conflit détecté avec une autre session (élève ou avion)." };
+        }
+
+        // Un créneau tenu par une demande de baptême en attente (ou déjà occupé)
+        // ne peut pas être réservé par un élève tant que le hold n'est pas levé.
+        const holdState = await resolveBaptemeHold(session.id);
+        if (holdState.held) {
+            return { error: "Ce créneau est réservé pour un baptême en attente de validation." };
+        }
+        const freshSession = await prisma.flight_sessions.findUnique({
+            where: { id: session.id },
+            select: { studentID: true },
+        });
+        if (freshSession?.studentID != null) {
+            return { error: "Ce créneau est déjà réservé." };
         }
 
         // Étape 2 : Mise à jour rapide de la session
