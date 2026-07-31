@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '@/utils/supabase/server'
 import { createUser } from '@/api/db/users'
+import { signupRedirect } from '@/lib/authFlow'
 
 export async function signup(formData: FormData) {
     const supabase = await createClient()
@@ -13,12 +14,9 @@ export async function signup(formData: FormData) {
         email: formData.get('email') as string,
         password: formData.get('password') as string
     })
-    
+
     if (errorAuth) {
-        const errorMessage = encodeURIComponent(
-            "Une erreur est survenue lors de la création du compte, se rapprocher de l'administrateur (E_009: failed to create auth user)"
-        );
-        redirect(`/auth/login?message=${errorMessage}`)
+        redirect(signupRedirect('authError'))
     }
 
     try {
@@ -29,13 +27,9 @@ export async function signup(formData: FormData) {
             phone: formData.get('phone') as string,
         })
     } catch {
-        const errorMessage = encodeURIComponent(
-            "Une erreur est survenue lors de la création du compte, se rapprocher de l'administrateur (E_010: failed to create private user)"
-        );
-        redirect(`/auth/register?message=${errorMessage}`)
+        redirect(signupRedirect('profileError'))
     }
 
     revalidatePath('/', 'layout')
-    const successMessage = encodeURIComponent('Compte créé avec succès');
-    redirect(`/auth/login?messageG=${successMessage}`);
+    redirect(signupRedirect('success'))
 }
