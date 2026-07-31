@@ -1,9 +1,18 @@
 "use server";
 
 import { MachineUsage, planes, userRole } from "@prisma/client";
+import { randomUUID } from "crypto";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
 import { canEditPlaneHobbs, canManagePlane, filterPlanesForBeneficiary, filterVisiblePlanes, resolvePlaneCreation, sanitizeClubUsages } from "@/lib/planeVisibility";
+import {
+    buildPlaneImagePath,
+    isPlaneImageMimeType,
+    isPlaneImagePathOwnedBy,
+    PLANE_IMAGE_BUCKET,
+    validatePlaneImage,
+} from "@/lib/planeImage";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 // Rôles habilités à inscrire un élève à une séance (miroir de MANAGEMENT_ROLES
 // dans users.ts, qui garde addStudentToSession).
@@ -137,6 +146,10 @@ export const deletePlane = async (planeID: string) => {
             where: { id: planeID }
         });
 
+        // La ligne est partie : on nettoie le fichier associé pour ne pas
+        // laisser d'orphelin dans le bucket.
+        await removeStoredPlaneImage(plane.imagePath, planeID);
+
         return { success: 'Plane deleted successfully' };
     } catch {
         return { error: 'Plane deletion failed' };
@@ -263,6 +276,120 @@ export const updatePlane = async (plane: planes) => {
         return { error: 'Plane update failed' };
     }
 };
+
+/**
+ * Supprime le fichier d'une photo dans le bucket. « Best effort » : un fichier
+ * orphelin est sans conséquence fonctionnelle, alors qu'échouer ici ferait
+ * échouer un remplacement de photo ou une suppression de machine.
+ */
+const removeStoredPlaneImage = async (imagePath: string | null, planeID: string) => {
+    if (!imagePath || !isPlaneImagePathOwnedBy(imagePath, planeID)) return;
+
+    const supabase = createAdminClient();
+    if (!supabase) return;
+
+    try {
+        await supabase.storage.from(PLANE_IMAGE_BUCKET).remove([imagePath]);
+    } catch {
+        // Ignoré volontairement (cf. commentaire ci-dessus).
+    }
+};
+
+/**
+ * Envoie (ou remplace) la photo d'une machine.
+ *
+ * Le fichier arrive dans un FormData sous la clé "file", déjà redimensionné par
+ * le navigateur (cf. PlaneImageInput). Le serveur revalide type et taille : le
+ * redimensionnement client est un confort, jamais une garantie.
+ *
+ * L'enregistrement est immédiat — la photo ne dépend pas du bouton « Enregistrer »
+ * du formulaire de modification.
+ */
+export const uploadPlaneImage = async (planeID: string, formData: FormData) => {
+    if (!planeID) {
+        return { error: 'Missing planeID' };
+    }
+
+    const auth = await requireAuth();
+    if ('error' in auth) return { error: auth.error };
+
+    const file = formData.get("file");
+    if (!(file instanceof File)) {
+        return { error: "Aucun fichier reçu." };
+    }
+
+    const invalid = validatePlaneImage({ type: file.type, size: file.size });
+    if (invalid) return { error: invalid };
+    // Redondant avec validatePlaneImage, mais c'est ce test qui restreint le
+    // type au sous-ensemble accepté par buildPlaneImagePath.
+    if (!isPlaneImageMimeType(file.type)) {
+        return { error: "Format non supporté. Utilisez une image JPEG, PNG ou WebP." };
+    }
+
+    const supabase = createAdminClient();
+    if (!supabase) {
+        return { error: "Le stockage des photos n'est pas configuré sur ce serveur." };
+    }
+
+    try {
+        const existing = await prisma.planes.findUnique({ where: { id: planeID } });
+        if (!existing || existing.clubID !== auth.user.clubID || !canManagePlane(existing, auth.user)) {
+            return { error: 'Permissions insuffisantes' };
+        }
+
+        const imagePath = buildPlaneImagePath(planeID, randomUUID(), file.type);
+
+        const { error: uploadError } = await supabase.storage
+            .from(PLANE_IMAGE_BUCKET)
+            .upload(imagePath, file, { contentType: file.type, upsert: false });
+
+        if (uploadError) {
+            return { error: "Échec de l'envoi de la photo." };
+        }
+
+        await prisma.planes.update({
+            where: { id: planeID },
+            data: { imagePath },
+        });
+
+        // L'ancienne photo n'est supprimée qu'une fois la nouvelle en base :
+        // en cas d'échec intermédiaire, la machine garde une photo valide.
+        await removeStoredPlaneImage(existing.imagePath, planeID);
+
+        return { success: 'Photo enregistrée', imagePath };
+    } catch {
+        return { error: "Échec de l'envoi de la photo." };
+    }
+};
+
+/** Retire la photo d'une machine (fichier + référence en base). */
+export const deletePlaneImage = async (planeID: string) => {
+    if (!planeID) {
+        return { error: 'Missing planeID' };
+    }
+
+    const auth = await requireAuth();
+    if ('error' in auth) return { error: auth.error };
+
+    try {
+        const existing = await prisma.planes.findUnique({ where: { id: planeID } });
+        if (!existing || existing.clubID !== auth.user.clubID || !canManagePlane(existing, auth.user)) {
+            return { error: 'Permissions insuffisantes' };
+        }
+
+        await prisma.planes.update({
+            where: { id: planeID },
+            data: { imagePath: null },
+        });
+
+        await removeStoredPlaneImage(existing.imagePath, planeID);
+
+        return { success: 'Photo supprimée' };
+    } catch {
+        return { error: "Échec de la suppression de la photo." };
+    }
+};
+
 /**
  * Machines proposables à un élève donné pour un créneau donné.
  *

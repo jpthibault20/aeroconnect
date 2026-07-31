@@ -102,15 +102,24 @@ export function hasActiveHold(requests: BaptemeRequestLike[], now: Date): boolea
  * effectivement offertes sur le créneau (présentes dans slot.planeID) et
  * compatibles avec les classes autorisées du créneau (si le créneau restreint
  * les classes).
+ *
+ * `unavailablePlaneIDs` liste les machines déjà prises à ce même horaire par une
+ * AUTRE session — baptême concurrent ou réservation d'un membre. Sans ce filtre,
+ * deux créneaux simultanés portés par des pilotes différents peuvent vendre le
+ * même appareil (et le public ignorerait les réservations internes). Même règle
+ * que `filterPlanesForBeneficiary` côté membres.
  */
 export function filterBaptemePlanes<T extends BaptemePlaneLike>(
     planes: T[],
-    slot: Pick<BaptemeSlotLike, "planeID" | "classes">
+    slot: Pick<BaptemeSlotLike, "planeID" | "classes">,
+    unavailablePlaneIDs: string[] = []
 ): T[] {
+    const unavailable = new Set(unavailablePlaneIDs);
     return planes.filter(
         (plane) =>
             plane.ownerID == null &&
             plane.operational &&
+            !unavailable.has(plane.id) &&
             slot.planeID.includes(plane.id) &&
             (slot.classes.length === 0 || slot.classes.includes(plane.classes))
     );
@@ -123,18 +132,30 @@ export function filterBaptemePlanes<T extends BaptemePlaneLike>(
  *  - qu'il n'ait aucun hold PENDING actif ;
  *  - qu'il soit dans le futur ;
  *  - qu'au moins une machine club opérationnelle et compatible soit disponible.
+ *
+ * Deux référentiels de temps cohabitent, et les confondre laisse un créneau
+ * dépassé réservable pendant la durée de l'offset (2 h en France l'été) :
+ *  - `now` : instant réel, pour l'expiration des holds (une durée de 24 h) ;
+ *  - `slotNow` : heure de pendule du club, pour comparer à `sessionDateStart`
+ *    qui est stockée en wall-clock UTC (cf. src/lib/clubTime.ts).
+ * `slotNow` vaut `now` par défaut : les deux ne diffèrent que côté serveur, là
+ * où l'appelant sait convertir.
  */
 export function isBaptemeSlotAvailable(
     slot: BaptemeSlotLike,
     planes: BaptemePlaneLike[],
     requests: BaptemeRequestLike[],
-    now: Date
+    now: Date,
+    slotNow: Date = now,
+    unavailablePlaneIDs: string[] = []
 ): boolean {
     if (!slot.natureOfTheft.includes(NatureOfTheft.DISCOVERY)) return false;
     if (slot.studentID != null) return false;
-    if (toDate(slot.sessionDateStart).getTime() <= now.getTime()) return false;
+    if (toDate(slot.sessionDateStart).getTime() <= slotNow.getTime()) return false;
     if (hasActiveHold(requests, now)) return false;
-    return filterBaptemePlanes(planes, slot).length > 0;
+    // Un créneau dont toutes les machines sont déjà prises à cet horaire n'est
+    // plus proposable : il disparaît de lui-même de la page publique.
+    return filterBaptemePlanes(planes, slot, unavailablePlaneIDs).length > 0;
 }
 
 /**
@@ -176,6 +197,100 @@ export function isBaptemeSlot(natureOfTheft: NatureOfTheft[]): boolean {
  */
 export function formatPilotName(firstName: string, lastName: string): string {
     return `${firstName} ${lastName.toUpperCase()}`.trim();
+}
+
+// Horizon de la réservation publique : au-delà, les créneaux ne sont pas
+// proposés. Borne la charge utile envoyée au navigateur (un gros club peut avoir
+// plusieurs centaines de créneaux baptême ouverts) et évite d'engager le club
+// sur une date lointaine.
+export const PUBLIC_BOOKING_HORIZON_DAYS = 60;
+
+// Forme minimale d'un créneau pour le regroupement de la page publique.
+export interface GroupableSlotLike {
+    sessionID: string;
+    sessionDateStart: Date | string;
+    durationMin: number;
+    pilotFirstName: string;
+    pilotLastName: string;
+}
+
+// Un horaire de la journée. Plusieurs sessions peuvent le partager : autant de
+// pilotes proposant un baptême à la même heure.
+export interface BaptemeTimeGroup<T extends GroupableSlotLike> {
+    timeKey: string;
+    sessionDateStart: Date;
+    durationMin: number;
+    sessions: T[];
+}
+
+export interface BaptemeDayGroup<T extends GroupableSlotLike> {
+    dayKey: string;
+    date: Date;
+    times: BaptemeTimeGroup<T>[];
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+// Clés construites sur les composantes UTC : les créneaux sont stockés en
+// wall-clock UTC, une lecture locale regrouperait mal (et changerait de jour
+// pour les créneaux de fin de soirée).
+export function baptemeDayKey(date: Date | string): string {
+    const d = toDate(date);
+    return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+}
+
+export function baptemeTimeKey(date: Date | string): string {
+    const d = toDate(date);
+    return `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`;
+}
+
+/**
+ * Regroupe les créneaux publics par jour, puis par horaire.
+ *
+ * Une liste à plat ne tient pas à l'échelle : un club à 3 pilotes proposant
+ * 8 créneaux par jour sur deux mois produit des centaines d'entrées, dont
+ * beaucoup portent le même horaire. Le client choisit donc un jour, puis une
+ * heure ; les pilotes proposant cette heure sont regroupés dessous.
+ *
+ * Fonction pure, triée de façon déterministe (jour croissant, puis heure
+ * croissante) : l'ordre ne dépend pas de celui reçu du serveur.
+ */
+export function groupBaptemeSlots<T extends GroupableSlotLike>(slots: T[]): BaptemeDayGroup<T>[] {
+    const days = new Map<string, Map<string, BaptemeTimeGroup<T>>>();
+
+    for (const slot of slots) {
+        const start = toDate(slot.sessionDateStart);
+        const dayKey = baptemeDayKey(start);
+        const timeKey = baptemeTimeKey(start);
+
+        let times = days.get(dayKey);
+        if (!times) {
+            times = new Map();
+            days.set(dayKey, times);
+        }
+
+        const group = times.get(timeKey);
+        if (group) {
+            group.sessions.push(slot);
+        } else {
+            times.set(timeKey, {
+                timeKey,
+                sessionDateStart: start,
+                durationMin: slot.durationMin,
+                sessions: [slot],
+            });
+        }
+    }
+
+    return Array.from(days.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([dayKey, times]) => ({
+            dayKey,
+            // Toutes les sessions du jour partagent la même date : on prend
+            // celle du premier horaire pour l'affichage du libellé.
+            date: Array.from(times.values())[0].sessionDateStart,
+            times: Array.from(times.values()).sort((a, b) => a.timeKey.localeCompare(b.timeKey)),
+        }));
 }
 
 // Forme minimale d'un créneau pour construire son libellé public.

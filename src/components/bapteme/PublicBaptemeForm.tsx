@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createBaptemeRequest } from "@/api/db/bapteme";
 import { baptemeRequestSchema, BaptemeRequestSchema } from "@/schemas/baptemeSchema";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, PlaneTakeoff, UserRound } from "lucide-react";
-import { formatBaptemeSlotLabel, formatPilotName } from "@/lib/bapteme";
+import { CheckCircle2, ChevronLeft, ChevronRight, PlaneTakeoff, UserRound } from "lucide-react";
+import { formatPilotName, groupBaptemeSlots } from "@/lib/bapteme";
+import { formatSessionDate } from "@/api/global function/dateServeur";
 
 export interface PublicSlot {
     sessionID: string;
@@ -15,7 +17,8 @@ export interface PublicSlot {
     durationMin: number;
     pilotFirstName: string;
     pilotLastName: string;
-    planes: { id: string; name: string }[];
+    // imageUrl est null tant qu'aucune photo n'a été ajoutée à la machine.
+    planes: { id: string; name: string; imageUrl: string | null }[];
 }
 
 interface Props {
@@ -34,6 +37,12 @@ const PublicBaptemeForm = ({ clubID, token, clubName, slots }: Props) => {
     const [loading, setLoading] = useState(false);
     const [serverError, setServerError] = useState("");
     const [selectedSessionID, setSelectedSessionID] = useState("");
+    // Doublonne `planeID` du formulaire : react-hook-form ne re-rend pas au
+    // changement de valeur, et il faut savoir quel appareil est à l'écran.
+    const [selectedPlaneID, setSelectedPlaneID] = useState("");
+    const [selectedDayKey, setSelectedDayKey] = useState("");
+    const [selectedTimeKey, setSelectedTimeKey] = useState("");
+    const carouselRef = useRef<HTMLDivElement>(null);
 
     const {
         register,
@@ -45,15 +54,95 @@ const PublicBaptemeForm = ({ clubID, token, clubName, slots }: Props) => {
         defaultValues: { sessionID: "", planeID: "" },
     });
 
+    // Jour → heure → pilote(s). Une liste à plat serait ingérable dès qu'un club
+    // ouvre plusieurs créneaux par jour avec plusieurs pilotes.
+    const days = useMemo(() => groupBaptemeSlots(slots), [slots]);
+
+    const selectedDay = useMemo(
+        () => days.find((d) => d.dayKey === selectedDayKey),
+        [days, selectedDayKey]
+    );
+
+    const selectedTime = useMemo(
+        () => selectedDay?.times.find((t) => t.timeKey === selectedTimeKey),
+        [selectedDay, selectedTimeKey]
+    );
+
     const selectedSlot = useMemo(
         () => slots.find((s) => s.sessionID === selectedSessionID),
         [slots, selectedSessionID]
     );
 
+    // Position dans le carrousel. Repli sur 0 : tant qu'aucun appareil n'est
+    // retenu, c'est la première vue qui est à l'écran.
+    const currentPlaneIndex = useMemo(() => {
+        if (!selectedSlot) return 0;
+        const index = selectedSlot.planes.findIndex((p) => p.id === selectedPlaneID);
+        return index >= 0 ? index : 0;
+    }, [selectedSlot, selectedPlaneID]);
+
     const onSelectSession = (sessionID: string) => {
         setSelectedSessionID(sessionID);
         setValue("sessionID", sessionID, { shouldValidate: true });
+
+        // Dans le carrousel, l'appareil affiché EST l'appareil choisi : on
+        // sélectionne donc celui de la première vue, et on ramène le carrousel
+        // au début (le conteneur est réutilisé d'un créneau à l'autre, sans ça
+        // il resterait sur la position précédente).
+        const slot = slots.find((s) => s.sessionID === sessionID);
+        const firstPlaneID = slot?.planes[0]?.id ?? "";
+        setSelectedPlaneID(firstPlaneID);
+        setValue("planeID", firstPlaneID, { shouldValidate: false });
+        carouselRef.current?.scrollTo({ left: 0 });
+    };
+
+    // Chaque étape invalide les suivantes : sans ça, changer de jour laisserait
+    // sélectionnés une heure et un appareil qui n'existent plus.
+    const clearSession = () => {
+        setSelectedSessionID("");
+        setSelectedPlaneID("");
+        setValue("sessionID", "", { shouldValidate: false });
         setValue("planeID", "", { shouldValidate: false });
+    };
+
+    const onSelectTime = (timeKey: string) => {
+        setSelectedTimeKey(timeKey);
+        const group = selectedDay?.times.find((t) => t.timeKey === timeKey);
+        // Un seul pilote sur cet horaire : aucun choix à faire, on enchaîne
+        // directement sur l'appareil.
+        if (group?.sessions.length === 1) {
+            onSelectSession(group.sessions[0].sessionID);
+        } else {
+            clearSession();
+        }
+    };
+
+    const onSelectDay = (dayKey: string) => {
+        setSelectedDayKey(dayKey);
+        setSelectedTimeKey("");
+        clearSession();
+    };
+
+    const onSelectPlane = (planeID: string) => {
+        setSelectedPlaneID(planeID);
+        setValue("planeID", planeID, { shouldValidate: true });
+    };
+
+    // Vue courante du carrousel : déduite de la largeur d'une vue (chacune fait
+    // 100 % du conteneur), donc valable aussi bien au swipe qu'aux flèches.
+    const onCarouselScroll = () => {
+        const scroller = carouselRef.current;
+        if (!scroller || !selectedSlot) return;
+
+        const index = Math.round(scroller.scrollLeft / scroller.clientWidth);
+        const plane = selectedSlot.planes[index];
+        if (plane && plane.id !== selectedPlaneID) onSelectPlane(plane.id);
+    };
+
+    const scrollToPlane = (index: number) => {
+        const scroller = carouselRef.current;
+        if (!scroller) return;
+        scroller.scrollTo({ left: index * scroller.clientWidth, behavior: "smooth" });
     };
 
     const onSubmit = async (data: BaptemeRequestSchema) => {
@@ -122,60 +211,209 @@ const PublicBaptemeForm = ({ clubID, token, clubName, slots }: Props) => {
                         </p>
                     ) : (
                         <>
-                            {/* Créneau */}
+                            {/* Étape 1 — le jour */}
                             <div className="space-y-1.5">
                                 <label className="text-sm font-semibold text-slate-700">
-                                    Choisissez un créneau
+                                    Choisissez un jour
                                 </label>
-                                <select
-                                    className={inputClass}
-                                    value={selectedSessionID}
-                                    onChange={(e) => onSelectSession(e.target.value)}
-                                >
-                                    <option value="">— Sélectionner —</option>
-                                    {slots.map((s) => (
-                                        <option key={s.sessionID} value={s.sessionID}>
-                                            {formatBaptemeSlotLabel(s)}
-                                        </option>
-                                    ))}
-                                </select>
-                                {selectedSlot && (
-                                    <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                                        <UserRound size={13} className="flex-shrink-0 text-[#774BBE]" />
-                                        Votre pilote :{" "}
-                                        <span className="font-medium text-slate-700">
-                                            {formatPilotName(
-                                                selectedSlot.pilotFirstName,
-                                                selectedSlot.pilotLastName
-                                            )}
-                                        </span>
-                                    </p>
-                                )}
-                                {errors.sessionID && (
-                                    <p className="text-red-500 text-xs">{errors.sessionID.message}</p>
-                                )}
+                                <div className="max-h-52 space-y-2 overflow-y-auto pr-0.5">
+                                    {days.map((day) => {
+                                        const selected = day.dayKey === selectedDayKey;
+                                        return (
+                                            <button
+                                                key={day.dayKey}
+                                                type="button"
+                                                onClick={() => onSelectDay(day.dayKey)}
+                                                aria-pressed={selected}
+                                                className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left transition-colors ${selected
+                                                    ? "border-[#774BBE] bg-[#774BBE]/5"
+                                                    : "border-slate-200 bg-white hover:border-slate-300"
+                                                    }`}
+                                            >
+                                                <span className="text-sm font-semibold capitalize text-slate-800">
+                                                    {formatSessionDate(day.date)}
+                                                </span>
+                                                <span className="text-xs text-slate-500">
+                                                    {day.times.length} horaire
+                                                    {day.times.length > 1 ? "s" : ""}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
+
+                            {/* Étape 2 — l'horaire */}
+                            {selectedDay && (
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-semibold text-slate-700">
+                                        Choisissez un horaire
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                        {selectedDay.times.map((time) => {
+                                            const selected = time.timeKey === selectedTimeKey;
+                                            return (
+                                                <button
+                                                    key={time.timeKey}
+                                                    type="button"
+                                                    onClick={() => onSelectTime(time.timeKey)}
+                                                    aria-pressed={selected}
+                                                    className={`rounded-lg border py-2 text-sm font-medium transition-colors ${selected
+                                                        ? "border-[#774BBE] bg-[#774BBE] text-white"
+                                                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                                                        }`}
+                                                >
+                                                    {time.timeKey}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {selectedTime && (
+                                        <p className="text-xs text-slate-500">
+                                            Durée : {selectedTime.durationMin} min
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Étape 3 — le pilote, seulement s'il y a un choix */}
+                            {selectedTime && selectedTime.sessions.length > 1 && (
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-semibold text-slate-700">
+                                        Choisissez votre pilote
+                                    </label>
+                                    <div className="space-y-2">
+                                        {selectedTime.sessions.map((s) => {
+                                            const selected = s.sessionID === selectedSessionID;
+                                            return (
+                                                <button
+                                                    key={s.sessionID}
+                                                    type="button"
+                                                    onClick={() => onSelectSession(s.sessionID)}
+                                                    aria-pressed={selected}
+                                                    className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${selected
+                                                        ? "border-[#774BBE] bg-[#774BBE]/5 font-semibold text-slate-800"
+                                                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                                                        }`}
+                                                >
+                                                    <UserRound
+                                                        size={14}
+                                                        className="flex-shrink-0 text-[#774BBE]"
+                                                    />
+                                                    {formatPilotName(s.pilotFirstName, s.pilotLastName)}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {errors.sessionID && (
+                                        <p className="text-red-500 text-xs">{errors.sessionID.message}</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Pilote imposé : simple information */}
+                            {selectedSlot && selectedTime?.sessions.length === 1 && (
+                                <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                                    <UserRound size={13} className="flex-shrink-0 text-[#774BBE]" />
+                                    Votre pilote :{" "}
+                                    <span className="font-medium text-slate-700">
+                                        {formatPilotName(
+                                            selectedSlot.pilotFirstName,
+                                            selectedSlot.pilotLastName
+                                        )}
+                                    </span>
+                                </p>
+                            )}
 
                             {/* Appareil */}
                             {selectedSlot && (
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-semibold text-slate-700">
-                                        Choisissez un appareil
+                                        {selectedSlot.planes.length > 1
+                                            ? "Choisissez un appareil"
+                                            : "Votre appareil"}
                                     </label>
-                                    <select
-                                        className={inputClass}
-                                        defaultValue=""
-                                        onChange={(e) =>
-                                            setValue("planeID", e.target.value, { shouldValidate: true })
-                                        }
-                                    >
-                                        <option value="">— Sélectionner —</option>
-                                        {selectedSlot.planes.map((p) => (
-                                            <option key={p.id} value={p.id}>
-                                                {p.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div className="relative">
+                                        {/* Carrousel en défilement natif : swipe au doigt
+                                            sur mobile, flèches sur desktop, et aucune
+                                            librairie embarquée sur une page publique. */}
+                                        <div
+                                            ref={carouselRef}
+                                            onScroll={onCarouselScroll}
+                                            style={{ scrollbarWidth: "none" }}
+                                            className="flex snap-x snap-mandatory overflow-x-auto rounded-xl border border-slate-200 [&::-webkit-scrollbar]:hidden"
+                                        >
+                                            {selectedSlot.planes.map((p) => (
+                                                <div
+                                                    key={p.id}
+                                                    className="relative aspect-[4/3] w-full shrink-0 snap-center bg-slate-100"
+                                                >
+                                                    {p.imageUrl ? (
+                                                        <Image
+                                                            src={p.imageUrl}
+                                                            alt={p.name}
+                                                            fill
+                                                            sizes="(max-width: 640px) 100vw, 480px"
+                                                            className="object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-300">
+                                                            <PlaneTakeoff className="h-10 w-10" />
+                                                            <span className="text-xs text-slate-400">
+                                                                Photo non disponible
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {selectedSlot.planes.length > 1 && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    aria-label="Appareil précédent"
+                                                    disabled={currentPlaneIndex === 0}
+                                                    onClick={() => scrollToPlane(currentPlaneIndex - 1)}
+                                                    className="absolute left-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow transition hover:bg-white disabled:pointer-events-none disabled:opacity-0"
+                                                >
+                                                    <ChevronLeft className="h-5 w-5" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    aria-label="Appareil suivant"
+                                                    disabled={currentPlaneIndex === selectedSlot.planes.length - 1}
+                                                    onClick={() => scrollToPlane(currentPlaneIndex + 1)}
+                                                    className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow transition hover:bg-white disabled:pointer-events-none disabled:opacity-0"
+                                                >
+                                                    <ChevronRight className="h-5 w-5" />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Nom de l'appareil à l'écran = celui qui sera réservé */}
+                                    <p className="pt-1 text-center text-sm font-semibold text-slate-800">
+                                        {selectedSlot.planes[currentPlaneIndex]?.name}
+                                    </p>
+
+                                    {selectedSlot.planes.length > 1 && (
+                                        <div className="flex justify-center gap-1.5">
+                                            {selectedSlot.planes.map((p, index) => (
+                                                <button
+                                                    key={p.id}
+                                                    type="button"
+                                                    aria-label={`Voir ${p.name}`}
+                                                    onClick={() => scrollToPlane(index)}
+                                                    className={`h-2 rounded-full transition-all ${index === currentPlaneIndex
+                                                        ? "w-5 bg-[#774BBE]"
+                                                        : "w-2 bg-slate-300 hover:bg-slate-400"
+                                                        }`}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+
                                     {errors.planeID && (
                                         <p className="text-red-500 text-xs">{errors.planeID.message}</p>
                                     )}

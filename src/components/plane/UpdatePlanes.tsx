@@ -15,6 +15,7 @@ import { DropDownClasse } from './DropDownClasse'
 import { cn } from '@/lib/utils'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { canEditPlaneHobbs } from '@/lib/planeVisibility'
+import PlaneImageInput from './PlaneImageInput'
 
 interface props {
     children: React.ReactNode
@@ -33,6 +34,16 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
     const canEditHobbs = currentUser ? canEditPlaneHobbs(plane, currentUser) : false;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    // La photo est enregistrée par son propre server action, indépendamment du
+    // bouton « Enregistrer » : on répercute donc tout de suite le changement
+    // dans la fiche ET dans la liste, sinon la vignette resterait périmée
+    // jusqu'au prochain chargement de la page.
+    const onImageChange = (imagePath: string | null) => {
+        setPlane((prev) => ({ ...prev, imagePath }));
+        setPlanes(planes.map((p) => (p.id === plane.id ? { ...p, imagePath } : p)));
+        clearCache(`planes:${plane.clubID}`);
+    };
 
     const onClickUpdatePlane = async () => {
         setLoading(true);
@@ -116,6 +127,20 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                 />
                             </div>
                         </div>
+                    </div>
+
+                    <div className="h-px bg-slate-100 w-full" />
+
+                    {/* Bloc Photo */}
+                    <div className="space-y-4">
+                        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Photo</h3>
+                        <PlaneImageInput
+                            planeID={plane.id}
+                            planeName={plane.name}
+                            imagePath={plane.imagePath}
+                            disabled={loading}
+                            onChange={onImageChange}
+                        />
                     </div>
 
                     <div className="h-px bg-slate-100 w-full" />

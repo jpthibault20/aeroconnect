@@ -14,9 +14,12 @@ import {
     filterBaptemePlanes,
     hasActiveHold,
     isBaptemeSlotAvailable,
+    PUBLIC_BOOKING_HORIZON_DAYS,
     PUBLIC_LINK_MANAGE_ROLES,
 } from "@/lib/bapteme";
 import { baptemeRequestSchema } from "@/schemas/baptemeSchema";
+import { toClubWallClock } from "@/lib/clubTime";
+import { planeImagePublicUrl } from "@/lib/planeImage";
 import { verifyCaptcha } from "@/lib/captcha";
 import {
     sendBaptemeClientConfirmed,
@@ -53,25 +56,42 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
     if (!club) return { error: "Lien invalide ou expiré." };
 
     const now = new Date();
+    // Les créneaux sont stockés en wall-clock UTC : les comparer à l'instant
+    // réel laisserait passer les créneaux dépassés de moins de 2 h l'été.
+    const slotNow = toClubWallClock(now);
+
+    // Au-delà de l'horizon, on ne propose rien : la charge utile reste bornée
+    // même pour un club qui ouvre des créneaux très à l'avance.
+    const horizon = new Date(slotNow.getTime() + PUBLIC_BOOKING_HORIZON_DAYS * 24 * 60 * 60 * 1000);
 
     try {
-        const [sessions, planes, holds] = await Promise.all([
+        const [sessions, planes, holds, busySessions] = await Promise.all([
             prisma.flight_sessions.findMany({
                 where: {
                     clubID,
                     studentID: null,
-                    sessionDateStart: { gte: now },
+                    sessionDateStart: { gte: slotNow, lte: horizon },
                     natureOfTheft: { has: NatureOfTheft.DISCOVERY },
                 },
                 orderBy: { sessionDateStart: "asc" },
             }),
             prisma.planes.findMany({
                 where: { clubID, ownerID: null, operational: true },
-                select: { id: true, name: true, ownerID: true, operational: true, classes: true },
+                select: { id: true, name: true, ownerID: true, operational: true, classes: true, imagePath: true },
             }),
             prisma.baptemeRequest.findMany({
                 where: { clubID, status: "PENDING" },
                 select: { sessionID: true, status: true, expiresAt: true },
+            }),
+            // Machines déjà engagées sur un horaire à venir, toutes natures de
+            // vol confondues : baptême concurrent comme réservation d'un membre.
+            prisma.flight_sessions.findMany({
+                where: {
+                    clubID,
+                    sessionDateStart: { gte: slotNow, lte: horizon },
+                    studentPlaneID: { not: null },
+                },
+                select: { sessionDateStart: true, studentPlaneID: true },
             }),
         ]);
 
@@ -82,7 +102,24 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
             holdsBySession.set(h.sessionID, list);
         }
 
-        const planeName = new Map(planes.map((p) => [p.id, p.name]));
+        // Indexées par horaire de départ : deux sessions simultanées ne peuvent
+        // pas vendre le même appareil.
+        const takenPlanesByStart = new Map<number, string[]>();
+        for (const s of busySessions) {
+            if (!s.studentPlaneID) continue;
+            const key = s.sessionDateStart.getTime();
+            const list = takenPlanesByStart.get(key) ?? [];
+            list.push(s.studentPlaneID);
+            takenPlanesByStart.set(key, list);
+        }
+        const takenAt = (start: Date) => takenPlanesByStart.get(start.getTime()) ?? [];
+
+        // Nom + photo de chaque machine : le client choisit son appareil en le
+        // voyant, pas seulement d'après un nom de modèle. L'URL est construite
+        // ici (le chemin brut en base n'a aucun sens pour le navigateur).
+        const planeInfo = new Map(
+            planes.map((p) => [p.id, { name: p.name, imageUrl: planeImagePublicUrl(p.imagePath) }])
+        );
 
         const slots = sessions
             .filter((s) =>
@@ -96,7 +133,9 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
                     },
                     planes,
                     holdsBySession.get(s.id) ?? [],
-                    now
+                    now,
+                    slotNow,
+                    takenAt(s.sessionDateStart)
                 )
             )
             .map((s) => ({
@@ -109,8 +148,16 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
                 // confirmation, une fois la demande validée.
                 pilotFirstName: s.pilotFirstName,
                 pilotLastName: s.pilotLastName,
-                planes: filterBaptemePlanes(planes, { planeID: s.planeID, classes: s.classes }).map(
-                    (p) => ({ id: p.id, name: planeName.get(p.id) ?? "Appareil" })
+                planes: filterBaptemePlanes(
+                    planes,
+                    { planeID: s.planeID, classes: s.classes },
+                    takenAt(s.sessionDateStart)
+                ).map(
+                    (p) => ({
+                        id: p.id,
+                        name: planeInfo.get(p.id)?.name ?? "Appareil",
+                        imageUrl: planeInfo.get(p.id)?.imageUrl ?? null,
+                    })
                 ),
             }));
 
@@ -161,6 +208,9 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
     if (!captchaOk) return { error: "Vérification anti-robot échouée. Merci de réessayer." };
 
     const now = new Date();
+    // Même précaution qu'à l'affichage : sans ça un formulaire laissé ouvert
+    // (ou une requête forgée) permet de réserver un créneau déjà commencé.
+    const slotNow = toClubWallClock(now);
 
     try {
         const session = await prisma.flight_sessions.findUnique({
@@ -170,9 +220,27 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
             return { error: "Créneau introuvable." };
         }
 
-        const planes = await prisma.planes.findMany({
-            where: { clubID: input.clubID, ownerID: null, operational: true },
-        });
+        const [planes, busySessions] = await Promise.all([
+            prisma.planes.findMany({
+                where: { clubID: input.clubID, ownerID: null, operational: true },
+            }),
+            // Machines déjà engagées au même horaire par une AUTRE session : la
+            // session courante est exclue (son propre studentPlaneID est nul
+            // tant qu'aucun hold n'est posé, mais autant être explicite).
+            prisma.flight_sessions.findMany({
+                where: {
+                    clubID: input.clubID,
+                    sessionDateStart: session.sessionDateStart,
+                    studentPlaneID: { not: null },
+                    id: { not: session.id },
+                },
+                select: { studentPlaneID: true },
+            }),
+        ]);
+
+        const unavailablePlaneIDs = busySessions
+            .map((s) => s.studentPlaneID)
+            .filter((id): id is string => id !== null);
 
         // Le créneau doit encore être un baptême libre et futur…
         if (
@@ -186,17 +254,21 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
                 },
                 planes,
                 [],
-                now
+                now,
+                slotNow,
+                unavailablePlaneIDs
             )
         ) {
             return { error: "Ce créneau n'est plus disponible." };
         }
 
-        // …et la machine choisie doit être une machine club proposée sur le créneau.
-        const eligiblePlanes = filterBaptemePlanes(planes, {
-            planeID: session.planeID,
-            classes: session.classes,
-        });
+        // …et la machine choisie doit être une machine club proposée sur le
+        // créneau, et pas déjà prise à cet horaire par quelqu'un d'autre.
+        const eligiblePlanes = filterBaptemePlanes(
+            planes,
+            { planeID: session.planeID, classes: session.classes },
+            unavailablePlaneIDs
+        );
         const chosenPlane = eligiblePlanes.find((p) => p.id === input.planeID);
         if (!chosenPlane) {
             return { error: "Appareil indisponible pour ce créneau." };
