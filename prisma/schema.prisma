@@ -80,6 +80,10 @@ model planes {
   // la machine pour garder un lien indestructible machine <-> maintenance.
   // Forme : MaintenanceIntervention[] (cf. src/schemas/maintenance.ts).
   maintenanceHistory Json?
+  // Photo de la machine : CHEMIN dans le bucket Supabase Storage (jamais l'URL
+  // complète, pour ne pas figer le projet/bucket en base). Forme :
+  // `{planeID}/{uuid}.{ext}` — cf. src/lib/planeImage.ts. null => aucune photo.
+  imagePath       String?
   MaintenanceTask MaintenanceTask[]
 }
 

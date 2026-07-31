@@ -14,6 +14,7 @@ import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, Use
 import { cn } from '@/lib/utils';
 import { canManagePlane, canAccessMaintenance, isPrivatePlane } from '@/lib/planeVisibility';
 import MaintenanceDialog from './maintenance/MaintenanceDialog';
+import PlaneThumbnail from './PlaneThumbnail';
 
 interface Props {
     planesList: planes[];
@@ -150,15 +151,19 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOve
                 {/* Header: Icon, Name, Immat */}
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                        {/* Icone dynamique selon statut */}
-                        <div className={cn(
-                            "w-12 h-12 rounded-xl flex items-center justify-center transition-colors border",
-                            planeState.operational
-                                ? "bg-purple-50 text-[#774BBE] border-purple-100"
-                                : "bg-red-50 text-red-500 border-red-100"
-                        )}>
-                            <PlaneIcon className="w-6 h-6" />
-                        </div>
+                        {/* Photo de la machine, ou icône dynamique selon statut */}
+                        <PlaneThumbnail
+                            imagePath={planeState.imagePath}
+                            name={planeState.name}
+                            sizes="48px"
+                            iconClassName="w-6 h-6"
+                            className={cn(
+                                "w-12 h-12 rounded-xl transition-colors border",
+                                planeState.operational
+                                    ? "bg-purple-50 text-[#774BBE] border-purple-100"
+                                    : "bg-red-50 text-red-500 border-red-100"
+                            )}
+                        />
 
                         <div>
                             <h3 className="font-bold text-lg text-slate-900 leading-tight">

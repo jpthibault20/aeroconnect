@@ -51,6 +51,10 @@ const NewPlane = ({ setPlanes }: Props) => {
         ownerID: null,
         usageTypes: [],
         maintenanceHistory: null,
+        // La photo s'ajoute depuis la fiche de modification, une fois la
+        // machine créée (avant, elle n'a pas d'id, donc pas de chemin de
+        // stockage possible).
+        imagePath: null,
     };
 
     const [plane, setPlane] = useState<planes>(initialPlaneState);

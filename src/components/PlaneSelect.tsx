@@ -3,6 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { planes } from '@prisma/client';
 import { isPrivatePlane } from '@/lib/planeVisibility';
 import PlaneBadge from './PlaneBadge';
+import PlaneThumbnail from './plane/PlaneThumbnail';
 
 interface PlaneSelectProps {
     planes: planes[];
@@ -34,8 +35,18 @@ const PlaneSelect = ({ planes, selectedPlane, onPlaneChange }: PlaneSelectProps)
                 {planes.map(item => (
                     <SelectItem key={item.id} value={item.id}>
                         <span className="flex items-center gap-2">
+                            {/* La séance en salle n'est pas une machine : ni
+                                vignette, ni pastille. */}
+                            {item.id !== "classroomSession" && (
+                                <PlaneThumbnail
+                                    imagePath={item.imagePath}
+                                    name={item.name}
+                                    sizes="32px"
+                                    iconClassName="w-3.5 h-3.5"
+                                    className="w-8 h-8 rounded-md bg-slate-100 text-slate-400"
+                                />
+                            )}
                             <span className="truncate">{item.name}</span>
-                            {/* La séance en salle n'est pas une machine : pas de pastille. */}
                             {item.id !== "classroomSession" && (
                                 <PlaneBadge isPrivate={isPrivatePlane(item)} />
                             )}
