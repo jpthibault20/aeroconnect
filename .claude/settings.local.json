@@ -33,7 +33,17 @@
       "PowerShell(Stop-Process *)",
       "Bash(npx --yes tsc --noEmit --skipLibCheck --esModuleInterop --moduleResolution node --module esnext --target es2020 prisma/seed-current-month.ts)",
       "PowerShell($paths = @\\(\"$env:ProgramFiles\\\\nodejs\\\\node.exe\", \"$env:LOCALAPPDATA\\\\nvs\", \"$env:APPDATA\\\\nvm\", \"$env:LOCALAPPDATA\\\\Programs\\\\nodejs\\\\node.exe\"\\); foreach \\($p in $paths\\) { if \\(Test-Path $p\\) { $p } })",
-      "Bash(echo \"---exit:$?---\")"
+      "Bash(echo \"---exit:$?---\")",
+      "Bash(taskkill //F //PID 10908 //T)",
+      "Bash(taskkill //F //PID 4180 //T)",
+      "PowerShell(npx tsc --noEmit -p tsconfig.json)",
+      "PowerShell(npx vitest run src/lib/__tests__/clubAccess.test.ts src/lib/__tests__/bapteme.test.ts)",
+      "PowerShell(git *)",
+      "PowerShell(npx next lint --file src/components/NewSession.tsx)",
+      "PowerShell(npx eslint src/components/NewSession.tsx)",
+      "PowerShell(npx vitest run src/api/__tests__/roleCapabilities.test.ts)",
+      "PowerShell(npx prisma generate)",
+      "PowerShell(npx next build)"
     ]
   }
 }

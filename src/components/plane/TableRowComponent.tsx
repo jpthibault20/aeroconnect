@@ -15,11 +15,11 @@ import UpdatePlanes from './UpdatePlanes';
 import { Button } from '../ui/button';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Pencil, Trash2, Plane as PlaneIcon, CheckCircle2, Ban, Lock, Wrench, AlertTriangle } from 'lucide-react';
+import { Pencil, Trash2, CheckCircle2, Ban, Lock, Wrench, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { canManagePlane, canAccessMaintenance, isPrivatePlane } from '@/lib/planeVisibility';
-import { usageLabel } from './usageLabels';
 import MaintenanceDialog from './maintenance/MaintenanceDialog';
+import PlaneThumbnail from './PlaneThumbnail';
 
 interface Props {
     plane: planes;
@@ -131,14 +131,18 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
             isOverdue ? "bg-red-50/50 hover:bg-red-50" : "hover:bg-slate-50"
         )}>
 
-            {/* 1. Icon Column */}
+            {/* 1. Icon Column — photo de la machine, ou icône en repli */}
             <TableCell className="text-center py-4">
-                <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors",
-                    planeState.operational ? "bg-purple-50 text-purple-600" : "bg-red-50 text-red-400"
-                )}>
-                    <PlaneIcon className="w-4 h-4" />
-                </div>
+                <PlaneThumbnail
+                    imagePath={planeState.imagePath}
+                    name={planeState.name}
+                    sizes="40px"
+                    iconClassName="w-4 h-4"
+                    className={cn(
+                        "w-10 h-10 rounded-lg mx-auto transition-colors",
+                        planeState.operational ? "bg-purple-50 text-purple-600" : "bg-red-50 text-red-400"
+                    )}
+                />
             </TableCell>
 
             {/* 2. Name Column */}
@@ -152,17 +156,14 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                                 Révision en retard
                             </span>
                         )}
-                        {isPrivate ? (
+                        {/* Les usages (instruction / location / club) ne sont plus
+                            affichés : le champ n'est pas encore exploité par une
+                            règle métier. */}
+                        {isPrivate && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
                                 <Lock className="w-3 h-3" />
                                 Privé
                             </span>
-                        ) : (
-                            planeState.usageTypes.map((u) => (
-                                <span key={u} className="inline-flex items-center text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200 rounded-full px-2 py-0.5">
-                                    {usageLabel(u)}
-                                </span>
-                            ))
                         )}
                     </div>
                 </div>

@@ -13,8 +13,8 @@ import { aircraftClasses } from '@/config/config';
 import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, User, Wrench, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { canManagePlane, canAccessMaintenance, isPrivatePlane } from '@/lib/planeVisibility';
-import { usageLabel } from './usageLabels';
 import MaintenanceDialog from './maintenance/MaintenanceDialog';
+import PlaneThumbnail from './PlaneThumbnail';
 
 interface Props {
     planesList: planes[];
@@ -151,15 +151,19 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOve
                 {/* Header: Icon, Name, Immat */}
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                        {/* Icone dynamique selon statut */}
-                        <div className={cn(
-                            "w-12 h-12 rounded-xl flex items-center justify-center transition-colors border",
-                            planeState.operational
-                                ? "bg-purple-50 text-[#774BBE] border-purple-100"
-                                : "bg-red-50 text-red-500 border-red-100"
-                        )}>
-                            <PlaneIcon className="w-6 h-6" />
-                        </div>
+                        {/* Photo de la machine, ou icône dynamique selon statut */}
+                        <PlaneThumbnail
+                            imagePath={planeState.imagePath}
+                            name={planeState.name}
+                            sizes="48px"
+                            iconClassName="w-6 h-6"
+                            className={cn(
+                                "w-12 h-12 rounded-xl transition-colors border",
+                                planeState.operational
+                                    ? "bg-purple-50 text-[#774BBE] border-purple-100"
+                                    : "bg-red-50 text-red-500 border-red-100"
+                            )}
+                        />
 
                         <div>
                             <h3 className="font-bold text-lg text-slate-900 leading-tight">
@@ -175,17 +179,14 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOve
                                         Révision en retard
                                     </span>
                                 )}
-                                {isPrivate ? (
+                                {/* Les usages (instruction / location / club) ne sont
+                                    plus affichés : le champ n'est pas encore exploité
+                                    par une règle métier. */}
+                                {isPrivate && (
                                     <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
                                         <Lock className="w-3 h-3" />
                                         Privé
                                     </span>
-                                ) : (
-                                    planeState.usageTypes.map((u) => (
-                                        <span key={u} className="inline-flex items-center text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200 rounded-full px-2 py-0.5">
-                                            {usageLabel(u)}
-                                        </span>
-                                    ))
                                 )}
                             </div>
                         </div>

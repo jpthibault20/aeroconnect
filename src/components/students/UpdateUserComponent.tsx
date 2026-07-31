@@ -26,7 +26,7 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Spinner } from '../ui/SpinnerVariants';
 import InputClasses from '../InputClasses';
 import { clearCache } from '@/lib/cache';
-import { UserCog, Ban, Plane } from 'lucide-react';
+import { UserCog, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IoIosWarning } from 'react-icons/io';
 
@@ -214,27 +214,6 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                                     />
                                 </div>
 
-                                {/* Autonome Switch */}
-                                <div className={cn(
-                                    "flex items-center justify-between p-3 rounded-lg border transition-colors",
-                                    userState.canSubscribeWithoutPlan ? "bg-blue-50 border-blue-100" : "bg-white border-slate-200"
-                                )}>
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn("p-2 rounded-full", userState.canSubscribeWithoutPlan ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-500")}>
-                                            <Plane className="w-4 h-4" />
-                                        </div>
-                                        <div className="text-sm">
-                                            <p className="font-medium text-slate-900">Utilisateur Autonome</p>
-                                            <p className="text-xs text-slate-500">Peut réserver sans instructeur</p>
-                                        </div>
-                                    </div>
-                                    <Switch
-                                        checked={userState.canSubscribeWithoutPlan}
-                                        onCheckedChange={(c) => onChangeUserState('canSubscribeWithoutPlan', c)}
-                                        disabled={loading || !autorisedModifyRole}
-                                        className="data-[state=checked]:bg-blue-600"
-                                    />
-                                </div>
                             </div>
 
                             {/* Classes */}

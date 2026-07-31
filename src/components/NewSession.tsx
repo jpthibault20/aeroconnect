@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { flight_sessions, planes, User, userRole } from '@prisma/client'
+import { isBaptemeSlot, natureOfTheftForBapteme } from '@/lib/bapteme'
 import { toast } from "@/hooks/use-toast"
 import { checkSessionDate, interfaceSessions, newSession } from '@/api/db/sessions'
 import { fr } from "date-fns/locale"
@@ -79,7 +80,8 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         endReccurence: undefined,
         planeId: planesProp.map(plane => plane.id),
         classes: Array.from(new Set(planesProp.map(plane => plane.classes))),
-        comment: ""
+        comment: "",
+        natureOfTheft: []
     });
 
     // --- Effects ---
@@ -219,6 +221,15 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                 : planeClasses;
             return { ...prev, planeId: updatedPlaneId, classes: updatedClasses as number[] };
         });
+    };
+
+    // Le créneau baptême est porté par le seul marqueur DISCOVERY dans
+    // natureOfTheft : c'est lui que le lien public interroge (cf. api/db/bapteme).
+    const toggleBapteme = (checked: boolean) => {
+        setSessionData(prev => ({
+            ...prev,
+            natureOfTheft: natureOfTheftForBapteme(checked)
+        }));
     };
 
     const onConfirm = async () => {
@@ -557,6 +568,23 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                                 </div>
                             </div>
                         )}
+
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                                <Switch
+                                    id="bapteme"
+                                    checked={isBaptemeSlot(sessionData.natureOfTheft)}
+                                    onCheckedChange={toggleBapteme}
+                                    className="data-[state=checked]:bg-[#774BBE] scale-90 sm:scale-100"
+                                />
+                                <Label htmlFor="bapteme" className="cursor-pointer text-sm">Ouvrir cette session aux baptêmes de l&apos;air</Label>
+                            </div>
+                            <p className="pl-12 text-xs text-slate-500">
+                                Les créneaux baptême sont visibles depuis l&apos;extérieur du club : ils
+                                sont proposés au public sur le lien de réservation en ligne, et
+                                n&apos;importe qui peut y réserver une place.
+                            </p>
+                        </div>
 
                         <div className="space-y-2">
                             <Label className="text-slate-600 text-sm">Note (optionnel)</Label>

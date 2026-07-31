@@ -10,7 +10,7 @@ import PlaneSelect from "./PlaneSelect";
 import SubmitButton from "./SubmitButton";
 import { toast } from "@/hooks/use-toast";
 import { filterPilotePlane } from "@/api/popupCalendar";
-import { filterBookablePlanes } from "@/lib/planeVisibility";
+import { filterBookablePlanes, filterPlanesForBeneficiary } from "@/lib/planeVisibility";
 import { studentRegistration } from "@/api/db/sessions";
 import { sendNotificationBooking, sendStudentNotificationBooking } from "@/lib/mail";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
@@ -28,7 +28,8 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Spinner } from "./ui/SpinnerVariants";
 import ShowCommentSession from "./ShowCommentSession";
-import { cn } from "@/lib/utils";
+import SessionContacts from "./calendar/SessionContacts";
+import { cn, LEGACY_NO_PLANE_ID } from "@/lib/utils";
 
 interface Prop {
     children: React.ReactNode;
@@ -189,6 +190,13 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     // Machines réservables : visibilité (club + sa propre privée) ∩ classe autorisée.
     const filterdPlanes = currentUser ? filterBookablePlanes(planesProp, currentUser) : [];
 
+    // Une machine privée appartenant à l'utilisateur courant n'a pas à être
+    // « proposée » par le créneau : elle est à lui. Sans ça, elle n'apparaît que
+    // si le créateur de la séance la voyait (président/admin), et un créneau
+    // ouvert par un instructeur la rendrait inaccessible à son propriétaire.
+    const isOwnPlane = (planeID: string) =>
+        !!currentUser && planesProp.some(p => p.id === planeID && p.ownerID === currentUser.id);
+
     // --- 1. LOGIC & EFFECTS (Inchangés pour garantir le fonctionnement) ---
     useEffect(() => {
         if (sessions.length === 1) {
@@ -198,7 +206,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
         setSession(sessions.find(
             session =>
                 session.pilotID === instructor &&
-                (plane === "noPlane" || session.planeID.includes(plane))
+                (isOwnPlane(plane) || session.planeID.includes(plane))
         ));
         setStudentComment(session?.studentComment || "");
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -208,11 +216,29 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
         if (!sessions.length) return;
         const loadPilotsAndPlanes = async () => {
             try {
-                const { pilotes, planes } = await filterPilotePlane(sessions, usersProps, filterdPlanes);
+                const { pilotes } = await filterPilotePlane(sessions, usersProps, filterdPlanes);
+
+                // Machines proposées : celles offertes sur les créneaux encore
+                // libres, PLUS la machine privée de l'utilisateur (cf. isOwnPlane).
+                // Même règle que côté gestionnaire (filterPlanesForBeneficiary).
+                const availableSessions = sessions.filter(s => s.studentID === null);
+                const offeredPlaneIDs = Array.from(
+                    new Set(availableSessions.flatMap(s => s.planeID))
+                );
+                const unavailablePlaneIDs = sessions
+                    .map(s => s.studentPlaneID)
+                    .filter((id): id is string => id !== null);
+                const bookable = currentUser
+                    ? filterPlanesForBeneficiary(planesProp, currentUser, {
+                        offeredPlaneIDs,
+                        unavailablePlaneIDs,
+                    })
+                    : [];
+
                 setAllInstructors(pilotes);
-                setAllPlanes(planes);
+                setAllPlanes(bookable);
                 setAvailableInstructors(pilotes);
-                setAvailablePlanes(planes);
+                setAvailablePlanes(bookable);
             } catch (err) {
             }
         };
@@ -237,12 +263,15 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
     useEffect(() => {
         let updatedPlanes;
-        const classroomPlane = { id: "classroomSession", name: "Théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3, hobbsTotal: null, ownerID: null, usageTypes: [], maintenanceHistory: null };
+        const classroomPlane = { id: "classroomSession", name: "Théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3, hobbsTotal: null, ownerID: null, usageTypes: [], maintenanceHistory: null, imagePath: null };
 
         if (instructor === "nothing") {
             updatedPlanes = allPlanes;
         } else {
             updatedPlanes = allPlanes.filter(plane =>
+                // Sa propre machine reste proposable quel que soit l'instructeur :
+                // elle n'appartient pas à l'offre du créneau.
+                isOwnPlane(plane.id) ||
                 sessions.some(session => session.pilotID === instructor && session.planeID.includes(plane.id))
             );
         }
@@ -258,12 +287,15 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
     useEffect(() => {
         setAvailableInstructors(
-            plane === "nothing" || plane === "noPlane"
+            // Avec sa propre machine, tous les instructeurs du créneau restent
+            // possibles : le choix de la machine ne dépend plus de leur offre.
+            plane === "nothing" || isOwnPlane(plane)
                 ? allInstructors
                 : allInstructors.filter(instructor =>
                     sessions.some(session => session.planeID.includes(plane) && session.pilotID === instructor.id)
                 )
         );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [plane, allInstructors, sessions]);
 
     const onSubmit = async () => {
@@ -302,8 +334,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
                 const instructorFull = usersProps.find(user => user.id === session.pilotID);
                 const planeName = plane === "classroomSession" ? "Théorique" :
-                    plane == "noPlane" ? "Son avion personnel" :
-                        planesProp.find((p) => p.id === plane)?.name;
+                    planesProp.find((p) => p.id === plane)?.name;
                 const pilotComment = session.pilotComment as string;
 
                 Promise.all([
@@ -580,6 +611,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                                     </div>
                                                 </div>
 
+                                                <SessionContacts session={s} usersProps={usersProps} />
+
                                                 <div className="w-full h-px bg-slate-100 my-2" />
 
                                                 {/* Ligne 2: Avion & Notes */}
@@ -588,7 +621,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                                         <Plane size={14} />
                                                         <span>
                                                             {s.studentPlaneID === "classroomSession" ? "Théorique" :
-                                                                s.studentPlaneID === "noPlane" ? "Sans appareil" :
+                                                                s.studentPlaneID === LEGACY_NO_PLANE_ID ? "Sans appareil" :
                                                                     planesProp.find((plane) => plane.id === s.studentPlaneID)?.name}
                                                         </span>
                                                     </div>

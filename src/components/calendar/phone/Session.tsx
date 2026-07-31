@@ -1,5 +1,6 @@
 import { Clock, Plane, User, GraduationCap } from 'lucide-react'
 import { cn, getPlaneName } from "@/lib/utils"
+import { BAPTEME_HOLD_STUDENT_ID } from "@/lib/bapteme"
 import { flight_sessions, planes, User as PrismaUser } from '@prisma/client'
 import SessionPopup from '@/components/SessionPopup'
 import { useEffect, useState } from 'react'
@@ -45,6 +46,7 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
     );
 
     const isBooked = !!session.studentID;
+    const isHold = session.studentID === BAPTEME_HOLD_STUDENT_ID;
     const noteCount = (session.pilotComment ? 1 : 0) + (session.studentComment ? 1 : 0);
 
     const formatTime = formatSessionTime;
@@ -66,7 +68,9 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
                 // Réservé : Bordure fine grise + Barre gauche grise plus foncée + fond grisé
                 !isBooked
                     ? "bg-white border-[#774BBE] border-l-[#774BBE] shadow-purple-50"
-                    : "bg-slate-50 border-slate-200 border-l-slate-300 text-slate-500"
+                    : isHold
+                        ? "bg-amber-50 border-amber-200 border-l-amber-400 text-amber-700"
+                        : "bg-slate-50 border-slate-200 border-l-slate-300 text-slate-500"
             )}>
 
                 {/* GAUCHE : Heure & Avion */}
@@ -102,8 +106,15 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
                         <User size={12} className="text-slate-400" />
                     </div>
 
-                    {/* Élève ou Badge Dispo */}
-                    {isBooked ? (
+                    {/* Élève, hold baptême, ou Badge Dispo */}
+                    {isHold ? (
+                        <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-amber-100">
+                            <span className="text-[10px] font-bold text-amber-700 truncate max-w-[110px]">
+                                Baptême · en attente
+                            </span>
+                            <Clock size={11} className="text-amber-600" />
+                        </div>
+                    ) : isBooked ? (
                         <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-slate-200/50">
                             <span className="text-[10px] font-bold text-slate-600 truncate max-w-[80px]">
                                 {session.studentLastName?.toUpperCase().slice(0, 1)}.{session.studentFirstName}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { convertMinutesToHours, formatSessionTime } from "../dateServeur";
+import { convertMinutesToHours, formatSessionDate, formatSessionTime } from "../dateServeur";
 
 describe("convertMinutesToHours", () => {
     it("convertit 0 minutes en 00H00", () => {
@@ -114,5 +114,46 @@ describe("formatSessionTime — cohérence des heures de session", () => {
         const end = new Date(start.getTime() + durationMin * 60000);
         expect(formatSessionTime(start)).toBe("09:00");
         expect(formatSessionTime(end)).toBe("10:00");
+    });
+});
+
+/**
+ * Même invariant, côté DATE.
+ *
+ * Régression : la page publique de réservation baptême et le tableau des
+ * demandes en attente formataient avec toLocaleDate/TimeString SANS `timeZone`,
+ * donc dans le fuseau du visiteur — les horaires ressortaient décalés de +2 h
+ * en France l'été, et un créneau de fin de soirée changeait de jour.
+ */
+describe("formatSessionDate — cohérence des dates de session", () => {
+    it("accepte une date sérialisée (props RSC → composant client)", () => {
+        expect(formatSessionTime("2026-08-12T14:00:00.000Z")).toBe("14:00");
+        expect(formatSessionDate("2026-08-12T14:00:00.000Z")).toBe("mercredi 12 août");
+    });
+
+    it("ne bascule pas d'un jour sur un créneau de fin de soirée", () => {
+        // 22:30 UTC = 00:30 le lendemain à Paris : sans timeZone UTC, la date
+        // affichée passerait au 13 août.
+        const tard = new Date("2026-08-12T22:30:00.000Z");
+        expect(formatSessionDate(tard, { day: "2-digit", month: "long" })).toBe("12 août");
+        expect(formatSessionTime(tard)).toBe("22:30");
+    });
+
+    it("ne dépend pas du fuseau local (été comme hiver)", () => {
+        const ete = new Date("2026-08-12T14:00:00.000Z");
+        const hiver = new Date("2026-01-15T09:00:00.000Z");
+        expect(formatSessionDate(ete, { day: "2-digit", month: "short" })).toBe("12 août");
+        expect(formatSessionDate(hiver, { day: "2-digit", month: "short" })).toBe("15 janv.");
+    });
+
+    it("regression : ne renvoie PAS la date locale du navigateur", () => {
+        // Si quelqu'un retire `timeZone: "UTC"`, ce créneau ressortirait au 13
+        // août sur tout fuseau en avance sur UTC.
+        const d = new Date("2026-08-12T23:30:00.000Z");
+        const localFormat = d.toLocaleDateString("fr-FR", { day: "2-digit", month: "long" });
+        if (d.getTimezoneOffset() < 0) {
+            expect(formatSessionDate(d, { day: "2-digit", month: "long" })).not.toBe(localFormat);
+        }
+        expect(formatSessionDate(d, { day: "2-digit", month: "long" })).toBe("12 août");
     });
 });

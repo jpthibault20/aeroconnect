@@ -6,6 +6,7 @@ import { flight_sessions, planes, User } from '@prisma/client';
 import { Clock, Plane, User as UserIcon, Users } from 'lucide-react';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { cn } from '@/lib/utils';
+import { BAPTEME_HOLD_STUDENT_ID } from '@/lib/bapteme';
 import { formatSessionTime } from '@/api/global function/dateServeur';
 
 interface Props {
@@ -33,6 +34,11 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
             isFullyBooked: available.length === 0
         }
     }, [sessions]);
+
+    const hasHold = useMemo(
+        () => bookedSessions.some((s) => s.studentID === BAPTEME_HOLD_STUDENT_ID),
+        [bookedSessions]
+    );
 
     const firstSession = sessions[0];
 
@@ -65,13 +71,16 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
     }, [availableSessions, allowedPlanes, isFullyBooked]);
 
     const instructorString = useMemo(() => {
-        if (isFullyBooked) return bookedSessions.length > 0 ? "Réservé" : "Indisponible";
+        if (isFullyBooked) {
+            if (hasHold) return "Baptême en attente";
+            return bookedSessions.length > 0 ? "Réservé" : "Indisponible";
+        }
         if (availableSessions.length === 1) {
             const s = availableSessions[0];
             return `${s.pilotLastName.slice(0, 1).toUpperCase()}.${s.pilotFirstName}`;
         }
         return `${availableSessions.length} instructeurs`;
-    }, [availableSessions, isFullyBooked, bookedSessions.length]);
+    }, [availableSessions, isFullyBooked, bookedSessions.length, hasHold]);
 
     if (sessions.length === 0) return null;
 

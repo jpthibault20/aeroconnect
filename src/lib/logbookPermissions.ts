@@ -68,3 +68,11 @@ export function canSelectAnyPilot(role: userRole | undefined): boolean {
 export function isLogbookReadOnly(role: userRole | undefined): boolean {
     return role === userRole.STUDENT;
 }
+
+// La popup automatique « vols à signer » (PendingFlightsPrompt) ne doit
+// s'ouvrir que pour quelqu'un qui peut effectivement compléter et signer. Un
+// rôle en lecture seule n'y verrait qu'un mur : ses vols restent consultables
+// dans la page carnet.
+export function shouldPromptToSignFlights(role: userRole | undefined): boolean {
+    return canAccessLogbookPage(role) && !isLogbookReadOnly(role);
+}

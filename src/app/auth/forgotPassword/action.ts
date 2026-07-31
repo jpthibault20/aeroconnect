@@ -1,6 +1,7 @@
 "use server"
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
+import { forgotPasswordRedirect, passwordResetRedirectTo } from "@/lib/authFlow"
 
 
 export async function forgotPassword(formData: FormData) {
@@ -10,18 +11,19 @@ export async function forgotPassword(formData: FormData) {
     const email = formData.get('email') as string
 
     if (!email) {
-        return redirect('/auth/forgotPassword?message=Email manquant')
+        return redirect(forgotPasswordRedirect('missingEmail'))
     }
 
     // Utiliser Supabase pour envoyer un email de réinitialisation de mot de passe
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.WEBSITE_LINK}/auth/newPassword`, // Page vers laquelle rediriger après réinitialisation
+        // Page vers laquelle rediriger après réinitialisation
+        redirectTo: passwordResetRedirectTo(process.env.WEBSITE_LINK),
     })
 
     if (error) {
-        return redirect(`/auth/forgotPassword?message=${encodeURIComponent('Erreur lors de l\'envoi de l\'email de réinitialisation')}`)
+        return redirect(forgotPasswordRedirect('sendError'))
     }
 
     // Réponse après envoi réussi
-    return redirect(`/auth/login?messageG=${encodeURIComponent('Email de réinitialisation envoyé')}`)
+    return redirect(forgotPasswordRedirect('sent'))
 }

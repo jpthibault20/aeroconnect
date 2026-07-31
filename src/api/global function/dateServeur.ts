@@ -13,9 +13,18 @@ export const convertMinutesToHours = (totalMinutes: number) => {
 // Les sessions sont stockées en UTC en utilisant l'heure « wall-clock » saisie
 // (cf. setUTCHours dans api/db/sessions.ts). Tous les affichages d'heure de
 // session doivent donc lire en UTC pour rester cohérents entre eux.
-export const formatSessionTime = (date: Date): string => {
+export const formatSessionTime = (date: Date | string): string => {
     const d = new Date(date);
     const h = d.getUTCHours().toString().padStart(2, "0");
     const m = d.getUTCMinutes().toString().padStart(2, "0");
     return `${h}:${m}`;
 };
+
+// Pendant de formatSessionTime pour la date : même convention UTC. Sans
+// `timeZone: "UTC"`, toLocaleDateString applique le fuseau du navigateur et
+// décale l'affichage (+2 h en France l'été), jusqu'à changer de jour pour un
+// créneau de fin de soirée.
+export const formatSessionDate = (
+    date: Date | string,
+    options: Intl.DateTimeFormatOptions = { weekday: "long", day: "2-digit", month: "long" }
+): string => new Date(date).toLocaleDateString("fr-FR", { ...options, timeZone: "UTC" });

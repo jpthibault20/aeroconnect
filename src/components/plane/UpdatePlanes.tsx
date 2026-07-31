@@ -1,4 +1,4 @@
-import { planes, userRole } from '@prisma/client'
+import { planes } from '@prisma/client'
 import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Label } from '../ui/label'
@@ -14,9 +14,8 @@ import { clearCache } from '@/lib/cache'
 import { DropDownClasse } from './DropDownClasse'
 import { cn } from '@/lib/utils'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
-import { MachineUsage } from '@prisma/client'
-import { USAGE_OPTIONS } from './usageLabels'
-import { isPrivatePlane } from '@/lib/planeVisibility'
+import { canEditPlaneHobbs } from '@/lib/planeVisibility'
+import PlaneImageInput from './PlaneImageInput'
 
 interface props {
     children: React.ReactNode
@@ -30,20 +29,20 @@ interface props {
 
 const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setPlanes, planes }: props) => {
     const { currentUser } = useCurrentUser();
-    const canEditHobbs = currentUser?.role === userRole.OWNER || currentUser?.role === userRole.ADMIN;
-    // Les usages ne concernent que les machines du club (une machine privée n'a
-    // pas d'usage : sa nature est portée par le propriétaire).
-    const isPrivate = isPrivatePlane(plane);
+    // Compteur horaire : gestion (OWNER/ADMIN) sur toute machine, et le
+    // propriétaire sur sa propre machine privée.
+    const canEditHobbs = currentUser ? canEditPlaneHobbs(plane, currentUser) : false;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const toggleUsage = (usage: MachineUsage) => {
-        setPlane((prev) => ({
-            ...prev,
-            usageTypes: prev.usageTypes.includes(usage)
-                ? prev.usageTypes.filter((u) => u !== usage)
-                : [...prev.usageTypes, usage],
-        }));
+    // La photo est enregistrée par son propre server action, indépendamment du
+    // bouton « Enregistrer » : on répercute donc tout de suite le changement
+    // dans la fiche ET dans la liste, sinon la vignette resterait périmée
+    // jusqu'au prochain chargement de la page.
+    const onImageChange = (imagePath: string | null) => {
+        setPlane((prev) => ({ ...prev, imagePath }));
+        setPlanes(planes.map((p) => (p.id === plane.id ? { ...p, imagePath } : p)));
+        clearCache(`planes:${plane.clubID}`);
     };
 
     const onClickUpdatePlane = async () => {
@@ -132,6 +131,20 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
 
                     <div className="h-px bg-slate-100 w-full" />
 
+                    {/* Bloc Photo */}
+                    <div className="space-y-4">
+                        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Photo</h3>
+                        <PlaneImageInput
+                            planeID={plane.id}
+                            planeName={plane.name}
+                            imagePath={plane.imagePath}
+                            disabled={loading}
+                            onChange={onImageChange}
+                        />
+                    </div>
+
+                    <div className="h-px bg-slate-100 w-full" />
+
                     {/* Bloc Statut & Classe */}
                     <div className="space-y-4">
                         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Paramètres</h3>
@@ -146,35 +159,7 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                 />
                             </div>
 
-                            {/* Usages — uniquement pour une machine du club */}
-                            {!isPrivate && (
-                                <div className="space-y-2">
-                                    <Label className="text-slate-700 font-medium">Usages de la machine</Label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {USAGE_OPTIONS.map((opt) => {
-                                            const selected = plane.usageTypes.includes(opt.value);
-                                            return (
-                                                <button
-                                                    key={opt.value}
-                                                    type="button"
-                                                    disabled={loading}
-                                                    onClick={() => toggleUsage(opt.value)}
-                                                    className={cn(
-                                                        "rounded-full border px-3 py-1.5 text-sm transition-colors",
-                                                        selected
-                                                            ? "border-[#774BBE] bg-[#774BBE]/10 text-[#774BBE] font-medium"
-                                                            : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                                                    )}
-                                                >
-                                                    {opt.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Heures moteur — modifiable uniquement par OWNER/ADMIN */}
+                            {/* Heures moteur — gestion sur toute machine, propriétaire sur la sienne */}
                             {canEditHobbs && (
                                 <div className="space-y-2">
                                     <Label htmlFor="hobbsTotal" className="text-slate-700 font-medium">Heures moteur</Label>
@@ -188,6 +173,14 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                         placeholder="0.0"
                                         className="bg-slate-50 border-slate-200 focus:ring-blue-500 focus:border-blue-500 font-mono"
                                     />
+                                    <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-md">
+                                        <IoIosWarning className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-red-700">
+                                            Le compteur doit refléter la valeur lue sur l&apos;aéronef. Il avance
+                                            automatiquement à la signature de chaque vol : ne le corriger qu&apos;en cas
+                                            d&apos;erreur de saisie avérée.
+                                        </p>
+                                    </div>
                                 </div>
                             )}
 

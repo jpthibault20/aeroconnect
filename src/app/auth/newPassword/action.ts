@@ -1,6 +1,7 @@
 "use server"
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
+import { updatePasswordRedirect, validateNewPassword } from "@/lib/authFlow"
 
 
 export async function updatePassword(formData: FormData) {
@@ -10,24 +11,18 @@ export async function updatePassword(formData: FormData) {
     const confirmPassword = formData.get('confirmPassword') as string
     const code = formData.get('code') as string
 
-    if (!password || !confirmPassword) {
-        return redirect('/auth/forgotPassword?message=Mot de passe manquant')
+    const check = validateNewPassword(password, confirmPassword)
+    if (!check.ok) {
+        return redirect(check.redirect)
     }
 
-    if (password !== confirmPassword) {
-        return redirect('/auth/forgotPassword?message=Les mots de passe ne correspondent pas')
-    }
-
-    const supabase =  await createClient()
+    const supabase = await createClient()
     const res = await supabase.auth.exchangeCodeForSession(code)
     const email = res.data.user?.email
 
     if (!email) {
-        return redirect('/auth/login?message=Email manquant')
+        return redirect(updatePasswordRedirect('missingEmail'))
     }
-
-
-
 
     // Utiliser Supabase pour mettre à jour le mot de passe
     const { error } = await supabase.auth.updateUser({
@@ -35,9 +30,9 @@ export async function updatePassword(formData: FormData) {
     })
 
     if (error) {
-        return redirect(`/auth/forgotPassword?message=${encodeURIComponent('Erreur lors de la mise à jour du mot de passe')}`)
+        return redirect(updatePasswordRedirect('updateError'))
     }
 
     // Réponse après mise à jour réussie
-    return redirect(`/auth/login?messageG=${encodeURIComponent('Mot de passe mis à jour')}`)
+    return redirect(updatePasswordRedirect('success'))
 }

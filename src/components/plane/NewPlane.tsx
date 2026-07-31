@@ -20,11 +20,10 @@ import { toast } from '@/hooks/use-toast';
 import { IoIosWarning } from 'react-icons/io';
 import { IoMdAdd } from 'react-icons/io';
 import { Plane, Lock, Users } from 'lucide-react';
-import { MachineUsage, planes, userRole } from '@prisma/client';
+import { planes, userRole } from '@prisma/client';
 import { DropDownClasse } from './DropDownClasse';
 import { clearCache } from '@/lib/cache';
-import { CLUB_PLANE_MANAGE_ROLES } from '@/lib/planeVisibility';
-import { USAGE_OPTIONS } from './usageLabels';
+import { CLUB_PLANE_MANAGE_ROLES, CLUB_USAGE_VALUES } from '@/lib/planeVisibility';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -52,6 +51,10 @@ const NewPlane = ({ setPlanes }: Props) => {
         ownerID: null,
         usageTypes: [],
         maintenanceHistory: null,
+        // La photo s'ajoute depuis la fiche de modification, une fois la
+        // machine créée (avant, elle n'a pas d'id, donc pas de chemin de
+        // stockage possible).
+        imagePath: null,
     };
 
     const [plane, setPlane] = useState<planes>(initialPlaneState);
@@ -62,15 +65,6 @@ const NewPlane = ({ setPlanes }: Props) => {
         setPlane(initialPlaneState);
         setKind(isManagement ? "club" : "private");
         setError("");
-    };
-
-    const toggleUsage = (usage: MachineUsage) => {
-        setPlane((prev) => ({
-            ...prev,
-            usageTypes: prev.usageTypes.includes(usage)
-                ? prev.usageTypes.filter((u) => u !== usage)
-                : [...prev.usageTypes, usage],
-        }));
     };
 
     const onSubmit = async () => {
@@ -84,11 +78,6 @@ const NewPlane = ({ setPlanes }: Props) => {
             return;
         }
 
-        if (kind === "club" && plane.usageTypes.length === 0) {
-            setError("Sélectionnez au moins un usage pour la machine du club");
-            return;
-        }
-
         try {
             setLoading(true);
             const res = await createPlane({
@@ -97,7 +86,11 @@ const NewPlane = ({ setPlanes }: Props) => {
                 immatriculation: plane.immatriculation,
                 classes: plane.classes,
                 kind,
-                usageTypes: kind === "club" ? plane.usageTypes : [],
+                // Le choix des usages n'est pas exposé pour l'instant : une
+                // machine du club est créée avec tous les usages (le serveur en
+                // exige au moins un). Le jour où le champ revient dans le
+                // formulaire, il suffit de repasser la sélection de l'utilisateur.
+                usageTypes: kind === "club" ? CLUB_USAGE_VALUES : [],
             });
 
             if (res.error) {
@@ -244,33 +237,6 @@ const NewPlane = ({ setPlanes }: Props) => {
                                 setPlaneProp={setPlane}
                             />
                         </div>
-
-                        {/* Usages : uniquement pour une machine du club */}
-                        {kind === "club" && (
-                            <div className="space-y-2">
-                                <Label className="text-slate-600 text-sm font-medium">Usages de la machine</Label>
-                                <div className="flex flex-wrap gap-2">
-                                    {USAGE_OPTIONS.map((opt) => {
-                                        const selected = plane.usageTypes.includes(opt.value);
-                                        return (
-                                            <button
-                                                key={opt.value}
-                                                type="button"
-                                                onClick={() => toggleUsage(opt.value)}
-                                                className={cn(
-                                                    "rounded-full border px-3 py-1.5 text-sm transition-colors",
-                                                    selected
-                                                        ? "border-[#774BBE] bg-[#774BBE]/10 text-[#774BBE] font-medium"
-                                                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                                                )}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
 
