@@ -6,6 +6,7 @@ import AddStudent from './flights/AddStudent'
 import RemoveStudent from './RemoveStudent'
 import DeleteFlightSession from './DeleteFlightSession'
 import ShowCommentSession from './ShowCommentSession'
+import SessionContacts from './calendar/SessionContacts'
 import { cn } from '@/lib/utils'
 
 interface Prop {
@@ -135,6 +136,8 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp, onO
                                         </div>
                                     )}
                                 </div>
+
+                                <SessionContacts session={s} usersProps={usersProps} />
 
                                 <div className="h-px bg-slate-100 w-full" />
 

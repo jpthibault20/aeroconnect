@@ -126,6 +126,21 @@ export function canManagePlane(plane: Pick<planes, "ownerID">, user: Viewer): bo
     return CLUB_PLANE_MANAGE_ROLES.includes(user.role);
 }
 
+/**
+ * Un utilisateur peut-il corriger le compteur horaire (hobbsTotal) de cette
+ * machine depuis sa fiche ?
+ *  - machine du club : président (OWNER) et admin (ADMIN) uniquement ;
+ *  - machine privée : son propriétaire, en plus du président et de l'admin.
+ *
+ * Le compteur avance normalement tout seul à la signature d'un vol
+ * (cf. signFlightLog) : cette édition est une correction manuelle, d'où
+ * l'avertissement affiché dans la fiche.
+ */
+export function canEditPlaneHobbs(plane: Pick<planes, "ownerID">, user: Viewer): boolean {
+    if (PRIVATE_PLANE_OVERSIGHT_ROLES.includes(user.role)) return true;
+    return isPrivatePlane(plane) && plane.ownerID === user.id;
+}
+
 // Rôles qui voient/gèrent la maintenance d'une machine DU CLUB : instructeurs +
 // gestion (manager, président, admin). PILOT / STUDENT / USER n'y ont pas accès
 // (même s'ils voient la fiche de l'avion).

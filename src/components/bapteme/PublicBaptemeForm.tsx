@@ -6,12 +6,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createBaptemeRequest } from "@/api/db/bapteme";
 import { baptemeRequestSchema, BaptemeRequestSchema } from "@/schemas/baptemeSchema";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, PlaneTakeoff } from "lucide-react";
+import { CheckCircle2, PlaneTakeoff, UserRound } from "lucide-react";
+import { formatBaptemeSlotLabel, formatPilotName } from "@/lib/bapteme";
 
 export interface PublicSlot {
     sessionID: string;
     sessionDateStart: Date | string;
     durationMin: number;
+    pilotFirstName: string;
+    pilotLastName: string;
     planes: { id: string; name: string }[];
 }
 
@@ -22,18 +25,6 @@ interface Props {
     slots: PublicSlot[];
 }
 
-const formatSlotLabel = (start: Date | string, durationMin: number) => {
-    const startDate = start instanceof Date ? start : new Date(start);
-    const endDate = new Date(startDate.getTime() + durationMin * 60 * 1000);
-    const dateStr = startDate.toLocaleDateString("fr-FR", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-    });
-    const time = (d: Date) =>
-        d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-    return `${dateStr} · ${time(startDate)} → ${time(endDate)}`;
-};
 
 const inputClass =
     "w-full h-11 px-3 rounded-md border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#774BBE] focus:border-transparent";
@@ -144,10 +135,22 @@ const PublicBaptemeForm = ({ clubID, token, clubName, slots }: Props) => {
                                     <option value="">— Sélectionner —</option>
                                     {slots.map((s) => (
                                         <option key={s.sessionID} value={s.sessionID}>
-                                            {formatSlotLabel(s.sessionDateStart, s.durationMin)}
+                                            {formatBaptemeSlotLabel(s)}
                                         </option>
                                     ))}
                                 </select>
+                                {selectedSlot && (
+                                    <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                                        <UserRound size={13} className="flex-shrink-0 text-[#774BBE]" />
+                                        Votre pilote :{" "}
+                                        <span className="font-medium text-slate-700">
+                                            {formatPilotName(
+                                                selectedSlot.pilotFirstName,
+                                                selectedSlot.pilotLastName
+                                            )}
+                                        </span>
+                                    </p>
+                                )}
                                 {errors.sessionID && (
                                     <p className="text-red-500 text-xs">{errors.sessionID.message}</p>
                                 )}

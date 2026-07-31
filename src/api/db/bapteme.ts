@@ -5,10 +5,12 @@ import { NatureOfTheft } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
 import { expireStaleHolds, RELEASE_SESSION_DATA } from "./baptemeHold";
+import { appUrl } from "@/lib/appUrl";
 import {
     BAPTEME_HOLD_STUDENT_ID,
     BAPTEME_MANAGEMENT_ROLES,
     canValidateBapteme,
+    computeHoldExpiry,
     filterBaptemePlanes,
     hasActiveHold,
     isBaptemeSlotAvailable,
@@ -23,12 +25,7 @@ import {
     sendBaptemePilotNotification,
 } from "@/lib/mail";
 
-// Durée de vie du « hold » posé par une demande PENDING : le pilote (ou la
-// gestion) dispose de 10 h pour valider avant que la demande n'expire et que le
-// créneau ne soit rouvert.
-const HOLD_TTL_MINUTES = 10 * 60;
 
-const appUrl = () => process.env.NEXT_PUBLIC_APP_URL ?? "";
 
 // ─── Helpers internes ───
 
@@ -106,6 +103,12 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
                 sessionID: s.id,
                 sessionDateStart: s.sessionDateStart,
                 durationMin: s.sessionDateDuration_min,
+                // Nom du pilote qui assurera le vol : le client choisit son
+                // créneau en connaissance de cause. Aucune coordonnée n'est
+                // exposée ici (page publique) — elles arrivent dans l'email de
+                // confirmation, une fois la demande validée.
+                pilotFirstName: s.pilotFirstName,
+                pilotLastName: s.pilotLastName,
                 planes: filterBaptemePlanes(planes, { planeID: s.planeID, classes: s.classes }).map(
                     (p) => ({ id: p.id, name: planeName.get(p.id) ?? "Appareil" })
                 ),
@@ -210,10 +213,10 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
             return { error: "Ce créneau vient d'être réservé. Merci d'en choisir un autre." };
         }
 
-        const expiresAt = new Date(now.getTime() + HOLD_TTL_MINUTES * 60 * 1000);
+        const expiresAt = computeHoldExpiry(now);
         // On crée la demande ET on occupe le créneau (studentID = sentinelle de
         // hold) dans la même transaction : plus aucune inscription concurrente
-        // possible tant que le pilote n'a pas validé/refusé (ou 10 h écoulées).
+        // possible tant que le pilote n'a pas validé/refusé (ou 24 h écoulées).
         await prisma.$transaction([
             prisma.baptemeRequest.create({
                 data: {
@@ -471,7 +474,8 @@ export const validateBaptemeRequest = async (requestID: string) => {
             start,
             end,
             request.clubID,
-            plane?.name ?? "Appareil"
+            plane?.name ?? "Appareil",
+            session.pilotID
         );
 
         return { success: "Baptême confirmé, le client a été notifié !" };

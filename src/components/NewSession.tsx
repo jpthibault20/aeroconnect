@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
-import { flight_sessions, NatureOfTheft, planes, User, userRole } from '@prisma/client'
+import { flight_sessions, planes, User, userRole } from '@prisma/client'
+import { isBaptemeSlot, natureOfTheftForBapteme } from '@/lib/bapteme'
 import { toast } from "@/hooks/use-toast"
 import { checkSessionDate, interfaceSessions, newSession } from '@/api/db/sessions'
 import { fr } from "date-fns/locale"
@@ -51,16 +52,6 @@ interface TimeSelectProps {
     options: (string | number)[];
     placeholder?: string;
 }
-
-// Types de vol proposés à la création d'un créneau (sélection multiple).
-// DISCOVERY (« Baptême ») rend le créneau visible sur le lien public.
-const NATURE_OF_THEFT_OPTIONS: { value: NatureOfTheft; label: string }[] = [
-    { value: NatureOfTheft.TRAINING, label: "Formation" },
-    { value: NatureOfTheft.PRIVATE, label: "Privé" },
-    { value: NatureOfTheft.SIGHTSEEING, label: "Tourisme" },
-    { value: NatureOfTheft.DISCOVERY, label: "Baptême" },
-    { value: NatureOfTheft.EXAM, label: "Examen" },
-];
 
 const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersProps }) => {
     const { currentUser } = useCurrentUser()
@@ -232,12 +223,12 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         });
     };
 
-    const toggleNatureOfTheft = (value: NatureOfTheft) => {
+    // Le créneau baptême est porté par le seul marqueur DISCOVERY dans
+    // natureOfTheft : c'est lui que le lien public interroge (cf. api/db/bapteme).
+    const toggleBapteme = (checked: boolean) => {
         setSessionData(prev => ({
             ...prev,
-            natureOfTheft: prev.natureOfTheft.includes(value)
-                ? prev.natureOfTheft.filter(n => n !== value)
-                : [...prev.natureOfTheft, value]
+            natureOfTheft: natureOfTheftForBapteme(checked)
         }));
     };
 
@@ -579,32 +570,20 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                         )}
 
                         <div className="space-y-2">
-                            <Label className="text-slate-600 text-sm">Type(s) de vol (optionnel)</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {NATURE_OF_THEFT_OPTIONS.map((option) => {
-                                    const isSelected = sessionData.natureOfTheft.includes(option.value);
-                                    return (
-                                        <button
-                                            key={option.value}
-                                            type="button"
-                                            onClick={() => toggleNatureOfTheft(option.value)}
-                                            className={cn(
-                                                "px-3 py-1.5 rounded-full border-2 text-sm font-medium transition-all",
-                                                isSelected
-                                                    ? "border-[#774BBE] bg-[#774BBE]/5 text-[#774BBE]"
-                                                    : "border-slate-100 bg-white text-slate-500 hover:border-slate-200 hover:bg-slate-50"
-                                            )}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    );
-                                })}
+                            <div className="flex items-center gap-2">
+                                <Switch
+                                    id="bapteme"
+                                    checked={isBaptemeSlot(sessionData.natureOfTheft)}
+                                    onCheckedChange={toggleBapteme}
+                                    className="data-[state=checked]:bg-[#774BBE] scale-90 sm:scale-100"
+                                />
+                                <Label htmlFor="bapteme" className="cursor-pointer text-sm">Ouvrir cette session aux baptêmes de l&apos;air</Label>
                             </div>
-                            {sessionData.natureOfTheft.includes(NatureOfTheft.DISCOVERY) && (
-                                <p className="text-xs text-[#774BBE]">
-                                    Ce créneau sera proposé aux clients via le lien public de réservation de baptêmes.
-                                </p>
-                            )}
+                            <p className="pl-12 text-xs text-slate-500">
+                                Les créneaux baptême sont visibles depuis l&apos;extérieur du club : ils
+                                sont proposés au public sur le lien de réservation en ligne, et
+                                n&apos;importe qui peut y réserver une place.
+                            </p>
                         </div>
 
                         <div className="space-y-2">

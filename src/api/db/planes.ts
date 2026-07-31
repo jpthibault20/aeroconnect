@@ -1,9 +1,9 @@
 "use server";
 
-import { MachineUsage, planes, userRole } from "@prisma/client";
+import { MachineUsage, planes } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
-import { canManagePlane, filterVisiblePlanes, resolvePlaneCreation, sanitizeClubUsages } from "@/lib/planeVisibility";
+import { canEditPlaneHobbs, canManagePlane, filterVisiblePlanes, resolvePlaneCreation, sanitizeClubUsages } from "@/lib/planeVisibility";
 
 export interface CreatePlaneInput {
     clubID: string;
@@ -231,7 +231,9 @@ export const updatePlane = async (plane: planes) => {
             return { error: 'Permissions insuffisantes' };
         }
 
-        const canEditHobbs = auth.user.role === userRole.OWNER || auth.user.role === userRole.ADMIN;
+        // Compteur horaire : gestion (OWNER/ADMIN) sur toute machine, et le
+        // propriétaire sur sa propre machine privée.
+        const canEditHobbs = canEditPlaneHobbs(existing, auth.user);
 
         // Les usages ne concernent que les machines du club : on ne les met à
         // jour que pour une machine du club (ownerID null), avec les valeurs

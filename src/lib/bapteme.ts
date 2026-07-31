@@ -1,4 +1,5 @@
 import { NatureOfTheft, userRole } from "@prisma/client";
+import { formatSessionDate, formatSessionTime } from "@/api/global function/dateServeur";
 
 /**
  * Règles (pures, testées) de la réservation publique de vols baptême.
@@ -32,6 +33,17 @@ export const PUBLIC_LINK_MANAGE_ROLES: userRole[] = [
 // « baptême en attente » dans le calendrier. Distincte de "invited" (client
 // confirmé après validation).
 export const BAPTEME_HOLD_STUDENT_ID = "bapteme-hold";
+
+// Durée de vie du « hold » posé par une demande PENDING : le pilote (ou la
+// gestion) dispose de 24 h pour valider avant que la demande n'expire et que le
+// créneau ne soit rouvert. Vit ici (module pur) et non dans le server action
+// bapteme.ts, qui est "use server" et ne peut exporter que des fonctions async.
+export const HOLD_TTL_MINUTES = 24 * 60;
+
+// Échéance d'un hold créé à l'instant `now`.
+export function computeHoldExpiry(now: Date): Date {
+    return new Date(now.getTime() + HOLD_TTL_MINUTES * 60 * 1000);
+}
 
 // Valeurs possibles du statut d'une demande (miroir de l'enum Prisma
 // BaptemeStatus, redéclaré ici pour garder ce module découplé du client généré).
@@ -142,6 +154,51 @@ export function canValidateBapteme(
  */
 export function canManagePublicLink(role: userRole): boolean {
     return PUBLIC_LINK_MANAGE_ROLES.includes(role);
+}
+
+/**
+ * Types de vol à écrire sur un créneau selon l'interrupteur « baptême » de la
+ * création de séance. DISCOVERY est le SEUL marqueur exploité (c'est lui que
+ * getPublicBaptemeSlots interroge) : décoché, on ne laisse rien traîner.
+ */
+export function natureOfTheftForBapteme(isBapteme: boolean): NatureOfTheft[] {
+    return isBapteme ? [NatureOfTheft.DISCOVERY] : [];
+}
+
+/** Un créneau porte-t-il le marqueur baptême ? */
+export function isBaptemeSlot(natureOfTheft: NatureOfTheft[]): boolean {
+    return natureOfTheft.includes(NatureOfTheft.DISCOVERY);
+}
+
+/**
+ * Nom du pilote tel qu'affiché au client (page publique ET email de
+ * confirmation) : prénom puis nom en capitales.
+ */
+export function formatPilotName(firstName: string, lastName: string): string {
+    return `${firstName} ${lastName.toUpperCase()}`.trim();
+}
+
+// Forme minimale d'un créneau pour construire son libellé public.
+export interface BaptemeSlotLabelLike {
+    sessionDateStart: Date | string;
+    durationMin: number;
+    pilotFirstName: string;
+    pilotLastName: string;
+}
+
+/**
+ * Libellé d'un créneau dans le sélecteur public :
+ * « mercredi 12 août · 14:00 → 15:00 · Luc DUPONT ».
+ *
+ * Les horaires passent par formatSessionDate/Time (lecture UTC) : les créneaux
+ * sont stockés en « wall-clock UTC », un formatage local décalerait l'affichage
+ * selon le fuseau du visiteur.
+ */
+export function formatBaptemeSlotLabel(slot: BaptemeSlotLabelLike): string {
+    const start = toDate(slot.sessionDateStart);
+    const end = new Date(start.getTime() + slot.durationMin * 60 * 1000);
+    const pilot = formatPilotName(slot.pilotFirstName, slot.pilotLastName);
+    return `${formatSessionDate(start)} · ${formatSessionTime(start)} → ${formatSessionTime(end)} · ${pilot}`;
 }
 
 /**

@@ -6,10 +6,16 @@ import {
     BaptemeSlotLike,
     canManagePublicLink,
     canValidateBapteme,
+    computeHoldExpiry,
     filterBaptemePlanes,
+    formatBaptemeSlotLabel,
+    formatPilotName,
     hasActiveHold,
+    HOLD_TTL_MINUTES,
+    isBaptemeSlot,
     isBaptemeSlotAvailable,
     isHoldExpired,
+    natureOfTheftForBapteme,
     nextBaptemeStatus,
 } from "@/lib/bapteme";
 import { baptemeRequestSchema } from "@/schemas/baptemeSchema";
@@ -255,5 +261,94 @@ describe("baptemeRequestSchema", () => {
     it("exige le choix d'un créneau et d'un appareil", () => {
         expect(baptemeRequestSchema.safeParse({ ...valid, sessionID: "" }).success).toBe(false);
         expect(baptemeRequestSchema.safeParse({ ...valid, planeID: "" }).success).toBe(false);
+    });
+});
+
+// ─── Interrupteur « baptême » à la création d'une séance ───
+
+describe("natureOfTheftForBapteme — interrupteur de NewSession", () => {
+    it("activé : pose le seul marqueur DISCOVERY", () => {
+        expect(natureOfTheftForBapteme(true)).toEqual([NatureOfTheft.DISCOVERY]);
+    });
+
+    it("désactivé : ne laisse aucun type de vol résiduel", () => {
+        expect(natureOfTheftForBapteme(false)).toEqual([]);
+    });
+
+    it("le marqueur produit rend bien le créneau visible côté public", () => {
+        // Contrat entre l'interrupteur et getPublicBaptemeSlots (has: DISCOVERY) :
+        // si l'un des deux change, ce test casse.
+        const slot = makeSlot({ natureOfTheft: natureOfTheftForBapteme(true) });
+        expect(isBaptemeSlotAvailable(slot, [clubPlane], [], now)).toBe(true);
+        expect(isBaptemeSlot(slot.natureOfTheft)).toBe(true);
+
+        const nonBapteme = makeSlot({ natureOfTheft: natureOfTheftForBapteme(false) });
+        expect(isBaptemeSlotAvailable(nonBapteme, [clubPlane], [], now)).toBe(false);
+        expect(isBaptemeSlot(nonBapteme.natureOfTheft)).toBe(false);
+    });
+
+    it("aller-retour activé → désactivé : le créneau redevient invisible du public", () => {
+        let nature = natureOfTheftForBapteme(true);
+        expect(isBaptemeSlot(nature)).toBe(true);
+        nature = natureOfTheftForBapteme(false);
+        expect(isBaptemeSlot(nature)).toBe(false);
+    });
+});
+
+// ─── Durée du hold ───
+
+describe("computeHoldExpiry — durée de blocage d'un créneau", () => {
+    it("le hold dure 24 h", () => {
+        expect(HOLD_TTL_MINUTES).toBe(24 * 60);
+        expect(computeHoldExpiry(now).toISOString()).toBe("2026-07-23T12:00:00.000Z");
+    });
+
+    it("une demande créée maintenant est encore active 23 h 59 plus tard", () => {
+        const expiresAt = computeHoldExpiry(now);
+        const presqueEchu = new Date(now.getTime() + (HOLD_TTL_MINUTES - 1) * 60 * 1000);
+        expect(isHoldExpired({ status: "PENDING", expiresAt }, presqueEchu)).toBe(false);
+    });
+
+    it("elle est expirée une minute après l'échéance", () => {
+        const expiresAt = computeHoldExpiry(now);
+        const apres = new Date(expiresAt.getTime() + 60 * 1000);
+        expect(isHoldExpired({ status: "PENDING", expiresAt }, apres)).toBe(true);
+        expect(hasActiveHold([{ status: "PENDING", expiresAt }], apres)).toBe(false);
+    });
+});
+
+// ─── Libellé public d'un créneau ───
+
+describe("formatBaptemeSlotLabel — sélecteur de la page publique", () => {
+    const slot = {
+        sessionDateStart: new Date("2026-08-12T14:00:00.000Z"),
+        durationMin: 60,
+        pilotFirstName: "Luc",
+        pilotLastName: "Dupont",
+    };
+
+    it("affiche date, plage horaire et pilote", () => {
+        expect(formatBaptemeSlotLabel(slot)).toBe(
+            "mercredi 12 août · 14:00 → 15:00 · Luc DUPONT"
+        );
+    });
+
+    it("lit les horaires en UTC (pas de décalage selon le fuseau du visiteur)", () => {
+        // 22:30 UTC = 00:30 le lendemain à Paris : la date ne doit pas basculer.
+        const tard = { ...slot, sessionDateStart: "2026-08-12T22:30:00.000Z", durationMin: 30 };
+        expect(formatBaptemeSlotLabel(tard)).toBe(
+            "mercredi 12 août · 22:30 → 23:00 · Luc DUPONT"
+        );
+    });
+
+    it("accepte une date sérialisée (props serveur → composant client)", () => {
+        expect(formatBaptemeSlotLabel({ ...slot, sessionDateStart: "2026-08-12T14:00:00.000Z" })).toBe(
+            formatBaptemeSlotLabel(slot)
+        );
+    });
+
+    it("formatPilotName : prénom puis nom en capitales, comme dans l'email", () => {
+        expect(formatPilotName("Luc", "Dupont")).toBe("Luc DUPONT");
+        expect(formatPilotName("Anne-Marie", "de la Tour")).toBe("Anne-Marie DE LA TOUR");
     });
 });

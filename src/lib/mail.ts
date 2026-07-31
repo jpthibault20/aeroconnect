@@ -15,6 +15,7 @@ import { clubAdressType } from "@/emails/Template";
 import { Club, flight_sessions, User } from "@prisma/client";
 import { Resend } from "resend";
 import { receiveType } from "./utils";
+import { appUrl } from "./appUrl";
 
 if (!process.env.RESEND_API_KEY) {
   throw new Error("RESEND_API_KEY is not defined");
@@ -24,7 +25,6 @@ if (!process.env.SENDER_EMAIL) {
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const domain = process.env.NEXT_PUBLIC_APP_URL;
 const senderMailAdress = process.env.SENDER_EMAIL;
 
 const formattedDate = (date: Date) => {
@@ -58,7 +58,7 @@ const getClubData = (clubID: string) => {
 }
 
 export const sendVerificationEmail = async (email: string, token: string, clubID: string) => {
-  const confirmLink = `${domain}/auth/new-verification?token=${token}`;
+  const confirmLink = `${appUrl()}/auth/new-verification?token=${token}`;
   const clubData = await getClubData(clubID);
 
   if (!clubData || !clubData.name) {
@@ -361,23 +361,34 @@ export const sendBaptemeClientConfirmed = async (
   startDate: Date,
   endDate: Date,
   clubID: string,
-  planeName: string
+  planeName: string,
+  pilotID: string
 ) => {
   if (!email) return;
   try {
-    const club = await prisma.club.findUnique({
-      where: { id: clubID },
-      select: {
-        Name: true,
-        Country: true,
-        ZipCode: true,
-        City: true,
-        Address: true,
-        defaultAirfield: true,
-        phoneContact: true,
-        mailContact: true,
-      },
-    });
+    // Le pilote est joint au mail pour que le client puisse le contacter
+    // directement le jour du vol (cf. section « Votre pilote »).
+    const [club, pilot] = await Promise.all([
+      prisma.club.findUnique({
+        where: { id: clubID },
+        select: {
+          Name: true,
+          Country: true,
+          ZipCode: true,
+          City: true,
+          Address: true,
+          defaultAirfield: true,
+          phoneContact: true,
+          mailContact: true,
+        },
+      }),
+      pilotID
+        ? prisma.user.findUnique({
+            where: { id: pilotID },
+            select: { firstName: true, lastName: true, email: true, phone: true },
+          })
+        : Promise.resolve(null),
+    ]);
     if (!club || !club.Name) return;
 
     await resend.emails.send({
@@ -399,6 +410,14 @@ export const sendBaptemeClientConfirmed = async (
         airfield: club.defaultAirfield,
         phoneContact: club.phoneContact,
         mailContact: club.mailContact,
+        pilot: pilot
+          ? {
+              firstName: pilot.firstName,
+              lastName: pilot.lastName,
+              email: pilot.email,
+              phone: pilot.phone,
+            }
+          : null,
       }),
     });
   } catch {

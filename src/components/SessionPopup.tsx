@@ -28,6 +28,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Spinner } from "./ui/SpinnerVariants";
 import ShowCommentSession from "./ShowCommentSession";
+import SessionContacts from "./calendar/SessionContacts";
 import { cn } from "@/lib/utils";
 
 interface Prop {
@@ -579,6 +580,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                <SessionContacts session={s} usersProps={usersProps} />
 
                                                 <div className="w-full h-px bg-slate-100 my-2" />
 

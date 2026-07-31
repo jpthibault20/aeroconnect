@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { validateBaptemeRequest, rejectBaptemeRequest } from "@/api/db/bapteme";
 import { BAPTEME_REQUESTS_EVENT } from "@/lib/baptemeEvents";
 import { Mail, Phone, PlaneTakeoff, Clock, Check, X } from "lucide-react";
+import { formatSessionDate, formatSessionTime } from "@/api/global function/dateServeur";
 
 // DTO renvoyé par getPendingBaptemeRequests (dates incluses).
 export interface PendingBaptemeItem {
@@ -30,12 +31,11 @@ interface Props {
     pendingBaptemes: PendingBaptemeItem[];
 }
 
+// Même convention UTC que le reste des créneaux (cf. dateServeur) : le club doit
+// voir exactement l'horaire que le client a réservé sur la page publique.
 const formatSlot = (start: Date | string, end: Date | string) => {
-    const s = start instanceof Date ? start : new Date(start);
-    const e = end instanceof Date ? end : new Date(end);
-    const dateStr = s.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
-    const time = (d: Date) => d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-    return `${dateStr} · ${time(s)} → ${time(e)}`;
+    const dateStr = formatSessionDate(start, { day: "2-digit", month: "short" });
+    return `${dateStr} · ${formatSessionTime(start)} → ${formatSessionTime(end)}`;
 };
 
 const PendingBaptemeRequests = ({ pendingBaptemes }: Props) => {

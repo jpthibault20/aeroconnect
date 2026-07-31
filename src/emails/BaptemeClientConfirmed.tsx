@@ -7,6 +7,15 @@ import {
 import * as React from "react";
 import EmailTemplate, { clubAdressType } from "./Template";
 
+// Coordonnées du pilote qui assurera le vol, pour que le client puisse le
+// joindre directement (retard, imprévu, météo).
+export interface BaptemePilotContact {
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+}
+
 interface BaptemeClientConfirmedProps {
     firstName: string;
     startDate: string;
@@ -17,6 +26,7 @@ interface BaptemeClientConfirmedProps {
     airfield: string | null;
     phoneContact: string | null;
     mailContact: string | null;
+    pilot: BaptemePilotContact | null;
 }
 
 export const BaptemeClientConfirmed = ({
@@ -29,6 +39,7 @@ export const BaptemeClientConfirmed = ({
     airfield,
     phoneContact,
     mailContact,
+    pilot,
 }: BaptemeClientConfirmedProps) => (
     <Tailwind
         config={{ theme: { extend: { colors: { brand: "#007291" } } } }}
@@ -61,6 +72,34 @@ export const BaptemeClientConfirmed = ({
                         </>
                     )}
                 </Text>
+
+                {pilot && (
+                    <>
+                        <Text className="text-lg leading-6 font-semibold">
+                            Votre pilote
+                        </Text>
+                        <Text className="text-base leading-6">
+                            👨‍✈️ {pilot.firstName} {pilot.lastName.toUpperCase()}
+                            {pilot.phone && (
+                                <>
+                                    <br />
+                                    📞 {pilot.phone}
+                                </>
+                            )}
+                            {pilot.email && (
+                                <>
+                                    <br />
+                                    ✉️ {pilot.email}
+                                </>
+                            )}
+                            <br />
+                            <span className="text-gray-600">
+                                Contactez-le directement en cas de retard ou d&apos;imprévu le
+                                jour du vol.
+                            </span>
+                        </Text>
+                    </>
+                )}
 
                 <Hr className="border-gray-300 my-4" />
 

@@ -37,7 +37,11 @@
       "Bash(taskkill //F //PID 10908 //T)",
       "Bash(taskkill //F //PID 4180 //T)",
       "PowerShell(npx tsc --noEmit -p tsconfig.json)",
-      "PowerShell(npx vitest run src/lib/__tests__/clubAccess.test.ts src/lib/__tests__/bapteme.test.ts)"
+      "PowerShell(npx vitest run src/lib/__tests__/clubAccess.test.ts src/lib/__tests__/bapteme.test.ts)",
+      "PowerShell(git *)",
+      "PowerShell(npx next lint --file src/components/NewSession.tsx)",
+      "PowerShell(npx eslint src/components/NewSession.tsx)",
+      "PowerShell(npx vitest run src/api/__tests__/roleCapabilities.test.ts)"
     ]
   }
 }
