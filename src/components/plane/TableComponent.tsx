@@ -41,8 +41,10 @@ const TableComponent = ({ planes, setPlanes, ownerNames, overduePlaneIDs }: Prop
         currentUser?.role === userRole.PILOT ||
         currentUser?.role === userRole.INSTRUCTOR;
 
-    // Style standardisé pour les headers (identique à la page Vols)
-    const headerClass = "text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 bg-slate-50";
+    // Style standardisé pour les headers. Le fond est porté par les cellules ET
+    // par le <thead> : un thead sticky en border-collapse ne peint pas toujours
+    // son propre fond selon le navigateur.
+    const headerClass = "text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 bg-slate-100";
 
     return (
         <div className="flex flex-col h-full">
@@ -51,8 +53,12 @@ const TableComponent = ({ planes, setPlanes, ownerNames, overduePlaneIDs }: Prop
 
                 <Table className="w-full text-sm text-left border-collapse">
                     {/* Sticky Header : Reste en haut au scroll */}
-                    <TableHeader className="sticky top-0 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                        <TableRow className="border-b border-slate-200 hover:bg-slate-50">
+                    <TableHeader className="sticky top-0 z-10 bg-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                        {/* Trait de 2px : il doit se lire différemment des
+                            séparateurs de lignes (1px), sinon l'en-tête se fond
+                            dans le contenu. Pas de hover : un en-tête n'est pas
+                            cliquable et s'éclaircissait au survol. */}
+                        <TableRow className="border-b-2 border-slate-300 hover:bg-transparent">
 
                             {/* Colonne Icône (Visuel) */}
                             <TableHead className={`${headerClass} w-[50px] text-center`}>
@@ -100,7 +106,12 @@ const TableComponent = ({ planes, setPlanes, ownerNames, overduePlaneIDs }: Prop
                         </TableRow>
                     </TableHeader>
 
-                    <TableBody className="bg-white divide-y divide-slate-100">
+                    {/* Pas de `divide-y` ici : TableRow porte déjà `border-b` et
+                        TableBody neutralise celui de la dernière ligne. Cumuler les
+                        deux mécanismes donnait un seul séparateur visible (celui de
+                        la 1re ligne), les suivants passant en border-top slate-100
+                        quasi invisible. Même réglage que la page Vols. */}
+                    <TableBody className="bg-white">
                         {planes && planes.length > 0 ? (
                             planes.map((plane, index) => (
                                 <TableRowComponent
