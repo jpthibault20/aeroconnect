@@ -2,6 +2,7 @@
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 import { flight_sessions, planes } from '@prisma/client';
+import { LEGACY_NO_PLANE_ID } from '@/lib/utils';
 
 interface Props {
     // Modification: accepte un tableau d'IDs d'instructeurs au lieu d'un seul
@@ -20,7 +21,8 @@ const isSameDay = (d1: Date, d2: Date): boolean =>
 
 const getPlaneName = (planeID: string, planes: planes[]) => {
     if (planeID === 'classroomSession') return 'Session salle';
-    if (planeID === 'noPlane') return 'Aucun avion';
+    // Séances historiques uniquement (cf. LEGACY_NO_PLANE_ID).
+    if (planeID === LEGACY_NO_PLANE_ID) return 'Aucun avion';
     const plane = planes.find((p) => p.id === planeID);
     return plane ? plane.name : 'Avion inconnu';
 };

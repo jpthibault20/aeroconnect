@@ -21,10 +21,24 @@ import {
     UserPlus,
     User as UserIcon,
     GraduationCap,
+    PlaneTakeoff,
+    Minus,
     Plane as PlaneIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
+import { resolveSessionKind, SESSION_KIND_LABEL, SessionKind } from '@/lib/sessionType';
+
+// Rendu du badge « Type » par nature de séance. Le violet de la charte marque le
+// baptême, cohérent avec le reste de la feature (lien public, calendrier).
+// UNDETERMINED garde la même pastille, en gris et bordure pointillée : la
+// colonne reste remplie sans suggérer une nature déjà décidée.
+const KIND_STYLES: Record<SessionKind, { className: string; Icon: typeof PlaneIcon }> = {
+    UNDETERMINED: { className: "bg-slate-50 text-slate-400 border-slate-200 border-dashed", Icon: Minus },
+    THEORETICAL: { className: "bg-blue-50 text-blue-700 border-blue-100", Icon: GraduationCap },
+    BAPTEME: { className: "bg-purple-50 text-[#774BBE] border-purple-200", Icon: PlaneTakeoff },
+    INSTRUCTION: { className: "bg-orange-50 text-orange-700 border-orange-100", Icon: PlaneIcon },
+};
 
 interface Props {
     session: flight_sessions;
@@ -94,7 +108,9 @@ const TableRowComponent = ({
         return { name: "Inconnu", type: "??" };
     }, [session.planeID, planesProp]);
 
-    const isTheoretical = planeDisplay.type === "TH";
+    // Tant qu'aucun inscrit, le type n'est pas déterminé (cf. lib/sessionType).
+    const sessionKind = resolveSessionKind(session);
+    const kindStyle = KIND_STYLES[sessionKind];
     // --- 2. SYNC CHECKBOX ---
     useEffect(() => {
         setIsChecked(isAllChecked);
@@ -175,16 +191,17 @@ const TableRowComponent = ({
                 </div>
             </TableCell>
 
-            {/* Type de vol (Avion / Théorie) */}
+            {/* Type de séance : déterminé seulement une fois quelqu'un inscrit */}
             <TableCell className="text-center">
-                <div className={cn(
-                    "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border",
-                    isTheoretical
-                        ? "bg-blue-50 text-blue-700 border-blue-100"
-                        : "bg-orange-50 text-orange-700 border-orange-100"
-                )}>
-                    {isTheoretical ? <GraduationCap className="w-3.5 h-3.5" /> : <PlaneIcon className="w-3.5 h-3.5" />}
-                    {isTheoretical ? "Théorique" : "Vol"}
+                <div
+                    className={cn(
+                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border",
+                        kindStyle.className
+                    )}
+                    title={sessionKind === "UNDETERMINED" ? "Type déterminé à l'inscription" : undefined}
+                >
+                    <kindStyle.Icon className="w-3.5 h-3.5" />
+                    {SESSION_KIND_LABEL[sessionKind]}
                 </div>
             </TableCell>
 

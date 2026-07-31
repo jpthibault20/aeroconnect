@@ -7,6 +7,7 @@ import {
     canCreatePrivatePlane,
     canCreateClubPlane,
     canCreateAnyPlane,
+    canEditPlaneHobbs,
     isPrivatePlane,
 } from "@/lib/planeVisibility";
 import {
@@ -15,6 +16,7 @@ import {
     canAddManualLogEntry,
     canSeeAircraftLogbook,
     isLogbookReadOnly,
+    shouldPromptToSignFlights,
 } from "@/lib/logbookPermissions";
 
 /**
@@ -286,6 +288,69 @@ describe("Général — visibilité des machines privées", () => {
     it("isPrivatePlane distingue club (ownerID null) et privée", () => {
         expect(isPrivatePlane(clubPlane)).toBe(false);
         expect(isPrivatePlane(myPrivatePlane)).toBe(true);
+    });
+});
+
+describe("Général — popup automatique « vols à signer »", () => {
+    it("ne s'ouvre PAS pour un élève : il ne peut ni compléter ni signer", () => {
+        expect(shouldPromptToSignFlights(userRole.STUDENT)).toBe(false);
+        // Cohérence avec la lecture seule du carnet : même règle, une seule source.
+        expect(isLogbookReadOnly(userRole.STUDENT)).toBe(true);
+    });
+
+    it("ne s'ouvre pas non plus pour un USER (aucun accès au carnet)", () => {
+        expect(shouldPromptToSignFlights(userRole.USER)).toBe(false);
+        expect(shouldPromptToSignFlights(undefined)).toBe(false);
+    });
+
+    it("s'ouvre pour tous les rôles qui signent réellement des vols", () => {
+        for (const role of [
+            userRole.PILOT, userRole.INSTRUCTOR,
+            userRole.MANAGER, userRole.OWNER, userRole.ADMIN,
+        ]) {
+            expect(shouldPromptToSignFlights(role)).toBe(true);
+        }
+    });
+
+    it("invariant : jamais proposée à quelqu'un en lecture seule", () => {
+        for (const role of ALL_ROLES) {
+            if (isLogbookReadOnly(role)) {
+                expect(shouldPromptToSignFlights(role)).toBe(false);
+            }
+        }
+    });
+
+    it("l'élève garde l'accès à la page carnet (la popup seule est masquée)", () => {
+        expect(canAccessLogbookPage(userRole.STUDENT)).toBe(true);
+    });
+});
+
+describe("Général — correction du compteur horaire (hobbsTotal)", () => {
+    it("le propriétaire d'une machine privée peut corriger le compteur de SA machine", () => {
+        // Y compris un élève : c'est sa machine, il en relève le compteur.
+        expect(canEditPlaneHobbs(myPrivatePlane, user(userRole.STUDENT, "me"))).toBe(true);
+        expect(canEditPlaneHobbs(myPrivatePlane, user(userRole.PILOT, "me"))).toBe(true);
+    });
+
+    it("le propriétaire ne peut PAS corriger le compteur d'une machine du club", () => {
+        for (const role of [userRole.STUDENT, userRole.PILOT, userRole.INSTRUCTOR, userRole.MANAGER]) {
+            expect(canEditPlaneHobbs(clubPlane, user(role))).toBe(false);
+        }
+    });
+
+    it("personne ne corrige le compteur de la machine privée d'un autre, sauf président/admin", () => {
+        for (const role of [userRole.USER, userRole.STUDENT, userRole.PILOT, userRole.INSTRUCTOR, userRole.MANAGER]) {
+            expect(canEditPlaneHobbs(othersPrivatePlane, user(role))).toBe(false);
+        }
+        expect(canEditPlaneHobbs(othersPrivatePlane, user(userRole.OWNER))).toBe(true);
+        expect(canEditPlaneHobbs(othersPrivatePlane, user(userRole.ADMIN))).toBe(true);
+    });
+
+    it("président et admin corrigent le compteur de n'importe quelle machine", () => {
+        for (const role of [userRole.OWNER, userRole.ADMIN]) {
+            expect(canEditPlaneHobbs(clubPlane, user(role))).toBe(true);
+            expect(canEditPlaneHobbs(myPrivatePlane, user(role))).toBe(true);
+        }
     });
 });
 

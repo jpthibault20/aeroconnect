@@ -1,5 +1,6 @@
 import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
+import { canEditClubSettings } from "@/lib/clubAccess";
 import { Settings2, LayoutDashboard } from "lucide-react";
 import { FC } from "react";
 
@@ -17,7 +18,7 @@ const Header: FC<HeaderProps> = ({ display, setDisplay }) => {
 
   // Sécurisation de l'accès : on utilise ?. au lieu de ! pour éviter les crashs si currentUser est null
   // On définit clairement qui a le droit d'accéder aux settings
-  const canAccessSettings = currentUser?.role === "OWNER" || currentUser?.role === "ADMIN";
+  const canAccessSettings = canEditClubSettings(currentUser?.role);
 
   return (
     <header className="flex flex-row justify-between items-center gap-4 p-4 bg-white/50 backdrop-blur-sm rounded-xl">
@@ -31,8 +32,10 @@ const Header: FC<HeaderProps> = ({ display, setDisplay }) => {
         </p>
       </div>
 
-      {/* Navigation Toggle */}
-      <nav className="flex bg-slate-100 p-1.5 rounded-full shadow-inner border border-slate-200 mb-2">
+      {/* Navigation Toggle : inutile si l'utilisateur n'a accès qu'à une seule vue */}
+      <nav
+        className={`flex bg-slate-100 p-1.5 rounded-full shadow-inner border border-slate-200 mb-2 ${canAccessSettings ? "" : "hidden"}`}
+      >
         {/* Dashboard Button */}
         <button
           onClick={() => setDisplay("dashboard")}

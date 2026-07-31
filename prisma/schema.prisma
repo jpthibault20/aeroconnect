@@ -113,6 +113,10 @@ model Club {
   lastNameContact             String?
   mailContact                 String?
   phoneContact                String?
+  // Jeton du lien public de réservation de baptêmes
+  // (/reservation/[clubID]/[token]). null => aucun lien actif. Régénérer ce
+  // jeton invalide immédiatement l'ancienne URL (cf. ADMIN/OWNER only).
+  publicBookingToken          String?
 }
 
 model MaintenanceTask {
@@ -150,6 +154,13 @@ enum NatureOfTheft {
   SIGHTSEEING
   DISCOVERY
   EXAM
+}
+
+enum BaptemeStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  EXPIRED
 }
 
 enum pilotFunction {
@@ -216,4 +227,29 @@ model flight_logs {
   createdAt           DateTime            @default(now()) @db.Timestamptz(6)
   updatedAt           DateTime            @updatedAt @db.Timestamptz(6)
   isManualEntry       Boolean             @default(false)
+}
+
+// Demande de réservation d'un vol baptême passée depuis le lien public
+// (/reservation/[clubID]/[token]), par un client externe sans compte.
+// La demande PENDING pose un « hold » sur le créneau (expiresAt = TTL) jusqu'à
+// validation/refus par le pilote assigné ou la gestion. Expiration paresseuse :
+// une demande PENDING dont expiresAt < now est considérée expirée à la lecture.
+model BaptemeRequest {
+  id         String        @id @default(uuid())
+  clubID     String
+  sessionID  String // créneau flight_sessions visé
+  firstName  String
+  lastName   String
+  email      String
+  phone      String
+  comment    String?
+  planeID    String // machine club choisie
+  status     BaptemeStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  expiresAt  DateTime // TTL du hold
+  handledBy  String? // userID du validateur / refuseur
+  handledAt  DateTime?
+
+  @@index([clubID, status])
+  @@index([sessionID, status])
 }

@@ -114,7 +114,13 @@ export const requestClubID = async (clubID: string, userID: string) => {
     }
 }
 
+// Demandes d'adhésion en attente : données nominatives (email, téléphone) des
+// candidats, réservées à la gestion du club.
 export const getAllUserRequestedClubID = async (clubID: string) => {
+    const auth = await requireAuth(MANAGEMENT_ROLES);
+    if ('error' in auth) return { error: auth.error };
+    if (auth.user.clubID !== clubID) return { error: "Permissions insuffisantes" };
+
     try {
         const user = await prisma.user.findMany({
             where: {

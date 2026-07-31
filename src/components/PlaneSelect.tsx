@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { planes } from '@prisma/client';
-import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { isPrivatePlane } from '@/lib/planeVisibility';
+import PlaneBadge from './PlaneBadge';
 
 interface PlaneSelectProps {
     planes: planes[];
@@ -10,8 +11,6 @@ interface PlaneSelectProps {
 }
 
 const PlaneSelect = ({ planes, selectedPlane, onPlaneChange }: PlaneSelectProps) => {
-    const { currentUser } = useCurrentUser();
-
     // Auto-sélection s'il n'y a qu'un seul choix
     useEffect(() => {
         if (planes.length === 1) {
@@ -34,16 +33,15 @@ const PlaneSelect = ({ planes, selectedPlane, onPlaneChange }: PlaneSelectProps)
 
                 {planes.map(item => (
                     <SelectItem key={item.id} value={item.id}>
-                        {item.name}
+                        <span className="flex items-center gap-2">
+                            <span className="truncate">{item.name}</span>
+                            {/* La séance en salle n'est pas une machine : pas de pastille. */}
+                            {item.id !== "classroomSession" && (
+                                <PlaneBadge isPrivate={isPrivatePlane(item)} />
+                            )}
+                        </span>
                     </SelectItem>
                 ))}
-
-                {/* Option spéciale "Sans avion" si l'utilisateur y a droit */}
-                {currentUser?.canSubscribeWithoutPlan && (
-                    <SelectItem value="noPlane" className="text-blue-700">
-                        Sans avion (Appareil personnel)
-                    </SelectItem>
-                )}
             </SelectContent>
         </Select>
     );

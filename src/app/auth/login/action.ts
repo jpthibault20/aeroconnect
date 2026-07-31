@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import prisma from '@/api/prisma'
+import { AUTH_ROUTES, loginFailure, loginRedirect } from '@/lib/authFlow'
 
 export async function login(formData: FormData) {
     const supabase = await createClient();
@@ -16,10 +17,7 @@ export async function login(formData: FormData) {
     const { error } = await supabase.auth.signInWithPassword(data);
 
     if (error) {
-        return { 
-            success: false, 
-            message: 'Informations de connexion incorrectes (E_008: invalid credentials)' 
-        };
+        return loginFailure();
     }
 
     const userClub = await prisma.user.findFirst({
@@ -28,12 +26,12 @@ export async function login(formData: FormData) {
     });
 
     revalidatePath('/', 'layout');
-    redirect(`/calendar?clubID=${userClub?.clubID || ''}`);
+    redirect(loginRedirect(userClub?.clubID));
 }
 
 
 export async function signOut() {
     const supabase = await createClient()
     await supabase.auth.signOut()
-    redirect('/auth/login')
+    redirect(AUTH_ROUTES.login)
 }

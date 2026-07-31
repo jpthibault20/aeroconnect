@@ -1,4 +1,4 @@
-import { planes, userRole } from '@prisma/client'
+import { planes } from '@prisma/client'
 import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Label } from '../ui/label'
@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { MachineUsage } from '@prisma/client'
 import { USAGE_OPTIONS } from './usageLabels'
-import { isPrivatePlane } from '@/lib/planeVisibility'
+import { canEditPlaneHobbs, isPrivatePlane } from '@/lib/planeVisibility'
 
 interface props {
     children: React.ReactNode
@@ -30,7 +30,9 @@ interface props {
 
 const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setPlanes, planes }: props) => {
     const { currentUser } = useCurrentUser();
-    const canEditHobbs = currentUser?.role === userRole.OWNER || currentUser?.role === userRole.ADMIN;
+    // Compteur horaire : gestion (OWNER/ADMIN) sur toute machine, et le
+    // propriétaire sur sa propre machine privée.
+    const canEditHobbs = currentUser ? canEditPlaneHobbs(plane, currentUser) : false;
     // Les usages ne concernent que les machines du club (une machine privée n'a
     // pas d'usage : sa nature est portée par le propriétaire).
     const isPrivate = isPrivatePlane(plane);
@@ -174,7 +176,7 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                 </div>
                             )}
 
-                            {/* Heures moteur — modifiable uniquement par OWNER/ADMIN */}
+                            {/* Heures moteur — gestion sur toute machine, propriétaire sur la sienne */}
                             {canEditHobbs && (
                                 <div className="space-y-2">
                                     <Label htmlFor="hobbsTotal" className="text-slate-700 font-medium">Heures moteur</Label>
@@ -188,6 +190,14 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                         placeholder="0.0"
                                         className="bg-slate-50 border-slate-200 focus:ring-blue-500 focus:border-blue-500 font-mono"
                                     />
+                                    <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-md">
+                                        <IoIosWarning className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-red-700">
+                                            Le compteur doit refléter la valeur lue sur l&apos;aéronef. Il avance
+                                            automatiquement à la signature de chaque vol : ne le corriger qu&apos;en cas
+                                            d&apos;erreur de saisie avérée.
+                                        </p>
+                                    </div>
                                 </div>
                             )}
 

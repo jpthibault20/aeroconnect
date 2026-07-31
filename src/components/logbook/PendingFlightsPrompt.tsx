@@ -5,6 +5,7 @@ import { flight_logs } from "@prisma/client";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { getIncompleteFlightLogs, autoCreateLogsFromSessions, getPlaneHobbs } from "@/api/db/logbook";
+import { shouldPromptToSignFlights } from "@/lib/logbookPermissions";
 import CompleteFlightDialog from "./CompleteFlightDialog";
 
 /**
@@ -12,6 +13,10 @@ import CompleteFlightDialog from "./CompleteFlightDialog";
  * signés. File traitée chronologiquement : à chaque étape on lit le hobbsTotal
  * frais de l'avion (post-signature précédente) pour proposer un hobbsStart à
  * jour. La valeur est figée serveur-side à la signature (cf. signFlightLog).
+ *
+ * Jamais affichée aux élèves : ils ne peuvent ni compléter ni signer un vol
+ * (cf. isStudent dans CompleteFlightDialog), la popup n'y serait qu'un mur en
+ * lecture seule. Leurs vols restent consultables dans la page carnet de vol.
  */
 const PendingFlightsPrompt = () => {
     const { currentUser } = useCurrentUser();
@@ -22,9 +27,11 @@ const PendingFlightsPrompt = () => {
     const [loaded, setLoaded] = useState(false);
     const [currentHobbsStart, setCurrentHobbsStart] = useState<number | undefined>(undefined);
 
+    const canBePrompted = shouldPromptToSignFlights(currentUser?.role);
+
     // Charger les vols incomplets au montage
     useEffect(() => {
-        if (!currentUser?.id || !currentClub?.id || loaded) return;
+        if (!currentUser?.id || !currentClub?.id || loaded || !canBePrompted) return;
 
         const load = async () => {
             // S'assurer que les flight_logs sont créés depuis les sessions passées
@@ -44,7 +51,7 @@ const PendingFlightsPrompt = () => {
         // Petit délai pour ne pas bloquer le premier rendu
         const timeout = setTimeout(load, 1500);
         return () => clearTimeout(timeout);
-    }, [currentUser?.id, currentClub?.id, loaded]);
+    }, [currentUser?.id, currentClub?.id, loaded, canBePrompted]);
 
     const currentLog = queue[currentIndex] ?? null;
 
@@ -81,7 +88,7 @@ const PendingFlightsPrompt = () => {
         // Si l'utilisateur ferme, on ne relance pas
     }, []);
 
-    if (!currentLog || !open) return null;
+    if (!canBePrompted || !currentLog || !open) return null;
 
     const queueInfo = queue.length > 1
         ? `Vol ${currentIndex + 1} sur ${queue.length} à compléter`
