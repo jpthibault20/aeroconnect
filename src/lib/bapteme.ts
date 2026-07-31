@@ -293,6 +293,61 @@ export function groupBaptemeSlots<T extends GroupableSlotLike>(slots: T[]): Bapt
         }));
 }
 
+/**
+ * Points d'entrée de la réservation publique. Un client vient rarement avec le
+ * même critère en tête : certains ont une date impérative, d'autres veulent
+ * « le petit rouge » vu sur la photo, d'autres encore un pilote qu'on leur a
+ * recommandé. L'ordre des étapes suit le critère choisi, ce qui évite de leur
+ * faire parcourir des listes hors sujet.
+ */
+export type BaptemeEntryPoint = "date" | "plane" | "pilot";
+
+/**
+ * Machines distinctes proposées, toutes dates confondues. Sert de première
+ * étape à l'entrée « par appareil ». Triées par nom pour un ordre stable.
+ */
+export function listBaptemePlanes<P extends { id: string; name: string }>(
+    slots: { planes: P[] }[]
+): P[] {
+    const byID = new Map<string, P>();
+    for (const slot of slots) {
+        for (const plane of slot.planes) {
+            if (!byID.has(plane.id)) byID.set(plane.id, plane);
+        }
+    }
+    return Array.from(byID.values()).sort((a, b) => a.name.localeCompare(b.name, "fr"));
+}
+
+export interface BaptemePilotOption {
+    key: string;
+    firstName: string;
+    lastName: string;
+}
+
+/**
+ * Identifiant public d'un pilote. On s'appuie sur son nom affiché plutôt que
+ * sur son id interne, qui n'a pas à sortir sur une page anonyme. Deux pilotes
+ * strictement homonymes seraient donc fusionnés — de toute façon indiscernables
+ * pour le client.
+ */
+export function baptemePilotKey(firstName: string, lastName: string): string {
+    return formatPilotName(firstName, lastName);
+}
+
+/** Pilotes distincts proposant au moins un créneau. */
+export function listBaptemePilots(
+    slots: Pick<GroupableSlotLike, "pilotFirstName" | "pilotLastName">[]
+): BaptemePilotOption[] {
+    const byKey = new Map<string, BaptemePilotOption>();
+    for (const slot of slots) {
+        const key = baptemePilotKey(slot.pilotFirstName, slot.pilotLastName);
+        if (!byKey.has(key)) {
+            byKey.set(key, { key, firstName: slot.pilotFirstName, lastName: slot.pilotLastName });
+        }
+    }
+    return Array.from(byKey.values()).sort((a, b) => a.key.localeCompare(b.key, "fr"));
+}
+
 // Forme minimale d'un créneau pour construire son libellé public.
 export interface BaptemeSlotLabelLike {
     sessionDateStart: Date | string;

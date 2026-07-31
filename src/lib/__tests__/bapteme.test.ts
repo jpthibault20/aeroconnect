@@ -8,8 +8,11 @@ import {
     canValidateBapteme,
     computeHoldExpiry,
     filterBaptemePlanes,
+    baptemePilotKey,
     formatBaptemeSlotLabel,
     groupBaptemeSlots,
+    listBaptemePilots,
+    listBaptemePlanes,
     formatPilotName,
     hasActiveHold,
     HOLD_TTL_MINUTES,
@@ -438,6 +441,62 @@ describe("groupBaptemeSlots", () => {
 
     it("liste vide → aucun jour", () => {
         expect(groupBaptemeSlots([])).toEqual([]);
+    });
+});
+
+// ─── Catalogues des points d'entrée « par appareil » / « par pilote » ───
+
+describe("listBaptemePlanes", () => {
+    const slot = (planes: { id: string; name: string }[]) => ({ planes });
+
+    it("dédoublonne les machines partagées par plusieurs créneaux", () => {
+        const planes = listBaptemePlanes([
+            slot([{ id: "p1", name: "Alpha" }, { id: "p2", name: "Bravo" }]),
+            slot([{ id: "p1", name: "Alpha" }]),
+        ]);
+        expect(planes.map((p) => p.id)).toEqual(["p1", "p2"]);
+    });
+
+    it("trie par nom", () => {
+        const planes = listBaptemePlanes([
+            slot([{ id: "p2", name: "Zoulou" }, { id: "p1", name: "Alpha" }]),
+        ]);
+        expect(planes.map((p) => p.name)).toEqual(["Alpha", "Zoulou"]);
+    });
+
+    it("aucun créneau → aucune machine", () => {
+        expect(listBaptemePlanes([])).toEqual([]);
+    });
+});
+
+describe("listBaptemePilots", () => {
+    const slot = (pilotFirstName: string, pilotLastName: string) => ({
+        pilotFirstName,
+        pilotLastName,
+    });
+
+    it("dédoublonne un pilote présent sur plusieurs créneaux", () => {
+        const pilots = listBaptemePilots([
+            slot("Luc", "Dupont"),
+            slot("Luc", "Dupont"),
+            slot("Marie", "Martin"),
+        ]);
+        expect(pilots.map((p) => p.key)).toEqual(["Luc DUPONT", "Marie MARTIN"]);
+    });
+
+    it("la clé est le nom affiché (pas d'identifiant interne exposé)", () => {
+        expect(baptemePilotKey("Luc", "Dupont")).toBe("Luc DUPONT");
+        expect(listBaptemePilots([slot("Luc", "Dupont")])[0].key).toBe("Luc DUPONT");
+    });
+
+    it("conserve prénom et nom bruts pour l'affichage", () => {
+        const [pilot] = listBaptemePilots([slot("Luc", "Dupont")]);
+        expect(pilot.firstName).toBe("Luc");
+        expect(pilot.lastName).toBe("Dupont");
+    });
+
+    it("aucun créneau → aucun pilote", () => {
+        expect(listBaptemePilots([])).toEqual([]);
     });
 });
 
