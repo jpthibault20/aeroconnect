@@ -4,7 +4,7 @@ import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { navigationLinks } from '@/config/links'
 import { userRole } from '@prisma/client'
 import React, { useState, useEffect, useRef } from 'react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet'
 import { Button } from './ui/button'
 import { LogOut, Menu, X, ChevronDown } from 'lucide-react'
 import { signOut } from '@/app/auth/login/action'
@@ -197,7 +197,13 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                     {/* En-tête et pied de panneau volontairement compacts : chaque
                         pixel repris ici est une entrée de menu visible en plus. */}
                     <SheetHeader className="px-6 pt-2 pb-4 text-left">
+                        {/* Titre et description réservés aux lecteurs d'écran : le
+                            panneau se passe d'en-tête visible, mais Radix exige les
+                            deux pour renseigner aria-labelledby / aria-describedby. */}
                         <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
+                        <SheetDescription className="sr-only">
+                            Accédez aux différentes pages de l&apos;application et à votre profil.
+                        </SheetDescription>
 
                         <div className="flex items-center gap-3 p-3 bg-slate-50/80 border border-slate-100 rounded-2xl shadow-sm mt-2">
                             <div className="relative shrink-0">
