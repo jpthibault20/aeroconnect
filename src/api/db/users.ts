@@ -4,6 +4,7 @@ import { userRole } from '@prisma/client'
 import { User } from '@prisma/client'
 import prisma from '../prisma';
 import { resolveBaptemeHold } from './baptemeHold';
+import { canViewPlane, isPrivatePlane } from '@/lib/planeVisibility';
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
@@ -171,8 +172,19 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             return { error: "Ce créneau est réservé pour un baptême en attente de validation." };
         }
 
-        if (student.planeId != "classroomSession" && student.planeId != "noPlane" && !plane?.operational) {
+        if (student.planeId != "classroomSession" && !plane?.operational) {
             return { error: "L'avion est désactivé par l'administrateur du club." };
+        }
+
+        // Défense en profondeur, symétrique de studentRegistration : la machine
+        // est validée du point de vue de l'ÉLÈVE inscrit, pas du gestionnaire qui
+        // saisit. Une machine privée n'est donc attribuable qu'à son propriétaire
+        // — et un invité externe (pas de compte) n'a droit qu'aux machines club.
+        if (plane && isPrivatePlane(plane)) {
+            const beneficiary = await prisma.user.findUnique({ where: { id: student.id } });
+            if (!beneficiary || !canViewPlane(plane, beneficiary)) {
+                return { error: "Cette machine privée n'appartient pas à l'élève inscrit." };
+            }
         }
 
         if (session.sessionDateStart < nowDate) {
@@ -267,7 +279,6 @@ export const updateUser = async (user: User) => {
                 restricted: isSelf && !isManager ? auth.user.restricted : user.restricted,
                 country: user.country,
                 classes: user.classes,
-                canSubscribeWithoutPlan: user.canSubscribeWithoutPlan,
             }
         });
         return { success: "L'utilisateur a été mis à jour avec succès !" };

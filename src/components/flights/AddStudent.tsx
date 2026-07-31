@@ -7,11 +7,22 @@ import { Button } from '../ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Spinner } from '../ui/SpinnerVariants';
 import { getFreePlanesUsers } from '@/api/popupCalendar';
+import { getPlanesForStudentOnSession } from '@/api/db/planes';
+import { isPrivatePlane } from '@/lib/planeVisibility';
+import PlaneBadge from '../PlaneBadge';
 import { sendNotificationBooking, sendStudentNotificationBooking } from '@/lib/mail';
 import { AlertCircle, UserPlus, Plane, User as UserIcon, Check } from 'lucide-react';
 import InvitedForm from './InvitedForm';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Label } from '../ui/label';
+
+// Machine proposée dans la liste. `isPrivate` absent = ce n'est pas une machine
+// (séance en salle).
+interface PlaneOption {
+    id: string;
+    name: string;
+    isPrivate?: boolean;
+}
 
 interface Props {
     session: flight_sessions;
@@ -27,7 +38,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     const [error, setError] = useState("");
     const [freeStudents, setFreeStudents] = useState<{ id: string, name: string }[]>([]);
     const [studentId, setStudentId] = useState<string>("");
-    const [freePlanes, setFreePlanes] = useState<{ id: string, name: string }[]>([]);
+    const [freePlanes, setFreePlanes] = useState<PlaneOption[]>([]);
     const [planeId, setPlaneId] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const [warningStudent, setWarningStudent] = useState("");
@@ -45,7 +56,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
     const filterStudentsByPlane = (planeId: string) => {
         const { students } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
-        if (!planeId || planeId === " " || planeId === "classroomSession" || planeId === "noPlane") {
+        if (!planeId || planeId === " " || planeId === "classroomSession") {
             return students.map(student => ({
                 id: student.id,
                 name: `${student.lastName} ${student.firstName}`
@@ -64,36 +75,57 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         }));
     };
 
-    const filterPlanesByStudent = (studentId: string) => {
+    // La séance en salle n'est pas une machine : isPrivate reste indéfini, la
+    // pastille club/privé n'est alors pas affichée.
+    const withClassroom = (list: PlaneOption[]): PlaneOption[] =>
+        session.planeID.includes("classroomSession")
+            ? [...list, { id: "classroomSession", name: "Session théorique" }]
+            : list;
+
+    const toOptions = (list: planes[]): PlaneOption[] =>
+        list.map(plane => ({ id: plane.id, name: plane.name, isPrivate: isPrivatePlane(plane) }));
+
+    /**
+     * Machines proposables à l'élève sélectionné.
+     *
+     * Résolu CÔTÉ SERVEUR : la page calendrier ne transmet au navigateur que les
+     * machines visibles par l'utilisateur courant, donc jamais la machine privée
+     * de l'élève qu'un gestionnaire veut inscrire. Le filtrage local ne pouvait
+     * pas la faire réapparaître.
+     */
+    const loadPlanesForStudent = async (studentId: string) => {
         if (!studentId) return [];
 
-        const { planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
-        let planesRes: { id: string, name: string }[] = [];
-
+        // Invité externe : pas de compte, donc aucune machine personnelle. Le
+        // filtrage local sur les machines du club suffit.
         if (studentId === "invited") {
-            planesRes = planes.map(plane => ({ id: plane.id, name: plane.name }));
-        }
-        else if (studentId) {
-            for (const plane of planes) {
-                const userClasses = usersProp.find(user => user.id === studentId)?.classes || [];
-                if (userClasses.includes(plane.classes)) {
-                    planesRes.push({ id: plane.id, name: plane.name });
-                }
-            }
+            const { planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
+            return withClassroom(toOptions(planes));
         }
 
-        if (session.planeID.includes("classroomSession")) {
-            planesRes.push({ id: "classroomSession", name: "Session théorique" });
+        const res = await getPlanesForStudentOnSession(session.id, studentId);
+        if ("error" in res || !res.planes) {
+            // Repli sur les machines déjà connues du navigateur : on n'empêche
+            // pas l'inscription si l'appel échoue.
+            const { planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
+            return withClassroom(toOptions(planes));
         }
-
-        return planesRes;
+        return withClassroom(res.planes);
     };
 
     useEffect(() => {
-        if (planeId && planeId !== " ") {
+        let cancelled = false;
+        // Filtrer les élèves par machine n'a de sens QUE si aucun élève n'est
+        // encore choisi : sinon la machine sélectionnée peut être la machine
+        // privée de l'élève, absente de planesProp (elle vient du serveur), et
+        // le calcul viderait à tort la liste des élèves.
+        if (planeId && planeId !== " " && !studentId) {
             setFreeStudents(filterStudentsByPlane(planeId));
         } else if (studentId && studentId !== " ") {
-            setFreePlanes(filterPlanesByStudent(studentId));
+            loadPlanesForStudent(studentId).then(list => {
+                if (!cancelled) setFreePlanes(list);
+            });
+            return () => { cancelled = true; };
         } else {
             const { students, planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
             setFreeStudents(students.map(student => ({
@@ -103,11 +135,11 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
             if (session.planeID.includes("classroomSession")) {
                 setFreePlanes([
-                    ...planes.map(plane => ({ id: plane.id, name: plane.name })),
+                    ...toOptions(planes),
                     { id: "classroomSession", name: "Session théorique" }
                 ]);
             } else {
-                setFreePlanes(planes.map(plane => ({ id: plane.id, name: plane.name })));
+                setFreePlanes(toOptions(planes));
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -120,7 +152,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     }, [freePlanes]);
 
     useEffect(() => {
-        if (freeStudents.length === 0 && planeId !== "noPlane") {
+        if (freeStudents.length === 0) {
             setWarningStudent("Aucun étudiant autorisé pour cette classe d'avion.");
         } else {
             setWarningStudent("");
@@ -327,13 +359,14 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                 <SelectItem value=" ">-- Choisir --</SelectItem>
                                 {freePlanes.map((item, index) => (
                                     <SelectItem key={index} value={item.id}>
-                                        {item.name}
+                                        <span className="flex items-center gap-2">
+                                            <span className="truncate">{item.name}</span>
+                                            {item.isPrivate !== undefined && (
+                                                <PlaneBadge isPrivate={item.isPrivate} />
+                                            )}
+                                        </span>
                                     </SelectItem>
                                 ))}
-                                <div className="mx-2 my-1 h-px bg-slate-100" />
-                                <SelectItem value="noPlane" className="text-amber-700 focus:text-amber-800">
-                                    Sans appareil
-                                </SelectItem>
                             </SelectContent>
                         </Select>
 

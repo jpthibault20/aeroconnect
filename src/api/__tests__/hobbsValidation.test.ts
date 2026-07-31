@@ -85,7 +85,9 @@ describe("Validation heures moteur", () => {
         });
     });
 
-    describe("sans avion (noPlane)", () => {
+    // Vols historiques « sans appareil » (sentinelle noPlane retirée des
+    // formulaires) : hasPlane=false, aucun compteur horaire à saisir.
+    describe("vol sans machine (données historiques)", () => {
         it("accepte toujours pour la signature", () => {
             const result = validateHobbs("", "", false, true);
             expect(result.valid).toBe(true);

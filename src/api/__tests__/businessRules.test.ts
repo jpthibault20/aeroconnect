@@ -184,9 +184,14 @@ describe("Auto-création des flight_logs", () => {
     });
 });
 
-// --- RÈGLE : Vol sans machine (noPlane) ---
+// --- RÈGLE : Vol sans machine (données historiques) ---
+//
+// La sentinelle noPlane a été retirée des formulaires : aucune nouvelle séance
+// ne peut en porter. Ces cas restent couverts parce que les séances et vols
+// DÉJÀ enregistrés doivent continuer de s'afficher correctement
+// (cf. LEGACY_NO_PLANE_ID dans lib/utils.ts).
 
-describe("Vol sans machine (noPlane)", () => {
+describe("Vol sans machine (séances historiques)", () => {
     it("noPlane donne planeID null dans le flight_log", () => {
         const studentPlaneID = "noPlane";
         const isNoPlane = studentPlaneID === "noPlane";
@@ -284,9 +289,12 @@ describe("Filtrage avions par classe d'élève", () => {
         expect(availablePlanes.map(p => p.id)).toEqual(["p1", "p3"]);
     });
 
-    it("noPlane ignore le filtrage par classe", () => {
-        const planeId = "noPlane";
-        const shouldFilter = planeId !== "noPlane" && planeId !== "classroomSession";
-        expect(shouldFilter).toBe(false);
+    it("seule la séance théorique échappe encore au filtrage par classe", () => {
+        // L'option « sans appareil » (noPlane) a été retirée des formulaires :
+        // toute machine sélectionnable est désormais une vraie machine, donc
+        // soumise au filtrage par classe.
+        const shouldFilter = (planeId: string) => planeId !== "classroomSession";
+        expect(shouldFilter("classroomSession")).toBe(false);
+        expect(shouldFilter("p1")).toBe(true);
     });
 });

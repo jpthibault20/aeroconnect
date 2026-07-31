@@ -7,7 +7,7 @@ import RemoveStudent from './RemoveStudent'
 import DeleteFlightSession from './DeleteFlightSession'
 import ShowCommentSession from './ShowCommentSession'
 import SessionContacts from './calendar/SessionContacts'
-import { cn } from '@/lib/utils'
+import { cn, LEGACY_NO_PLANE_ID } from '@/lib/utils'
 
 interface Prop {
     sessions: flight_sessions[]
@@ -47,7 +47,7 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp, onO
                         currentUser?.id === s.pilotID;
 
                     const planeName = s.studentPlaneID === "classroomSession" ? "Théorique" :
-                        s.studentPlaneID === "noPlane" ? "Sans appareil" :
+                        s.studentPlaneID === LEGACY_NO_PLANE_ID ? "Sans appareil" :
                             s.studentID ? planesProp.find((plane) => plane.id === s.studentPlaneID)?.name : "...";
 
                     const hasNotes = s.pilotComment || s.studentComment;

@@ -5,6 +5,7 @@ import { flightNature, instructionSubType, userRole } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
 import { BAPTEME_HOLD_STUDENT_ID } from "@/lib/bapteme";
+import { LEGACY_NO_PLANE_ID } from "@/lib/utils";
 import {
     computeDurationMinutes,
     computeFlightTimes,
@@ -681,7 +682,7 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
         const loggedSet = new Set(existingLogs.map((l) => l.sessionID).filter((id): id is string => !!id));
 
         // Récupérer infos avions
-        const planeIDs = [...new Set(sessions.map((s) => s.studentPlaneID).filter((id): id is string => !!id && id !== "classroomSession" && id !== "noPlane"))];
+        const planeIDs = [...new Set(sessions.map((s) => s.studentPlaneID).filter((id): id is string => !!id && id !== "classroomSession" && id !== LEGACY_NO_PLANE_ID))];
         const planesMap = new Map<string, { name: string; immatriculation: string; classes: number; hobbsTotal: number | null }>();
         if (planeIDs.length > 0) {
             const planes = await prisma.planes.findMany({
@@ -699,7 +700,9 @@ export const autoCreateLogsFromSessions = async (clubID: string) => {
         for (const session of sessions) {
             const planeInfo = session.studentPlaneID ? planesMap.get(session.studentPlaneID) : null;
             const isClassroom = session.studentPlaneID === "classroomSession";
-            const isNoPlane = session.studentPlaneID === "noPlane";
+            // Séances historiques uniquement (cf. LEGACY_NO_PLANE_ID) : l'option
+            // « sans appareil » n'existe plus dans les formulaires.
+            const isNoPlane = session.studentPlaneID === LEGACY_NO_PLANE_ID;
             const { nature, subType } = await mapFlightType(session.flightType ?? session.student_type ?? null);
 
             const basePlane = {

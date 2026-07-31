@@ -55,7 +55,10 @@ interface SubscribeContext {
     clubCanSubscribe: boolean;
     timeDelaySubscribeMinutes: number;
     planeOperational: boolean;
-    isSpecialPlane: boolean; // classroomSession ou noPlane
+    // Séance en salle (classroomSession) : aucune machine, donc pas de contrôle
+    // « appareil opérationnel ». L'ancienne sentinelle « sans appareil »
+    // (noPlane) bénéficiait de la même exemption, elle a été retirée.
+    isSpecialPlane: boolean;
 }
 
 function canSubscribe(ctx: SubscribeContext): { allowed: boolean; reason?: string } {
@@ -219,7 +222,7 @@ describe("Protection des séances passées", () => {
             expect(result.reason).toBe("Avion non opérationnel");
         });
 
-        it("autorise si avion non opérationnel MAIS c'est un noPlane", () => {
+        it("autorise si avion non opérationnel MAIS c'est une séance en salle", () => {
             const result = canSubscribe({
                 sessionDate: new Date("2026-06-16T10:00:00Z"),
                 now,

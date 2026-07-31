@@ -185,3 +185,45 @@ export function filterBookablePlanes<T extends Pick<planes, "ownerID" | "classes
 ): T[] {
     return filterVisiblePlanes(list, user).filter((plane) => user.classes.includes(plane.classes));
 }
+
+export interface BeneficiaryPlaneScope {
+    // Machines proposées sur le créneau (flight_sessions.planeID) : ce que
+    // l'instructeur a mis à disposition.
+    offeredPlaneIDs: string[];
+    // Machines déjà prises par une autre inscription au même horaire.
+    unavailablePlaneIDs?: string[];
+}
+
+/**
+ * Machines réservables POUR LE BÉNÉFICIAIRE d'un vol (l'élève inscrit), sur un
+ * créneau donné.
+ *
+ * La liste se calcule du point de vue de celui qui va voler, jamais de celui
+ * qui saisit : un manager qui inscrit un élève par téléphone doit voir les
+ * machines de CET élève, pas les siennes. C'est déjà la règle appliquée côté
+ * serveur (cf. canViewPlane dans studentRegistration).
+ *
+ * Deux sources se cumulent :
+ *  - les machines DU CLUB proposées sur le créneau (l'instructeur choisit
+ *    lesquelles il met à disposition) ;
+ *  - les machines PRIVÉES du bénéficiaire, qu'il n'a pas à voir « offertes »
+ *    par le créneau : elles lui appartiennent.
+ *
+ * Dans les deux cas la classe du bénéficiaire est exigée : posséder une machine
+ * ne dispense pas d'être qualifié dessus.
+ */
+export function filterPlanesForBeneficiary<T extends Pick<planes, "id" | "ownerID" | "classes">>(
+    list: T[],
+    beneficiary: Viewer & { classes: number[] },
+    scope: BeneficiaryPlaneScope
+): T[] {
+    const unavailable = new Set(scope.unavailablePlaneIDs ?? []);
+    return list.filter((plane) => {
+        if (unavailable.has(plane.id)) return false;
+        if (!beneficiary.classes.includes(plane.classes)) return false;
+        // Machine du bénéficiaire : toujours proposable.
+        if (isPrivatePlane(plane) && plane.ownerID === beneficiary.id) return true;
+        // Sinon : machine visible par lui ET mise à disposition sur le créneau.
+        return canViewPlane(plane, beneficiary) && scope.offeredPlaneIDs.includes(plane.id);
+    });
+}

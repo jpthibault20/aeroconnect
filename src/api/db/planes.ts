@@ -1,9 +1,13 @@
 "use server";
 
-import { MachineUsage, planes } from "@prisma/client";
+import { MachineUsage, planes, userRole } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
-import { canEditPlaneHobbs, canManagePlane, filterVisiblePlanes, resolvePlaneCreation, sanitizeClubUsages } from "@/lib/planeVisibility";
+import { canEditPlaneHobbs, canManagePlane, filterPlanesForBeneficiary, filterVisiblePlanes, resolvePlaneCreation, sanitizeClubUsages } from "@/lib/planeVisibility";
+
+// Rôles habilités à inscrire un élève à une séance (miroir de MANAGEMENT_ROLES
+// dans users.ts, qui garde addStudentToSession).
+const STUDENT_ASSIGN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 export interface CreatePlaneInput {
     clubID: string;
@@ -257,5 +261,64 @@ export const updatePlane = async (plane: planes) => {
         return { success: 'Plane updated successfully' };
     } catch {
         return { error: 'Plane update failed' };
+    }
+};
+/**
+ * Machines proposables à un élève donné pour un créneau donné.
+ *
+ * Chargée à la demande par le formulaire « ajouter un élève » : la page
+ * calendrier ne transmet au navigateur que les machines visibles par
+ * l'utilisateur courant (cf. filterVisiblePlanes dans calendar/ServerPageComp),
+ * donc jamais la machine privée de l'élève qu'un gestionnaire veut inscrire.
+ * C'est le serveur qui résout la liste, du point de vue de l'élève — sans
+ * diffuser au passage les machines privées des autres membres.
+ */
+export const getPlanesForStudentOnSession = async (sessionID: string, studentID: string) => {
+    const auth = await requireAuth(STUDENT_ASSIGN_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
+    if (!sessionID || !studentID) {
+        return { error: "Une erreur est survenue (E_001: paramètres invalides)" };
+    }
+
+    try {
+        const session = await prisma.flight_sessions.findUnique({
+            where: { id: sessionID },
+            select: { id: true, clubID: true, planeID: true, sessionDateStart: true },
+        });
+        if (!session || session.clubID !== auth.user.clubID) {
+            return { error: "Session introuvable ou non accessible." };
+        }
+
+        const student = await prisma.user.findUnique({ where: { id: studentID } });
+        if (!student || student.clubID !== auth.user.clubID) {
+            return { error: "Élève introuvable dans votre club." };
+        }
+
+        const [clubPlanes, concurrentSessions] = await Promise.all([
+            prisma.planes.findMany({ where: { clubID: session.clubID, operational: true } }),
+            prisma.flight_sessions.findMany({
+                where: { clubID: session.clubID, sessionDateStart: session.sessionDateStart },
+                select: { studentPlaneID: true },
+            }),
+        ]);
+
+        const unavailablePlaneIDs = concurrentSessions
+            .map((s) => s.studentPlaneID)
+            .filter((id): id is string => id !== null);
+
+        const planes = filterPlanesForBeneficiary(clubPlanes, student, {
+            offeredPlaneIDs: session.planeID,
+            unavailablePlaneIDs,
+        });
+
+        // On ne renvoie que le strict nécessaire à l'affichage de la liste
+        // (`isPrivate` sert à distinguer visuellement machine club et privée).
+        return {
+            success: true,
+            planes: planes.map((p) => ({ id: p.id, name: p.name, isPrivate: p.ownerID != null })),
+        };
+    } catch {
+        return { error: "Erreur lors de la récupération des machines." };
     }
 };
