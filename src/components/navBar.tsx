@@ -3,7 +3,7 @@
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { navigationLinks } from '@/config/links'
 import { userRole } from '@prisma/client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet'
 import { Button } from './ui/button'
 import { LogOut, Menu, X, ChevronDown } from 'lucide-react'
@@ -12,7 +12,6 @@ import { updateUserClub } from '@/api/db/users'
 import Link from 'next/link'
 import Image from 'next/image'
 import packageJson from "../../package.json";
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -136,6 +135,30 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
         link.roles.includes(currentUser?.role as userRole)
     )
 
+    // --- Indicateur de défilement du menu ---
+    // Le panneau ne montre que quelques entrées à la fois sur un petit écran, et
+    // rien n'indiquait qu'il y en avait d'autres en dessous : la barre de
+    // défilement de Radix ne s'affiche qu'au survol, donc jamais sur tactile.
+    // D'où le défilement natif (meilleure inertie au doigt) + ce dégradé.
+    const listRef = useRef<HTMLDivElement>(null);
+    const [canScrollDown, setCanScrollDown] = useState(false);
+
+    const updateScrollHint = () => {
+        const el = listRef.current;
+        if (!el) return;
+        // 8 px de marge : évite de laisser le dégradé allumé en fin de course à
+        // cause des arrondis de hauteur.
+        setCanScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 8);
+    };
+
+    useEffect(() => {
+        if (!isOpen) return;
+        // La liste n'est montée qu'à l'ouverture du panneau : on mesure une fois
+        // la première image peinte.
+        const frame = requestAnimationFrame(updateScrollHint);
+        return () => cancelAnimationFrame(frame);
+    }, [isOpen, filteredLinks.length]);
+
     const getRoleLabel = (role?: string) => {
         switch (role) {
             case "STUDENT": return "Élève";
@@ -171,16 +194,18 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                         <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
                     </div>
 
-                    <SheetHeader className="px-6 pt-2 pb-6 text-left">
+                    {/* En-tête et pied de panneau volontairement compacts : chaque
+                        pixel repris ici est une entrée de menu visible en plus. */}
+                    <SheetHeader className="px-6 pt-2 pb-4 text-left">
                         <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
 
-                        <div className="flex items-center gap-4 p-4 bg-slate-50/80 border border-slate-100 rounded-2xl shadow-sm mt-2">
+                        <div className="flex items-center gap-3 p-3 bg-slate-50/80 border border-slate-100 rounded-2xl shadow-sm mt-2">
                             <div className="relative shrink-0">
                                 <Image
                                     src="/images/profilePicture.png"
                                     alt="Profil"
-                                    width={48}
-                                    height={48}
+                                    width={40}
+                                    height={40}
                                     className="rounded-full ring-2 ring-white shadow-sm object-cover bg-white"
                                 />
                                 <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-white rounded-full"></div>
@@ -230,9 +255,13 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                     )}
 
                     <div className="flex-1 px-4 overflow-hidden flex flex-col">
-                        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest px-4 mb-2">Menu</h3>
-                        <ScrollArea className="flex-1 pr-2 -mr-2">
-                            <div className="space-y-1 pb-4">
+                        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2">Menu</h3>
+                        <div className="relative flex-1 overflow-hidden">
+                            <div
+                                ref={listRef}
+                                onScroll={updateScrollHint}
+                                className="h-full space-y-1 overflow-y-auto pb-6"
+                            >
                                 {filteredLinks.map((item) => {
                                     const badgeCount =
                                         item.name === "Club" || item.name === "Membres"
@@ -251,23 +280,25 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                                             href={`${item.path}?clubID=${currentUser?.clubID}`}
                                             // 5. Application des styles conditionnels
                                             className={cn(
-                                                "flex items-center gap-4 px-4 py-3.5 rounded-xl font-medium transition-all active:scale-[0.98] group justify-between",
+                                                "flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all active:scale-[0.98] group justify-between",
                                                 isActive
                                                     ? "bg-[#774BBE]/10 text-[#774BBE]" // Style Actif : Fond violet très clair + texte violet
                                                     : "text-slate-600 hover:bg-purple-50 hover:text-[#774BBE]" // Style Inactif
                                             )}
                                             onClick={() => setIsOpen(false)}
                                         >
-                                            <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-3">
+                                                {/* Pastille compacte : à l'ancienne taille, trois
+                                                    entrées seulement tenaient à l'écran. */}
                                                 <span className={cn(
-                                                    "p-2 rounded-lg transition-all",
+                                                    "p-1.5 rounded-lg transition-all",
                                                     isActive
                                                         ? "bg-white shadow-sm text-[#774BBE]" // Icône Active : Fond blanc + icône violette
                                                         : "bg-slate-50 text-slate-500 group-hover:bg-white group-hover:shadow-sm group-hover:text-[#774BBE]"
                                                 )}>
-                                                    <item.icon className="h-5 w-5" />
+                                                    <item.icon className="h-4 w-4" />
                                                 </span>
-                                                <span className="text-base">{item.name}</span>
+                                                <span className="text-[15px]">{item.name}</span>
                                             </div>
 
                                             {showBadge && (
@@ -279,19 +310,27 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                                     )
                                 })}
                             </div>
-                        </ScrollArea>
+
+                            {/* « Il y a d'autres entrées en dessous » : dégradé + chevron,
+                                masqués dès qu'on atteint le bas de la liste. */}
+                            {canScrollDown && (
+                                <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-12 items-end justify-center bg-gradient-to-t from-white via-white/80 to-transparent">
+                                    <ChevronDown className="h-4 w-4 animate-bounce text-slate-400" />
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="p-6 border-t border-slate-100 bg-slate-50/50 mt-auto pb-8">
+                    <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 mt-auto pb-6">
                         <button
-                            className="flex items-center justify-center w-full gap-2 px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-sm active:scale-[0.98] transition-all hover:bg-red-50 hover:text-red-600 hover:border-red-100"
+                            className="flex items-center justify-center w-full gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-sm active:scale-[0.98] transition-all hover:bg-red-50 hover:text-red-600 hover:border-red-100"
                             onClick={() => signOut()}
                         >
-                            <LogOut className="h-5 w-5" />
+                            <LogOut className="h-4 w-4" />
                             <span>Déconnexion</span>
                         </button>
 
-                        <div className="text-center mt-4 text-[10px] text-slate-400 font-medium">
+                        <div className="text-center mt-2 text-[10px] text-slate-400 font-medium">
                             v{packageJson.version} • {packageJson.date}
                         </div>
                     </div>
