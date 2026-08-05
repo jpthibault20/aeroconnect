@@ -32,6 +32,7 @@ const Page = async ({ params }: PageProps) => {
             clubID={clubID}
             token={token}
             clubName={result.clubName}
+            clubContact={result.clubContact}
             slots={result.slots}
         />
     );

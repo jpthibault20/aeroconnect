@@ -45,7 +45,12 @@
       "PowerShell(npx prisma generate)",
       "PowerShell(npx next build)",
       "Bash(npx tsc *)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(py --version)",
+      "Bash(python -m http.server 8791 --directory \"C:/Users/tjean/AppData/Local/Temp/claude/C--Users-tjean-PROJET-aeroconnect/652e873d-a975-4324-ac8f-00a0b91e5baf/scratchpad\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8791/public-bapteme-redesign.html)",
+      "Bash(python \"C:/Users/tjean/AppData/Local/Temp/claude/C--Users-tjean-PROJET-aeroconnect/652e873d-a975-4324-ac8f-00a0b91e5baf/scratchpad/serve_utf8.py\")",
+      "Bash(curl -s -I http://localhost:8792/public-bapteme-redesign.html)"
     ]
   }
 }

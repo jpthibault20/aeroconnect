@@ -161,7 +161,20 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
                 ),
             }));
 
-        return { clubName: club.Name, slots };
+        // Coordonnées publiques du club : affichées sur la page publique pour que
+        // le visiteur puisse joindre le club (adresse, téléphone, email, référent).
+        const clubContact = {
+            firstNameContact: club.firstNameContact,
+            lastNameContact: club.lastNameContact,
+            mailContact: club.mailContact,
+            phoneContact: club.phoneContact,
+            Address: club.Address,
+            City: club.City,
+            ZipCode: club.ZipCode,
+            Country: club.Country,
+        };
+
+        return { clubName: club.Name, clubContact, slots };
     } catch {
         return { error: "Erreur lors de la récupération des créneaux." };
     }
