@@ -43,7 +43,9 @@
       "PowerShell(npx eslint src/components/NewSession.tsx)",
       "PowerShell(npx vitest run src/api/__tests__/roleCapabilities.test.ts)",
       "PowerShell(npx prisma generate)",
-      "PowerShell(npx next build)"
+      "PowerShell(npx next build)",
+      "Bash(npx tsc *)",
+      "Bash(npx next *)"
     ]
   }
 }
