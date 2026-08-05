@@ -56,6 +56,14 @@ const ClubInfoCard = () => {
 
     const labelClass = "text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2";
 
+    // Sur téléphone, la carte parente est transparente et sans bordure (pour ne
+    // pas empiler carte dans carte) : sans conteneur propre, les sections
+    // s'enchaînent sans aucune séparation visuelle. Chacune devient donc une
+    // carte à part entière en dessous de `md`, comme les listes mobiles du
+    // reste de l'app. À partir de `md`, la grille suffit et on les efface.
+    const sectionClass =
+        "space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none";
+
     return (
         <Card className="border-none shadow-none md:border md:shadow-sm bg-transparent md:bg-white">
             <CardHeader className="px-0 md:px-6">
@@ -70,10 +78,10 @@ const ClubInfoCard = () => {
             </CardHeader>
 
             <CardContent className="p-0 md:p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
 
                     {/* Contact */}
-                    <div className="space-y-3">
+                    <div className={sectionClass}>
                         <h3 className={labelClass}>
                             <Phone className="w-4 h-4 text-[#774BBE]" /> Contact
                         </h3>
@@ -104,7 +112,7 @@ const ClubInfoCard = () => {
                     </div>
 
                     {/* Localisation */}
-                    <div className="space-y-3">
+                    <div className={sectionClass}>
                         <h3 className={labelClass}>
                             <MapPin className="w-4 h-4 text-[#774BBE]" /> Localisation
                         </h3>
@@ -119,7 +127,7 @@ const ClubInfoCard = () => {
                     </div>
 
                     {/* Ouverture */}
-                    <div className="space-y-3">
+                    <div className={sectionClass}>
                         <h3 className={labelClass}>
                             <Clock className="w-4 h-4 text-[#774BBE]" /> Ouverture
                         </h3>
@@ -142,7 +150,7 @@ const ClubInfoCard = () => {
                     </div>
 
                     {/* Classes ULM */}
-                    <div className="space-y-3">
+                    <div className={sectionClass}>
                         <h3 className={labelClass}>
                             <Plane className="w-4 h-4 text-[#774BBE]" /> Classes ULM du club
                         </h3>
@@ -164,7 +172,7 @@ const ClubInfoCard = () => {
                     </div>
 
                     {/* Règles de réservation */}
-                    <div className="space-y-3 md:col-span-2">
+                    <div className={`${sectionClass} md:col-span-2`}>
                         <h3 className={labelClass}>
                             <CalendarDays className="w-4 h-4 text-[#774BBE]" /> Règles de réservation
                         </h3>
