@@ -35,6 +35,14 @@ const addDays = (date: Date, days: number) => {
     return result;
 };
 
+// Les jours du bandeau sont générés à minuit : on normalise "aujourd'hui" de la même
+// façon pour que la date sélectionnée corresponde exactement à une entrée de la plage.
+const startOfDay = (date: Date) => {
+    const result = new Date(date);
+    result.setHours(0, 0, 0, 0);
+    return result;
+};
+
 interface DayButtonProps {
     date: Date;
     isSelected: boolean;
@@ -82,7 +90,7 @@ const DayButton = React.memo(function DayButton({ date, isSelected, barColor, on
 const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: Props) => {
     const { currentUser } = useCurrentUser()
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
-    const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+    const [selectedDate, setSelectedDate] = useState<Date>(() => startOfDay(new Date()));
 
     // --- Refs de navigation du bandeau ---
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -98,6 +106,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
     // Miroir de la clé sélectionnée pour comparer dans le handler de scroll sans closure périmée.
     const selectedKeyRef = useRef<string>(formatDateAsKey(selectedDate));
     const didInitRef = useRef(false);
+    const initCheckTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Plage continue de jours autour d'aujourd'hui (bornée mais large).
     const dates = useMemo<Date[]>(() => {
@@ -167,15 +176,26 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         }
     }, []);
 
-    // Centre le jour `key` dans le bandeau (scroll limité au conteneur horizontal).
-    const centerOnKey = useCallback((key: string, smooth: boolean) => {
+    // Position de scroll (absolue, bornée) qui met le jour `key` au centre du bandeau.
+    // Renvoie null tant que le conteneur ou le bouton ne sont pas mesurables.
+    const getCenterOffset = useCallback((key: string) => {
         const container = scrollRef.current;
         const el = itemsRef.current.get(key);
-        if (!container || !el) return;
+        if (!container || !el || container.clientWidth === 0) return null;
 
-        const containerRect = container.getBoundingClientRect();
-        const elRect = el.getBoundingClientRect();
-        const delta = (elRect.left + elRect.width / 2) - (containerRect.left + containerRect.width / 2);
+        const max = Math.max(0, container.scrollWidth - container.clientWidth);
+        const target = el.offsetLeft + el.offsetWidth / 2 - container.clientWidth / 2;
+        return Math.min(Math.max(target, 0), max);
+    }, []);
+
+    // Centre le jour `key` dans le bandeau (scroll limité au conteneur horizontal).
+    // On vise une position absolue plutôt qu'un delta : un scroll relatif calculé sur un
+    // conteneur pas encore stabilisé envoyait le bandeau à une extrémité de la plage
+    // (donc à ~1 an d'écart, sans jour sélectionné visible).
+    const centerOnKey = useCallback((key: string, smooth: boolean) => {
+        const container = scrollRef.current;
+        const target = getCenterOffset(key);
+        if (!container || target === null) return;
 
         programmaticRef.current = true;
         if (programmaticTimeout.current) clearTimeout(programmaticTimeout.current);
@@ -183,10 +203,10 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
             programmaticRef.current = false;
         }, smooth ? 700 : 150);
 
-        if (Math.abs(delta) >= 1) {
-            container.scrollBy({ left: delta, behavior: smooth ? 'smooth' : 'auto' });
+        if (Math.abs(container.scrollLeft - target) >= 1) {
+            container.scrollTo({ left: target, behavior: smooth ? 'smooth' : 'auto' });
         }
-    }, []);
+    }, [getCenterOffset]);
 
     // Sélectionne un jour (met à jour l'état + éventuellement recentre le bandeau).
     const selectDate = useCallback((date: Date, opts?: { scroll?: boolean; smooth?: boolean }) => {
@@ -223,7 +243,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         selectDate(clampToRange(target), { scroll: true, smooth: true });
     };
 
-    const goToToday = () => selectDate(new Date(), { scroll: true, smooth: true });
+    const goToToday = () => selectDate(startOfDay(new Date()), { scroll: true, smooth: true });
 
     // Recalcule les centres en cache (après rendu / redimensionnement).
     const recomputeCenters = useCallback(() => {
@@ -270,14 +290,56 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
     }, [dates]);
 
     // Au montage : cache des centres + centrage instantané sur aujourd'hui.
+    // Le bandeau couvre ~2 ans de jours ; tant que le conteneur n'a pas sa largeur
+    // définitive (1er paint, polices, layout parent) le centrage tombe à côté. On
+    // réessaie donc frame par frame jusqu'à ce que la position visée soit atteinte,
+    // puis on revérifie une fois (le snap CSS peut recorriger après coup).
     useLayoutEffect(() => {
         recomputeCenters();
-        if (!didInitRef.current) {
-            didInitRef.current = true;
-            // rAF : on centre une fois la largeur du conteneur stabilisée (1er paint).
-            requestAnimationFrame(() => centerOnKey(selectedKeyRef.current, false));
-        }
-    }, [recomputeCenters, centerOnKey]);
+        if (didInitRef.current) return;
+
+        let raf = 0;
+        let attempts = 0;
+
+        const settle = () => {
+            const container = scrollRef.current;
+            const target = getCenterOffset(selectedKeyRef.current);
+
+            if (container && target !== null) {
+                recomputeCenters();
+                centerOnKey(selectedKeyRef.current, false);
+
+                if (Math.abs(container.scrollLeft - target) <= 2) {
+                    didInitRef.current = true;
+                    // Filet de sécurité : si la mise en page bouge juste après (snap,
+                    // barre d'URL mobile), on recentre une dernière fois.
+                    initCheckTimeout.current = setTimeout(() => {
+                        const finalTarget = getCenterOffset(selectedKeyRef.current);
+                        const el = itemsRef.current.get(selectedKeyRef.current);
+                        const tolerance = el ? el.offsetWidth / 2 : 2;
+                        if (
+                            scrollRef.current &&
+                            finalTarget !== null &&
+                            Math.abs(scrollRef.current.scrollLeft - finalTarget) > tolerance
+                        ) {
+                            recomputeCenters();
+                            centerOnKey(selectedKeyRef.current, false);
+                        }
+                    }, 250);
+                    return;
+                }
+            }
+
+            if (attempts++ < 30) {
+                raf = requestAnimationFrame(settle);
+            } else {
+                didInitRef.current = true;
+            }
+        };
+
+        raf = requestAnimationFrame(settle);
+        return () => cancelAnimationFrame(raf);
+    }, [recomputeCenters, centerOnKey, getCenterOffset]);
 
     // Redimensionnement / rotation : on recalcule les centres et on recentre le jour sélectionné.
     useEffect(() => {
@@ -293,6 +355,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
     useEffect(() => () => {
         if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
         if (programmaticTimeout.current) clearTimeout(programmaticTimeout.current);
+        if (initCheckTimeout.current) clearTimeout(initCheckTimeout.current);
     }, []);
 
     const selectedKey = formatDateAsKey(selectedDate);
