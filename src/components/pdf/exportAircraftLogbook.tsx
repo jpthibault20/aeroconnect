@@ -112,7 +112,12 @@ const ROWS_PER_PAGE = 32;
 
 // Construit les <Page> d'une machine (une section).
 const renderSectionPages = (section: AircraftLogbookSection, year: number, keyPrefix: string) => {
-    const { planeRegistration, planeName, logs } = section;
+    const { planeRegistration, planeName, logs: logsProp } = section;
+
+    // Ordre historique : du vol le plus ancien (en haut) au plus récent (en bas).
+    const logs = [...logsProp].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
 
     const pages: flight_logs[][] = [];
     for (let i = 0; i < logs.length; i += ROWS_PER_PAGE) {
@@ -124,6 +129,7 @@ const renderSectionPages = (section: AircraftLogbookSection, year: number, keyPr
 
     const totalMinutes = logs.reduce((acc, l) => acc + computeFlightTimes(l).durationMinutes, 0);
     const totalLandings = logs.reduce((acc, l) => acc + l.landings, 0);
+    const totalFuel = logs.reduce((acc, l) => acc + (l.fuelAdded ?? 0), 0);
 
     return pages.map((pageLogs, pageIdx) => (
         <Page key={`${keyPrefix}-${pageIdx}`} size="A4" orientation="landscape" style={styles.page}>
@@ -177,7 +183,7 @@ const renderSectionPages = (section: AircraftLogbookSection, year: number, keyPr
                         <Text style={[styles.cell, { width: "7%" }]}></Text>
                         <Text style={[styles.cell, { width: "7%" }]}></Text>
                         <Text style={[styles.cell, { width: "4%" }]}>{totalLandings}</Text>
-                        <Text style={[styles.cell, { width: "7%" }]}></Text>
+                        <Text style={[styles.cell, { width: "7%" }]}>{totalFuel > 0 ? `${totalFuel}L` : ""}</Text>
                         <Text style={[styles.cell, { width: "19%" }]}></Text>
                         <Text style={[styles.cell, { width: "4%" }]}></Text>
                     </View>
