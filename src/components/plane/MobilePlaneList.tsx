@@ -10,10 +10,12 @@ import UpdatePlanes from './UpdatePlanes'; // Ton composant d'édition
 import { Switch } from '@/components/ui/switch';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, User, Wrench, AlertTriangle } from 'lucide-react';
+import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, User, Wrench, AlertTriangle, Ticket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { canManagePlane, canAccessMaintenance, isPrivatePlane } from '@/lib/planeVisibility';
+import { canManageBaptemeOptions } from '@/lib/bapteme';
 import MaintenanceDialog from './maintenance/MaintenanceDialog';
+import BaptemeOptionsDialog from './bapteme/BaptemeOptionsDialog';
 import PlaneThumbnail from './PlaneThumbnail';
 
 interface Props {
@@ -65,11 +67,13 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOve
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
     const [showMaintenance, setShowMaintenance] = useState(false);
+    const [showBapteme, setShowBapteme] = useState(false);
     const [planeState, setPlaneState] = useState<planes>(initialPlane);
 
     // --- Permissions (par machine, identiques au Tableau) ---
     const canManage = currentUser ? canManagePlane(planeState, currentUser) : false;
     const canMaintenance = currentUser ? canAccessMaintenance(planeState, currentUser) : false;
+    const canBapteme = currentUser ? canManageBaptemeOptions(planeState, currentUser) : false;
 
     // Président (OWNER) et admin voient le propriétaire des machines privées.
     const canViewOwner =
@@ -277,6 +281,20 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOve
                     </div>
                 )}
 
+                {/* Bouton Formules de baptême (durée + tarif) */}
+                {canBapteme && (
+                    <div className={cn("pt-2", !canMaintenance && "border-t border-slate-100")}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowBapteme(true)}
+                            className="w-full border-slate-200 text-slate-700 hover:bg-purple-50 hover:text-[#774BBE] hover:border-purple-200"
+                        >
+                            <Ticket className="w-4 h-4 mr-2" />
+                            Formules de baptême
+                        </Button>
+                    </div>
+                )}
+
                 {/* Actions Footer */}
                 {canManage && (
                     <div className={cn(
@@ -321,6 +339,14 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOve
                         plane={planeState}
                         open={showMaintenance}
                         onOpenChange={setShowMaintenance}
+                    />
+                )}
+
+                {canBapteme && (
+                    <BaptemeOptionsDialog
+                        plane={planeState}
+                        open={showBapteme}
+                        onOpenChange={setShowBapteme}
                     />
                 )}
             </CardContent>

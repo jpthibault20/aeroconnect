@@ -26,13 +26,23 @@ import {
 } from "lucide-react";
 import {
     BaptemeEntryPoint,
+    BaptemeOptionLike,
     baptemePilotKey,
+    formatBaptemeOptionLabel,
+    formatBaptemeOptionPrice,
     formatPilotName,
     groupBaptemeSlots,
     listBaptemePilots,
     listBaptemePlanes,
 } from "@/lib/bapteme";
 import { formatSessionDate, formatSessionTime } from "@/api/global function/dateServeur";
+
+// Formule (durée + tarif) proposée sur une machine. Une machine sans formule
+// configurée n'en propose aucune : le client passe directement à ses
+// coordonnées, sans écran de choix.
+export interface PublicBaptemeOption extends BaptemeOptionLike {
+    id: string;
+}
 
 export interface PublicSlot {
     sessionID: string;
@@ -41,7 +51,7 @@ export interface PublicSlot {
     pilotFirstName: string;
     pilotLastName: string;
     // imageUrl est null tant qu'aucune photo n'a été ajoutée à la machine.
-    planes: { id: string; name: string; imageUrl: string | null }[];
+    planes: { id: string; name: string; imageUrl: string | null; baptemeOptions: PublicBaptemeOption[] }[];
 }
 
 // Coordonnées publiques du club (toutes optionnelles : un club peut n'en
@@ -73,6 +83,8 @@ interface Confirmation {
     timeLabel: string;
     planeName: string;
     pilotName: string;
+    // Formule choisie, ex. "30 min – 90 €". null si la machine n'en proposait pas.
+    optionLabel: string | null;
 }
 
 const inputClass =
@@ -98,9 +110,10 @@ const ENTRY_POINTS: { value: BaptemeEntryPoint; label: string; Icon: typeof Cale
 ];
 
 // Écrans du wizard (un par étape). L'ordre dépend du point d'entrée mais
-// reproduit exactement l'ordonnancement métier existant ; « contact » clôt
-// toujours le parcours.
-type ScreenKey = "day" | "slot" | "plane" | "pilot" | "contact";
+// reproduit exactement l'ordonnancement métier existant ; « formula » (si la
+// machine choisie propose des formules) puis « contact » clôturent toujours
+// le parcours.
+type ScreenKey = "day" | "slot" | "plane" | "pilot" | "formula" | "contact";
 
 const SELECTION_SCREENS: Record<BaptemeEntryPoint, ScreenKey[]> = {
     date: ["day", "slot", "plane"],
@@ -125,6 +138,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     // Doublonne `planeID` du formulaire : react-hook-form ne re-rend pas au
     // changement de valeur, et il faut savoir quel appareil est à l'écran.
     const [selectedPlaneID, setSelectedPlaneID] = useState("");
+    const [selectedOptionID, setSelectedOptionID] = useState("");
     const carouselRef = useRef<HTMLDivElement>(null);
 
     const {
@@ -134,7 +148,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         formState: { errors },
     } = useForm<BaptemeRequestSchema>({
         resolver: zodResolver(baptemeRequestSchema),
-        defaultValues: { sessionID: "", planeID: "" },
+        defaultValues: { sessionID: "", planeID: "", baptemeOptionID: "" },
     });
 
     // Catalogues complets, toutes dates confondues : ce sont eux qui servent de
@@ -191,12 +205,20 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         selectedSlot?.planes.find((p) => p.id === selectedPlaneID) ??
         allPlanes.find((p) => p.id === selectedPlaneID);
 
+    // Formules proposées par l'appareil retenu. Vide => aucun écran de choix
+    // (la machine n'a pas de config baptême, on va directement aux coordonnées).
+    const selectedPlaneOptions = selectedPlane?.baptemeOptions ?? [];
+
+    const selectedOption = selectedPlaneOptions.find((o) => o.id === selectedOptionID);
+
     // ─── Navigation du wizard ───
 
-    const screens = useMemo<ScreenKey[]>(
-        () => [...SELECTION_SCREENS[entryPoint], "contact"],
-        [entryPoint]
-    );
+    const screens = useMemo<ScreenKey[]>(() => {
+        const base: ScreenKey[] = [...SELECTION_SCREENS[entryPoint]];
+        if (selectedPlaneOptions.length > 0) base.push("formula");
+        base.push("contact");
+        return base;
+    }, [entryPoint, selectedPlaneOptions.length]);
     const currentScreen = screens[Math.min(stepIndex, screens.length - 1)];
 
     const isScreenComplete = (screen: ScreenKey) => {
@@ -209,6 +231,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
                 return !!selectedPlaneID;
             case "pilot":
                 return !!selectedPilotKey;
+            case "formula":
+                return !!selectedOptionID;
             case "contact":
                 return true;
         }
@@ -229,9 +253,21 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
 
     // ─── Sélection : chaque étape invalide les suivantes ───
 
+    const clearOption = () => {
+        setSelectedOptionID("");
+        setValue("baptemeOptionID", "", { shouldValidate: false });
+    };
+
+    const setOptionValue = (optionID: string) => {
+        setSelectedOptionID(optionID);
+        setValue("baptemeOptionID", optionID, { shouldValidate: true });
+    };
+
     const setPlaneValue = (planeID: string) => {
         setSelectedPlaneID(planeID);
         setValue("planeID", planeID, { shouldValidate: true });
+        // Une formule est propre à un appareil : en changer invalide le choix.
+        clearOption();
     };
 
     const clearSession = () => {
@@ -242,6 +278,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     const clearPlane = () => {
         setSelectedPlaneID("");
         setValue("planeID", "", { shouldValidate: false });
+        clearOption();
     };
 
     // Remet tout le parcours à zéro, sans toucher au point d'entrée.
@@ -339,6 +376,11 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         advance();
     };
 
+    const handleSelectFormula = (optionID: string) => {
+        setOptionValue(optionID);
+        advance();
+    };
+
     // ─── Carrousel ───
 
     // Vue courante déduite de la largeur d'une vue (chacune fait 100 % du
@@ -374,6 +416,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
             email: data.email,
             phone: data.phone,
             comment: data.comment || undefined,
+            baptemeOptionID: data.baptemeOptionID || undefined,
         });
         setLoading(false);
         if ("error" in res) {
@@ -390,6 +433,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
             pilotName: selectedSlot
                 ? formatPilotName(selectedSlot.pilotFirstName, selectedSlot.pilotLastName)
                 : "",
+            optionLabel: selectedOption ? formatBaptemeOptionLabel(selectedOption) : null,
         });
     };
 
@@ -432,7 +476,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     );
 
     const renderProgress = () => {
-        const currentPhase = currentScreen === "contact" ? 2 : currentScreen === "plane" ? 1 : 0;
+        const currentPhase =
+            currentScreen === "contact" ? 2 : currentScreen === "plane" || currentScreen === "formula" ? 1 : 0;
         const phases = [
             { label: "Créneau", done: !!selectedSessionID, on: currentPhase === 0 },
             { label: "Appareil", done: !!selectedPlaneID, on: currentPhase === 1 },
@@ -508,6 +553,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
                 chips.push({ idx, icon: Plane, text: selectedPlane.name });
             else if (key === "pilot" && selectedPilotKey)
                 chips.push({ idx, icon: UserRound, text: selectedPilotKey });
+            else if (key === "formula" && selectedOption)
+                chips.push({ idx, icon: Clock, text: formatBaptemeOptionLabel(selectedOption) });
         });
         if (chips.length === 0) return null;
         return (
@@ -808,6 +855,37 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         </div>
     );
 
+    const renderFormulaStep = () => (
+        <div className="space-y-2">
+            <p className="px-1 text-sm font-bold text-slate-700">Choisissez votre formule</p>
+            <div className="grid grid-cols-2 gap-2">
+                {selectedPlaneOptions.map((option) => {
+                    const selected = option.id === selectedOptionID;
+                    return (
+                        <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => handleSelectFormula(option.id)}
+                            aria-pressed={selected}
+                            className={`rounded-xl border py-3 text-center transition ${selected
+                                ? "border-[#774BBE] bg-[#774BBE] text-white"
+                                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                                }`}
+                        >
+                            <span className="block text-sm font-bold">{option.durationMin} min</span>
+                            <span className={`block text-xs font-semibold ${selected ? "text-white/85" : "text-slate-500"}`}>
+                                {formatBaptemeOptionPrice(option.price)}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+            {errors.baptemeOptionID && (
+                <p className="px-1 text-xs text-red-500">{errors.baptemeOptionID.message}</p>
+            )}
+        </div>
+    );
+
     const renderContact = () => (
         <div className="space-y-4">
             {/* Récap : rassure avant la saisie */}
@@ -846,6 +924,21 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
                         </span>
                     </div>
                 </div>
+                {selectedOption && (
+                    <div className="flex items-center gap-3 border-t border-slate-100 px-4 py-3">
+                        <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-[#774BBE]/10 text-[#774BBE]">
+                            <Clock className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0">
+                            <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                Formule
+                            </span>
+                            <span className="block truncate text-sm font-bold text-slate-800">
+                                {formatBaptemeOptionLabel(selectedOption)}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -910,6 +1003,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
                 return renderPlaneCarousel();
             case "pilot":
                 return renderPilotPicker();
+            case "formula":
+                return renderFormulaStep();
             case "contact":
                 return renderContact();
         }
@@ -1096,6 +1191,14 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
                                 </span>
                                 <span className="text-sm font-bold text-slate-800">{confirmation.pilotName}</span>
                             </div>
+                            {confirmation.optionLabel && (
+                                <div className="col-span-2 border-t border-dashed border-slate-200 px-4 py-3">
+                                    <span className="block text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                                        Formule
+                                    </span>
+                                    <span className="text-sm font-bold text-slate-800">{confirmation.optionLabel}</span>
+                                </div>
+                            )}
                             <div className="col-span-2 border-t border-dashed border-slate-200 px-4 py-3">
                                 <span className="block text-[9px] font-semibold uppercase tracking-wide text-slate-400">
                                     Passager

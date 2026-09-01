@@ -1,5 +1,6 @@
 import { NatureOfTheft, userRole } from "@prisma/client";
 import { formatSessionDate, formatSessionTime } from "@/api/global function/dateServeur";
+import { CLUB_PLANE_MANAGE_ROLES } from "@/lib/planeVisibility";
 
 /**
  * Règles (pures, testées) de la réservation publique de vols baptême.
@@ -175,6 +176,63 @@ export function canValidateBapteme(
  */
 export function canManagePublicLink(role: userRole): boolean {
     return PUBLIC_LINK_MANAGE_ROLES.includes(role);
+}
+
+// ─── Formules (durée + tarif) ───
+
+// Forme minimale d'une formule de vol baptême (BaptemeOption).
+export interface BaptemeOptionLike {
+    durationMin: number;
+    price: number;
+}
+
+/**
+ * Qui peut créer/modifier/supprimer les formules d'une machine : les mêmes
+ * rôles de gestion que la machine elle-même (cf. CLUB_PLANE_MANAGE_ROLES),
+ * et seulement sur une machine DU CLUB — une machine privée n'est jamais
+ * proposée au public (cf. filterBaptemePlanes) donc n'a pas de formule.
+ */
+export function canManageBaptemeOptions(
+    plane: { ownerID: string | null },
+    user: { role: userRole }
+): boolean {
+    return plane.ownerID == null && CLUB_PLANE_MANAGE_ROLES.includes(user.role);
+}
+
+/** Tarif formaté en euros, à la française : « 90 € », « 89,90 € ». */
+export function formatBaptemeOptionPrice(price: number): string {
+    const formatted = new Intl.NumberFormat("fr-FR", {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: price % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2,
+    }).format(price);
+    // Intl insère une espace fine insécable (U+202F) avant « € » : remplacée par
+    // une espace normale pour rester prévisible partout où ce texte atterrit
+    // (commentaire du vol, email en texte brut, comparaisons de chaînes).
+    return formatted.replace(/[  ]/g, " ");
+}
+
+/** Libellé d'une formule dans le sélecteur public et les rappels internes. */
+export function formatBaptemeOptionLabel(option: BaptemeOptionLike): string {
+    return `${option.durationMin} min – ${formatBaptemeOptionPrice(option.price)}`;
+}
+
+/**
+ * Commentaire à écrire sur le créneau (flight_sessions.studentComment) : la
+ * formule choisie en tête (si la machine en avait une configurée), puis le
+ * commentaire libre du client. Fonction pure pour rester testable et partagée
+ * entre la création du hold et la validation de la demande, qui doivent
+ * produire exactement le même texte.
+ */
+export function buildBaptemeSessionComment(
+    option: BaptemeOptionLike | null,
+    clientComment: string | null
+): string | null {
+    const parts: string[] = [];
+    if (option) parts.push(`Formule : ${formatBaptemeOptionLabel(option)}`);
+    if (clientComment) parts.push(clientComment);
+    return parts.length > 0 ? parts.join("\n") : null;
 }
 
 /**

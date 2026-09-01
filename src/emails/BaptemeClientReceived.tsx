@@ -11,6 +11,9 @@ interface BaptemeClientReceivedProps {
     startDate: string;
     endDate: string;
     planeName: string;
+    // Formule choisie (durée + tarif), ex. "30 min – 90 €". null si la machine
+    // n'avait pas de formule configurée.
+    optionLabel: string | null;
     clubName: string | null;
     clubAdress: clubAdressType;
 }
@@ -20,6 +23,7 @@ export const BaptemeClientReceived = ({
     startDate,
     endDate,
     planeName,
+    optionLabel,
     clubName,
     clubAdress,
 }: BaptemeClientReceivedProps) => (
@@ -42,6 +46,12 @@ export const BaptemeClientReceived = ({
                     Créneau souhaité : {startDate} ➡️ {endDate}
                     <br />
                     Appareil : {planeName}
+                    {optionLabel && (
+                        <>
+                            <br />
+                            Formule : {optionLabel}
+                        </>
+                    )}
                 </Text>
                 <Text className="text-base leading-6">
                     Un membre de notre équipe va étudier votre demande. Vous

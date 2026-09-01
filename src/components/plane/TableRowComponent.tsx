@@ -15,10 +15,12 @@ import UpdatePlanes from './UpdatePlanes';
 import { Button } from '../ui/button';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Pencil, Trash2, CheckCircle2, Ban, Lock, Wrench, AlertTriangle } from 'lucide-react';
+import { Pencil, Trash2, CheckCircle2, Ban, Lock, Wrench, AlertTriangle, Ticket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { canManagePlane, canAccessMaintenance, isPrivatePlane } from '@/lib/planeVisibility';
+import { canManageBaptemeOptions } from '@/lib/bapteme';
 import MaintenanceDialog from './maintenance/MaintenanceDialog';
+import BaptemeOptionsDialog from './bapteme/BaptemeOptionsDialog';
 import PlaneThumbnail from './PlaneThumbnail';
 
 interface Props {
@@ -37,6 +39,7 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
     const [showMaintenance, setShowMaintenance] = useState(false);
+    const [showBapteme, setShowBapteme] = useState(false);
     const [planeState, setPlaneState] = useState<planes>(plane);
 
     // --- Permissions Logic ---
@@ -50,6 +53,12 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
     // voit la maintenance des machines club sans pouvoir gérer l'avion).
     const canMaintenance = currentUser
         ? canAccessMaintenance(planeState, currentUser)
+        : false;
+
+    // Config des formules de baptême (durée + tarif) : rôles de gestion,
+    // uniquement sur une machine du club.
+    const canBapteme = currentUser
+        ? canManageBaptemeOptions(planeState, currentUser)
         : false;
 
     const canViewStatus = canManage ||
@@ -236,7 +245,7 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
             )}
 
             {/* 6. Actions Column */}
-            {(canManage || canMaintenance) && (
+            {(canManage || canMaintenance || canBapteme) && (
                 <TableCell className="text-right pr-4">
                     <div className="flex items-center justify-end gap-1 opacity-100  transition-opacity">
 
@@ -255,6 +264,19 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                                 title={isOverdue ? "Maintenance — révision en retard" : "Maintenance"}
                             >
                                 <Wrench className="w-4 h-4" />
+                            </Button>
+                        )}
+
+                        {/* Config baptême (durées + tarifs) Button */}
+                        {canBapteme && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowBapteme(true)}
+                                className="h-8 w-8 text-slate-500 hover:text-[#774BBE] hover:bg-purple-50"
+                                title="Formules de baptême"
+                            >
+                                <Ticket className="w-4 h-4" />
                             </Button>
                         )}
 
@@ -298,6 +320,14 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                     plane={planeState}
                     open={showMaintenance}
                     onOpenChange={setShowMaintenance}
+                />
+            )}
+
+            {canBapteme && (
+                <BaptemeOptionsDialog
+                    plane={planeState}
+                    open={showBapteme}
+                    onOpenChange={setShowBapteme}
                 />
             )}
         </TableRow>
