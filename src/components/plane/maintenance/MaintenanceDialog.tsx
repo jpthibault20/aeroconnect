@@ -52,6 +52,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
     const [showInterventionForm, setShowInterventionForm] = useState(false);
     const [showReminderForm, setShowReminderForm] = useState(false);
     const [editingTask, setEditingTask] = useState<MaintenanceTask | null>(null);
+    const [editingIntervention, setEditingIntervention] = useState<MaintenanceIntervention | null>(null);
     const [exporting, setExporting] = useState(false);
     // ID en cours de suppression : pilote le `loading` d'AlertConfirmDeleted (qui
     // se referme sur la transition true → false).
@@ -81,16 +82,22 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
             setShowInterventionForm(false);
             setShowReminderForm(false);
             setEditingTask(null);
+            setEditingIntervention(null);
         }
     }, [open, load]);
 
     const handleInterventionSaved = (next: MaintenanceIntervention[]) => {
+        const wasEditing = editingIntervention != null;
         setInterventions(next);
         setShowInterventionForm(false);
+        setEditingIntervention(null);
         // Une intervention peut avoir clôturé un rappel : on recharge les tâches.
         void load();
         notifyAlertsChanged();
-        toast({ title: "Intervention ajoutée", className: "bg-green-600 text-white border-none" });
+        toast({
+            title: wasEditing ? "Intervention mise à jour" : "Intervention ajoutée",
+            className: "bg-green-600 text-white border-none",
+        });
     };
 
     const handleTaskSaved = (task: MaintenanceTask) => {
@@ -165,19 +172,20 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
 
     const now = new Date();
     const sortedInterventions = sortInterventionsDesc(interventions);
-    const anyFormOpen = showInterventionForm || showReminderForm || editingTask != null;
+    const anyFormOpen =
+        showInterventionForm || showReminderForm || editingTask != null || editingIntervention != null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[95%] sm:max-w-[720px] p-0 gap-0 bg-white rounded-xl sm:rounded-2xl border-none shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
                 {/* Header */}
-                <div className="bg-slate-50 p-6 border-b border-slate-100 flex-shrink-0">
+                <div className="bg-slate-50 p-6 pr-12 border-b border-slate-100 flex-shrink-0">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                            <div className="p-2 bg-purple-100 text-[#774BBE] rounded-lg">
+                            <div className="p-2 bg-purple-100 text-[#774BBE] rounded-lg flex-shrink-0">
                                 <Wrench className="w-5 h-5" />
                             </div>
-                            Maintenance — {plane.name}
+                            <span className="min-w-0 break-words">Maintenance — {plane.name}</span>
                         </DialogTitle>
                         <DialogDescription className="text-slate-500 ml-11">
                             {plane.immatriculation} · {hobbsTotal != null ? `${hobbsTotal.toFixed(1)} h moteur` : "heures moteur inconnues"}
@@ -189,7 +197,12 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                 <div className="px-6 py-3 border-b border-slate-100 flex flex-wrap gap-2 flex-shrink-0">
                     <Button
                         size="sm"
-                        onClick={() => { setShowInterventionForm(true); setShowReminderForm(false); setEditingTask(null); }}
+                        onClick={() => {
+                            setShowInterventionForm(true);
+                            setShowReminderForm(false);
+                            setEditingTask(null);
+                            setEditingIntervention(null);
+                        }}
                         className="bg-[#774BBE] hover:bg-[#6538a5] text-white"
                     >
                         <Plus className="w-4 h-4 mr-1" /> Intervention
@@ -197,7 +210,12 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                     <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => { setShowReminderForm(true); setShowInterventionForm(false); setEditingTask(null); }}
+                        onClick={() => {
+                            setShowReminderForm(true);
+                            setShowInterventionForm(false);
+                            setEditingTask(null);
+                            setEditingIntervention(null);
+                        }}
                         className="border-slate-200 text-slate-700"
                     >
                         <Bell className="w-4 h-4 mr-1" /> Rappel
@@ -215,7 +233,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                 </div>
 
                 {/* Body */}
-                <div className="p-6 space-y-6 overflow-y-auto">
+                <div className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0">
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
                             <Spinner className="w-6 h-6 text-[#774BBE]" />
@@ -223,13 +241,14 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                     ) : (
                         <>
                             {/* Formulaires */}
-                            {showInterventionForm && (
+                            {(showInterventionForm || editingIntervention) && (
                                 <InterventionForm
                                     planeID={plane.id}
                                     currentHobbs={hobbsTotal}
                                     tasks={tasks}
+                                    intervention={editingIntervention ?? undefined}
                                     onSaved={handleInterventionSaved}
-                                    onCancel={() => setShowInterventionForm(false)}
+                                    onCancel={() => { setShowInterventionForm(false); setEditingIntervention(null); }}
                                 />
                             )}
                             {(showReminderForm || editingTask) && (
@@ -286,7 +305,12 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className="h-8 w-8 text-slate-500 hover:text-[#774BBE]"
-                                                                onClick={() => { setEditingTask(task); setShowInterventionForm(false); setShowReminderForm(false); }}
+                                                                onClick={() => {
+                                                                    setEditingTask(task);
+                                                                    setShowInterventionForm(false);
+                                                                    setShowReminderForm(false);
+                                                                    setEditingIntervention(null);
+                                                                }}
                                                             >
                                                                 <Pencil className="w-4 h-4" />
                                                             </Button>
@@ -339,18 +363,33 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                                                             <p className="text-xs text-slate-400 mt-1 italic">{it.comment}</p>
                                                         )}
                                                     </div>
-                                                    <AlertConfirmDeleted
-                                                        title="Supprimer cette intervention ?"
-                                                        description="Cette action est irréversible."
-                                                        cancel="Annuler"
-                                                        confirm="Supprimer"
-                                                        confirmAction={() => handleDeleteIntervention(it.id)}
-                                                        loading={deletingId === it.id}
-                                                    >
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 flex-shrink-0">
-                                                            <Trash2 className="w-4 h-4" />
+                                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-slate-500 hover:text-[#774BBE]"
+                                                            onClick={() => {
+                                                                setEditingIntervention(it);
+                                                                setShowInterventionForm(false);
+                                                                setShowReminderForm(false);
+                                                                setEditingTask(null);
+                                                            }}
+                                                        >
+                                                            <Pencil className="w-4 h-4" />
                                                         </Button>
-                                                    </AlertConfirmDeleted>
+                                                        <AlertConfirmDeleted
+                                                            title="Supprimer cette intervention ?"
+                                                            description="Cette action est irréversible."
+                                                            cancel="Annuler"
+                                                            confirm="Supprimer"
+                                                            confirmAction={() => handleDeleteIntervention(it.id)}
+                                                            loading={deletingId === it.id}
+                                                        >
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </AlertConfirmDeleted>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
