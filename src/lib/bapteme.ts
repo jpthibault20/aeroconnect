@@ -1,6 +1,6 @@
 import { NatureOfTheft, userRole } from "@prisma/client";
 import { formatSessionDate, formatSessionTime } from "@/api/global function/dateServeur";
-import { CLUB_PLANE_MANAGE_ROLES } from "@/lib/planeVisibility";
+import { CLUB_PLANE_MANAGE_ROLES, resolveOfferedPlaneIDs } from "@/lib/planeVisibility";
 
 /**
  * Règles (pures, testées) de la réservation publique de vols baptême.
@@ -116,12 +116,13 @@ export function filterBaptemePlanes<T extends BaptemePlaneLike>(
     unavailablePlaneIDs: string[] = []
 ): T[] {
     const unavailable = new Set(unavailablePlaneIDs);
+    const offeredPlaneIDs = resolveOfferedPlaneIDs(slot.planeID, planes);
     return planes.filter(
         (plane) =>
             plane.ownerID == null &&
             plane.operational &&
             !unavailable.has(plane.id) &&
-            slot.planeID.includes(plane.id) &&
+            offeredPlaneIDs.includes(plane.id) &&
             (slot.classes.length === 0 || slot.classes.includes(plane.classes))
     );
 }

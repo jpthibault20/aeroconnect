@@ -10,6 +10,7 @@ import {
     filterPlanesForBeneficiary,
     filterVisiblePlanes,
     PRIVATE_PLANE_OVERSIGHT_ROLES,
+    resolveOfferedPlaneIDs,
     resolveOwnerReassignment,
     resolvePlaneCreation,
     sanitizeClubUsages,
@@ -486,7 +487,7 @@ export const getPlanesForStudentOnSession = async (sessionID: string, studentID:
             .filter((id): id is string => id !== null);
 
         const planes = filterPlanesForBeneficiary(clubPlanes, student, {
-            offeredPlaneIDs: session.planeID,
+            offeredPlaneIDs: resolveOfferedPlaneIDs(session.planeID, clubPlanes),
             unavailablePlaneIDs,
         });
 

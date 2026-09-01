@@ -10,7 +10,7 @@ import PlaneSelect from "./PlaneSelect";
 import SubmitButton from "./SubmitButton";
 import { toast } from "@/hooks/use-toast";
 import { filterPilotePlane } from "@/api/popupCalendar";
-import { filterBookablePlanes, filterPlanesForBeneficiary } from "@/lib/planeVisibility";
+import { filterBookablePlanes, filterPlanesForBeneficiary, resolveOfferedPlaneIDs, sessionOffersPlane } from "@/lib/planeVisibility";
 import { studentRegistration } from "@/api/db/sessions";
 import { sendNotificationBooking, sendStudentNotificationBooking } from "@/lib/mail";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
@@ -206,7 +206,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
         setSession(sessions.find(
             session =>
                 session.pilotID === instructor &&
-                (isOwnPlane(plane) || session.planeID.includes(plane))
+                (isOwnPlane(plane) || sessionOffersPlane(session.planeID, plane, planesProp))
         ));
         setStudentComment(session?.studentComment || "");
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -223,7 +223,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 // Même règle que côté gestionnaire (filterPlanesForBeneficiary).
                 const availableSessions = sessions.filter(s => s.studentID === null);
                 const offeredPlaneIDs = Array.from(
-                    new Set(availableSessions.flatMap(s => s.planeID))
+                    new Set(availableSessions.flatMap(s => resolveOfferedPlaneIDs(s.planeID, planesProp)))
                 );
                 const unavailablePlaneIDs = sessions
                     .map(s => s.studentPlaneID)
@@ -272,7 +272,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 // Sa propre machine reste proposable quel que soit l'instructeur :
                 // elle n'appartient pas à l'offre du créneau.
                 isOwnPlane(plane.id) ||
-                sessions.some(session => session.pilotID === instructor && session.planeID.includes(plane.id))
+                sessions.some(session => session.pilotID === instructor && sessionOffersPlane(session.planeID, plane.id, planesProp))
             );
         }
 
@@ -292,7 +292,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
             plane === "nothing" || isOwnPlane(plane)
                 ? allInstructors
                 : allInstructors.filter(instructor =>
-                    sessions.some(session => session.planeID.includes(plane) && session.pilotID === instructor.id)
+                    sessions.some(session => sessionOffersPlane(session.planeID, plane, planesProp) && session.pilotID === instructor.id)
                 )
         );
         // eslint-disable-next-line react-hooks/exhaustive-deps
