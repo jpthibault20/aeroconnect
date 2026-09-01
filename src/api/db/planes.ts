@@ -4,7 +4,16 @@ import { MachineUsage, planes, userRole } from "@prisma/client";
 import { randomUUID } from "crypto";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
-import { canEditPlaneHobbs, canManagePlane, filterPlanesForBeneficiary, filterVisiblePlanes, resolvePlaneCreation, sanitizeClubUsages } from "@/lib/planeVisibility";
+import {
+    canEditPlaneHobbs,
+    canManagePlane,
+    filterPlanesForBeneficiary,
+    filterVisiblePlanes,
+    PRIVATE_PLANE_OVERSIGHT_ROLES,
+    resolveOwnerReassignment,
+    resolvePlaneCreation,
+    sanitizeClubUsages,
+} from "@/lib/planeVisibility";
 import {
     buildPlaneImagePath,
     isPlaneImageMimeType,
@@ -274,6 +283,48 @@ export const updatePlane = async (plane: planes) => {
         return { success: 'Plane updated successfully' };
     } catch {
         return { error: 'Plane update failed' };
+    }
+};
+
+/**
+ * Réattribue le propriétaire d'une machine : à un membre du club (elle devient
+ * privée) ou « au club » (newOwnerID null). Réservé au président et à l'admin
+ * (cf. PRIVATE_PLANE_OVERSIGHT_ROLES) — un propriétaire ne peut pas se
+ * réassigner lui-même ni transférer sa machine à un autre membre.
+ */
+export const updatePlaneOwner = async (planeID: string, newOwnerID: string | null) => {
+    if (!planeID) {
+        return { error: 'Missing planeID' };
+    }
+
+    const auth = await requireAuth(PRIVATE_PLANE_OVERSIGHT_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
+    try {
+        const existing = await prisma.planes.findUnique({ where: { id: planeID } });
+        if (!existing || existing.clubID !== auth.user.clubID) {
+            return { error: 'Avion introuvable' };
+        }
+
+        let targetOwnerID: string | null = null;
+        if (newOwnerID) {
+            const targetUser = await prisma.user.findUnique({ where: { id: newOwnerID } });
+            if (!targetUser || targetUser.clubID !== auth.user.clubID) {
+                return { error: 'Membre introuvable dans ce club' };
+            }
+            targetOwnerID = targetUser.id;
+        }
+
+        const { ownerID, usageTypes } = resolveOwnerReassignment(targetOwnerID, existing.usageTypes);
+
+        await prisma.planes.update({
+            where: { id: planeID },
+            data: { ownerID, usageTypes },
+        });
+
+        return { success: 'Propriétaire mis à jour', ownerID, usageTypes };
+    } catch {
+        return { error: 'Échec de la mise à jour du propriétaire' };
     }
 };
 

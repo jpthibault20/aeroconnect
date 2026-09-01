@@ -1,21 +1,27 @@
 import { planes } from '@prisma/client'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { Spinner } from '../ui/SpinnerVariants'
 import { Switch } from '../ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { IoIosWarning } from 'react-icons/io'
-import { Pencil } from 'lucide-react' // Icône pour le header
-import { updatePlane } from '@/api/db/planes'
+import { Pencil, Users } from 'lucide-react' // Icônes pour le header et la propriété
+import { updatePlane, updatePlaneOwner } from '@/api/db/planes'
+import { getAllUser } from '@/api/db/users'
 import { toast } from '@/hooks/use-toast';
 import { clearCache } from '@/lib/cache'
 import { DropDownClasse } from './DropDownClasse'
 import { cn } from '@/lib/utils'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
-import { canEditPlaneHobbs } from '@/lib/planeVisibility'
+import { canEditPlaneHobbs, canReassignPlaneOwner } from '@/lib/planeVisibility'
 import PlaneImageInput from './PlaneImageInput'
+
+// Sentinelle pour « propriétaire = le club » dans le Select (Radix n'accepte
+// pas de valeur vide).
+const CLUB_OWNER_VALUE = "__club__";
 
 interface props {
     children: React.ReactNode
@@ -32,8 +38,54 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
     // Compteur horaire : gestion (OWNER/ADMIN) sur toute machine, et le
     // propriétaire sur sa propre machine privée.
     const canEditHobbs = currentUser ? canEditPlaneHobbs(plane, currentUser) : false;
+    // Réattribution du propriétaire : réservée au président (OWNER) et à l'admin.
+    const canReassignOwner = currentUser ? canReassignPlaneOwner(currentUser) : false;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
+    const [ownerLoading, setOwnerLoading] = useState(false);
+
+    // Liste des membres du club, chargée à l'ouverture de la fiche (uniquement
+    // pour président/admin, seuls à voir le sélecteur de propriétaire).
+    useEffect(() => {
+        if (!showPopup || !canReassignOwner || !plane.clubID) return;
+        let cancelled = false;
+        (async () => {
+            const res = await getAllUser(plane.clubID);
+            if (!cancelled && Array.isArray(res)) {
+                setMembers(
+                    res
+                        .map((u) => ({ id: u.id, name: `${u.firstName} ${u.lastName}`.trim() }))
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                );
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [showPopup, canReassignOwner, plane.clubID]);
+
+    const onOwnerChange = async (value: string) => {
+        const newOwnerID = value === CLUB_OWNER_VALUE ? null : value;
+        setOwnerLoading(true);
+        try {
+            const res = await updatePlaneOwner(plane.id, newOwnerID);
+            if ('error' in res) {
+                toast({ title: "Erreur", description: res.error, variant: "destructive" });
+                return;
+            }
+            setPlane((prev) => ({ ...prev, ownerID: res.ownerID, usageTypes: res.usageTypes }));
+            setPlanes(planes.map((p) => (p.id === plane.id ? { ...p, ownerID: res.ownerID, usageTypes: res.usageTypes } : p)));
+            clearCache(`planes:${plane.clubID}`);
+            toast({
+                title: "Propriétaire mis à jour",
+                description: newOwnerID ? "La machine est désormais privée." : "La machine appartient désormais au club.",
+                className: "bg-green-600 text-white border-none",
+            });
+        } catch {
+            toast({ title: "Erreur technique", variant: "destructive" });
+        } finally {
+            setOwnerLoading(false);
+        }
+    };
 
     // La photo est enregistrée par son propre server action, indépendamment du
     // bouton « Enregistrer » : on répercute donc tout de suite le changement
@@ -150,6 +202,33 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Paramètres</h3>
 
                         <div className='space-y-4'>
+                            {/* Propriétaire — président/admin uniquement */}
+                            {canReassignOwner && (
+                                <div className="space-y-2">
+                                    <Label className="text-slate-700 font-medium flex items-center gap-1.5">
+                                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                                        Propriétaire
+                                    </Label>
+                                    <Select
+                                        value={plane.ownerID ?? CLUB_OWNER_VALUE}
+                                        onValueChange={onOwnerChange}
+                                        disabled={loading || ownerLoading}
+                                    >
+                                        <SelectTrigger className="bg-slate-50 border-slate-200 focus:ring-blue-500 focus:border-blue-500">
+                                            <SelectValue placeholder="Sélectionner un propriétaire" />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-60">
+                                            <SelectItem value={CLUB_OWNER_VALUE}>Club (machine collective)</SelectItem>
+                                            {members.map((member) => (
+                                                <SelectItem key={member.id} value={member.id}>
+                                                    {member.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
                             {/* Dropdown Classe */}
                             <div className="space-y-2">
                                 <Label className="text-slate-700 font-medium">Classe</Label>

@@ -2,10 +2,12 @@ import { describe, it, expect } from "vitest";
 import { MachineUsage, userRole } from "@prisma/client";
 import {
     canManagePlane,
+    canReassignPlaneOwner,
     canViewPlane,
     filterVisiblePlanes,
     filterBookablePlanes,
     isPrivatePlane,
+    resolveOwnerReassignment,
     resolvePlaneCreation,
     sanitizeClubUsages,
 } from "@/lib/planeVisibility";
@@ -152,6 +154,46 @@ describe("resolvePlaneCreation", () => {
     it("machine du club sans usage valide → erreur", () => {
         expect(resolvePlaneCreation(manager, "club", [])).toEqual({
             error: "Sélectionnez au moins un usage pour la machine du club",
+        });
+    });
+});
+
+// ─────────────────────────────────────────────────────────────
+// canReassignPlaneOwner / resolveOwnerReassignment
+// ─────────────────────────────────────────────────────────────
+
+describe("canReassignPlaneOwner", () => {
+    it("président et admin peuvent réattribuer le propriétaire", () => {
+        expect(canReassignPlaneOwner(president)).toBe(true);
+        expect(canReassignPlaneOwner(admin)).toBe(true);
+    });
+
+    it("aucun autre rôle ne peut réattribuer le propriétaire", () => {
+        expect(canReassignPlaneOwner(manager)).toBe(false);
+        expect(canReassignPlaneOwner(owner)).toBe(false);
+        expect(canReassignPlaneOwner(otherStudent)).toBe(false);
+    });
+});
+
+describe("resolveOwnerReassignment", () => {
+    it("réattribution à un membre : machine privée, aucun usage club", () => {
+        expect(resolveOwnerReassignment("u-new-owner", [MachineUsage.INSTRUCTION])).toEqual({
+            ownerID: "u-new-owner",
+            usageTypes: [],
+        });
+    });
+
+    it("réattribution au club depuis une machine déjà club : usages existants conservés", () => {
+        expect(resolveOwnerReassignment(null, [MachineUsage.LOCATION])).toEqual({
+            ownerID: null,
+            usageTypes: [MachineUsage.LOCATION],
+        });
+    });
+
+    it("réattribution au club depuis une machine privée (aucun usage) : tous les usages par défaut", () => {
+        expect(resolveOwnerReassignment(null, [])).toEqual({
+            ownerID: null,
+            usageTypes: [MachineUsage.INSTRUCTION, MachineUsage.LOCATION, MachineUsage.CLUB],
         });
     });
 });

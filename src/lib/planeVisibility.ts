@@ -16,8 +16,9 @@ import { MachineUsage, planes, userRole } from "@prisma/client";
  */
 
 // Rôles qui voient TOUTES les machines privées du club, en plus de leurs propres
-// machines : président (OWNER) et admin (ADMIN).
-const PRIVATE_PLANE_OVERSIGHT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN];
+// machines : président (OWNER) et admin (ADMIN). Ce sont aussi les seuls rôles
+// habilités à réattribuer le propriétaire d'une machine (cf. canReassignPlaneOwner).
+export const PRIVATE_PLANE_OVERSIGHT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN];
 
 // Rôles de gestion, seuls habilités à créer/gérer des machines DU CLUB.
 export const CLUB_PLANE_MANAGE_ROLES: userRole[] = [
@@ -102,6 +103,36 @@ export function resolvePlaneCreation(
 interface Viewer {
     id: string;
     role: userRole;
+}
+
+// Seuls le président et l'admin peuvent réattribuer le propriétaire d'une
+// machine (à un membre du club, ou « au club » = ownerID null).
+export function canReassignPlaneOwner(user: Viewer): boolean {
+    return PRIVATE_PLANE_OVERSIGHT_ROLES.includes(user.role);
+}
+
+export interface OwnerReassignment {
+    ownerID: string | null;
+    usageTypes: MachineUsage[];
+}
+
+/**
+ * Résout propriétaire + usages lors d'une réattribution (président/admin
+ * uniquement). Mêmes règles d'exclusivité que resolvePlaneCreation :
+ *  - nouveau propriétaire = un membre => machine privée, aucun usage club ;
+ *  - nouveau propriétaire = null => machine du club, on reprend les usages
+ *    existants (le cas où la machine était déjà du club), ou tous les usages
+ *    par défaut si elle était privée (elle n'en avait aucun).
+ */
+export function resolveOwnerReassignment(
+    newOwnerID: string | null,
+    currentUsageTypes: MachineUsage[]
+): OwnerReassignment {
+    if (newOwnerID) {
+        return { ownerID: newOwnerID, usageTypes: [] };
+    }
+    const usageTypes = sanitizeClubUsages(currentUsageTypes);
+    return { ownerID: null, usageTypes: usageTypes.length > 0 ? usageTypes : CLUB_USAGE_VALUES };
 }
 
 /**
