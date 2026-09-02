@@ -20,7 +20,7 @@ function checkLogbookAccess(
     targetPilotID: string,
     targetClubID: string
 ): { allowed: boolean; reason?: string } {
-    const MANAGEMENT_ROLES = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
+    const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
     const isManager = MANAGEMENT_ROLES.includes(authUserRole);
 
     if (authUserClubID !== targetClubID) {
@@ -43,7 +43,7 @@ function checkSessionCreation(
     instructorID: string,
     authUserRole: userRole
 ): { allowed: boolean; reason?: string } {
-    const ADMIN_ROLES = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+    const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
     if (authUserClubID !== instructorClubID) {
         return { allowed: false, reason: "Instructeur d'un autre club" };
@@ -154,7 +154,7 @@ describe("Isolation inter-clubs", () => {
         // signé du club ; sinon un pilote peut supprimer SON propre vol non signé
         // (cas d'usage : instructeur dont l'élève ne s'est pas présenté).
         const canDelete = (role: userRole, userID: string, logPilotID: string) =>
-            [userRole.OWNER, userRole.ADMIN].includes(role) || userID === logPilotID;
+            ([userRole.OWNER, userRole.ADMIN] as userRole[]).includes(role) || userID === logPilotID;
 
         it("OWNER/ADMIN peuvent supprimer n'importe quel vol du club", () => {
             expect(canDelete(userRole.OWNER, "u1", "other")).toBe(true);

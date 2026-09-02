@@ -49,8 +49,8 @@ function canSignFlight(authUserID: string, logPilotID: string, pilotSigned: bool
 //     tout autre rôle autorisé ne peut supprimer QUE son propre vol
 //     (auth.user.id === log.pilotID) — cas d'usage : l'instructeur supprime le
 //     log auto-créé d'une séance où l'élève ne s'est pas présenté.
-const WRITE_ROLES = [userRole.PILOT, userRole.INSTRUCTOR, userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
-const OVERRIDE_ROLES = [userRole.OWNER, userRole.ADMIN];
+const WRITE_ROLES: userRole[] = [userRole.PILOT, userRole.INSTRUCTOR, userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+const OVERRIDE_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN];
 
 function canDeleteFlightLog(
     role: userRole,

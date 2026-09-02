@@ -6,7 +6,7 @@ import { userRole } from "@prisma/client";
  * Logique extraite de users.ts (updateUser, blockUser, deleteUser).
  */
 
-const MANAGEMENT_ROLES = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 // --- Logique updateUser : protection du changement de rôle ---
 
@@ -114,7 +114,7 @@ describe("Gestion des rôles", () => {
     });
 
     describe("Hiérarchie des rôles", () => {
-        const allRoles = [userRole.USER, userRole.STUDENT, userRole.PILOT, userRole.INSTRUCTOR, userRole.MANAGER, userRole.ADMIN, userRole.OWNER];
+        const allRoles: userRole[] = [userRole.USER, userRole.STUDENT, userRole.PILOT, userRole.INSTRUCTOR, userRole.MANAGER, userRole.ADMIN, userRole.OWNER];
 
         it("tous les rôles sont définis dans l'enum", () => {
             expect(allRoles).toHaveLength(7);

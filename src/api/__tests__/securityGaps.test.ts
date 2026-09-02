@@ -6,8 +6,8 @@ import { userRole } from "@prisma/client";
  * Ces tests servent de garde-fous contre les régressions.
  */
 
-const ADMIN_ROLES = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
-const SIGN_OVERRIDE = [userRole.OWNER, userRole.ADMIN];
+const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+const SIGN_OVERRIDE: userRole[] = [userRole.OWNER, userRole.ADMIN];
 
 describe("Failles de sécurité corrigées", () => {
 
@@ -16,7 +16,7 @@ describe("Failles de sécurité corrigées", () => {
     describe("[CORRIGÉ] Isolation inter-clubs sur les mutations", () => {
         it("updatePlane vérifie que l'avion appartient au club de l'utilisateur", () => {
             // planes.ts updatePlane() : vérifie existing.clubID === auth.user.clubID
-            const authClubID = "club-1";
+            const authClubID: string = "club-1";
             const planeClubID = "club-2";
             const isBlocked = authClubID !== planeClubID;
             expect(isBlocked).toBe(true);
@@ -24,7 +24,7 @@ describe("Failles de sécurité corrigées", () => {
 
         it("updateOperationalByID vérifie le clubID de l'avion", () => {
             // planes.ts updateOperationalByID() : vérifie existing.clubID === auth.user.clubID
-            const authClubID = "club-1";
+            const authClubID: string = "club-1";
             const planeClubID = "club-2";
             const isBlocked = authClubID !== planeClubID;
             expect(isBlocked).toBe(true);
@@ -32,7 +32,7 @@ describe("Failles de sécurité corrigées", () => {
 
         it("addStudentToSession vérifie que la session est du même club", () => {
             // users.ts addStudentToSession() : requireAuth + session.clubID === auth.user.clubID
-            const authClubID = "club-1";
+            const authClubID: string = "club-1";
             const sessionClubID = "club-2";
             const isBlocked = authClubID !== sessionClubID;
             expect(isBlocked).toBe(true);
