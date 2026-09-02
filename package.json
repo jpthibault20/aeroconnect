@@ -97,7 +97,8 @@
     "glob": "^10.4.5",
     "crypto-js": "^4.2.0",
     "postcss": "^8.5.10",
-    "@internationalized/date": "^3.12.1"
+    "@internationalized/date": "^3.12.1",
+    "deepmerge-ts": "^8.0.2"
   },
   "engines": {
     "node": "22.x"
