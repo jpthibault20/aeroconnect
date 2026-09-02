@@ -1,6 +1,6 @@
 {
   "name": "aeroconnect",
-  "version": "3.5",
+  "version": "3.6",
   "date": "Aout 2026",
   "description": "A Next.js app for managing flights and students",
   "private": true,
@@ -8,7 +8,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "postinstall": "prisma generate",
     "migrate:prod": "prisma migrate deploy",
     "postbuild": "npm run migrate:prod",
@@ -97,7 +98,8 @@
     "glob": "^10.4.5",
     "crypto-js": "^4.2.0",
     "postcss": "^8.5.10",
-    "@internationalized/date": "^3.12.1"
+    "@internationalized/date": "^3.12.1",
+    "deepmerge-ts": "^8.0.2"
   },
   "engines": {
     "node": "22.x"

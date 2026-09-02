@@ -13,6 +13,9 @@ interface BaptemePilotNotificationProps {
     clubName: string | null;
     clubAdress: clubAdressType;
     planeName: string;
+    // Formule choisie (durée + tarif), ex. "30 min – 90 €". null si la machine
+    // n'avait pas de formule configurée.
+    optionLabel: string | null;
     clientFirstName: string;
     clientLastName: string;
     clientEmail: string;
@@ -27,6 +30,7 @@ export const BaptemePilotNotification = ({
     clubName,
     clubAdress,
     planeName,
+    optionLabel,
     clientFirstName,
     clientLastName,
     clientEmail,
@@ -51,6 +55,12 @@ export const BaptemePilotNotification = ({
                 </Text>
                 <Text className="text-lg leading-6">
                     Appareil : {planeName}
+                    {optionLabel && (
+                        <>
+                            <br />
+                            Formule : {optionLabel}
+                        </>
+                    )}
                 </Text>
                 <Text className="text-base leading-6">
                     Client : {clientFirstName} {clientLastName.toUpperCase()}

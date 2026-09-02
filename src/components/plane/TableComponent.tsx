@@ -10,10 +10,11 @@ interface Props {
     planes: planes[] | undefined;
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
     ownerNames?: Record<string, string>;
+    onOwnerNameResolved?: (ownerID: string, ownerName: string) => void;
     overduePlaneIDs?: string[];
 }
 
-const TableComponent = ({ planes, setPlanes, ownerNames, overduePlaneIDs }: Props) => {
+const TableComponent = ({ planes, setPlanes, ownerNames, onOwnerNameResolved, overduePlaneIDs }: Props) => {
     const { currentUser } = useCurrentUser();
 
     // Président (OWNER) et admin voient toutes les machines du club : on leur
@@ -121,6 +122,7 @@ const TableComponent = ({ planes, setPlanes, ownerNames, overduePlaneIDs }: Prop
                                     setPlanes={setPlanes}
                                     canViewOwner={canViewOwner}
                                     ownerNames={ownerNames}
+                                    onOwnerNameResolved={onOwnerNameResolved}
                                     isOverdue={!!overduePlaneIDs?.includes(plane.id)}
                                 />
                             ))

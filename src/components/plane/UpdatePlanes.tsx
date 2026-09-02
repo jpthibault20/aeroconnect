@@ -1,21 +1,27 @@
 import { planes } from '@prisma/client'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { Spinner } from '../ui/SpinnerVariants'
 import { Switch } from '../ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { IoIosWarning } from 'react-icons/io'
-import { Pencil } from 'lucide-react' // Icône pour le header
-import { updatePlane } from '@/api/db/planes'
+import { Pencil, Users } from 'lucide-react' // Icônes pour le header et la propriété
+import { updatePlane, updatePlaneOwner } from '@/api/db/planes'
+import { getAllUser } from '@/api/db/users'
 import { toast } from '@/hooks/use-toast';
 import { clearCache } from '@/lib/cache'
 import { DropDownClasse } from './DropDownClasse'
 import { cn } from '@/lib/utils'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
-import { canEditPlaneHobbs } from '@/lib/planeVisibility'
+import { canEditPlaneHobbs, canReassignPlaneOwner } from '@/lib/planeVisibility'
 import PlaneImageInput from './PlaneImageInput'
+
+// Sentinelle pour « propriétaire = le club » dans le Select (Radix n'accepte
+// pas de valeur vide).
+const CLUB_OWNER_VALUE = "__club__";
 
 interface props {
     children: React.ReactNode
@@ -25,15 +31,55 @@ interface props {
     setPlane: React.Dispatch<React.SetStateAction<planes>>
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>
     planes: planes[]
+    // Remonte le nom du propriétaire fraîchement choisi : la map ownerNames de
+    // la liste est calculée côté serveur au rendu, elle ne connaît pas encore
+    // ce membre et afficherait « — ».
+    onOwnerNameResolved?: (ownerID: string, ownerName: string) => void
 }
 
-const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setPlanes, planes }: props) => {
+const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setPlanes, planes, onOwnerNameResolved }: props) => {
     const { currentUser } = useCurrentUser();
     // Compteur horaire : gestion (OWNER/ADMIN) sur toute machine, et le
     // propriétaire sur sa propre machine privée.
     const canEditHobbs = currentUser ? canEditPlaneHobbs(plane, currentUser) : false;
+    // Réattribution du propriétaire : réservée au président (OWNER) et à l'admin.
+    const canReassignOwner = currentUser ? canReassignPlaneOwner(currentUser) : false;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
+    // Propriétaire choisi dans le Select : conservé en local et enregistré
+    // seulement au clic sur « Enregistrer », comme les autres champs.
+    const [pendingOwnerID, setPendingOwnerID] = useState<string | null>(plane.ownerID);
+
+    // Réinitialise le choix en cours à chaque ouverture de la fiche (sinon un
+    // choix abandonné via « Annuler » resterait affiché à la réouverture).
+    useEffect(() => {
+        if (showPopup) setPendingOwnerID(plane.ownerID);
+    }, [showPopup, plane.ownerID]);
+
+    // Liste des membres du club, chargée à l'ouverture de la fiche (uniquement
+    // pour président/admin, seuls à voir le sélecteur de propriétaire).
+    useEffect(() => {
+        if (!showPopup || !canReassignOwner || !plane.clubID) return;
+        let cancelled = false;
+        (async () => {
+            const res = await getAllUser(plane.clubID);
+            if (!cancelled && Array.isArray(res)) {
+                setMembers(
+                    res
+                        .map((u) => ({ id: u.id, name: `${u.firstName} ${u.lastName}`.trim() }))
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                );
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [showPopup, canReassignOwner, plane.clubID]);
+
+    // Le Select ne fait que mémoriser le choix ; l'appel serveur a lieu dans
+    // onClickUpdatePlane.
+    const onOwnerChange = (value: string) => {
+        setPendingOwnerID(value === CLUB_OWNER_VALUE ? null : value);
+    };
 
     // La photo est enregistrée par son propre server action, indépendamment du
     // bouton « Enregistrer » : on répercute donc tout de suite le changement
@@ -51,22 +97,47 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
             const res = await updatePlane(plane);
             if (res.error) {
                 setError(res.error);
-            } else if (res.success) {
-                setError("");
-                toast({
-                    title: "Succès",
-                    description: "Les informations de l'avion ont été mises à jour.",
-                    className: "bg-green-600 text-white border-none",
-                });
-
-                // Update global list
-                setPlanes(planes.map(p =>
-                    p.id === plane.id ? { ...p, ...plane } : p
-                ));
-
-                clearCache(`planes:${plane.clubID}`);
-                setShowPopup(false);
+                return;
             }
+
+            // Réattribution du propriétaire : action serveur distincte (droits
+            // président/admin), jouée après la mise à jour de la fiche pour que
+            // les usages soient recalculés à partir des valeurs enregistrées.
+            let updatedPlane = { ...plane };
+            if (canReassignOwner && pendingOwnerID !== plane.ownerID) {
+                const ownerRes = await updatePlaneOwner(plane.id, pendingOwnerID);
+                if (ownerRes.error) {
+                    setError(ownerRes.error);
+                    return;
+                }
+                updatedPlane = {
+                    ...updatedPlane,
+                    ownerID: ownerRes.ownerID ?? null,
+                    usageTypes: ownerRes.usageTypes ?? updatedPlane.usageTypes,
+                };
+                setPlane(updatedPlane);
+
+                // Le nom vient de la liste des membres déjà chargée ici.
+                const newOwnerName = members.find((m) => m.id === updatedPlane.ownerID)?.name;
+                if (updatedPlane.ownerID && newOwnerName) {
+                    onOwnerNameResolved?.(updatedPlane.ownerID, newOwnerName);
+                }
+            }
+
+            setError("");
+            toast({
+                title: "Succès",
+                description: "Les informations de l'avion ont été mises à jour.",
+                className: "bg-green-600 text-white border-none",
+            });
+
+            // Update global list
+            setPlanes(planes.map(p =>
+                p.id === updatedPlane.id ? { ...p, ...updatedPlane } : p
+            ));
+
+            clearCache(`planes:${plane.clubID}`);
+            setShowPopup(false);
         } catch (error) {
             setError("Une erreur inattendue est survenue.");
         } finally {
@@ -150,6 +221,33 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Paramètres</h3>
 
                         <div className='space-y-4'>
+                            {/* Propriétaire — président/admin uniquement */}
+                            {canReassignOwner && (
+                                <div className="space-y-2">
+                                    <Label className="text-slate-700 font-medium flex items-center gap-1.5">
+                                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                                        Propriétaire
+                                    </Label>
+                                    <Select
+                                        value={pendingOwnerID ?? CLUB_OWNER_VALUE}
+                                        onValueChange={onOwnerChange}
+                                        disabled={loading}
+                                    >
+                                        <SelectTrigger className="bg-slate-50 border-slate-200 focus:ring-blue-500 focus:border-blue-500">
+                                            <SelectValue placeholder="Sélectionner un propriétaire" />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-60">
+                                            <SelectItem value={CLUB_OWNER_VALUE}>Club (machine collective)</SelectItem>
+                                            {members.map((member) => (
+                                                <SelectItem key={member.id} value={member.id}>
+                                                    {member.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
                             {/* Dropdown Classe */}
                             <div className="space-y-2">
                                 <Label className="text-slate-700 font-medium">Classe</Label>
@@ -173,9 +271,9 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                         placeholder="0.0"
                                         className="bg-slate-50 border-slate-200 focus:ring-blue-500 focus:border-blue-500 font-mono"
                                     />
-                                    <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-md">
-                                        <IoIosWarning className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                                        <p className="text-xs text-red-700">
+                                    <div className="flex items-start gap-2 p-2.5 bg-orange-50 border border-orange-200 rounded-md">
+                                        <IoIosWarning className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-orange-700">
                                             Le compteur doit refléter la valeur lue sur l&apos;aéronef. Il avance
                                             automatiquement à la signature de chaque vol : ne le corriger qu&apos;en cas
                                             d&apos;erreur de saisie avérée.

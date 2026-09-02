@@ -1,6 +1,7 @@
 "use client";
 
 import { flight_sessions, planes, User, userRole } from "@prisma/client";
+import { resolveOfferedPlaneIDs } from "@/lib/planeVisibility";
 
 
 interface Obj {
@@ -23,7 +24,9 @@ export const filterPilotePlane = async (
 
     // Récupérer les IDs uniques des pilotes et des avions
     const uniquePilotIDs = Array.from(new Set(availableSessions.map(session => session.pilotID)));
-    const uniquePlaneIDs = Array.from(new Set(availableSessions.flatMap(session => session.planeID)));
+    const uniquePlaneIDs = Array.from(new Set(
+        availableSessions.flatMap(session => resolveOfferedPlaneIDs(session.planeID, planes))
+    ));
 
     // Récupérer les IDs des avions associés à un étudiant
     const studentPlaneIDs = sessions
@@ -76,7 +79,8 @@ export const getFreePlanesUsers = (
     );
 
     // Filtrer les avions disponibles
-    const freePlanes = planesProp.filter(plane => !usedStudentPlaneIDs.includes(plane.id) && actualSession.planeID.includes(plane.id));
+    const offeredPlaneIDs = resolveOfferedPlaneIDs(actualSession.planeID, planesProp);
+    const freePlanes = planesProp.filter(plane => !usedStudentPlaneIDs.includes(plane.id) && offeredPlaneIDs.includes(plane.id));
 
     return { students, planes: freePlanes };
 };

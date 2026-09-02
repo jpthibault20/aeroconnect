@@ -15,6 +15,7 @@ import NewSession from '../NewSession';
 import DeleteFlightSession from '../DeleteFlightSession';
 import { isSameDay } from 'date-fns';
 import { DateValue } from "@internationalized/date";
+import { BaptemePendingProvider } from '@/components/calendar/BaptemePendingContext';
 
 // Icônes (Optionnel : si tu as lucide-react ou heroicons, c'est mieux d'ajouter des icônes visuelles)
 
@@ -72,7 +73,11 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
     // --- RENDU ---
 
     return (
-        // 1. Fond plus léger et moderne (Slate-50 au lieu de Gray-200)
+        // Pas de préchargement ici (la table n'a pas de plage bornée) : le
+        // provider sert juste à ce que la popup d'un vol puisse charger et
+        // mémoriser une demande de baptême à valider, comme au calendrier.
+        <BaptemePendingProvider>
+        {/* 1. Fond plus léger et moderne (Slate-50 au lieu de Gray-200) */}
         <div className='h-full min-h-screen bg-slate-50 p-6 md:p-8 font-sans text-slate-800'>
 
             {/* Header Section */}
@@ -163,6 +168,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
                 )}
             </div>
         </div>
+        </BaptemePendingProvider>
     );
 };
 

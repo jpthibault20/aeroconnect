@@ -6,6 +6,8 @@ import GlobalCalendarPhone from '@/components/calendar/phone/GlobalCalendarPhone
 import InitialLoading from '@/components/InitialLoading';
 import { flight_sessions, planes, User } from '@prisma/client';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { resolveOfferedClasses } from '@/lib/planeVisibility';
+import { BaptemePendingProvider } from '@/components/calendar/BaptemePendingContext';
 
 /**
  * Hook personnalisé pour détecter si l'écran est de taille mobile ou desktop.
@@ -44,28 +46,35 @@ const PageComponent = ({ sessionsprops, planesProp, clubIDUrl, usersProps }: pro
     const [sessions, setSessions] = useState<flight_sessions[]>([]);
 
     useEffect(() => {
-        setSessions(sessionsprops.filter((s) => currentUser?.classes.some(cls => s.classes.includes(cls))));
-    }, [currentUser?.classes, sessionsprops]);
+        setSessions(sessionsprops.filter((s) => {
+            const offeredClasses = resolveOfferedClasses(s.planeID, s.classes, planesProp);
+            return currentUser?.classes.some(cls => offeredClasses.includes(cls));
+        }));
+    }, [currentUser?.classes, sessionsprops, planesProp]);
 
 
     // Rendu conditionnel en fonction de la taille de l'écran
     return (
         <InitialLoading className="h-full w-full" clubIDURL={clubIDUrl}>
-            {!isMobile ? (
-                <GlobalCalendarDesktop
-                    sessions={sessions}
-                    setSessions={setSessions}
-                    planesProp={planesProp}
-                    usersProps={usersProps}
-                />
-            ) : (
-                <GlobalCalendarPhone
-                    sessions={sessions}
-                    setSessions={setSessions}
-                    planesProp={planesProp}
-                    usersProps={usersProps}
-                />
-            )}
+            {/* Cache des demandes de baptême en attente, préchargé par chaque
+                vue sur sa propre plage affichée (semaine / jour). */}
+            <BaptemePendingProvider>
+                {!isMobile ? (
+                    <GlobalCalendarDesktop
+                        sessions={sessions}
+                        setSessions={setSessions}
+                        planesProp={planesProp}
+                        usersProps={usersProps}
+                    />
+                ) : (
+                    <GlobalCalendarPhone
+                        sessions={sessions}
+                        setSessions={setSessions}
+                        planesProp={planesProp}
+                        usersProps={usersProps}
+                    />
+                )}
+            </BaptemePendingProvider>
         </InitialLoading>
     );
 };

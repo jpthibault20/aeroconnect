@@ -1,0 +1,259 @@
+AeroConnect — Licence propriétaire « source-available »
+Copyright (c) 2025-2026 Thibault JEANPIERRE. Tous droits réservés.
+
+Contact : thibault@jp-developpement.com
+
+La version française ci-dessous fait foi. An English translation is provided
+below for convenience only; in case of discrepancy, the French version prevails.
+
+================================================================================
+VERSION FRANÇAISE (fait foi)
+================================================================================
+
+1. DÉFINITIONS
+
+   « Logiciel » désigne le code source, les fichiers de configuration, les
+   schémas de base de données, les migrations, les gabarits d'e-mail, les
+   ressources graphiques et toute documentation contenus dans ce dépôt, ainsi
+   que toute version antérieure ou ultérieure publiée par le Titulaire.
+
+   « Titulaire » désigne Thibault JEANPIERRE, auteur et unique détenteur des
+   droits patrimoniaux sur le Logiciel.
+
+   « Vous » désigne toute personne physique ou morale accédant au Logiciel.
+
+2. NATURE DE LA PUBLICATION
+
+   Le Logiciel est publié en « source-available » : son code est rendu
+   consultable publiquement. Cette publication N'EST PAS une mise à
+   disposition sous licence open source et n'emporte AUCUNE cession de droits.
+   La mise à disposition publique du code ne vaut pas renonciation aux droits
+   d'auteur du Titulaire, ni autorisation tacite d'usage.
+
+3. DROITS ACCORDÉS
+
+   Le Titulaire Vous accorde un droit personnel, non exclusif, non
+   transférable et révocable à tout moment, limité aux actes suivants :
+
+   a) consulter et lire le code source ;
+   b) réaliser un audit technique ou de sécurité du code ;
+   c) évaluer le Logiciel à des fins d'appréciation professionnelle ou
+      pédagogique, y compris son exécution locale à titre strictement
+      personnel et temporaire ;
+   d) citer de courts extraits du code à des fins d'analyse, d'enseignement,
+      de critique ou de signalement de vulnérabilité, sous réserve de citer
+      la source et le Titulaire.
+
+4. RESTRICTIONS
+
+   Sauf autorisation écrite préalable et expresse du Titulaire, il Vous est
+   INTERDIT :
+
+   a) d'exploiter le Logiciel en production, pour Vous-même ou pour un tiers ;
+   b) de copier, reproduire, dupliquer ou forker le Logiciel, en totalité ou
+      en partie, au-delà des actes strictement nécessaires à l'article 3 ;
+   c) de modifier, adapter, traduire ou créer des œuvres dérivées du
+      Logiciel ;
+   d) de distribuer, publier, sous-licencier, louer, prêter, vendre ou
+      revendre le Logiciel ;
+   e) d'exploiter commercialement le Logiciel, sous quelque forme que ce soit,
+      y compris en mode SaaS, hébergé, managé ou en marque blanche ;
+   f) d'utiliser le Logiciel, en totalité ou en partie, pour concevoir,
+      entraîner ou améliorer un produit ou service concurrent ;
+   g) d'utiliser le Logiciel comme jeu de données d'entraînement pour un
+      modèle d'apprentissage automatique ;
+   h) de supprimer, masquer ou altérer les mentions de droit d'auteur, de
+      licence, de paternité ou les marques figurant dans le Logiciel.
+
+   Les dispositions du présent article s'appliquent sans préjudice des
+   exceptions impératives prévues par le droit applicable, notamment le droit
+   à la décompilation aux fins d'interopérabilité (art. L. 122-6-1 du Code de
+   la propriété intellectuelle).
+
+5. CONTRIBUTIONS
+
+   Le Logiciel est développé et maintenu exclusivement par le Titulaire.
+   Aucune contribution externe n'est sollicitée ni acceptée. Toute
+   contribution néanmoins soumise (pull request, correctif, suggestion de
+   code) est réputée offerte au Titulaire à titre gratuit, avec cession
+   irrévocable et mondiale de l'ensemble des droits patrimoniaux afférents,
+   sans que le Titulaire soit tenu de l'intégrer ni d'en accuser réception.
+
+   Les signalements de vulnérabilité sont en revanche bienvenus et doivent
+   être adressés en privé au Titulaire (voir SECURITY dans le README).
+
+6. MARQUES
+
+   « AeroConnect », le logo et l'identité visuelle associée demeurent la
+   propriété du Titulaire. La présente licence ne confère aucun droit
+   d'utilisation de ces signes distinctifs.
+
+7. LICENCE COMMERCIALE
+
+   Toute utilisation dépassant le cadre de l'article 3 — notamment le
+   déploiement au sein d'un aéroclub ou d'un club d'ULM — requiert une
+   licence commerciale distincte, négociée directement avec le Titulaire.
+
+8. COMPOSANTS TIERS
+
+   Le Logiciel s'appuie sur des bibliothèques tierces distribuées sous leurs
+   propres licences (voir le fichier package.json et le répertoire
+   node_modules). La présente licence ne s'applique qu'aux éléments originaux
+   du Logiciel et ne modifie en rien les droits et obligations attachés à ces
+   composants tiers.
+
+9. RÉSILIATION
+
+   Les droits accordés à l'article 3 prennent fin automatiquement et sans
+   formalité en cas de manquement à l'article 4. Vous devez alors cesser tout
+   usage du Logiciel et détruire toute copie en Votre possession. Le Titulaire
+   se réserve par ailleurs le droit de révoquer ces droits à tout moment et
+   de modifier les conditions applicables aux versions futures.
+
+10. ABSENCE DE GARANTIE
+
+   LE LOGICIEL EST FOURNI « EN L'ÉTAT », SANS GARANTIE D'AUCUNE SORTE,
+   EXPRESSE OU IMPLICITE, NOTAMMENT SANS GARANTIE DE QUALITÉ MARCHANDE,
+   D'ADÉQUATION À UN USAGE PARTICULIER, DE DISPONIBILITÉ, D'EXACTITUDE OU
+   D'ABSENCE DE CONTREFAÇON.
+
+   Le Logiciel comporte des fonctionnalités liées à la sécurité aérienne
+   (carnet de route, suivi de maintenance, qualifications des pilotes). Il ne
+   se substitue en aucun cas aux obligations réglementaires applicables ni au
+   jugement du pilote commandant de bord, du responsable technique ou du
+   dirigeant du club.
+
+11. LIMITATION DE RESPONSABILITÉ
+
+   DANS TOUTE LA MESURE PERMISE PAR LE DROIT APPLICABLE, LE TITULAIRE NE
+   SAURAIT ÊTRE TENU RESPONSABLE DE TOUT DOMMAGE DIRECT OU INDIRECT, MATÉRIEL
+   OU IMMATÉRIEL, PERTE DE DONNÉES, PERTE D'EXPLOITATION OU PRÉJUDICE DE
+   QUELQUE NATURE QUE CE SOIT RÉSULTANT DE L'UTILISATION OU DE L'IMPOSSIBILITÉ
+   D'UTILISER LE LOGICIEL.
+
+12. DROIT APPLICABLE
+
+   La présente licence est régie par le droit français. Tout litige relatif à
+   sa validité, son interprétation ou son exécution relève de la compétence
+   exclusive des tribunaux français, sous réserve des règles impératives de
+   compétence applicables aux consommateurs.
+
+================================================================================
+ENGLISH VERSION (courtesy translation — the French version prevails)
+================================================================================
+
+1. DEFINITIONS
+
+   "Software" means the source code, configuration files, database schemas,
+   migrations, email templates, assets and documentation contained in this
+   repository, together with any earlier or later version released by the
+   Holder.
+
+   "Holder" means Thibault JEANPIERRE, author and sole owner of the economic
+   rights in the Software.
+
+   "You" means any individual or legal entity accessing the Software.
+
+2. NATURE OF THE PUBLICATION
+
+   The Software is published as "source-available": its code is made publicly
+   readable. This publication is NOT an open source release and grants NO
+   transfer of rights. Making the code publicly visible does not waive the
+   Holder's copyright, nor does it imply any licence to use it.
+
+3. RIGHTS GRANTED
+
+   The Holder grants You a personal, non-exclusive, non-transferable licence,
+   revocable at any time, strictly limited to:
+
+   a) viewing and reading the source code;
+   b) performing a technical or security audit of the code;
+   c) evaluating the Software for professional or educational assessment,
+      including running it locally on a strictly personal and temporary basis;
+   d) quoting short excerpts of the code for analysis, teaching, criticism or
+      vulnerability reporting, provided the source and the Holder are cited.
+
+4. RESTRICTIONS
+
+   Without the Holder's prior express written permission, You may NOT:
+
+   a) operate the Software in production, for yourself or for a third party;
+   b) copy, reproduce, duplicate or fork the Software, in whole or in part,
+      beyond what is strictly necessary under Section 3;
+   c) modify, adapt, translate or create derivative works of the Software;
+   d) distribute, publish, sublicense, rent, lend, sell or resell it;
+   e) commercially exploit the Software in any form, including SaaS, hosted,
+      managed or white-label offerings;
+   f) use the Software, in whole or in part, to design, train or improve a
+      competing product or service;
+   g) use the Software as training data for a machine learning model;
+   h) remove, obscure or alter any copyright, licence, authorship notice or
+      trade mark appearing in the Software.
+
+   This Section applies without prejudice to mandatory exceptions granted by
+   applicable law, in particular the right to decompile for interoperability
+   purposes.
+
+5. CONTRIBUTIONS
+
+   The Software is developed and maintained exclusively by the Holder. No
+   external contribution is solicited or accepted. Any contribution
+   nonetheless submitted (pull request, patch, code suggestion) is deemed
+   offered to the Holder free of charge, with an irrevocable worldwide
+   assignment of all related economic rights, with no obligation for the
+   Holder to merge or acknowledge it.
+
+   Vulnerability reports, however, are welcome and must be sent privately to
+   the Holder (see SECURITY in the README).
+
+6. TRADE MARKS
+
+   "AeroConnect", its logo and associated visual identity remain the property
+   of the Holder. This licence grants no right to use those distinctive signs.
+
+7. COMMERCIAL LICENCE
+
+   Any use beyond Section 3 — in particular deployment within a flying club
+   or ULM club — requires a separate commercial licence negotiated directly
+   with the Holder.
+
+8. THIRD-PARTY COMPONENTS
+
+   The Software relies on third-party libraries distributed under their own
+   licences (see package.json and the node_modules directory). This licence
+   applies only to the original elements of the Software and does not alter
+   the rights and obligations attached to those third-party components.
+
+9. TERMINATION
+
+   The rights granted in Section 3 terminate automatically, without notice,
+   upon any breach of Section 4. You must then cease all use of the Software
+   and destroy every copy in Your possession. The Holder further reserves the
+   right to revoke those rights at any time and to change the terms applying
+   to future versions.
+
+10. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AVAILABILITY, ACCURACY AND
+   NON-INFRINGEMENT.
+
+   The Software includes features related to aviation safety (flight logbook,
+   maintenance tracking, pilot ratings). It is in no way a substitute for
+   applicable regulatory obligations, nor for the judgement of the pilot in
+   command, the technical manager or the club's management.
+
+11. LIMITATION OF LIABILITY
+
+   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE HOLDER SHALL NOT BE
+   LIABLE FOR ANY DIRECT OR INDIRECT DAMAGES, TANGIBLE OR INTANGIBLE, LOSS OF
+   DATA, LOSS OF BUSINESS OR ANY OTHER HARM ARISING FROM THE USE OF, OR
+   INABILITY TO USE, THE SOFTWARE.
+
+12. GOVERNING LAW
+
+   This licence is governed by French law. Any dispute relating to its
+   validity, interpretation or performance falls within the exclusive
+   jurisdiction of the French courts, subject to mandatory jurisdiction rules
+   applicable to consumers.

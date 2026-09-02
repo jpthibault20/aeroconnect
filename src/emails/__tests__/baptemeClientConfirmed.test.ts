@@ -12,6 +12,7 @@ const baseProps = {
     startDate: "12/08/2026 14:00:00",
     endDate: "12/08/2026 15:00:00",
     planeName: "F-JABC",
+    optionLabel: null,
     clubName: "Aéroclub Test",
     clubAdress: { countrie: "France", zipCode: "34000", city: "Montpellier", adress: "Aérodrome" },
     airfield: "LFMT",
@@ -51,5 +52,12 @@ describe("Email de confirmation baptême — contact du pilote", () => {
         // Le reste de l'email reste intact.
         expect(html).toContain("F-JABC");
         expect(html).toContain("contact@club.fr");
+    });
+
+    it("affiche la formule choisie quand la machine en avait une configurée", async () => {
+        const html = await render(
+            BaptemeClientConfirmed({ ...baseProps, optionLabel: "30 min – 90,00 €", pilot: null })
+        );
+        expect(html).toContain("30 min – 90,00 €");
     });
 });

@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { Textarea } from './ui/textarea'
 import { cn } from '@/lib/utils'
+import { ALL_CLUB_PLANES_SENTINEL } from '@/lib/planeVisibility'
 
 interface Props {
     display: "desktop" | "phone"
@@ -81,7 +82,10 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         planeId: planesProp.map(plane => plane.id),
         classes: Array.from(new Set(planesProp.map(plane => plane.classes))),
         comment: "",
-        natureOfTheft: []
+        // Visible par défaut sur le lien public de réservation baptême (cf.
+        // src/lib/bapteme.ts) : un vol créé sans y toucher doit pouvoir être
+        // pris par un client externe, désactivable via le switch.
+        natureOfTheft: natureOfTheftForBapteme(true)
     });
 
     // --- Effects ---
@@ -249,11 +253,17 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         }
 
         try {
+            // « Tout sélectionner » : on stocke un marqueur résolu dynamiquement
+            // à la lecture plutôt que la liste figée des avions du moment, pour
+            // qu'une machine créée après coup soit proposée sur ce créneau (y
+            // compris sur les occurrences déjà créées d'une série récurrente).
+            // Un sous-ensemble choisi délibérément par l'instructeur reste figé.
+            const basePlaneIds = allPlanesSelected ? [ALL_CLUB_PLANES_SENTINEL] : sessionData.planeId;
             const finalSessionData = {
                 ...sessionData,
                 planeId: classroomSession
-                    ? [...sessionData.planeId, "classroomSession"]
-                    : sessionData.planeId
+                    ? [...basePlaneIds, "classroomSession"]
+                    : basePlaneIds
             };
             const instructor = usersProps.find(user => user.id === sessionData.instructorId);
 

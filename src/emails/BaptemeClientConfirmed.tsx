@@ -21,6 +21,9 @@ interface BaptemeClientConfirmedProps {
     startDate: string;
     endDate: string;
     planeName: string;
+    // Formule choisie (durée + tarif), ex. "30 min – 90 €". null si la machine
+    // n'avait pas de formule configurée.
+    optionLabel: string | null;
     clubName: string | null;
     clubAdress: clubAdressType;
     airfield: string | null;
@@ -34,6 +37,7 @@ export const BaptemeClientConfirmed = ({
     startDate,
     endDate,
     planeName,
+    optionLabel,
     clubName,
     clubAdress,
     airfield,
@@ -65,6 +69,12 @@ export const BaptemeClientConfirmed = ({
                     📅 {startDate} ➡️ {endDate}
                     <br />
                     🛩️ Appareil : {planeName}
+                    {optionLabel && (
+                        <>
+                            <br />
+                            🎟️ Formule : {optionLabel}
+                        </>
+                    )}
                     {airfield && (
                         <>
                             <br />

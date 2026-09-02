@@ -116,9 +116,14 @@ const columns = [
 const ROWS_PER_PAGE = 32;
 
 export const PilotLogbookDocument = ({ logs, pilotName, year, displayedPilotID }: Props) => {
+    // Ordre historique : du vol le plus ancien (en haut) au plus récent (en bas).
+    const sortedLogs = [...logs].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
     const pages: flight_logs[][] = [];
-    for (let i = 0; i < logs.length; i += ROWS_PER_PAGE) {
-        pages.push(logs.slice(i, i + ROWS_PER_PAGE));
+    for (let i = 0; i < sortedLogs.length; i += ROWS_PER_PAGE) {
+        pages.push(sortedLogs.slice(i, i + ROWS_PER_PAGE));
     }
 
     if (pages.length === 0) {
@@ -130,7 +135,7 @@ export const PilotLogbookDocument = ({ logs, pilotName, year, displayedPilotID }
         displayedPilotID && log.studentID === displayedPilotID ? "EP" : log.pilotFunction;
 
     // Running totals
-    const totals = logs.reduce(
+    const totals = sortedLogs.reduce(
         (acc, log) => {
             const t = computeFlightTimes({
                 hobbsStart: log.hobbsStart,

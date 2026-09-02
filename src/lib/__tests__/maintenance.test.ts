@@ -5,6 +5,7 @@ import {
     addMonths,
     getTaskDueStatus,
     isPlaneOverdue,
+    sortTasksByUrgency,
     MaintenanceTaskLike,
 } from "@/lib/maintenance";
 
@@ -137,5 +138,27 @@ describe("isPlaneOverdue", () => {
 
     it("faux sans aucun rappel", () => {
         expect(isPlaneOverdue([], 500, now)).toBe(false);
+    });
+});
+
+describe("sortTasksByUrgency", () => {
+    const now = new Date("2026-07-13T12:00:00Z");
+
+    it("classe les rappels du plus urgent au moins urgent", () => {
+        const dansUnAn = { id: "an", intervalHours: null, intervalMonths: 12, lastPerformedDate: "2026-07-01", lastPerformedHobbs: 0 };
+        const enRetard = { id: "retard", intervalHours: 50, intervalMonths: null, lastPerformedDate: "2026-01-01", lastPerformedHobbs: 200 };
+        const bientot = { id: "bientot", intervalHours: 100, intervalMonths: null, lastPerformedDate: "2026-01-01", lastPerformedHobbs: 200 };
+
+        const sorted = sortTasksByUrgency([dansUnAn, bientot, enRetard], 255, now);
+        expect(sorted.map((t) => t.id)).toEqual(["retard", "bientot", "an"]);
+    });
+
+    it("place en dernier les rappels dont la marge est incalculable", () => {
+        const sansMarge = { id: "sans", intervalHours: 50, intervalMonths: null, lastPerformedDate: "2026-01-01", lastPerformedHobbs: 200 };
+        const avecMarge = { id: "avec", intervalHours: null, intervalMonths: 12, lastPerformedDate: "2026-01-01", lastPerformedHobbs: 0 };
+
+        // currentHobbs inconnu => pas de marge horaire calculable pour `sansMarge`.
+        const sorted = sortTasksByUrgency([sansMarge, avecMarge], null, now);
+        expect(sorted.map((t) => t.id)).toEqual(["avec", "sans"]);
     });
 });

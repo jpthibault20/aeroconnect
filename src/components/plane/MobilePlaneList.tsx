@@ -10,20 +10,23 @@ import UpdatePlanes from './UpdatePlanes'; // Ton composant d'édition
 import { Switch } from '@/components/ui/switch';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, User, Wrench, AlertTriangle } from 'lucide-react';
+import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, User, Wrench, AlertTriangle, Ticket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { canManagePlane, canAccessMaintenance, isPrivatePlane } from '@/lib/planeVisibility';
+import { canManageBaptemeOptions } from '@/lib/bapteme';
 import MaintenanceDialog from './maintenance/MaintenanceDialog';
+import BaptemeOptionsDialog from './bapteme/BaptemeOptionsDialog';
 import PlaneThumbnail from './PlaneThumbnail';
 
 interface Props {
     planesList: planes[];
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
     ownerNames?: Record<string, string>;
+    onOwnerNameResolved?: (ownerID: string, ownerName: string) => void;
     overduePlaneIDs?: string[];
 }
 
-const MobilePlaneList = ({ planesList, setPlanes, ownerNames, overduePlaneIDs }: Props) => {
+const MobilePlaneList = ({ planesList, setPlanes, ownerNames, onOwnerNameResolved, overduePlaneIDs }: Props) => {
     if (planesList.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center p-8 text-center bg-white rounded-xl border border-slate-200 shadow-sm mt-4">
@@ -43,6 +46,7 @@ const MobilePlaneList = ({ planesList, setPlanes, ownerNames, overduePlaneIDs }:
                     setPlanes={setPlanes}
                     allPlanes={planesList}
                     ownerNames={ownerNames}
+                    onOwnerNameResolved={onOwnerNameResolved}
                     isOverdue={!!overduePlaneIDs?.includes(plane.id)}
                 />
             ))}
@@ -57,19 +61,22 @@ interface CardProps {
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
     allPlanes: planes[];
     ownerNames?: Record<string, string>;
+    onOwnerNameResolved?: (ownerID: string, ownerName: string) => void;
     isOverdue?: boolean;
 }
 
-const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOverdue }: CardProps) => {
+const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwnerNameResolved, isOverdue }: CardProps) => {
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
     const [showMaintenance, setShowMaintenance] = useState(false);
+    const [showBapteme, setShowBapteme] = useState(false);
     const [planeState, setPlaneState] = useState<planes>(initialPlane);
 
     // --- Permissions (par machine, identiques au Tableau) ---
     const canManage = currentUser ? canManagePlane(planeState, currentUser) : false;
     const canMaintenance = currentUser ? canAccessMaintenance(planeState, currentUser) : false;
+    const canBapteme = currentUser ? canManageBaptemeOptions(planeState, currentUser) : false;
 
     // Président (OWNER) et admin voient le propriétaire des machines privées.
     const canViewOwner =
@@ -277,6 +284,20 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOve
                     </div>
                 )}
 
+                {/* Bouton Formules de baptême (durée + tarif) */}
+                {canBapteme && (
+                    <div className={cn("pt-2", !canMaintenance && "border-t border-slate-100")}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowBapteme(true)}
+                            className="w-full border-slate-200 text-slate-700 hover:bg-purple-50 hover:text-[#774BBE] hover:border-purple-200"
+                        >
+                            <Ticket className="w-4 h-4 mr-2" />
+                            Formules de baptême
+                        </Button>
+                    </div>
+                )}
+
                 {/* Actions Footer */}
                 {canManage && (
                     <div className={cn(
@@ -291,6 +312,7 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOve
                             setPlane={setPlaneState}
                             setPlanes={setPlanes}
                             planes={allPlanes}
+                            onOwnerNameResolved={onOwnerNameResolved}
                         >
                             <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-[#774BBE] hover:border-purple-200">
                                 <Pencil className="w-4 h-4 mr-2" />
@@ -321,6 +343,14 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOve
                         plane={planeState}
                         open={showMaintenance}
                         onOpenChange={setShowMaintenance}
+                    />
+                )}
+
+                {canBapteme && (
+                    <BaptemeOptionsDialog
+                        plane={planeState}
+                        open={showBapteme}
+                        onOpenChange={setShowBapteme}
                     />
                 )}
             </CardContent>
