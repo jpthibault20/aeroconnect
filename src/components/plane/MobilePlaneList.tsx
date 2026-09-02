@@ -22,10 +22,11 @@ interface Props {
     planesList: planes[];
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
     ownerNames?: Record<string, string>;
+    onOwnerNameResolved?: (ownerID: string, ownerName: string) => void;
     overduePlaneIDs?: string[];
 }
 
-const MobilePlaneList = ({ planesList, setPlanes, ownerNames, overduePlaneIDs }: Props) => {
+const MobilePlaneList = ({ planesList, setPlanes, ownerNames, onOwnerNameResolved, overduePlaneIDs }: Props) => {
     if (planesList.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center p-8 text-center bg-white rounded-xl border border-slate-200 shadow-sm mt-4">
@@ -45,6 +46,7 @@ const MobilePlaneList = ({ planesList, setPlanes, ownerNames, overduePlaneIDs }:
                     setPlanes={setPlanes}
                     allPlanes={planesList}
                     ownerNames={ownerNames}
+                    onOwnerNameResolved={onOwnerNameResolved}
                     isOverdue={!!overduePlaneIDs?.includes(plane.id)}
                 />
             ))}
@@ -59,10 +61,11 @@ interface CardProps {
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
     allPlanes: planes[];
     ownerNames?: Record<string, string>;
+    onOwnerNameResolved?: (ownerID: string, ownerName: string) => void;
     isOverdue?: boolean;
 }
 
-const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOverdue }: CardProps) => {
+const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwnerNameResolved, isOverdue }: CardProps) => {
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
@@ -309,6 +312,7 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, isOve
                             setPlane={setPlaneState}
                             setPlanes={setPlanes}
                             planes={allPlanes}
+                            onOwnerNameResolved={onOwnerNameResolved}
                         >
                             <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-[#774BBE] hover:border-purple-200">
                                 <Pencil className="w-4 h-4 mr-2" />

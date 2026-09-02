@@ -35,7 +35,7 @@ import {
     listBaptemePilots,
     listBaptemePlanes,
 } from "@/lib/bapteme";
-import { formatSessionDate, formatSessionTime } from "@/api/global function/dateServeur";
+import { formatSessionDate } from "@/api/global function/dateServeur";
 
 // Formule (durée + tarif) proposée sur une machine. Une machine sans formule
 // configurée n'en propose aucune : le client passe directement à ses
@@ -641,27 +641,18 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
                 <div className="grid grid-cols-3 gap-2">
                     {selectedDay.times.map((time) => {
                         const selected = time.timeKey === selectedTimeKey;
-                        const end = formatSessionTime(
-                            new Date(new Date(time.sessionDateStart).getTime() + time.durationMin * 60000)
-                        );
                         return (
                             <button
                                 key={time.timeKey}
                                 type="button"
                                 onClick={() => handleSelectTime(time.timeKey)}
                                 aria-pressed={selected}
-                                className={`rounded-xl border py-2.5 text-center text-sm font-bold transition ${selected
+                                className={`rounded-xl border py-3 text-center text-sm font-bold transition ${selected
                                     ? "border-[#774BBE] bg-[#774BBE] text-white"
                                     : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
                                     }`}
                             >
                                 {time.timeKey}
-                                <span
-                                    className={`block text-[10px] font-semibold ${selected ? "text-white/80" : "text-slate-400"
-                                        }`}
-                                >
-                                    → {end}
-                                </span>
                             </button>
                         );
                     })}

@@ -13,6 +13,10 @@ import { formatSessionDate, formatSessionTime } from "@/api/global function/date
 // DTO renvoyé par getPendingBaptemeRequests (dates incluses).
 export interface PendingBaptemeItem {
     id: string;
+    // Créneau et machine visés : servent à recaler l'état local du calendrier
+    // après validation / refus (cf. BaptemeSessionValidation).
+    sessionID: string;
+    planeID: string;
     firstName: string;
     lastName: string;
     email: string;

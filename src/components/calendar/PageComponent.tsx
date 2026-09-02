@@ -7,6 +7,7 @@ import InitialLoading from '@/components/InitialLoading';
 import { flight_sessions, planes, User } from '@prisma/client';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { resolveOfferedClasses } from '@/lib/planeVisibility';
+import { BaptemePendingProvider } from '@/components/calendar/BaptemePendingContext';
 
 /**
  * Hook personnalisé pour détecter si l'écran est de taille mobile ou desktop.
@@ -55,21 +56,25 @@ const PageComponent = ({ sessionsprops, planesProp, clubIDUrl, usersProps }: pro
     // Rendu conditionnel en fonction de la taille de l'écran
     return (
         <InitialLoading className="h-full w-full" clubIDURL={clubIDUrl}>
-            {!isMobile ? (
-                <GlobalCalendarDesktop
-                    sessions={sessions}
-                    setSessions={setSessions}
-                    planesProp={planesProp}
-                    usersProps={usersProps}
-                />
-            ) : (
-                <GlobalCalendarPhone
-                    sessions={sessions}
-                    setSessions={setSessions}
-                    planesProp={planesProp}
-                    usersProps={usersProps}
-                />
-            )}
+            {/* Cache des demandes de baptême en attente, préchargé par chaque
+                vue sur sa propre plage affichée (semaine / jour). */}
+            <BaptemePendingProvider>
+                {!isMobile ? (
+                    <GlobalCalendarDesktop
+                        sessions={sessions}
+                        setSessions={setSessions}
+                        planesProp={planesProp}
+                        usersProps={usersProps}
+                    />
+                ) : (
+                    <GlobalCalendarPhone
+                        sessions={sessions}
+                        setSessions={setSessions}
+                        planesProp={planesProp}
+                        usersProps={usersProps}
+                    />
+                )}
+            </BaptemePendingProvider>
         </InitialLoading>
     );
 };

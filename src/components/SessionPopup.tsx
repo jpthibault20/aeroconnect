@@ -29,6 +29,7 @@ import { Button } from "./ui/button";
 import { Spinner } from "./ui/SpinnerVariants";
 import ShowCommentSession from "./ShowCommentSession";
 import SessionContacts from "./calendar/SessionContacts";
+import BaptemeSessionValidation from "./calendar/BaptemeSessionValidation";
 import { cn, LEGACY_NO_PLANE_ID } from "@/lib/utils";
 
 interface Prop {
@@ -572,6 +573,16 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                         </div>
 
                         <div className="p-6 overflow-y-auto max-h-[70vh]">
+                            {/* Baptême en attente : validable ici comme en page
+                                Club, avec les mêmes droits (pilote assigné ou
+                                gestion). Placé hors du branchement par rôle pour
+                                rester visible du pilote non gestionnaire. */}
+                            <BaptemeSessionValidation
+                                sessions={sessions}
+                                setSessions={setSessions}
+                                open={isOpen}
+                            />
+
                             {/* MODE ADMIN / OWNER / INSTRUCTOR / MANAGER : UPDATE */}
                             {["ADMIN", "OWNER", "INSTRUCTOR", "MANAGER"].includes(currentUser?.role as string) ? (
                                 <SessionPopupUpdate

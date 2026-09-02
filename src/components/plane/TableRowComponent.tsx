@@ -30,11 +30,12 @@ interface Props {
     // Affichage de la colonne "Propriétaire" (président/admin uniquement).
     canViewOwner?: boolean;
     ownerNames?: Record<string, string>;
+    onOwnerNameResolved?: (ownerID: string, ownerName: string) => void;
     // Au moins un rappel de maintenance en retard sur cette machine.
     isOverdue?: boolean;
 }
 
-const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames, isOverdue }: Props) => {
+const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames, onOwnerNameResolved, isOverdue }: Props) => {
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
@@ -290,6 +291,7 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                                     setPlane={setPlaneState}
                                     setPlanes={setPlanes}
                                     planes={planes}
+                                    onOwnerNameResolved={onOwnerNameResolved}
                                 >
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-purple-600 hover:bg-purple-50">
                                         <Pencil className="w-4 h-4" />

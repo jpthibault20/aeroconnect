@@ -38,6 +38,23 @@ export const getDaysOfWeek = (inputDate: Date): DayInfo[] => {
     return daysOfWeek;
 };
 
+/**
+ * Sessions tombant dans la semaine affichée (lundi -> dimanche) de `date`.
+ *
+ * Même convention que getSessionsFromDate : `sessionDateStart` est stockée en
+ * wall-clock UTC, donc comparée par ses composantes UTC aux jours de la semaine
+ * (eux exprimés en local par getDaysOfWeek).
+ */
+export const getSessionsOfWeek = (date: Date, sessions: flight_sessions[]): flight_sessions[] => {
+    const days = new Set(
+        getDaysOfWeek(date).map((d) => `${d.year}-${d.month}-${d.dayNumber}`)
+    );
+    return sessions.filter((session) => {
+        const d = session.sessionDateStart;
+        return days.has(`${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`);
+    });
+};
+
 export const getSessionsFromDate = (date: Date, sessions: flight_sessions[]): flight_sessions[] => {
     return sessions?.filter((session) => {
         const sessionDate = session.sessionDateStart;

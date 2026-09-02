@@ -8,6 +8,7 @@ import Filter from '../Filter';
 import NewSession from '@/components/NewSession';
 import DeleteManySessions from '@/components/DeleteManySessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
+import { useBaptemePrefetch } from '../BaptemePendingContext';
 
 interface Props {
     sessions: flight_sessions[];
@@ -155,6 +156,13 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         const dateString = formatDateAsKey(date);
         return sessionsGroupedByDate[dateString] || [];
     };
+
+    // Préchargement en arrière-plan des baptêmes en attente du SEUL jour
+    // affiché : la popup d'un créneau les a alors déjà sous la main.
+    useBaptemePrefetch(useMemo(
+        () => sessionsGroupedByDate[formatDateAsKey(selectedDate)] || [],
+        [sessionsGroupedByDate, selectedDate]
+    ));
 
     const formatDate = (date: Date) => {
         const dayName = date.toLocaleDateString('fr-FR', { weekday: 'long' });
