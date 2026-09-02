@@ -16,8 +16,9 @@ import { MachineUsage, planes, userRole } from "@prisma/client";
  */
 
 // Rôles qui voient TOUTES les machines privées du club, en plus de leurs propres
-// machines : président (OWNER) et admin (ADMIN).
-const PRIVATE_PLANE_OVERSIGHT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN];
+// machines : président (OWNER) et admin (ADMIN). Ce sont aussi les seuls rôles
+// habilités à réattribuer le propriétaire d'une machine (cf. canReassignPlaneOwner).
+export const PRIVATE_PLANE_OVERSIGHT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN];
 
 // Rôles de gestion, seuls habilités à créer/gérer des machines DU CLUB.
 export const CLUB_PLANE_MANAGE_ROLES: userRole[] = [
@@ -104,6 +105,36 @@ interface Viewer {
     role: userRole;
 }
 
+// Seuls le président et l'admin peuvent réattribuer le propriétaire d'une
+// machine (à un membre du club, ou « au club » = ownerID null).
+export function canReassignPlaneOwner(user: Viewer): boolean {
+    return PRIVATE_PLANE_OVERSIGHT_ROLES.includes(user.role);
+}
+
+export interface OwnerReassignment {
+    ownerID: string | null;
+    usageTypes: MachineUsage[];
+}
+
+/**
+ * Résout propriétaire + usages lors d'une réattribution (président/admin
+ * uniquement). Mêmes règles d'exclusivité que resolvePlaneCreation :
+ *  - nouveau propriétaire = un membre => machine privée, aucun usage club ;
+ *  - nouveau propriétaire = null => machine du club, on reprend les usages
+ *    existants (le cas où la machine était déjà du club), ou tous les usages
+ *    par défaut si elle était privée (elle n'en avait aucun).
+ */
+export function resolveOwnerReassignment(
+    newOwnerID: string | null,
+    currentUsageTypes: MachineUsage[]
+): OwnerReassignment {
+    if (newOwnerID) {
+        return { ownerID: newOwnerID, usageTypes: [] };
+    }
+    const usageTypes = sanitizeClubUsages(currentUsageTypes);
+    return { ownerID: null, usageTypes: usageTypes.length > 0 ? usageTypes : CLUB_USAGE_VALUES };
+}
+
 /**
  * Un utilisateur donné peut-il voir cette machine ? (le club est supposé déjà
  * vérifié en amont — on ne filtre ici que la dimension privé/public).
@@ -184,6 +215,67 @@ export function filterBookablePlanes<T extends Pick<planes, "ownerID" | "classes
     user: Viewer & { classes: number[] }
 ): T[] {
     return filterVisiblePlanes(list, user).filter((plane) => user.classes.includes(plane.classes));
+}
+
+/**
+ * Marqueur stocké dans `flight_sessions.planeID`, au même titre que le
+ * marqueur `"classroomSession"` déjà présent dans ce tableau : signifie
+ * « toutes les machines DU CLUB », résolu dynamiquement à la lecture plutôt
+ * que figé à la création.
+ *
+ * Sans ça, un créneau (a fortiori une série récurrente sur plusieurs mois)
+ * créé avec « Tout sélectionner » ne proposait plus jamais une machine créée
+ * après coup : `planeID` était une photo des avions existants au moment de la
+ * création, jamais mise à jour. cf. resolveOfferedPlaneIDs / resolveOfferedClasses.
+ */
+export const ALL_CLUB_PLANES_SENTINEL = "allClubPlanes";
+
+/**
+ * Résout les machines réellement proposées par un créneau : remplace le
+ * marqueur `ALL_CLUB_PLANES_SENTINEL` (s'il est présent) par la liste actuelle
+ * des machines DU CLUB (jamais une machine privée), tout en conservant les
+ * autres entrées telles quelles (notamment `"classroomSession"`).
+ *
+ * Un `planeID` sans marqueur (créneau où l'instructeur a délibérément choisi
+ * un sous-ensemble de machines) n'est jamais modifié : seule la sélection
+ * « toutes les machines » doit suivre l'ajout de nouvelles machines.
+ */
+export function resolveOfferedPlaneIDs<T extends Pick<planes, "id" | "ownerID">>(
+    planeIDField: string[],
+    clubPlanes: T[]
+): string[] {
+    if (!planeIDField.includes(ALL_CLUB_PLANES_SENTINEL)) return planeIDField;
+
+    const clubPlaneIDs = clubPlanes.filter((p) => !isPrivatePlane(p)).map((p) => p.id);
+    const explicitExtras = planeIDField.filter((id) => id !== ALL_CLUB_PLANES_SENTINEL);
+    return Array.from(new Set([...clubPlaneIDs, ...explicitExtras]));
+}
+
+/**
+ * Résout les classes réellement couvertes par un créneau. Même logique que
+ * resolveOfferedPlaneIDs : si le créneau porte le marqueur « toutes les
+ * machines », les classes suivent dynamiquement les machines DU CLUB
+ * existantes plutôt que de rester figées sur celles présentes à la création.
+ */
+export function resolveOfferedClasses<T extends Pick<planes, "classes" | "ownerID">>(
+    planeIDField: string[],
+    classesField: number[],
+    clubPlanes: T[]
+): number[] {
+    if (!planeIDField.includes(ALL_CLUB_PLANES_SENTINEL)) return classesField;
+    return Array.from(new Set(clubPlanes.filter((p) => !isPrivatePlane(p)).map((p) => p.classes)));
+}
+
+/**
+ * Une machine donnée est-elle proposée par ce créneau ? Pratique pour les
+ * `.includes(...)` ponctuels (SessionPopup) sans reconstruire la liste complète.
+ */
+export function sessionOffersPlane<T extends Pick<planes, "id" | "ownerID">>(
+    planeIDField: string[],
+    planeID: string,
+    clubPlanes: T[]
+): boolean {
+    return resolveOfferedPlaneIDs(planeIDField, clubPlanes).includes(planeID);
 }
 
 export interface BeneficiaryPlaneScope {

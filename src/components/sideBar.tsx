@@ -291,10 +291,7 @@ const SideBar = ({ clubsProp }: props) => {
                     </div>
                 </Link>
 
-                <div className="flex items-center justify-between pt-2 px-2">
-                    <p className="text-[10px] text-slate-600 font-mono">
-                        v{packageJson.version}
-                    </p>
+                <div className="flex items-center justify-end pt-2 px-2">
                     <button
                         className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-red-400 hover:bg-red-400/10 px-3 py-1.5 rounded-md transition-all"
                         onClick={logout}
@@ -304,6 +301,13 @@ const SideBar = ({ clubsProp }: props) => {
                         {isLoadingSignout ? "..." : "Déconnexion"}
                     </button>
                 </div>
+
+                {/* Version + date, comme dans le menu mobile (navBar.tsx). Sur sa
+                    propre ligne : la sidebar ne fait que 240px et le libellé
+                    déborderait à côté du bouton de déconnexion. */}
+                <p className="text-center pt-2 text-[10px] text-slate-600 font-mono">
+                    v{packageJson.version} • {packageJson.date}
+                </p>
             </div>
         </aside>
     );

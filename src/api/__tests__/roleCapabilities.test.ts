@@ -67,7 +67,7 @@ const ALL_ROLES = [
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle USER", () => {
-    const role = userRole.USER;
+    const role: userRole = userRole.USER;
 
     it("ne peut créer AUCUNE machine (ni privée, ni club)", () => {
         expect(canCreatePrivatePlane(role)).toBe(false);
@@ -96,7 +96,7 @@ describe("Rôle USER", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle STUDENT", () => {
-    const role = userRole.STUDENT;
+    const role: userRole = userRole.STUDENT;
 
     it("peut créer une machine privée mais PAS une machine du club", () => {
         expect(canCreatePrivatePlane(role)).toBe(true);
@@ -134,7 +134,7 @@ describe("Rôle STUDENT", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle PILOT", () => {
-    const role = userRole.PILOT;
+    const role: userRole = userRole.PILOT;
 
     it("peut créer une machine privée mais PAS une machine du club", () => {
         expect(canCreatePrivatePlane(role)).toBe(true);
@@ -165,7 +165,7 @@ describe("Rôle PILOT", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle INSTRUCTOR", () => {
-    const role = userRole.INSTRUCTOR;
+    const role: userRole = userRole.INSTRUCTOR;
 
     it("peut créer une machine privée mais PAS une machine du club", () => {
         expect(canCreatePrivatePlane(role)).toBe(true);
@@ -193,7 +193,7 @@ describe("Rôle INSTRUCTOR", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle MANAGER", () => {
-    const role = userRole.MANAGER;
+    const role: userRole = userRole.MANAGER;
 
     it("peut créer des machines du club ET des machines privées", () => {
         expect(canCreateClubPlane(role)).toBe(true);
@@ -220,7 +220,7 @@ describe("Rôle MANAGER", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle OWNER (président)", () => {
-    const role = userRole.OWNER;
+    const role: userRole = userRole.OWNER;
 
     it("peut créer machines du club et privées", () => {
         expect(canCreateClubPlane(role)).toBe(true);
@@ -245,7 +245,7 @@ describe("Rôle OWNER (président)", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle ADMIN", () => {
-    const role = userRole.ADMIN;
+    const role: userRole = userRole.ADMIN;
 
     it("voit et gère TOUTES les machines, y compris les privées des autres", () => {
         expect(canViewPlane(othersPrivatePlane, user(role))).toBe(true);

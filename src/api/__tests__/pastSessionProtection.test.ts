@@ -22,7 +22,7 @@ interface UnsubscribeContext {
     timeDelayUnsubscribeMinutes: number;
 }
 
-const ALLOWED_UNSUBSCRIBE_ROLES = [userRole.ADMIN, userRole.INSTRUCTOR, userRole.OWNER, userRole.MANAGER];
+const ALLOWED_UNSUBSCRIBE_ROLES: userRole[] = [userRole.ADMIN, userRole.INSTRUCTOR, userRole.OWNER, userRole.MANAGER];
 
 function canUnsubscribe(ctx: UnsubscribeContext): { allowed: boolean; reason?: string } {
     const isAuthorized = ALLOWED_UNSUBSCRIBE_ROLES.includes(ctx.userRole);
@@ -299,7 +299,7 @@ describe("Protection des séances passées", () => {
     });
 
     describe("Modification d'un vol signé", () => {
-        const SIGN_OVERRIDE = [userRole.OWNER, userRole.ADMIN];
+        const SIGN_OVERRIDE: userRole[] = [userRole.OWNER, userRole.ADMIN];
 
         function canModifySigned(pilotSigned: boolean, role: userRole): boolean {
             if (!pilotSigned) return true;

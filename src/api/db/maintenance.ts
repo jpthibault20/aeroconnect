@@ -118,6 +118,56 @@ export const addMaintenanceIntervention = async (
     }
 };
 
+export const updateMaintenanceIntervention = async (
+    planeID: string,
+    interventionID: string,
+    input: InterventionInput
+) => {
+    const parsed = interventionInputSchema.safeParse(input);
+    if (!parsed.success) {
+        return { error: parsed.error.issues[0]?.message ?? "Saisie invalide" };
+    }
+    const data = parsed.data;
+
+    const loaded = await loadPlaneForMaintenance(planeID);
+    if ("error" in loaded) return { error: loaded.error };
+    const { plane } = loaded;
+
+    const history = parseMaintenanceHistory(plane.maintenanceHistory);
+    const index = history.findIndex((i) => i.id === interventionID);
+    if (index === -1) return { error: "Intervention introuvable" };
+    const existing = history[index];
+
+    // On ne touche pas à l'auteur / la date de saisie d'origine : seuls les
+    // champs saisis par l'utilisateur sont modifiables. Pas de ré-association à
+    // un rappel ici (contrairement à l'ajout) pour éviter de réinitialiser un
+    // compteur par effet de bord lors d'une simple correction.
+    const updated: MaintenanceIntervention = {
+        id: existing.id,
+        date: data.date,
+        type: data.type,
+        description: data.description,
+        ...(data.comment ? { comment: data.comment } : {}),
+        engineHours: data.engineHours,
+        createdById: existing.createdById,
+        createdByName: existing.createdByName,
+        createdAt: existing.createdAt,
+    };
+
+    const nextHistory = [...history];
+    nextHistory[index] = updated;
+
+    try {
+        await prisma.planes.update({
+            where: { id: planeID },
+            data: { maintenanceHistory: nextHistory },
+        });
+        return { success: "Intervention mise à jour", interventions: nextHistory };
+    } catch {
+        return { error: "Erreur lors de la mise à jour de l'intervention" };
+    }
+};
+
 export const deleteMaintenanceIntervention = async (
     planeID: string,
     interventionID: string

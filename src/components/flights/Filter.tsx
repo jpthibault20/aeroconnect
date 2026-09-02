@@ -51,8 +51,17 @@ const Filter = ({
 }: Props) => {
     const { currentUser } = useCurrentUser();
 
+    // shouldCloseOnScroll : désactivé car HeroUI écoute tous les scrolls de la page ;
+    // sur téléphone le moindre appui dans la popup (mise en avant de l'élément qui
+    // prend le focus, barre d'URL) déclenche un scroll et refermait le filtre.
+    // shouldCloseOnBlur : les menus déroulants et le calendrier sont rendus dans des
+    // portails hors de la popup, le focus qui y part ne doit pas la fermer.
     return (
-        <Popover placement="bottom-end">
+        <Popover
+            placement="bottom-end"
+            shouldCloseOnScroll={false}
+            shouldCloseOnBlur={false}
+        >
             <PopoverTrigger>
                 <Button aria-label="Open filters">
                     <CiFilter size={20} />

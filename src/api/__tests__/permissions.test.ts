@@ -7,12 +7,12 @@ import { userRole } from "@prisma/client";
  * telle qu'implémentée dans les différents fichiers de l'app.
  */
 
-const MANAGEMENT_ROLES = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
-const ADMIN_ROLES = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
-const LOGBOOK_ROLES = [userRole.PILOT, userRole.STUDENT, userRole.INSTRUCTOR, userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
+const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+const LOGBOOK_ROLES: userRole[] = [userRole.PILOT, userRole.STUDENT, userRole.INSTRUCTOR, userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 // Roles qui peuvent gérer les avions (planes.ts ADMIN_ROLES inclut MANAGER)
-const PLANE_MANAGEMENT_ROLES = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+const PLANE_MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 describe("Matrice de permissions", () => {
     describe("Gestion des sessions (création/suppression)", () => {
@@ -109,7 +109,7 @@ describe("Matrice de permissions", () => {
     });
 
     describe("Modification d'un vol signé", () => {
-        const SIGN_OVERRIDE = [userRole.OWNER, userRole.ADMIN];
+        const SIGN_OVERRIDE: userRole[] = [userRole.OWNER, userRole.ADMIN];
         const canModifySigned = (role: userRole) => SIGN_OVERRIDE.includes(role);
 
         it("seuls OWNER et ADMIN peuvent modifier un vol signé", () => {

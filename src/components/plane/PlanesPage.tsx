@@ -26,6 +26,13 @@ interface Props {
 const PlanesPage = ({ PlanesProps, ownerNames }: Props) => {
     const { currentUser } = useCurrentUser();
     const [planesList, setPlanes] = useState<planes[]>(PlanesProps);
+    // La map serveur ne connaît que les propriétaires présents au rendu : on la
+    // complète côté client quand une machine est réattribuée à un autre membre.
+    const [ownerNamesState, setOwnerNamesState] = useState<Record<string, string>>(ownerNames ?? {});
+
+    const registerOwnerName = useCallback((ownerID: string, ownerName: string) => {
+        setOwnerNamesState((prev) => (prev[ownerID] === ownerName ? prev : { ...prev, [ownerID]: ownerName }));
+    }, []);
     // IDs des avions ayant au moins un rappel de maintenance en retard (parmi
     // ceux dont l'utilisateur voit la maintenance).
     const [overduePlaneIDs, setOverduePlaneIDs] = useState<string[]>([]);
@@ -72,13 +79,13 @@ const PlanesPage = ({ PlanesProps, ownerNames }: Props) => {
             {/* 1. VUE DESKTOP (Tableau) : Cachée sur mobile */}
             <div className="hidden md:block flex-1 bg-white border border-slate-200 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden flex-col h-full">
                 <div className="flex-1 overflow-auto">
-                    <TableComponent planes={planesList} setPlanes={setPlanes} ownerNames={ownerNames} overduePlaneIDs={overduePlaneIDs} />
+                    <TableComponent planes={planesList} setPlanes={setPlanes} ownerNames={ownerNamesState} onOwnerNameResolved={registerOwnerName} overduePlaneIDs={overduePlaneIDs} />
                 </div>
             </div>
 
             {/* 2. VUE MOBILE (Cartes) : Visible uniquement sur mobile */}
             <div className="block md:hidden pb-10">
-                <MobilePlaneList planesList={planesList} setPlanes={setPlanes} ownerNames={ownerNames} overduePlaneIDs={overduePlaneIDs} />
+                <MobilePlaneList planesList={planesList} setPlanes={setPlanes} ownerNames={ownerNamesState} onOwnerNameResolved={registerOwnerName} overduePlaneIDs={overduePlaneIDs} />
             </div>
 
         </div>

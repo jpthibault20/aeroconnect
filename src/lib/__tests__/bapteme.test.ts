@@ -4,11 +4,15 @@ import {
     BaptemePlaneLike,
     BaptemeRequestLike,
     BaptemeSlotLike,
+    buildBaptemeSessionComment,
+    canManageBaptemeOptions,
     canManagePublicLink,
     canValidateBapteme,
     computeHoldExpiry,
     filterBaptemePlanes,
     baptemePilotKey,
+    formatBaptemeOptionLabel,
+    formatBaptemeOptionPrice,
     formatBaptemeSlotLabel,
     groupBaptemeSlots,
     listBaptemePilots,
@@ -531,5 +535,69 @@ describe("formatBaptemeSlotLabel — sélecteur de la page publique", () => {
     it("formatPilotName : prénom puis nom en capitales, comme dans l'email", () => {
         expect(formatPilotName("Luc", "Dupont")).toBe("Luc DUPONT");
         expect(formatPilotName("Anne-Marie", "de la Tour")).toBe("Anne-Marie DE LA TOUR");
+    });
+});
+
+// ─── Formules (durée + tarif) ───
+
+describe("canManageBaptemeOptions", () => {
+    it("machine du club + rôle de gestion → autorisé", () => {
+        expect(
+            canManageBaptemeOptions({ ownerID: null }, { role: userRole.MANAGER })
+        ).toBe(true);
+        expect(canManageBaptemeOptions({ ownerID: null }, { role: userRole.OWNER })).toBe(true);
+        expect(canManageBaptemeOptions({ ownerID: null }, { role: userRole.ADMIN })).toBe(true);
+    });
+
+    it("machine du club + rôle non-gestion → refusé", () => {
+        expect(
+            canManageBaptemeOptions({ ownerID: null }, { role: userRole.INSTRUCTOR })
+        ).toBe(false);
+    });
+
+    it("machine privée → toujours refusé, même pour un rôle de gestion", () => {
+        expect(
+            canManageBaptemeOptions({ ownerID: "user-1" }, { role: userRole.OWNER })
+        ).toBe(false);
+    });
+});
+
+describe("formatBaptemeOptionPrice", () => {
+    it("arrondi entier → sans décimales", () => {
+        expect(formatBaptemeOptionPrice(90)).toBe("90 €");
+    });
+
+    it("prix avec centimes → deux décimales", () => {
+        expect(formatBaptemeOptionPrice(89.9)).toBe("89,90 €");
+    });
+});
+
+describe("formatBaptemeOptionLabel", () => {
+    it("combine durée et tarif", () => {
+        expect(formatBaptemeOptionLabel({ durationMin: 30, price: 90 })).toBe("30 min – 90 €");
+    });
+});
+
+describe("buildBaptemeSessionComment", () => {
+    it("formule seule → une ligne « Formule : … »", () => {
+        expect(buildBaptemeSessionComment({ durationMin: 30, price: 90 }, null)).toBe(
+            "Formule : 30 min – 90 €"
+        );
+    });
+
+    it("commentaire client seul (machine sans formule configurée) → inchangé", () => {
+        expect(buildBaptemeSessionComment(null, "Anniversaire de mon fils")).toBe(
+            "Anniversaire de mon fils"
+        );
+    });
+
+    it("formule + commentaire → formule en tête, commentaire en dessous", () => {
+        expect(buildBaptemeSessionComment({ durationMin: 45, price: 120 }, "Cadeau surprise")).toBe(
+            "Formule : 45 min – 120 €\nCadeau surprise"
+        );
+    });
+
+    it("ni formule ni commentaire → null (pas de commentaire vide)", () => {
+        expect(buildBaptemeSessionComment(null, null)).toBeNull();
     });
 });

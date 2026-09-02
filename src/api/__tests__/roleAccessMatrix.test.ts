@@ -18,14 +18,14 @@ import { userRole } from "@prisma/client";
 
 // --- Constantes de rôles (identiques au code source) ---
 
-const MANAGEMENT_ROLES = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
-const ADMIN_ROLES = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
-const LOGBOOK_ROLES = [userRole.PILOT, userRole.STUDENT, userRole.INSTRUCTOR, userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
-const DELETE_LOG_ROLES = [userRole.OWNER, userRole.ADMIN];
-const PLANE_MGMT_ROLES = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
-const STUDENT_ELIGIBLE_ROLES = [userRole.STUDENT, userRole.PILOT, userRole.OWNER, userRole.ADMIN, userRole.INSTRUCTOR];
+const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
+const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+const LOGBOOK_ROLES: userRole[] = [userRole.PILOT, userRole.STUDENT, userRole.INSTRUCTOR, userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+const DELETE_LOG_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN];
+const PLANE_MGMT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+const STUDENT_ELIGIBLE_ROLES: userRole[] = [userRole.STUDENT, userRole.PILOT, userRole.OWNER, userRole.ADMIN, userRole.INSTRUCTOR];
 
-const ALL_ROLES = [userRole.USER, userRole.STUDENT, userRole.PILOT, userRole.INSTRUCTOR, userRole.MANAGER, userRole.ADMIN, userRole.OWNER];
+const ALL_ROLES: userRole[] = [userRole.USER, userRole.STUDENT, userRole.PILOT, userRole.INSTRUCTOR, userRole.MANAGER, userRole.ADMIN, userRole.OWNER];
 
 // --- Helper ---
 function can(role: userRole, allowedRoles: userRole[]): boolean {
@@ -37,7 +37,7 @@ function can(role: userRole, allowedRoles: userRole[]): boolean {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle STUDENT", () => {
-    const role = userRole.STUDENT;
+    const role: userRole = userRole.STUDENT;
 
     describe("Ce qu'il PEUT faire", () => {
         it("accéder au carnet de vol", () => expect(can(role, LOGBOOK_ROLES)).toBe(true));
@@ -54,12 +54,12 @@ describe("Rôle STUDENT", () => {
 
     describe("Restrictions de visibilité", () => {
         it("ne peut PAS voir le carnet d'un autre pilote", () => {
-            const isManager = ADMIN_ROLES.includes(role) || role === userRole.INSTRUCTOR;
+            const isManager = can(role, [...ADMIN_ROLES, userRole.INSTRUCTOR]);
             expect(isManager).toBe(false);
         });
 
         it("ne peut PAS modifier un vol signé", () => {
-            const canModifySigned = ADMIN_ROLES.includes(role) || role === userRole.INSTRUCTOR;
+            const canModifySigned = can(role, [...ADMIN_ROLES, userRole.INSTRUCTOR]);
             expect(canModifySigned).toBe(false);
         });
 
@@ -77,7 +77,7 @@ describe("Rôle STUDENT", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle PILOT", () => {
-    const role = userRole.PILOT;
+    const role: userRole = userRole.PILOT;
 
     describe("Ce qu'il PEUT faire", () => {
         it("accéder au carnet de vol", () => expect(can(role, LOGBOOK_ROLES)).toBe(true));
@@ -93,12 +93,12 @@ describe("Rôle PILOT", () => {
 
     describe("Restrictions de visibilité", () => {
         it("ne peut PAS voir le carnet d'un autre", () => {
-            const isManager = ADMIN_ROLES.includes(role) || role === userRole.INSTRUCTOR;
+            const isManager = can(role, [...ADMIN_ROLES, userRole.INSTRUCTOR]);
             expect(isManager).toBe(false);
         });
 
         it("ne peut PAS modifier un vol signé", () => {
-            const canModifySigned = ADMIN_ROLES.includes(role) || role === userRole.INSTRUCTOR;
+            const canModifySigned = can(role, [...ADMIN_ROLES, userRole.INSTRUCTOR]);
             expect(canModifySigned).toBe(false);
         });
     });
@@ -109,8 +109,8 @@ describe("Rôle PILOT", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle INSTRUCTOR", () => {
-    const role = userRole.INSTRUCTOR;
-    const SIGN_OVERRIDE = [userRole.OWNER, userRole.ADMIN];
+    const role: userRole = userRole.INSTRUCTOR;
+    const SIGN_OVERRIDE: userRole[] = [userRole.OWNER, userRole.ADMIN];
 
     describe("Ce qu'il PEUT faire", () => {
         it("accéder au carnet de vol", () => expect(can(role, LOGBOOK_ROLES)).toBe(true));
@@ -164,8 +164,8 @@ describe("Rôle INSTRUCTOR", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle MANAGER", () => {
-    const role = userRole.MANAGER;
-    const SIGN_OVERRIDE = [userRole.OWNER, userRole.ADMIN];
+    const role: userRole = userRole.MANAGER;
+    const SIGN_OVERRIDE: userRole[] = [userRole.OWNER, userRole.ADMIN];
 
     describe("Ce qu'il PEUT faire", () => {
         it("accéder au carnet de vol", () => expect(can(role, LOGBOOK_ROLES)).toBe(true));
@@ -192,7 +192,7 @@ describe("Rôle MANAGER", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle ADMIN", () => {
-    const role = userRole.ADMIN;
+    const role: userRole = userRole.ADMIN;
 
     describe("Ce qu'il PEUT faire", () => {
         it("accéder au carnet de vol", () => expect(can(role, LOGBOOK_ROLES)).toBe(true));
@@ -202,7 +202,7 @@ describe("Rôle ADMIN", () => {
         it("supprimer un vol du carnet", () => expect(can(role, DELETE_LOG_ROLES)).toBe(true));
         it("créer des sessions pour un autre instructeur", () => expect(can(role, ADMIN_ROLES)).toBe(true));
         it("modifier un vol signé", () => {
-            const canModify = ADMIN_ROLES.includes(role) || role === userRole.INSTRUCTOR;
+            const canModify = can(role, [...ADMIN_ROLES, userRole.INSTRUCTOR]);
             expect(canModify).toBe(true);
         });
     });
@@ -213,7 +213,7 @@ describe("Rôle ADMIN", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle OWNER", () => {
-    const role = userRole.OWNER;
+    const role: userRole = userRole.OWNER;
 
     describe("Ce qu'il PEUT faire", () => {
         it("accéder au carnet de vol", () => expect(can(role, LOGBOOK_ROLES)).toBe(true));
@@ -231,7 +231,7 @@ describe("Rôle OWNER", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle USER (sans club)", () => {
-    const role = userRole.USER;
+    const role: userRole = userRole.USER;
 
     describe("Ce qu'il NE PEUT PAS faire", () => {
         it("accéder au carnet de vol", () => expect(can(role, LOGBOOK_ROLES)).toBe(false));
@@ -261,7 +261,7 @@ describe("Actions sensibles par rôle", () => {
 
     describe("Compléter les données post-vol depuis le calendrier", () => {
         const canComplete = (role: userRole, isPilotOfSession: boolean) => {
-            if ([userRole.ADMIN, userRole.OWNER, userRole.MANAGER].includes(role)) return true;
+            if (([userRole.ADMIN, userRole.OWNER, userRole.MANAGER] as userRole[]).includes(role)) return true;
             return isPilotOfSession;
         };
 

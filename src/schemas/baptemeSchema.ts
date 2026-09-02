@@ -20,6 +20,9 @@ export const baptemeRequestSchema = z.object({
         .or(z.literal("")),
     sessionID: z.string().min(1, "Veuillez choisir un créneau"),
     planeID: z.string().min(1, "Veuillez choisir un appareil"),
+    // Formule (durée + tarif) choisie, si la machine en propose. Vide si la
+    // machine n'a aucune formule configurée (aucun choix à faire dans ce cas).
+    baptemeOptionID: z.string().optional().or(z.literal("")),
 });
 
 export type BaptemeRequestSchema = z.infer<typeof baptemeRequestSchema>;

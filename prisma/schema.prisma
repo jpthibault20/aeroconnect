@@ -61,21 +61,21 @@ model flight_sessions {
 }
 
 model planes {
-  id              String            @id @unique @default(uuid())
-  clubID          String
-  name            String
-  immatriculation String
-  operational     Boolean           @default(true)
-  classes         Int               @default(3)
-  hobbsTotal      Float?            @default(0)
+  id                 String            @id @unique @default(uuid())
+  clubID             String
+  name               String
+  immatriculation    String
+  operational        Boolean           @default(true)
+  classes            Int               @default(3)
+  hobbsTotal         Float?            @default(0)
   // Propriétaire physique de la machine. null => machine du club (propriétaire =
   // le club). Renseigné => machine privée, visible seulement par le
   // propriétaire, le président (OWNER) et l'admin (ADMIN).
-  ownerID         String?
+  ownerID            String?
   // Usages d'une machine du club (instruction / location / usage club). Vide
   // pour une machine privée : la nature « privée » est portée par ownerID, pas
   // par un tag. INSTRUCTION/LOCATION/CLUB et « privé » sont mutuellement exclusifs.
-  usageTypes      MachineUsage[]    @default([])
+  usageTypes         MachineUsage[]    @default([])
   // Historique des interventions de maintenance, stocké en JSON directement sur
   // la machine pour garder un lien indestructible machine <-> maintenance.
   // Forme : MaintenanceIntervention[] (cf. src/schemas/maintenance.ts).
@@ -83,8 +83,9 @@ model planes {
   // Photo de la machine : CHEMIN dans le bucket Supabase Storage (jamais l'URL
   // complète, pour ne pas figer le projet/bucket en base). Forme :
   // `{planeID}/{uuid}.{ext}` — cf. src/lib/planeImage.ts. null => aucune photo.
-  imagePath       String?
-  MaintenanceTask MaintenanceTask[]
+  imagePath          String?
+  MaintenanceTask    MaintenanceTask[]
+  BaptemeOption      BaptemeOption[]
 }
 
 enum MachineUsage {
@@ -134,6 +135,24 @@ model MaintenanceTask {
   lastPerformedHobbs Float
   planeId            String
   planes             planes   @relation(fields: [planeId], references: [id], onDelete: Cascade)
+}
+
+// Formule de vol baptême proposable sur une machine DU CLUB : une durée et un
+// tarif. Une machine peut avoir autant de formules que le club veut (ex. 15,
+// 20, 30, 45 min). Le créneau calendrier reste toujours d'une heure quelle que
+// soit la formule choisie ; seule la partie visible côté client (page publique,
+// commentaire du vol, mail) varie. Sans intérêt sur une machine privée : les
+// machines privées ne sont jamais proposées au public (cf. filterBaptemePlanes).
+model BaptemeOption {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  durationMin Int
+  price       Float
+  planeId     String
+  planes      planes   @relation(fields: [planeId], references: [id], onDelete: Cascade)
+
+  @@index([planeId])
 }
 
 enum userRole {
@@ -187,20 +206,20 @@ enum instructionSubType {
 }
 
 model flight_logs {
-  id                  String              @id @default(uuid())
-  clubID              String
-  sessionID           String?
+  id        String  @id @default(uuid())
+  clubID    String
+  sessionID String?
 
-  date                DateTime            @db.Date
-  planeID             String?
-  planeRegistration   String
-  planeName           String
-  planeClass          Int?
+  date              DateTime @db.Date
+  planeID           String?
+  planeRegistration String
+  planeName         String
+  planeClass        Int?
 
-  pilotID             String
-  pilotFirstName      String
-  pilotLastName       String
-  pilotFunction       pilotFunction
+  pilotID        String
+  pilotFirstName String
+  pilotLastName  String
+  pilotFunction  pilotFunction
 
   instructorID        String?
   instructorFirstName String?
@@ -211,26 +230,26 @@ model flight_logs {
   studentEmail        String?
   studentPhone        String?
 
-  flightNature        flightNature
-  instructionSubType  instructionSubType?
-  takeoffs            Int                 @default(1)
-  landings            Int                 @default(1)
+  flightNature       flightNature
+  instructionSubType instructionSubType?
+  takeoffs           Int                 @default(1)
+  landings           Int                 @default(1)
 
-  departureAirfield   String?
-  arrivalAirfield     String?
+  departureAirfield String?
+  arrivalAirfield   String?
 
-  hobbsStart          Float?
-  hobbsEnd            Float?
-  fuelAdded           Float?
-  machineAnomalies    String?
+  hobbsStart       Float?
+  hobbsEnd         Float?
+  fuelAdded        Float?
+  machineAnomalies String?
 
-  pilotSigned         Boolean             @default(false)
-  pilotSignedAt       DateTime?           @db.Timestamptz(6)
+  pilotSigned         Boolean   @default(false)
+  pilotSignedAt       DateTime? @db.Timestamptz(6)
   personalObservation String?
 
-  createdAt           DateTime            @default(now()) @db.Timestamptz(6)
-  updatedAt           DateTime            @updatedAt @db.Timestamptz(6)
-  isManualEntry       Boolean             @default(false)
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+  isManualEntry Boolean  @default(false)
 }
 
 // Demande de réservation d'un vol baptême passée depuis le lien public
@@ -239,20 +258,26 @@ model flight_logs {
 // validation/refus par le pilote assigné ou la gestion. Expiration paresseuse :
 // une demande PENDING dont expiresAt < now est considérée expirée à la lecture.
 model BaptemeRequest {
-  id         String        @id @default(uuid())
-  clubID     String
-  sessionID  String // créneau flight_sessions visé
-  firstName  String
-  lastName   String
-  email      String
-  phone      String
-  comment    String?
-  planeID    String // machine club choisie
-  status     BaptemeStatus @default(PENDING)
-  createdAt  DateTime      @default(now())
-  expiresAt  DateTime // TTL du hold
-  handledBy  String? // userID du validateur / refuseur
-  handledAt  DateTime?
+  id                String        @id @default(uuid())
+  clubID            String
+  sessionID         String // créneau flight_sessions visé
+  firstName         String
+  lastName          String
+  email             String
+  phone             String
+  comment           String?
+  planeID           String // machine club choisie
+  // Formule choisie (durée + tarif), copiée depuis BaptemeOption au moment de la
+  // demande : la formule doit survivre à une modification/suppression ultérieure
+  // de la config de la machine (même logique que les champs dénormalisés de
+  // flight_logs). null => la machine n'avait pas (ou plus) de formule configurée.
+  optionDurationMin Int?
+  optionPrice       Float?
+  status            BaptemeStatus @default(PENDING)
+  createdAt         DateTime      @default(now())
+  expiresAt         DateTime // TTL du hold
+  handledBy         String? // userID du validateur / refuseur
+  handledAt         DateTime?
 
   @@index([clubID, status])
   @@index([sessionID, status])

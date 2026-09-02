@@ -100,6 +100,32 @@ export function isPlaneOverdue(
 }
 
 /**
+ * Tri d'affichage des rappels : les plus urgents d'abord. On classe sur la
+ * « marge » restante, exprimée en jours pour la borne calendaire et en heures
+ * pour la borne moteur ; un rappel borné par les deux prend la plus petite des
+ * deux marges (c'est elle qui déclenchera l'alerte). Les rappels sans marge
+ * calculable (pas d'heures moteur connues, pas de borne mensuelle) passent en
+ * dernier.
+ */
+export function sortTasksByUrgency<T extends MaintenanceTaskLike>(
+    tasks: T[],
+    currentHobbs: number | null,
+    now: Date
+): T[] {
+    const margin = (task: T): number => {
+        const due = getTaskDueStatus(task, currentHobbs, now);
+        const margins = [due.hoursRemaining, due.daysRemaining].filter(
+            (m): m is number => m != null
+        );
+        return margins.length ? Math.min(...margins) : Number.POSITIVE_INFINITY;
+    };
+    return [...tasks]
+        .map((task) => ({ task, margin: margin(task) }))
+        .sort((a, b) => a.margin - b.margin)
+        .map((entry) => entry.task);
+}
+
+/**
  * Tri d'affichage des interventions : les plus récentes d'abord (par date, puis
  * par date de saisie pour départager).
  */

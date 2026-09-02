@@ -290,7 +290,8 @@ export const sendBaptemePilotNotification = async (
   planeName: string,
   client: BaptemeClientContact,
   comment: string | null,
-  validationLink: string
+  validationLink: string,
+  optionLabel: string | null = null
 ) => {
   if (!pilotEmail) return;
   try {
@@ -308,6 +309,7 @@ export const sendBaptemePilotNotification = async (
         clubName: name,
         clubAdress: adress as clubAdressType,
         planeName,
+        optionLabel,
         clientFirstName: client.firstName,
         clientLastName: client.lastName,
         clientEmail: client.email,
@@ -328,7 +330,8 @@ export const sendBaptemeClientReceived = async (
   startDate: Date,
   endDate: Date,
   clubID: string,
-  planeName: string
+  planeName: string,
+  optionLabel: string | null = null
 ) => {
   if (!email) return;
   try {
@@ -345,6 +348,7 @@ export const sendBaptemeClientReceived = async (
         startDate: formattedDate(startDate),
         endDate: formattedDate(endDate),
         planeName,
+        optionLabel,
         clubName: name,
         clubAdress: adress as clubAdressType,
       }),
@@ -362,7 +366,8 @@ export const sendBaptemeClientConfirmed = async (
   endDate: Date,
   clubID: string,
   planeName: string,
-  pilotID: string
+  pilotID: string,
+  optionLabel: string | null = null
 ) => {
   if (!email) return;
   try {
@@ -400,6 +405,7 @@ export const sendBaptemeClientConfirmed = async (
         startDate: formattedDate(startDate),
         endDate: formattedDate(endDate),
         planeName,
+        optionLabel,
         clubName: club.Name,
         clubAdress: {
           countrie: club.Country,

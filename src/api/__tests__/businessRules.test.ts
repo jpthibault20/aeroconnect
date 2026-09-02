@@ -21,9 +21,10 @@ const makeUser = (overrides: Partial<User> = {}): User => ({
     country: null,
     zipCode: null,
     classes: [1, 2, 3],
+    adress: null,
+    city: null,
+    clubIDRequest: null,
     canSubscribeWithoutPlan: false,
-    licenseExpiry: null,
-    medicalExpiry: null,
     ...overrides,
 });
 
@@ -59,10 +60,18 @@ const makeSession = (overrides: Partial<flight_sessions> = {}): flight_sessions 
     studentComment: null,
     flightType: null,
     student_type: null,
-    classes: null,
+    classes: [],
     flightComment: null,
     natureOfTheft: [],
     logDismissed: false,
+    finalReccurence: null,
+    studentEmail: null,
+    studentPhone: null,
+    startLocation: null,
+    endLocation: null,
+    hobbsStart: null,
+    hobbsEnd: null,
+    landings: null,
     ...overrides,
 });
 

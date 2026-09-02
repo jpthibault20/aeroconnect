@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { NatureOfTheft } from "@prisma/client";
+import { BaptemeRequest, NatureOfTheft, userRole } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
 import { expireStaleHolds, RELEASE_SESSION_DATA } from "./baptemeHold";
@@ -9,9 +9,11 @@ import { appUrl } from "@/lib/appUrl";
 import {
     BAPTEME_HOLD_STUDENT_ID,
     BAPTEME_MANAGEMENT_ROLES,
+    buildBaptemeSessionComment,
     canValidateBapteme,
     computeHoldExpiry,
     filterBaptemePlanes,
+    formatBaptemeOptionLabel,
     hasActiveHold,
     isBaptemeSlotAvailable,
     PUBLIC_BOOKING_HORIZON_DAYS,
@@ -40,6 +42,69 @@ async function resolveClubByToken(clubID: string, token: string) {
     if (!club || !club.publicBookingToken) return null;
     if (club.publicBookingToken !== token) return null;
     return club;
+}
+
+/**
+ * DTO commun aux deux points d'entrée de validation (page Club et popup du
+ * calendrier) : la demande enrichie du créneau et de la machine, filtrée sur ce
+ * que `user` a le droit de traiter (pilote assigné ou gestion).
+ */
+async function buildPendingBaptemeItems(
+    requests: BaptemeRequest[],
+    user: { id: string; role: userRole }
+) {
+    if (requests.length === 0) return [];
+
+    const [sessions, planes] = await Promise.all([
+        prisma.flight_sessions.findMany({
+            where: { id: { in: requests.map((r) => r.sessionID) } },
+            select: {
+                id: true,
+                pilotID: true,
+                pilotFirstName: true,
+                pilotLastName: true,
+                sessionDateStart: true,
+                sessionDateDuration_min: true,
+            },
+        }),
+        prisma.planes.findMany({
+            where: { id: { in: requests.map((r) => r.planeID) } },
+            select: { id: true, name: true },
+        }),
+    ]);
+    const sessionById = new Map(sessions.map((s) => [s.id, s]));
+    const planeName = new Map(planes.map((p) => [p.id, p.name]));
+
+    return requests
+        .map((r) => {
+            const session = sessionById.get(r.sessionID);
+            if (!session) return null;
+            if (!canValidateBapteme(user, { pilotID: session.pilotID })) return null;
+            const start = session.sessionDateStart;
+            const end = new Date(start.getTime() + session.sessionDateDuration_min * 60 * 1000);
+            return {
+                id: r.id,
+                sessionID: r.sessionID,
+                planeID: r.planeID,
+                firstName: r.firstName,
+                lastName: r.lastName,
+                email: r.email,
+                phone: r.phone,
+                comment: r.comment,
+                optionLabel:
+                    r.optionDurationMin != null && r.optionPrice != null
+                        ? formatBaptemeOptionLabel({ durationMin: r.optionDurationMin, price: r.optionPrice })
+                        : null,
+                createdAt: r.createdAt,
+                expiresAt: r.expiresAt,
+                sessionDateStart: start,
+                sessionDateEnd: end,
+                pilotFirstName: session.pilotFirstName,
+                pilotLastName: session.pilotLastName,
+                planeName: planeName.get(r.planeID) ?? "Appareil",
+            };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null);
 }
 
 
@@ -77,7 +142,18 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
             }),
             prisma.planes.findMany({
                 where: { clubID, ownerID: null, operational: true },
-                select: { id: true, name: true, ownerID: true, operational: true, classes: true, imagePath: true },
+                select: {
+                    id: true,
+                    name: true,
+                    ownerID: true,
+                    operational: true,
+                    classes: true,
+                    imagePath: true,
+                    BaptemeOption: {
+                        select: { id: true, durationMin: true, price: true },
+                        orderBy: { durationMin: "asc" },
+                    },
+                },
             }),
             prisma.baptemeRequest.findMany({
                 where: { clubID, status: "PENDING" },
@@ -118,7 +194,14 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
         // voyant, pas seulement d'après un nom de modèle. L'URL est construite
         // ici (le chemin brut en base n'a aucun sens pour le navigateur).
         const planeInfo = new Map(
-            planes.map((p) => [p.id, { name: p.name, imageUrl: planeImagePublicUrl(p.imagePath) }])
+            planes.map((p) => [
+                p.id,
+                {
+                    name: p.name,
+                    imageUrl: planeImagePublicUrl(p.imagePath),
+                    baptemeOptions: p.BaptemeOption,
+                },
+            ])
         );
 
         const slots = sessions
@@ -157,6 +240,7 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
                         id: p.id,
                         name: planeInfo.get(p.id)?.name ?? "Appareil",
                         imageUrl: planeInfo.get(p.id)?.imageUrl ?? null,
+                        baptemeOptions: planeInfo.get(p.id)?.baptemeOptions ?? [],
                     })
                 ),
             }));
@@ -190,6 +274,9 @@ interface CreateBaptemeInput {
     email: string;
     phone: string;
     comment?: string;
+    // Formule (durée + tarif) choisie parmi celles configurées sur la machine.
+    // Absent si la machine n'en a aucune.
+    baptemeOptionID?: string;
     captchaToken?: string;
 }
 
@@ -212,6 +299,7 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
         comment: input.comment ?? "",
         sessionID: input.sessionID,
         planeID: input.planeID,
+        baptemeOptionID: input.baptemeOptionID ?? "",
     });
     if (!parsed.success) {
         return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
@@ -287,6 +375,20 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
             return { error: "Appareil indisponible pour ce créneau." };
         }
 
+        // Formule (durée + tarif) : si la machine en propose, le client doit en
+        // avoir choisi une (revalidée ici — jamais fait confiance à l'ID envoyé
+        // sans vérifier qu'il appartient bien à CETTE machine). Sans formule
+        // configurée côté machine, aucun choix n'est attendu.
+        const planeOptions = await prisma.baptemeOption.findMany({ where: { planeId: chosenPlane.id } });
+        let option: { durationMin: number; price: number } | null = null;
+        if (planeOptions.length > 0) {
+            const chosenOption = planeOptions.find((o) => o.id === parsed.data.baptemeOptionID);
+            if (!chosenOption) {
+                return { error: "Merci de choisir une formule." };
+            }
+            option = { durationMin: chosenOption.durationMin, price: chosenOption.price };
+        }
+
         // Anti-double-hold : on purge les holds expirés (ce qui libère aussi le
         // créneau), puis on refuse s'il reste un PENDING actif (1er arrivé gagne).
         await expireStaleHolds(now, { sessionID: input.sessionID });
@@ -299,6 +401,7 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
         }
 
         const expiresAt = computeHoldExpiry(now);
+        const sessionComment = buildBaptemeSessionComment(option, parsed.data.comment || null);
         // On crée la demande ET on occupe le créneau (studentID = sentinelle de
         // hold) dans la même transaction : plus aucune inscription concurrente
         // possible tant que le pilote n'a pas validé/refusé (ou 24 h écoulées).
@@ -313,6 +416,8 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
                     email: parsed.data.email,
                     phone: parsed.data.phone,
                     comment: parsed.data.comment || null,
+                    optionDurationMin: option?.durationMin ?? null,
+                    optionPrice: option?.price ?? null,
                     status: "PENDING",
                     expiresAt,
                 },
@@ -326,7 +431,7 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
                     studentEmail: parsed.data.email,
                     studentPhone: parsed.data.phone,
                     studentPlaneID: input.planeID,
-                    studentComment: parsed.data.comment || null,
+                    studentComment: sessionComment,
                 },
             }),
         ]);
@@ -334,6 +439,7 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
         const start = session.sessionDateStart;
         const end = new Date(start.getTime() + session.sessionDateDuration_min * 60 * 1000);
         const validationLink = `${appUrl()}/dashboard?clubID=${input.clubID}`;
+        const optionLabel = option ? formatBaptemeOptionLabel(option) : null;
 
         // Notifie le pilote assigné + accuse réception au client (non bloquant).
         const pilot = await prisma.user.findUnique({ where: { id: session.pilotID } });
@@ -352,7 +458,8 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
                           phone: parsed.data.phone,
                       },
                       parsed.data.comment || null,
-                      validationLink
+                      validationLink,
+                      optionLabel
                   )
                 : Promise.resolve(),
             sendBaptemeClientReceived(
@@ -361,7 +468,8 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
                 start,
                 end,
                 input.clubID,
-                chosenPlane.name ?? "Appareil"
+                chosenPlane.name ?? "Appareil",
+                optionLabel
             ),
         ]);
 
@@ -392,52 +500,39 @@ export const getPendingBaptemeRequests = async (clubID: string) => {
             where: { clubID, status: "PENDING" },
             orderBy: { createdAt: "asc" },
         });
-        if (requests.length === 0) return [];
-
-        const sessions = await prisma.flight_sessions.findMany({
-            where: { id: { in: requests.map((r) => r.sessionID) } },
-            select: {
-                id: true,
-                pilotID: true,
-                pilotFirstName: true,
-                pilotLastName: true,
-                sessionDateStart: true,
-                sessionDateDuration_min: true,
-            },
-        });
-        const sessionById = new Map(sessions.map((s) => [s.id, s]));
-
-        const planes = await prisma.planes.findMany({
-            where: { id: { in: requests.map((r) => r.planeID) } },
-            select: { id: true, name: true },
-        });
-        const planeName = new Map(planes.map((p) => [p.id, p.name]));
 
         // Ne renvoie que les demandes que l'utilisateur peut valider.
-        return requests
-            .map((r) => {
-                const session = sessionById.get(r.sessionID);
-                if (!session) return null;
-                if (!canValidateBapteme(auth.user, { pilotID: session.pilotID })) return null;
-                const start = session.sessionDateStart;
-                const end = new Date(start.getTime() + session.sessionDateDuration_min * 60 * 1000);
-                return {
-                    id: r.id,
-                    firstName: r.firstName,
-                    lastName: r.lastName,
-                    email: r.email,
-                    phone: r.phone,
-                    comment: r.comment,
-                    createdAt: r.createdAt,
-                    expiresAt: r.expiresAt,
-                    sessionDateStart: start,
-                    sessionDateEnd: end,
-                    pilotFirstName: session.pilotFirstName,
-                    pilotLastName: session.pilotLastName,
-                    planeName: planeName.get(r.planeID) ?? "Appareil",
-                };
-            })
-            .filter((r): r is NonNullable<typeof r> => r !== null);
+        return await buildPendingBaptemeItems(requests, auth.user);
+    } catch {
+        return { error: "Erreur lors de la récupération des baptêmes en attente." };
+    }
+};
+
+/**
+ * Demandes en attente portant sur des créneaux précis, que l'utilisateur courant
+ * peut traiter. Alimente la validation depuis la popup du calendrier : les mêmes
+ * droits qu'en page Club (pilote assigné ou gestion), sans l'obliger à quitter
+ * son planning pour valider un baptême qu'il a sous les yeux.
+ */
+export const getPendingBaptemeRequestsBySessions = async (sessionIDs: string[]) => {
+    const auth = await requireAuth();
+    if ("error" in auth) return { error: auth.error };
+    if (!auth.user.clubID) return { error: "Permissions insuffisantes" };
+    if (sessionIDs.length === 0) return [];
+
+    const now = new Date();
+
+    try {
+        // Même expiration paresseuse qu'en page Club : un hold échu ne doit pas
+        // rester proposé à la validation.
+        await expireStaleHolds(now, { clubID: auth.user.clubID });
+
+        const requests = await prisma.baptemeRequest.findMany({
+            where: { clubID: auth.user.clubID, status: "PENDING", sessionID: { in: sessionIDs } },
+            orderBy: { createdAt: "asc" },
+        });
+
+        return await buildPendingBaptemeItems(requests, auth.user);
     } catch {
         return { error: "Erreur lors de la récupération des baptêmes en attente." };
     }
@@ -526,6 +621,15 @@ export const validateBaptemeRequest = async (requestID: string) => {
             return { error: "Ce créneau n'est plus disponible." };
         }
 
+        // La formule (durée + tarif dénormalisés sur la demande) doit apparaître
+        // dans le commentaire du vol exactement comme lors de la création du hold
+        // (buildBaptemeSessionComment produit le même texte des deux côtés).
+        const option =
+            request.optionDurationMin != null && request.optionPrice != null
+                ? { durationMin: request.optionDurationMin, price: request.optionPrice }
+                : null;
+        const sessionComment = buildBaptemeSessionComment(option, request.comment);
+
         // Inscription via le mécanisme invité + passage à CONFIRMED, en transaction.
         await prisma.$transaction([
             prisma.flight_sessions.update({
@@ -537,7 +641,7 @@ export const validateBaptemeRequest = async (requestID: string) => {
                     studentEmail: request.email,
                     studentPhone: request.phone,
                     studentPlaneID: request.planeID,
-                    studentComment: request.comment,
+                    studentComment: sessionComment,
                 },
             }),
             prisma.baptemeRequest.update({
@@ -560,7 +664,8 @@ export const validateBaptemeRequest = async (requestID: string) => {
             end,
             request.clubID,
             plane?.name ?? "Appareil",
-            session.pilotID
+            session.pilotID,
+            option ? formatBaptemeOptionLabel(option) : null
         );
 
         return { success: "Baptême confirmé, le client a été notifié !" };

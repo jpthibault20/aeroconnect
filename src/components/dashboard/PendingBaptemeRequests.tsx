@@ -13,11 +13,18 @@ import { formatSessionDate, formatSessionTime } from "@/api/global function/date
 // DTO renvoyé par getPendingBaptemeRequests (dates incluses).
 export interface PendingBaptemeItem {
     id: string;
+    // Créneau et machine visés : servent à recaler l'état local du calendrier
+    // après validation / refus (cf. BaptemeSessionValidation).
+    sessionID: string;
+    planeID: string;
     firstName: string;
     lastName: string;
     email: string;
     phone: string;
     comment: string | null;
+    // Formule choisie (durée + tarif), ex. "30 min – 90 €". null si la machine
+    // n'avait pas de formule configurée.
+    optionLabel: string | null;
     createdAt: Date | string;
     expiresAt: Date | string;
     sessionDateStart: Date | string;
@@ -101,6 +108,11 @@ const PendingBaptemeRequests = ({ pendingBaptemes }: Props) => {
                                 <div className="flex items-center gap-2">
                                     <PlaneTakeoff className="w-4 h-4 text-slate-400" />
                                     <span>{req.planeName}</span>
+                                    {req.optionLabel && (
+                                        <span className="text-xs font-semibold text-[#774BBE]">
+                                            · {req.optionLabel}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Mail className="w-4 h-4 text-slate-400" />
@@ -162,7 +174,14 @@ const PendingBaptemeRequests = ({ pendingBaptemes }: Props) => {
                                     <TableCell className="text-slate-600">
                                         {formatSlot(req.sessionDateStart, req.sessionDateEnd)}
                                     </TableCell>
-                                    <TableCell className="text-slate-600">{req.planeName}</TableCell>
+                                    <TableCell className="text-slate-600">
+                                        {req.planeName}
+                                        {req.optionLabel && (
+                                            <span className="block text-xs font-semibold text-[#774BBE]">
+                                                {req.optionLabel}
+                                            </span>
+                                        )}
+                                    </TableCell>
                                     <TableCell className="text-slate-600 text-xs">
                                         {req.email}
                                         <br />

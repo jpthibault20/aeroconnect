@@ -15,7 +15,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { IoIosWarning } from "react-icons/io";
-import { addMaintenanceIntervention } from "@/api/db/maintenance";
+import { addMaintenanceIntervention, updateMaintenanceIntervention } from "@/api/db/maintenance";
 import {
     InterventionInput,
     MAINTENANCE_TYPES,
@@ -40,19 +40,25 @@ interface Props {
     // Rappels de la machine, proposés en association (l'intervention peut clôturer
     // un rappel et réinitialiser son compteur).
     tasks: MaintenanceTask[];
+    // Intervention à éditer ; absente => création.
+    intervention?: MaintenanceIntervention;
     onSaved: (interventions: MaintenanceIntervention[]) => void;
     onCancel: () => void;
 }
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-const InterventionForm = ({ planeID, currentHobbs, tasks, onSaved, onCancel }: Props) => {
-    const [date, setDate] = useState(todayISO());
-    const [type, setType] = useState<string>(MAINTENANCE_TYPES[1]); // REVISION par défaut
-    const [description, setDescription] = useState("");
-    const [comment, setComment] = useState("");
+const InterventionForm = ({ planeID, currentHobbs, tasks, intervention, onSaved, onCancel }: Props) => {
+    const [date, setDate] = useState(
+        intervention ? new Date(intervention.date).toISOString().slice(0, 10) : todayISO()
+    );
+    const [type, setType] = useState<string>(intervention?.type ?? MAINTENANCE_TYPES[1]); // REVISION par défaut
+    const [description, setDescription] = useState(intervention?.description ?? "");
+    const [comment, setComment] = useState(intervention?.comment ?? "");
     const [engineHours, setEngineHours] = useState<string>(
-        currentHobbs != null ? String(currentHobbs) : ""
+        intervention
+            ? intervention.engineHours != null ? String(intervention.engineHours) : ""
+            : currentHobbs != null ? String(currentHobbs) : ""
     );
     const [taskID, setTaskID] = useState<string>(NO_TASK);
     const [loading, setLoading] = useState(false);
@@ -73,7 +79,9 @@ const InterventionForm = ({ planeID, currentHobbs, tasks, onSaved, onCancel }: P
 
         setLoading(true);
         try {
-            const res = await addMaintenanceIntervention(planeID, input);
+            const res = intervention
+                ? await updateMaintenanceIntervention(planeID, intervention.id, input)
+                : await addMaintenanceIntervention(planeID, input);
             if ("error" in res) {
                 setError(res.error ?? "Une erreur est survenue");
             } else if (res.interventions) {
@@ -88,7 +96,9 @@ const InterventionForm = ({ planeID, currentHobbs, tasks, onSaved, onCancel }: P
 
     return (
         <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-            <h4 className="text-sm font-semibold text-slate-800">Nouvelle intervention</h4>
+            <h4 className="text-sm font-semibold text-slate-800">
+                {intervention ? "Modifier l'intervention" : "Nouvelle intervention"}
+            </h4>
 
             <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -129,7 +139,7 @@ const InterventionForm = ({ planeID, currentHobbs, tasks, onSaved, onCancel }: P
                 />
             </div>
 
-            {tasks.length > 0 ? (
+            {tasks.length > 0 && !intervention ? (
                 // Libellés et champs placés en cellules directes de la grille : chaque
                 // ligne (libellés puis inputs) s'aligne même si un libellé passe sur
                 // deux lignes. `self-end` colle les libellés juste au-dessus des inputs.
@@ -212,7 +222,7 @@ const InterventionForm = ({ planeID, currentHobbs, tasks, onSaved, onCancel }: P
                     disabled={loading}
                     className="bg-[#774BBE] hover:bg-[#6538a5] text-white min-w-[100px]"
                 >
-                    {loading ? <Spinner className="text-white w-4 h-4" /> : "Ajouter"}
+                    {loading ? <Spinner className="text-white w-4 h-4" /> : intervention ? "Enregistrer" : "Ajouter"}
                 </Button>
             </div>
         </div>
