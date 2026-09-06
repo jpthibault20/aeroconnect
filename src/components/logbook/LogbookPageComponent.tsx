@@ -1,19 +1,14 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { flight_logs, planes, User, userRole } from "@prisma/client";
+import type { DateRange } from "react-day-picker";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import PilotLogbookTab, { PilotExportInfo } from "./PilotLogbookTab";
 import AircraftLogbookTab from "./AircraftLogbookTab";
 import NewFlightLogDialog from "./NewFlightLogDialog";
+import LogbookDateRangePicker from "./LogbookDateRangePicker";
 import { Button } from "@/components/ui/button";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { BookOpen, Plane, FileDown } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
@@ -22,6 +17,12 @@ import { AircraftLogbookDocument } from "@/components/pdf/exportAircraftLogbook"
 import { mergeSessionLogs } from "./mergeSessionLogs";
 import { canAddManualLogEntry, canSeeAircraftLogbook, isLogbookReadOnly } from "@/lib/logbookPermissions";
 import { groupLogsByMachine, canExportAircraftLogbook } from "@/lib/logbookDisplay";
+import { getClubFlightLogsByDateRange } from "@/api/db/logbook";
+
+const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+const fmtDate = (d: Date) => d.toLocaleDateString("fr-FR");
 
 interface Props {
     logsProp: flight_logs[];
@@ -36,6 +37,31 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
     const [logs, setLogs] = useState<flight_logs[]>(logsProp);
     const [activeTab, setActiveTab] = useState<Tab>("pilot");
 
+    // Plage par défaut = année civile en cours, celle que ServerPageComp a
+    // déjà chargée côté serveur (logsProp). Tant que l'utilisateur reste sur
+    // cette plage, on se contente de refléter logsProp (pas de round-trip
+    // réseau superflu).
+    const defaultRange = useMemo<DateRange>(() => {
+        const year = new Date().getFullYear();
+        return { from: new Date(year, 0, 1), to: new Date(year, 11, 31) };
+    }, []);
+    const [dateRange, setDateRange] = useState<DateRange>(defaultRange);
+    const [rangeLoading, setRangeLoading] = useState(false);
+
+    const isDefaultRange = useCallback((r: DateRange) => {
+        if (!r.from || !r.to || !defaultRange.from || !defaultRange.to) return false;
+        return isSameDay(r.from, defaultRange.from) && isSameDay(r.to, defaultRange.to);
+    }, [defaultRange]);
+
+    const fetchLogsForRange = useCallback(async (range: DateRange) => {
+        if (!currentUser?.clubID || !range.from || !range.to) return;
+        setRangeLoading(true);
+        const res = await getClubFlightLogsByDateRange(currentUser.clubID, range.from, range.to);
+        if ("logs" in res) setLogs(res.logs);
+        setRangeLoading(false);
+    }, [currentUser?.clubID]);
+
+    const didMountRef = useRef(false);
     // Resynchronise l'état local avec les données serveur à chaque nouveau
     // rendu RSC (revalidatePath après une mutation, ou vol complété via la
     // popup globale PendingFlightsPrompt montée dans le layout). Sans ça,
@@ -45,10 +71,34 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
     // cet effet ne se déclenche pas sur les simples re-rendus client (filtres,
     // pagination…). Les mises à jour optimistes (onCreated/onDeleted/…) restent
     // valides : le rafraîchissement serveur qui suit porte la même donnée.
+    // ServerPageComp ne charge toujours que l'année en cours : si une plage
+    // personnalisée est active, on rejoue la requête pour CETTE plage au lieu
+    // d'adopter logsProp, sinon la vue reviendrait silencieusement à l'année
+    // en cours après la moindre mutation ailleurs dans l'appli.
     useEffect(() => {
-        setLogs(logsProp);
+        if (!didMountRef.current) {
+            didMountRef.current = true;
+            setLogs(logsProp);
+            return;
+        }
+        if (isDefaultRange(dateRange)) {
+            setLogs(logsProp);
+        } else {
+            void fetchLogsForRange(dateRange);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [logsProp]);
-    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
+    const handleDateRangeChange = useCallback((range: DateRange) => {
+        setDateRange(range);
+        void fetchLogsForRange(range);
+    }, [fetchLogsForRange]);
+
+    const periodLabel = useMemo(() => {
+        if (!dateRange.from || !dateRange.to) return "";
+        if (isDefaultRange(dateRange)) return String(dateRange.from.getFullYear());
+        return `${fmtDate(dateRange.from)} – ${fmtDate(dateRange.to)}`;
+    }, [dateRange, isDefaultRange]);
 
     // Saisie manuelle : rôles de gestion + PILOT (pour son propre carnet). Pas
     // le STUDENT (il vole avec instructeur, ses vols sont auto-logués).
@@ -91,13 +141,6 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
         // anciens logs paires en cohabitation.
         return mergeSessionLogs(filtered);
     }, [logs, currentUser]);
-
-    // Build year options from logs
-    const yearOptions = useMemo(() => {
-        const years = new Set(logs.map((l) => new Date(l.date).getFullYear()));
-        years.add(new Date().getFullYear());
-        return Array.from(years).sort((a, b) => b - a);
-    }, [logs]);
 
     const [selectedPlaneForExport, setSelectedPlaneForExport] = useState<string>("");
     const [exporting, setExporting] = useState(false);
@@ -147,7 +190,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                     <PilotLogbookDocument
                         logs={pilotLogs}
                         pilotName={pilotName}
-                        year={selectedYear}
+                        periodLabel={periodLabel}
                         displayedPilotID={displayedPilotID}
                     />
                 ).toBlob();
@@ -168,7 +211,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                                 planeName: plane?.name ?? aircraftExportLogs[0]?.planeName ?? "",
                                 logs: aircraftExportLogs,
                             }]}
-                            year={selectedYear}
+                            periodLabel={periodLabel}
                         />
                     ).toBlob();
                     filename = registration
@@ -178,7 +221,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                     // « Tous les aéronefs » : une section PDF par machine.
                     const sections = groupLogsByMachine(aircraftExportLogs);
                     blob = await pdf(
-                        <AircraftLogbookDocument sections={sections} year={selectedYear} />
+                        <AircraftLogbookDocument sections={sections} periodLabel={periodLabel} />
                     ).toBlob();
                     filename = `carnet_de_vol_machines_${datestamp}.pdf`;
                 }
@@ -197,7 +240,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
         } finally {
             setExporting(false);
         }
-    }, [activeTab, currentUser, selectedYear, planesProp, selectedPlaneForExport, pilotExportInfo, aircraftExportLogs]);
+    }, [activeTab, currentUser, periodLabel, planesProp, selectedPlaneForExport, pilotExportInfo, aircraftExportLogs]);
 
     return (
         <div className="h-full flex flex-col bg-slate-50 p-6 md:p-8 font-sans text-slate-800 overflow-hidden">
@@ -208,35 +251,25 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                         Carnet de vol
                     </h1>
                     <span className="px-3 py-1 bg-white text-purple-600 border border-purple-100 font-semibold rounded-full text-sm shadow-sm">
-                        {visibleLogs.length} entrees
+                        {rangeLoading ? "Chargement…" : `${visibleLogs.length} entrees`}
                     </span>
                 </div>
 
                 {/* Action bar */}
                 <div className="flex items-center gap-3">
-                    {/* Year selector */}
-                    <Select
-                        value={String(selectedYear)}
-                        onValueChange={(val) => setSelectedYear(parseInt(val))}
-                    >
-                        <SelectTrigger className="w-[100px] bg-white border-slate-200 focus:ring-[#774BBE] text-sm">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {yearOptions.map((y) => (
-                                <SelectItem key={y} value={String(y)}>
-                                    {y}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    {/* Date range selector — pilote aussi la période exportée en PDF */}
+                    <LogbookDateRangePicker
+                        value={dateRange}
+                        onChange={handleDateRangeChange}
+                        disabled={rangeLoading}
+                    />
 
                     {/* Export PDF */}
                     <Button
                         variant="outline"
                         size="sm"
                         className="border-slate-200 text-slate-600 hover:bg-slate-100"
-                        disabled={exporting || (activeTab === "aircraft" && !canExportAircraftLogbook(aircraftExportLogs))}
+                        disabled={exporting || rangeLoading || (activeTab === "aircraft" && !canExportAircraftLogbook(aircraftExportLogs))}
                         onClick={handleExportPDF}
                     >
                         <FileDown className="w-4 h-4 mr-2" />
