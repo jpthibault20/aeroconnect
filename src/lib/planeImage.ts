@@ -22,10 +22,12 @@
 export const PLANE_IMAGE_BUCKET = "planes";
 
 // Taille maximale acceptée par le serveur, APRÈS redimensionnement côté client
-// (qui vise ~200 Ko). La marge absorbe les cas où le navigateur ne sait pas
-// ré-encoder en WebP. Reste sous la limite par défaut des server actions (1 Mo)
-// serait trop juste : on relève donc explicitement ce plafond côté client.
-export const PLANE_IMAGE_MAX_BYTES = 3 * 1024 * 1024;
+// (qui vise ~1,2 Mo, cf. PlaneImageInput). La marge absorbe les cas où le
+// navigateur ne sait pas ré-encoder en WebP. Plafonné à 2 Mo pour limiter le
+// volume du bucket Supabase Storage. Le plafond par défaut des Server Actions
+// (1 Mo) est explicitement relevé dans next.config.mjs pour laisser passer ce
+// volume.
+export const PLANE_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 
 // Types acceptés. WebP est la cible du redimensionnement ; JPEG et PNG sont
 // conservés en repli pour les navigateurs qui ne savent pas encoder en WebP
