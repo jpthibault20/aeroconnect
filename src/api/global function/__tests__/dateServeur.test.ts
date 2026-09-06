@@ -115,6 +115,26 @@ describe("formatSessionTime — cohérence des heures de session", () => {
         expect(formatSessionTime(start)).toBe("09:00");
         expect(formatSessionTime(end)).toBe("10:00");
     });
+
+    it("régression AER-59 : la page Vols (TableRowComponent) ne doit pas décaler l'horaire de +2h en été", () => {
+        // Bug rapporté : une séance affichée 09:00-10:00 dans le calendrier
+        // ressortait 11:00-12:00 dans la page Vols. Cause : TableRowComponent
+        // formatait avec `date.toLocaleTimeString('fr-FR', …)` sans `timeZone:
+        // "UTC"`, donc dans le fuseau du navigateur (CEST = UTC+2 en été) au
+        // lieu de lire l'heure wall-clock stockée. Reproduit ici exactement le
+        // calcul de TableRowComponent : startDate puis endDate = start + durée.
+        const sessionDateStart = new Date("2026-06-15T09:00:00.000Z");
+        const sessionDateDuration_min = 60;
+        const startDate = new Date(sessionDateStart);
+        const endDate = new Date(startDate.getTime() + sessionDateDuration_min * 60000);
+
+        expect(formatSessionTime(startDate)).toBe("09:00");
+        expect(formatSessionTime(endDate)).toBe("10:00");
+
+        // Non-régression explicite sur le symptôme observé (+2h, CEST).
+        expect(formatSessionTime(startDate)).not.toBe("11:00");
+        expect(formatSessionTime(endDate)).not.toBe("12:00");
+    });
 });
 
 /**

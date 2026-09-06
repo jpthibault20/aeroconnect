@@ -352,6 +352,49 @@ export function groupBaptemeSlots<T extends GroupableSlotLike>(slots: T[]): Bapt
         }));
 }
 
+/** Libellé d'un mois dans le sélecteur public : « Septembre 2026 ». */
+export function formatBaptemeMonthLabel(date: Date | string): string {
+    const label = toDate(date).toLocaleDateString("fr-FR", {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+    });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+export interface BaptemeMonthGroup<T extends GroupableSlotLike> {
+    monthKey: string;
+    label: string;
+    days: BaptemeDayGroup<T>[];
+}
+
+/**
+ * Regroupe des jours déjà groupés (cf. groupBaptemeSlots) par mois. Sert à
+ * n'imposer un écran « choix du mois » que lorsque l'horizon de réservation
+ * déborde effectivement sur plusieurs mois : avec un seul mois, ce sélecteur
+ * intermédiaire n'apporterait rien.
+ *
+ * `days` étant déjà triés par jour croissant, l'ordre d'insertion dans la Map
+ * suffit à conserver des mois triés — pas besoin de re-trier ici.
+ */
+export function groupBaptemeDaysByMonth<T extends GroupableSlotLike>(
+    days: BaptemeDayGroup<T>[]
+): BaptemeMonthGroup<T>[] {
+    const months = new Map<string, BaptemeDayGroup<T>[]>();
+    for (const day of days) {
+        const d = toDate(day.date);
+        const monthKey = `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}`;
+        const list = months.get(monthKey);
+        if (list) list.push(day);
+        else months.set(monthKey, [day]);
+    }
+    return Array.from(months.entries()).map(([monthKey, monthDays]) => ({
+        monthKey,
+        label: formatBaptemeMonthLabel(monthDays[0].date),
+        days: monthDays,
+    }));
+}
+
 /**
  * Points d'entrée de la réservation publique. Un client vient rarement avec le
  * même critère en tête : certains ont une date impérative, d'autres veulent

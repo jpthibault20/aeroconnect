@@ -28,6 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 import { resolveSessionKind, SESSION_KIND_LABEL, SessionKind } from '@/lib/sessionType';
+import { formatSessionDate, formatSessionTime } from '@/api/global function/dateServeur';
 
 // Rendu du badge « Type » par nature de séance. Le violet de la charte marque le
 // baptême, cohérent avec le reste de la feature (lien public, calendrier).
@@ -82,8 +83,11 @@ const TableRowComponent = ({
     // Gestion des dates
     const startDate = new Date(session.sessionDateStart);
     const endDate = new Date(startDate.getTime() + session.sessionDateDuration_min * 60000);
-    const formatTime = (date: Date) => date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    const formatDate = (date: Date) => date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    // Les sessions sont stockées en wall-clock UTC (cf. lib/clubTime.ts) : lire
+    // en heure locale du navigateur (toLocaleTimeString sans timeZone) décale
+    // l'affichage de l'offset du fuseau, jusqu'à +2h en France l'été.
+    const formatTime = (date: Date) => formatSessionTime(date);
+    const formatDate = (date: Date) => formatSessionDate(date, { day: 'numeric', month: 'short' });
 
 
     // Gestion de l'avion (Memo pour éviter les calculs inutiles)

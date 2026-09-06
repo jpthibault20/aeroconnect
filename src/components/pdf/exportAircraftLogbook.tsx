@@ -14,7 +14,7 @@ export interface AircraftLogbookSection {
 interface Props {
     // Une ou plusieurs machines (export « Tous les aéronefs » = plusieurs sections).
     sections: AircraftLogbookSection[];
-    year: number;
+    periodLabel: string;
 }
 
 const formatMin = (min: number): string => {
@@ -199,7 +199,7 @@ const paginate = (rows: LogbookRow[]): LogbookRow[][] => {
     return pages;
 };
 
-export const AircraftLogbookDocument = ({ sections, year }: Props) => {
+export const AircraftLogbookDocument = ({ sections, periodLabel }: Props) => {
     // Au moins une section pour toujours produire un PDF valide (non vide).
     const safeSections = sections.length > 0
         ? sections
@@ -220,7 +220,7 @@ export const AircraftLogbookDocument = ({ sections, year }: Props) => {
                 <Page key={pageIdx} size="A4" orientation="landscape" style={styles.page}>
                     <Text style={styles.title}>CARNET DE VOL MACHINE</Text>
                     <Text style={styles.subtitle}>
-                        {subtitleTarget} — {year} — Page {pageIdx + 1}/{pages.length}
+                        {subtitleTarget} — {periodLabel} — Page {pageIdx + 1}/{pages.length}
                     </Text>
 
                     <View style={styles.table}>

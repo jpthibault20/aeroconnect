@@ -25,41 +25,82 @@ interface Props {
 // l'affichage (la plus grande vignette fait ~600 px de large) et on paie en
 // temps d'envoi.
 const MAX_WIDTH = 1600;
-const WEBP_QUALITY = 0.82;
+const MIN_WIDTH = 800;
+// Budget visé après compression : marge sous PLANE_IMAGE_MAX_BYTES (2 Mo) pour
+// absorber les photos les plus détaillées (feuillage, hangar...) qui
+// compressent moins bien que la moyenne.
+const TARGET_BYTES = 1.2 * 1024 * 1024;
+// Essayés du plus qualitatif au plus compact : le premier essai qui tient dans
+// le budget est retenu, à la résolution courante.
+const QUALITY_STEPS = [0.82, 0.7, 0.6, 0.5];
+
+class UnsupportedImageFormatError extends Error {}
 
 /**
  * Redimensionne et ré-encode l'image dans le navigateur avant envoi.
  *
- * Deux bénéfices : on reste très en dessous de la limite de corps des server
- * actions, et on normalise le format (plus de photo de 8 Mo sortie d'un
- * téléphone). Les navigateurs qui ne savent pas encoder en WebP retombent
- * silencieusement sur PNG — d'où le type lu sur le blob produit, jamais supposé.
+ * Descend la qualité puis, si besoin, la résolution jusqu'à passer sous
+ * TARGET_BYTES — une photo de téléphone haute résolution ne tient pas toujours
+ * en un seul essai à qualité 0.82. Garde le meilleur essai obtenu même s'il
+ * dépasse encore le budget : la validation serveur tranchera, plutôt que
+ * d'envoyer le fichier original de plusieurs dizaines de Mo.
+ *
+ * Lève UnsupportedImageFormatError si le navigateur ne sait pas du tout décoder
+ * le fichier (HEIC/HEIF non pris en charge, par exemple) : l'appelant décide
+ * alors du message à afficher plutôt que de tenter un envoi voué à l'échec.
  */
 async function resizeImage(file: File): Promise<File> {
-    const bitmap = await createImageBitmap(file);
-    const ratio = Math.min(1, MAX_WIDTH / bitmap.width);
-    const width = Math.round(bitmap.width * ratio);
-    const height = Math.round(bitmap.height * ratio);
-
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-
-    const context = canvas.getContext("2d");
-    if (!context) {
-        bitmap.close();
-        return file;
+    let bitmap: ImageBitmap;
+    try {
+        bitmap = await createImageBitmap(file);
+    } catch {
+        throw new UnsupportedImageFormatError();
     }
 
-    context.drawImage(bitmap, 0, 0, width, height);
-    bitmap.close();
+    try {
+        let width = Math.min(bitmap.width, MAX_WIDTH);
+        let smallest: Blob | null = null;
 
-    const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/webp", WEBP_QUALITY)
-    );
-    if (!blob) return file;
+        while (true) {
+            const ratio = width / bitmap.width;
+            const height = Math.max(1, Math.round(bitmap.height * ratio));
 
-    return new File([blob], "photo", { type: blob.type });
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const context = canvas.getContext("2d");
+            if (!context) break;
+            context.drawImage(bitmap, 0, 0, width, height);
+
+            for (const quality of QUALITY_STEPS) {
+                const blob = await new Promise<Blob | null>((resolve) =>
+                    canvas.toBlob(resolve, "image/webp", quality)
+                );
+                if (!blob) continue;
+                if (!smallest || blob.size < smallest.size) smallest = blob;
+                if (blob.size <= TARGET_BYTES) {
+                    return new File([blob], "photo.webp", { type: blob.type });
+                }
+            }
+
+            if (width <= MIN_WIDTH) break;
+            width = Math.max(MIN_WIDTH, Math.round(width * 0.75));
+        }
+
+        // Format illisible en WebP (vieux Safari) : les blobs produits sont
+        // alors en PNG et bien plus lourds — on tente quand même le meilleur.
+        if (smallest) return new File([smallest], "photo", { type: smallest.type });
+        return file;
+    } finally {
+        bitmap.close();
+    }
+}
+
+// Repère un fichier HEIC/HEIF au type MIME (souvent vide sur iOS) ou à
+// l'extension, pour proposer une explication ciblée plutôt qu'un message
+// générique quand le navigateur ne sait pas le décoder.
+function looksLikeHeic(file: File): boolean {
+    return /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
 }
 
 const PlaneImageInput = ({ planeID, planeName, imagePath, onChange, disabled }: Props) => {
@@ -83,9 +124,17 @@ const PlaneImageInput = ({ planeID, planeName, imagePath, onChange, disabled }: 
             let payload = file;
             try {
                 payload = await resizeImage(file);
-            } catch {
-                // Format illisible par le navigateur (HEIC par exemple) : on
-                // tente l'envoi tel quel, la validation ci-dessous tranchera.
+            } catch (err) {
+                if (err instanceof UnsupportedImageFormatError) {
+                    setError(
+                        looksLikeHeic(file)
+                            ? "Ce format de photo (HEIC/HEIF) n'est pas lisible par ce navigateur. Sur iPhone : Réglages > Appareil photo > Formats > \"Le plus compatible\", puis reprenez la photo — ou choisissez une photo déjà au format JPEG."
+                            : "Ce format de photo n'est pas lisible par ce navigateur. Utilisez une image JPEG, PNG ou WebP."
+                    );
+                    return;
+                }
+                // Échec inattendu du redimensionnement : on tente l'envoi tel
+                // quel, la validation ci-dessous tranchera.
                 payload = file;
             }
 
@@ -108,8 +157,13 @@ const PlaneImageInput = ({ planeID, planeName, imagePath, onChange, disabled }: 
                 return;
             }
             onChange(res.imagePath ?? null);
-        } catch {
-            setError("Échec de l'envoi de la photo.");
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "";
+            setError(
+                /body exceeded|payload too large|413/i.test(message)
+                    ? "La photo est trop volumineuse pour être envoyée. Réessayez avec une autre photo."
+                    : "Échec de l'envoi de la photo. Vérifiez votre connexion et réessayez."
+            );
         } finally {
             setBusy(false);
         }

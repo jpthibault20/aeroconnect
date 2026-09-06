@@ -27,6 +27,15 @@ const nextConfig = {
     turbopack: {
         root: projectRoot,
     },
+    experimental: {
+        // Les photos de machines (src/lib/planeImage.ts) sont acceptées jusqu'à
+        // 2 Mo côté serveur. Sans ce réglage, la limite par défaut des Server
+        // Actions (1 Mo) rejette silencieusement l'envoi avant même d'exécuter
+        // `uploadPlaneImage`, avec une erreur réseau générique côté client.
+        serverActions: {
+            bodySizeLimit: "3mb",
+        },
+    },
     images: {
         remotePatterns: [
             {
