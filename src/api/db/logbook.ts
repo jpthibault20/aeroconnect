@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { flightNature, instructionSubType, userRole } from "@prisma/client";
+import { flightNature, flight_logs, instructionSubType, userRole } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
 import { BAPTEME_HOLD_STUDENT_ID } from "@/lib/bapteme";
@@ -150,6 +150,42 @@ export const getLogbookByPlane = async (planeID: string, clubID: string, year?: 
         return { success: true, logs };
     } catch {
         return { error: "Erreur lors de la récupération du carnet de vol machine" };
+    }
+};
+
+// ─── Carnet de vol club (plage de dates, pilote + machine confondus) ───
+// Utilisée par le sélecteur de période de la page carnet de vol : le filtrage
+// par rôle (perso vs club entier) reste fait côté client comme pour le
+// chargement initial (ServerPageComp), cette action ne fait que reborner la
+// période.
+
+export const getClubFlightLogsByDateRange = async (
+    clubID: string,
+    startDate: Date,
+    endDate: Date
+): Promise<{ error: string | undefined } | { success: true; logs: flight_logs[] }> => {
+    const auth = await requireAuth(LOGBOOK_ROLES);
+    if ("error" in auth) return { error: auth.error };
+    if (auth.user.clubID !== clubID) {
+        return { error: "Permissions insuffisantes" };
+    }
+
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    try {
+        const logs = await prisma.flight_logs.findMany({
+            where: {
+                clubID,
+                date: { gte: start, lte: end },
+            },
+            orderBy: { date: "desc" },
+        });
+        return { success: true, logs };
+    } catch {
+        return { error: "Erreur lors de la récupération du carnet de vol" };
     }
 };
 

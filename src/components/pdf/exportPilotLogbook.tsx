@@ -7,7 +7,7 @@ import { computeFlightTimes, formatNature } from '@/lib/logbookCalc';
 interface Props {
     logs: flight_logs[];
     pilotName: string;
-    year: number;
+    periodLabel: string;
     // Pilote dont on génère le carnet (pour fonction effective EP si studentID).
     // null/undefined = vue brute (manager en "ALL").
     displayedPilotID?: string | null;
@@ -115,7 +115,7 @@ const columns = [
 
 const ROWS_PER_PAGE = 32;
 
-export const PilotLogbookDocument = ({ logs, pilotName, year, displayedPilotID }: Props) => {
+export const PilotLogbookDocument = ({ logs, pilotName, periodLabel, displayedPilotID }: Props) => {
     // Ordre historique : du vol le plus ancien (en haut) au plus récent (en bas).
     const sortedLogs = [...logs].sort(
         (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -160,7 +160,7 @@ export const PilotLogbookDocument = ({ logs, pilotName, year, displayedPilotID }
                 <Page key={pageIdx} size="A4" orientation="landscape" style={styles.page}>
                     <Text style={styles.title}>CARNET DE VOL PILOTE</Text>
                     <Text style={styles.subtitle}>
-                        {pilotName} — {year} — Page {pageIdx + 1}/{pages.length}
+                        {pilotName} — {periodLabel} — Page {pageIdx + 1}/{pages.length}
                     </Text>
 
                     <View style={styles.table}>

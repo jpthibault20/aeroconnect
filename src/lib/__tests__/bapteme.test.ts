@@ -17,7 +17,9 @@ import {
     groupBaptemeSlots,
     listBaptemePilots,
     listBaptemePlanes,
+    formatBaptemeMonthLabel,
     formatPilotName,
+    groupBaptemeDaysByMonth,
     hasActiveHold,
     HOLD_TTL_MINUTES,
     isBaptemeSlot,
@@ -445,6 +447,64 @@ describe("groupBaptemeSlots", () => {
 
     it("liste vide → aucun jour", () => {
         expect(groupBaptemeSlots([])).toEqual([]);
+    });
+});
+
+// ─── groupBaptemeDaysByMonth ───
+
+describe("groupBaptemeDaysByMonth", () => {
+    const slot = (sessionID: string, start: string) => ({
+        sessionID,
+        sessionDateStart: start,
+        durationMin: 60,
+        pilotFirstName: "Luc",
+        pilotLastName: "Dupont",
+    });
+
+    it("un seul mois → un seul groupe", () => {
+        const days = groupBaptemeSlots([
+            slot("s1", "2026-08-12T14:00:00.000Z"),
+            slot("s2", "2026-08-25T14:00:00.000Z"),
+        ]);
+        const months = groupBaptemeDaysByMonth(days);
+        expect(months).toHaveLength(1);
+        expect(months[0].monthKey).toBe("2026-08");
+        expect(months[0].days).toHaveLength(2);
+    });
+
+    it("plusieurs mois → un groupe par mois, triés par ordre chronologique", () => {
+        const days = groupBaptemeSlots([
+            slot("s1", "2026-08-30T14:00:00.000Z"),
+            slot("s2", "2026-09-02T14:00:00.000Z"),
+            slot("s3", "2026-09-15T14:00:00.000Z"),
+        ]);
+        const months = groupBaptemeDaysByMonth(days);
+        expect(months.map((m) => m.monthKey)).toEqual(["2026-08", "2026-09"]);
+        expect(months[0].days).toHaveLength(1);
+        expect(months[1].days).toHaveLength(2);
+    });
+
+    it("libellé du mois formaté en français", () => {
+        const days = groupBaptemeSlots([slot("s1", "2026-09-02T14:00:00.000Z")]);
+        expect(groupBaptemeDaysByMonth(days)[0].label).toBe("Septembre 2026");
+    });
+
+    it("liste vide → aucun mois", () => {
+        expect(groupBaptemeDaysByMonth([])).toEqual([]);
+    });
+
+    it("groupe en UTC : fin de mois en soirée ne bascule pas sur le mois suivant", () => {
+        // 23:30 wall-clock le 31 août : une lecture locale (UTC+2) le ferait
+        // passer au 1er septembre.
+        const days = groupBaptemeSlots([slot("s1", "2026-08-31T23:30:00.000Z")]);
+        expect(groupBaptemeDaysByMonth(days)[0].monthKey).toBe("2026-08");
+    });
+});
+
+describe("formatBaptemeMonthLabel", () => {
+    it("mois en toutes lettres, capitalisé, avec l'année", () => {
+        expect(formatBaptemeMonthLabel("2026-01-15T00:00:00.000Z")).toBe("Janvier 2026");
+        expect(formatBaptemeMonthLabel("2026-12-01T00:00:00.000Z")).toBe("Décembre 2026");
     });
 });
 

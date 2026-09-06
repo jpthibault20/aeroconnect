@@ -31,6 +31,7 @@ import {
     formatBaptemeOptionLabel,
     formatBaptemeOptionPrice,
     formatPilotName,
+    groupBaptemeDaysByMonth,
     groupBaptemeSlots,
     listBaptemePilots,
     listBaptemePlanes,
@@ -112,8 +113,10 @@ const ENTRY_POINTS: { value: BaptemeEntryPoint; label: string; Icon: typeof Cale
 // Écrans du wizard (un par étape). L'ordre dépend du point d'entrée mais
 // reproduit exactement l'ordonnancement métier existant ; « formula » (si la
 // machine choisie propose des formules) puis « contact » clôturent toujours
-// le parcours.
-type ScreenKey = "day" | "slot" | "plane" | "pilot" | "formula" | "contact";
+// le parcours. « month » est inséré dynamiquement devant « day » quand les
+// disponibilités s'étalent sur plusieurs mois (cf. `screens` plus bas) : sur
+// un seul mois, il n'apporterait rien et on garde la liste de jours directe.
+type ScreenKey = "month" | "day" | "slot" | "plane" | "pilot" | "formula" | "contact";
 
 const SELECTION_SCREENS: Record<BaptemeEntryPoint, ScreenKey[]> = {
     date: ["day", "slot", "plane"],
@@ -132,6 +135,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     const [entryPoint, setEntryPoint] = useState<BaptemeEntryPoint>("date");
     const [stepIndex, setStepIndex] = useState(0);
     const [selectedPilotKey, setSelectedPilotKey] = useState("");
+    const [selectedMonthKey, setSelectedMonthKey] = useState("");
     const [selectedDayKey, setSelectedDayKey] = useState("");
     const [selectedTimeKey, setSelectedTimeKey] = useState("");
     const [selectedSessionID, setSelectedSessionID] = useState("");
@@ -173,7 +177,16 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         return slots;
     }, [slots, entryPoint, selectedPlaneID, selectedPilotKey]);
 
-    const days = useMemo(() => groupBaptemeSlots(scopedSlots), [scopedSlots]);
+    const allDays = useMemo(() => groupBaptemeSlots(scopedSlots), [scopedSlots]);
+
+    // Mois distincts sur l'horizon proposé. Un seul mois → l'écran « month »
+    // est retiré du parcours (cf. `screens`) et `days` reste la liste complète.
+    const months = useMemo(() => groupBaptemeDaysByMonth(allDays), [allDays]);
+
+    const days = useMemo(() => {
+        if (months.length <= 1 || !selectedMonthKey) return allDays;
+        return months.find((m) => m.monthKey === selectedMonthKey)?.days ?? allDays;
+    }, [allDays, months, selectedMonthKey]);
 
     const selectedDay = useMemo(
         () => days.find((d) => d.dayKey === selectedDayKey),
@@ -214,15 +227,21 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     // ─── Navigation du wizard ───
 
     const screens = useMemo<ScreenKey[]>(() => {
-        const base: ScreenKey[] = [...SELECTION_SCREENS[entryPoint]];
+        const base: ScreenKey[] = [];
+        for (const key of SELECTION_SCREENS[entryPoint]) {
+            if (key === "day" && months.length > 1) base.push("month");
+            base.push(key);
+        }
         if (selectedPlaneOptions.length > 0) base.push("formula");
         base.push("contact");
         return base;
-    }, [entryPoint, selectedPlaneOptions.length]);
+    }, [entryPoint, months, selectedPlaneOptions.length]);
     const currentScreen = screens[Math.min(stepIndex, screens.length - 1)];
 
     const isScreenComplete = (screen: ScreenKey) => {
         switch (screen) {
+            case "month":
+                return !!selectedMonthKey;
             case "day":
                 return !!selectedDayKey;
             case "slot":
@@ -284,6 +303,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     // Remet tout le parcours à zéro, sans toucher au point d'entrée.
     const clearSelections = () => {
         setSelectedPilotKey("");
+        setSelectedMonthKey("");
         setSelectedDayKey("");
         setSelectedTimeKey("");
         clearSession();
@@ -327,6 +347,14 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         }
     };
 
+    const onSelectMonth = (monthKey: string) => {
+        setSelectedMonthKey(monthKey);
+        setSelectedDayKey("");
+        setSelectedTimeKey("");
+        clearSession();
+        if (entryPoint !== "plane") clearPlane();
+    };
+
     const onSelectDay = (dayKey: string) => {
         setSelectedDayKey(dayKey);
         setSelectedTimeKey("");
@@ -352,6 +380,11 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     // ─── Auto-avance : sélectionner suffit à passer à l'étape suivante ───
     // Pas de clic « Continuer » sur jour / horaire / pilote : le simple choix
     // enchaîne. (Le carrousel appareil, lui, se choisit au swipe → CTA explicite.)
+
+    const handleSelectMonth = (monthKey: string) => {
+        onSelectMonth(monthKey);
+        advance();
+    };
 
     const handleSelectDay = (dayKey: string) => {
         onSelectDay(dayKey);
@@ -541,7 +574,11 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         const chips: { idx: number; icon: typeof CalendarDays; text: string }[] = [];
         screens.forEach((key, idx) => {
             if (idx >= stepIndex || key === "contact") return;
-            if (key === "day" && selectedDay)
+            if (key === "month" && selectedMonthKey) {
+                const month = months.find((m) => m.monthKey === selectedMonthKey);
+                if (month) chips.push({ idx, icon: CalendarDays, text: month.label });
+            }
+            else if (key === "day" && selectedDay)
                 chips.push({ idx, icon: CalendarDays, text: formatSessionDate(selectedDay.date) });
             else if (key === "slot" && selectedSlot)
                 chips.push({
@@ -574,6 +611,48 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
             </div>
         );
     };
+
+    const renderMonthStep = () => (
+        <div className="space-y-2">
+            <p className="px-1 text-sm font-bold text-slate-700">Choisissez un mois</p>
+            <div className="space-y-2">
+                {months.map((month) => {
+                    const selected = month.monthKey === selectedMonthKey;
+                    return (
+                        <button
+                            key={month.monthKey}
+                            type="button"
+                            onClick={() => handleSelectMonth(month.monthKey)}
+                            aria-pressed={selected}
+                            className={`flex min-h-[64px] w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${selected
+                                ? "border-[#774BBE] bg-[#774BBE]/[0.08]"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                                }`}
+                        >
+                            <span
+                                className={`flex h-11 w-11 flex-none items-center justify-center rounded-xl ${selected ? "bg-[#774BBE] text-white" : "bg-[#774BBE]/10 text-[#774BBE]"
+                                    }`}
+                            >
+                                <CalendarDays className="h-5 w-5" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-bold capitalize text-slate-800">
+                                    {month.label}
+                                </span>
+                                <span className="block text-xs text-slate-500">
+                                    {month.days.length} jour{month.days.length > 1 ? "s" : ""} disponible
+                                    {month.days.length > 1 ? "s" : ""}
+                                </span>
+                            </span>
+                            <ChevronRight
+                                className={`h-5 w-5 flex-none ${selected ? "text-[#774BBE]" : "text-slate-400"}`}
+                            />
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
 
     const renderDayStep = () => (
         <div className="space-y-2">
@@ -981,6 +1060,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     // Contenu de l'écran courant.
     const renderScreen = () => {
         switch (currentScreen) {
+            case "month":
+                return renderMonthStep();
             case "day":
                 return renderDayStep();
             case "slot":
