@@ -46,11 +46,15 @@ const PRESETS: { label: string; getRange: () => DateRange }[] = [
 ];
 
 const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+// Format compact pour les petits écrans : "01/01/26" au lieu de "01 janv. 2026",
+// pour que la boîte du filtre tienne à côté des autres actions.
+const fmtShort = (d: Date) => d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 
-const formatLabel = (range: DateRange): string => {
-    if (!range.from) return "Sélectionner une période";
-    if (!range.to) return fmt(range.from);
-    return `${fmt(range.from)} → ${fmt(range.to)}`;
+const formatLabel = (range: DateRange, short = false): string => {
+    const f = short ? fmtShort : fmt;
+    if (!range.from) return short ? "Période" : "Sélectionner une période";
+    if (!range.to) return f(range.from);
+    return `${f(range.from)} → ${f(range.to)}`;
 };
 
 // Un calendrier à 2 mois dans un popover déborde sur un écran étroit : sous
@@ -132,12 +136,14 @@ const LogbookDateRangePicker = ({ value, onChange, disabled, className }: Props)
             type="button"
             disabled={disabled}
             className={cn(
-                "flex items-center gap-2 h-9 px-3 rounded-md border border-slate-200 bg-white text-sm text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#774BBE]/40 disabled:opacity-60 disabled:cursor-not-allowed",
+                "flex items-center gap-1.5 sm:gap-2 h-9 min-w-0 px-2 sm:px-3 rounded-md border border-slate-200 bg-white text-xs sm:text-sm text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#774BBE]/40 disabled:opacity-60 disabled:cursor-not-allowed",
                 className
             )}
         >
             <CalendarIcon className="w-4 h-4 text-[#774BBE] flex-shrink-0" />
-            <span className="whitespace-nowrap font-medium">{formatLabel(value)}</span>
+            {/* Deux libellés (et non un calcul JS) pour éviter tout écart d'hydratation. */}
+            <span className="truncate font-medium sm:hidden">{formatLabel(value, true)}</span>
+            <span className="hidden sm:inline truncate whitespace-nowrap font-medium">{formatLabel(value)}</span>
         </button>
     );
 

@@ -243,11 +243,11 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
     }, [activeTab, currentUser, periodLabel, planesProp, selectedPlaneForExport, pilotExportInfo, aircraftExportLogs]);
 
     return (
-        <div className="h-full flex flex-col bg-slate-50 p-6 md:p-8 font-sans text-slate-800 overflow-hidden">
+        <div className="h-full flex flex-col bg-slate-50 p-4 sm:p-6 md:p-8 font-sans text-slate-800 overflow-hidden">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <div className="flex items-center space-x-3">
-                    <h1 className="font-bold text-3xl text-slate-900 tracking-tight">
+                    <h1 className="font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight">
                         Carnet de vol
                     </h1>
                     <span className="px-3 py-1 bg-white text-purple-600 border border-purple-100 font-semibold rounded-full text-sm shadow-sm">
@@ -255,28 +255,32 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                     </span>
                 </div>
 
-                {/* Action bar */}
-                <div className="flex items-center gap-3">
+                {/* Action bar — sur mobile elle occupe toute la largeur.
+                    Le sélecteur de période garde la largeur de son contenu (mr-auto
+                    pousse les boutons à droite) et ne se comprime qu'au besoin ; les
+                    boutons gardent leur taille pour ne jamais être rognés. */}
+                <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto min-w-0">
                     {/* Date range selector — pilote aussi la période exportée en PDF */}
                     <LogbookDateRangePicker
                         value={dateRange}
                         onChange={handleDateRangeChange}
                         disabled={rangeLoading}
+                        className="min-w-0 mr-auto md:mr-0"
                     />
 
                     {/* Export PDF */}
                     <Button
                         variant="outline"
                         size="sm"
-                        className="border-slate-200 text-slate-600 hover:bg-slate-100"
+                        className="border-slate-200 text-slate-600 hover:bg-slate-100 flex-shrink-0 px-2.5 sm:px-3"
                         disabled={exporting || rangeLoading || (activeTab === "aircraft" && !canExportAircraftLogbook(aircraftExportLogs))}
                         onClick={handleExportPDF}
                     >
-                        <FileDown className="w-4 h-4 mr-2" />
+                        <FileDown className="w-4 h-4 sm:mr-2" />
                         <span className="hidden sm:inline">{exporting ? "Export..." : "Export PDF"}</span>
                     </Button>
 
-                    <div className="h-6 w-[1px] bg-slate-200 mx-1" />
+                    <div className="hidden sm:block h-6 w-[1px] bg-slate-200 mx-1 flex-shrink-0" />
 
                     {/* New entry button */}
                     {canAddManualEntry && (
@@ -291,11 +295,11 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
 
             {/* Tabs */}
             {canSeeAircraftTab && (
-                <div className="flex items-center gap-0 mb-6 border-b border-slate-200">
+                <div className="flex items-center gap-0 mb-6 border-b border-slate-200 overflow-x-auto scrollbar-hide">
                     <button
                         onClick={() => setActiveTab("pilot")}
                         className={cn(
-                            "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-[1px]",
+                            "flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-[1px] whitespace-nowrap flex-shrink-0",
                             activeTab === "pilot"
                                 ? "border-[#774BBE] text-[#774BBE]"
                                 : "border-transparent text-slate-500 hover:text-slate-700"
@@ -307,7 +311,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                     <button
                         onClick={() => setActiveTab("aircraft")}
                         className={cn(
-                            "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-[1px]",
+                            "flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-[1px] whitespace-nowrap flex-shrink-0",
                             activeTab === "aircraft"
                                 ? "border-[#774BBE] text-[#774BBE]"
                                 : "border-transparent text-slate-500 hover:text-slate-700"
