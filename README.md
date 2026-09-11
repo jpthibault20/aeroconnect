@@ -313,7 +313,7 @@ npm run dev                 # http://localhost:3000
 | `NODE_ENV` | — | Géré par Next.js ; à ne définir manuellement que pour un cas particulier. |
 
 > [!WARNING]
-> `.env` et `.env.local` sont ignorés par Git et doivent le rester.
+> Toutes les variables vivent dans un unique `.env` (ignoré par Git, il doit le rester).
 > `SUPABASE_SERVICE_ROLE_KEY` contourne toutes les règles d'accès Supabase :
 > elle ne doit jamais être préfixée `NEXT_PUBLIC_` ni atteindre le navigateur.
 
