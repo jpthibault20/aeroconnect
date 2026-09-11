@@ -363,9 +363,12 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
             }}
         >
             <DialogTrigger asChild>
-                <Button className="bg-[#774BBE] hover:bg-[#6538a5] text-white shadow-md gap-2 transition-colors">
+                {/* Sur mobile : bouton icône seule (le libellé ferait déborder la
+                    barre d'actions et rognerait le bouton). */}
+                <Button className="bg-[#774BBE] hover:bg-[#6538a5] text-white shadow-md gap-2 transition-colors flex-shrink-0 px-2.5 sm:px-4">
                     <PlusIcon className="w-4 h-4" />
-                    Nouvelle entrée
+                    <span className="hidden sm:inline">Nouvelle entrée</span>
+                    <span className="sr-only sm:hidden">Nouvelle entrée</span>
                 </Button>
             </DialogTrigger>
 
