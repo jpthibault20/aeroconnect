@@ -3,7 +3,6 @@ import LogbookPageComponent from './LogbookPageComponent';
 import InitialLoading from '@/components/InitialLoading';
 import NoClubID from '@/components/NoClubID';
 import prisma from '@/api/prisma';
-import { autoCreateLogsFromSessions } from '@/api/db/logbook';
 import { getUser } from '@/api/db/users';
 import { filterVisiblePlanes } from '@/lib/planeVisibility';
 
@@ -15,13 +14,6 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
     if (ClubIDprop) {
         const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
         const currentYear = new Date().getFullYear();
-
-        // Synchroniser les sessions passées (non bloquant si la table n'existe pas encore)
-        try {
-            await autoCreateLogsFromSessions(clubID);
-        } catch {
-            // Table flight_logs peut ne pas exister si la migration n'est pas faite
-        }
 
         let logs: import("@prisma/client").flight_logs[] = [];
         try {

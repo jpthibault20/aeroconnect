@@ -4,13 +4,17 @@ import { revalidatePath } from "next/cache";
 import { flightNature, flight_logs, instructionSubType, userRole } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
-import { BAPTEME_HOLD_STUDENT_ID } from "@/lib/bapteme";
-import { LEGACY_NO_PLANE_ID } from "@/lib/utils";
 import {
+    advanceHobbsTotal,
     computeDurationMinutes,
     computeFlightTimes,
     derivePilotFunction,
     isInstructorRole,
+    resolveCreateHobbsStart,
+    resolveSignHobbsStart,
+    resolveUpdateHobbs,
+    rollbackHobbsTotal,
+    validateHobbsRange,
     validateNatureSubType,
 } from "@/lib/logbookCalc";
 
@@ -33,15 +37,8 @@ const SIGN_OVERRIDE_ROLES: userRole[] = [
     userRole.OWNER, userRole.ADMIN,
 ];
 
-// Seuil de prise en compte des sessions pour auto-création de logs. Calé sur la
-// date de déploiement de cette feature (2026-05-25) pour ne PAS importer la
-// masse historique : seules les sessions à partir de cette date génèrent un
-// log. Les sessions antérieures ne sont jamais auto-loguées (silently ignored).
-const REGULATION_START = new Date("2026-05-25");
-
 export interface CreateFlightLogInput {
     clubID: string;
-    sessionID?: string;
     date: Date;
     planeID?: string;
     planeRegistration: string;
@@ -64,14 +61,14 @@ export interface CreateFlightLogInput {
     landings: number;
     departureAirfield?: string;
     arrivalAirfield?: string;
-    // Override de hobbsStart : ignoré sauf si le créateur est OWNER/ADMIN.
-    // Par défaut, le serveur lit plane.hobbsTotal courant.
+    // hobbsStart : le serveur lit plane.hobbsTotal courant. La valeur envoyée
+    // n'est prise en compte que par un OWNER/ADMIN (override) ou si le compteur
+    // de la machine est encore inconnu (initialisation par la première entrée).
     hobbsStart?: number;
     hobbsEnd?: number;
     fuelAdded?: number;
     machineAnomalies?: string;
     personalObservation?: string;
-    isManualEntry: boolean;
 }
 
 export interface UpdateFlightLogInput {
@@ -189,7 +186,13 @@ export const getClubFlightLogsByDateRange = async (
     }
 };
 
-// ─── Création manuelle ───
+// ─── Création ───
+//
+// Règle du compteur moteur (cf. advanceHobbsTotal dans logbookCalc) : une
+// entrée est une lecture du compteur physique. Son hobbsStart est figé ICI
+// (= plane.hobbsTotal courant) et sa fin avance le compteur dès la création,
+// signée ou non, pour que le pilote suivant voie un début à jour. Le compteur
+// ne recule jamais (vol antérieur saisi en retard).
 
 export const createFlightLog = async (data: CreateFlightLogInput) => {
     const auth = await requireAuth(LOGBOOK_ROLES);
@@ -225,10 +228,9 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
     const pilotFunction = derivePilotFunction(data.flightNature, pilotRole);
 
     // hobbsStart est lu côté serveur depuis plane.hobbsTotal pour interdire
-    // toute manipulation. Exception : OWNER/ADMIN peuvent l'override (mauvaise
-    // pratique mais utile pour corriger une erreur de saisie).
-    const canEditHobbsStart = SIGN_OVERRIDE_ROLES.includes(auth.user.role);
+    // toute manipulation (règle et exceptions : cf. resolveCreateHobbsStart).
     let hobbsStart: number | null = null;
+    let planeHobbsTotal: number | null = null;
     if (data.planeID) {
         const plane = await prisma.planes.findUnique({
             where: { id: data.planeID },
@@ -236,60 +238,65 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
         });
         if (!plane) return { error: "Aéronef introuvable" };
         if (plane.clubID !== data.clubID) return { error: "Permissions insuffisantes" };
-        hobbsStart = plane.hobbsTotal ?? null;
-    }
-    if (canEditHobbsStart && data.hobbsStart !== undefined) {
-        hobbsStart = data.hobbsStart;
+        planeHobbsTotal = plane.hobbsTotal ?? null;
+        hobbsStart = resolveCreateHobbsStart({
+            planeHobbsTotal,
+            requested: data.hobbsStart,
+            canOverride: SIGN_OVERRIDE_ROLES.includes(auth.user.role),
+        });
     }
 
-    if (data.hobbsEnd != null && hobbsStart != null && data.hobbsEnd <= hobbsStart) {
-        return { error: "Les heures moteur de fin doivent être supérieures à celles de début" };
-    }
+    const range = validateHobbsRange(hobbsStart, data.hobbsEnd);
+    if (!range.ok) return { error: range.error };
 
     try {
-        const log = await prisma.flight_logs.create({
-            data: {
-                clubID: data.clubID,
-                sessionID: data.sessionID,
-                date: data.date,
-                planeID: data.planeID,
-                planeRegistration: data.planeRegistration,
-                planeName: data.planeName,
-                planeClass: data.planeClass,
-                pilotID: data.pilotID,
-                pilotFirstName: data.pilotFirstName,
-                pilotLastName: data.pilotLastName,
-                pilotFunction,
-                instructorID: data.instructorID,
-                instructorFirstName: data.instructorFirstName,
-                instructorLastName: data.instructorLastName,
-                studentID: data.studentID,
-                studentFirstName: data.studentFirstName,
-                studentLastName: data.studentLastName,
-                studentEmail: data.studentEmail,
-                studentPhone: data.studentPhone,
-                flightNature: data.flightNature,
-                instructionSubType: data.instructionSubType ?? null,
-                takeoffs: data.takeoffs,
-                landings: data.landings,
-                departureAirfield: data.departureAirfield,
-                arrivalAirfield: data.arrivalAirfield,
-                hobbsStart,
-                hobbsEnd: data.hobbsEnd,
-                fuelAdded: data.fuelAdded,
-                machineAnomalies: data.machineAnomalies,
-                personalObservation: data.personalObservation,
-                isManualEntry: data.isManualEntry,
-            },
-        });
-
-        // Mise à jour hobbsTotal sur l'avion si hobbsEnd renseigné
-        if (data.planeID && data.hobbsEnd) {
-            await prisma.planes.update({
-                where: { id: data.planeID },
-                data: { hobbsTotal: data.hobbsEnd },
+        const log = await prisma.$transaction(async (tx) => {
+            const created = await tx.flight_logs.create({
+                data: {
+                    clubID: data.clubID,
+                    date: data.date,
+                    planeID: data.planeID,
+                    planeRegistration: data.planeRegistration,
+                    planeName: data.planeName,
+                    planeClass: data.planeClass,
+                    pilotID: data.pilotID,
+                    pilotFirstName: data.pilotFirstName,
+                    pilotLastName: data.pilotLastName,
+                    pilotFunction,
+                    instructorID: data.instructorID,
+                    instructorFirstName: data.instructorFirstName,
+                    instructorLastName: data.instructorLastName,
+                    studentID: data.studentID,
+                    studentFirstName: data.studentFirstName,
+                    studentLastName: data.studentLastName,
+                    studentEmail: data.studentEmail,
+                    studentPhone: data.studentPhone,
+                    flightNature: data.flightNature,
+                    instructionSubType: data.instructionSubType ?? null,
+                    takeoffs: data.takeoffs,
+                    landings: data.landings,
+                    departureAirfield: data.departureAirfield,
+                    arrivalAirfield: data.arrivalAirfield,
+                    hobbsStart,
+                    hobbsEnd: data.hobbsEnd,
+                    fuelAdded: data.fuelAdded,
+                    machineAnomalies: data.machineAnomalies,
+                    personalObservation: data.personalObservation,
+                    isManualEntry: true,
+                },
             });
-        }
+
+            if (data.planeID) {
+                const next = advanceHobbsTotal(planeHobbsTotal, null, data.hobbsEnd);
+                if (next != null && next !== planeHobbsTotal) {
+                    await tx.planes.update({
+                        where: { id: data.planeID },
+                        data: { hobbsTotal: next },
+                    });
+                }
+            }
+            return created;
+        });
 
         // Invalide le cache RSC de la page carnet : sans ça, une navigation SPA
         // (ou une ré-ouverture de l'app) vers /logbook resservirait la version
@@ -328,40 +335,54 @@ export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput)
     const natureCheck = validateNatureSubType(nextNature, nextSubType);
     if (!natureCheck.ok) return { error: natureCheck.error };
 
-    // hobbsStart : modification réservée à OWNER/ADMIN (mauvaise pratique, mais
-    // utile pour corriger une erreur de saisie). Si fourni par un autre rôle,
-    // on l'ignore silencieusement (le client est censé bloquer le champ).
-    const canEditHobbsStart = SIGN_OVERRIDE_ROLES.includes(auth.user.role);
-    const nextHobbsStart = canEditHobbsStart && data.hobbsStart !== undefined
-        ? data.hobbsStart
-        : existing.hobbsStart;
-
-    if (data.hobbsEnd != null && nextHobbsStart != null && data.hobbsEnd <= nextHobbsStart) {
-        return { error: "Les heures moteur de fin doivent être supérieures à celles de début" };
-    }
+    // hobbsStart : modification réservée à OWNER/ADMIN (cf. resolveUpdateHobbs).
+    const hobbs = resolveUpdateHobbs({
+        existing,
+        requestedStart: data.hobbsStart,
+        requestedEnd: data.hobbsEnd,
+        canOverride: SIGN_OVERRIDE_ROLES.includes(auth.user.role),
+    });
+    if (!hobbs.ok) return { error: hobbs.error };
 
     try {
-        const updated = await prisma.flight_logs.update({
-            where: { id: logID },
-            data: {
-                ...(data.departureAirfield !== undefined && { departureAirfield: data.departureAirfield }),
-                ...(data.arrivalAirfield !== undefined && { arrivalAirfield: data.arrivalAirfield }),
-                ...(canEditHobbsStart && data.hobbsStart !== undefined && { hobbsStart: data.hobbsStart }),
-                ...(data.hobbsEnd !== undefined && { hobbsEnd: data.hobbsEnd }),
-                ...(data.fuelAdded !== undefined && { fuelAdded: data.fuelAdded }),
-                ...(data.machineAnomalies !== undefined && { machineAnomalies: data.machineAnomalies }),
-                ...(data.personalObservation !== undefined && { personalObservation: data.personalObservation }),
-                ...(data.takeoffs !== undefined && { takeoffs: data.takeoffs }),
-                ...(data.landings !== undefined && { landings: data.landings }),
-                ...(data.flightNature !== undefined && { flightNature: data.flightNature }),
-                ...(data.instructionSubType !== undefined && { instructionSubType: data.instructionSubType }),
-            },
-        });
+        const updated = await prisma.$transaction(async (tx) => {
+            const log = await tx.flight_logs.update({
+                where: { id: logID },
+                data: {
+                    ...(data.departureAirfield !== undefined && { departureAirfield: data.departureAirfield }),
+                    ...(data.arrivalAirfield !== undefined && { arrivalAirfield: data.arrivalAirfield }),
+                    ...(hobbs.startOverride !== undefined && { hobbsStart: hobbs.startOverride }),
+                    ...(data.hobbsEnd !== undefined && { hobbsEnd: data.hobbsEnd }),
+                    ...(data.fuelAdded !== undefined && { fuelAdded: data.fuelAdded }),
+                    ...(data.machineAnomalies !== undefined && { machineAnomalies: data.machineAnomalies }),
+                    ...(data.personalObservation !== undefined && { personalObservation: data.personalObservation }),
+                    ...(data.takeoffs !== undefined && { takeoffs: data.takeoffs }),
+                    ...(data.landings !== undefined && { landings: data.landings }),
+                    ...(data.flightNature !== undefined && { flightNature: data.flightNature }),
+                    ...(data.instructionSubType !== undefined && { instructionSubType: data.instructionSubType }),
+                },
+            });
 
-        // Pas de mise à jour de plane.hobbsTotal ici : ce serait incohérent si
-        // l'utilisateur édite plusieurs vols dans le désordre avant signature.
-        // L'avancement de plane.hobbsTotal se fait à la signature (signFlightLog)
-        // ou à la création manuelle (createFlightLog).
+            // La fin corrigée se répercute sur le compteur selon la règle
+            // d'avancement : si cette entrée est en tête, sa nouvelle fin
+            // remplace le compteur (correction de la dernière lecture) ; sinon
+            // le compteur ne peut qu'avancer.
+            if (existing.planeID && data.hobbsEnd !== undefined) {
+                const plane = await tx.planes.findUnique({
+                    where: { id: existing.planeID },
+                    select: { hobbsTotal: true },
+                });
+                const current = plane?.hobbsTotal ?? null;
+                const next = advanceHobbsTotal(current, existing.hobbsEnd, data.hobbsEnd);
+                if (next != null && next !== current) {
+                    await tx.planes.update({
+                        where: { id: existing.planeID },
+                        data: { hobbsTotal: next },
+                    });
+                }
+            }
+            return log;
+        });
 
         revalidatePath("/logbook");
         return { success: "Entrée mise à jour", log: updated };
@@ -371,6 +392,10 @@ export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput)
 };
 
 // ─── Signature ───
+
+// Fait remonter un refus métier hors de la transaction Prisma (qui l'annule)
+// sans le confondre avec une erreur technique.
+class HobbsStartUnresolvedError extends Error {}
 
 export const signFlightLog = async (logID: string) => {
     const auth = await requireAuth(LOGBOOK_WRITE_ROLES);
@@ -407,18 +432,24 @@ export const signFlightLog = async (logID: string) => {
     try {
         const signedAt = new Date();
         await prisma.$transaction(async (tx) => {
-            // hobbsStart est figé à la signature : on lit le hobbsTotal courant
-            // de l'avion (= reflet de l'état au moment où le pilote signe). Le
-            // hobbsTotal de l'avion est ensuite avancé à hobbsEnd. Ordre de
-            // signature chronologique recommandé pour cohérence (cf.
-            // getIncompleteFlightLogs trié asc).
+            // La signature ne fait que verrouiller : hobbsStart a été figé à la
+            // création et le compteur déjà avancé. Le cas des entrées
+            // historiques sans début est traité par resolveSignHobbsStart.
             let hobbsStart: number | null = log.hobbsStart;
-            if (log.planeID && hobbsStart == null) {
+            let current: number | null = null;
+            if (log.planeID) {
                 const plane = await tx.planes.findUnique({
                     where: { id: log.planeID },
                     select: { hobbsTotal: true },
                 });
-                hobbsStart = plane?.hobbsTotal ?? null;
+                current = plane?.hobbsTotal ?? null;
+                const resolved = resolveSignHobbsStart({
+                    logStart: log.hobbsStart,
+                    logEnd: log.hobbsEnd,
+                    planeHobbsTotal: current,
+                });
+                if (!resolved.ok) throw new HobbsStartUnresolvedError(resolved.error);
+                hobbsStart = resolved.hobbsStart;
             }
 
             await tx.flight_logs.update({
@@ -430,16 +461,22 @@ export const signFlightLog = async (logID: string) => {
                 },
             });
 
-            if (log.planeID && log.hobbsEnd != null) {
-                await tx.planes.update({
-                    where: { id: log.planeID },
-                    data: { hobbsTotal: log.hobbsEnd },
-                });
+            // Filet de sécurité : le compteur ne recule jamais, même si cette
+            // entrée n'avait pas encore été prise en compte (historique).
+            if (log.planeID) {
+                const next = advanceHobbsTotal(current, null, log.hobbsEnd);
+                if (next != null && next !== current) {
+                    await tx.planes.update({
+                        where: { id: log.planeID },
+                        data: { hobbsTotal: next },
+                    });
+                }
             }
         });
         revalidatePath("/logbook");
         return { success: "Entrée signée" };
-    } catch {
+    } catch (e) {
+        if (e instanceof HobbsStartUnresolvedError) return { error: e.message };
         return { error: "Erreur lors de la signature" };
     }
 };
@@ -463,27 +500,32 @@ export const deleteFlightLog = async (logID: string) => {
 
     // Qui peut supprimer un vol NON signé :
     //  - OWNER/ADMIN : n'importe quel vol de leur club ;
-    //  - le pilote du vol lui-même : son propre vol. Cas d'usage principal :
-    //    une séance dont l'élève ne s'est pas présenté génère un log auto-créé
-    //    que l'instructeur (= pilotID du log) doit pouvoir supprimer au lieu de
-    //    le signer.
+    //  - le pilote du vol lui-même : son propre vol.
     const canOverride = SIGN_OVERRIDE_ROLES.includes(auth.user.role);
     if (!canOverride && auth.user.id !== log.pilotID) {
         return { error: "Permissions insuffisantes" };
     }
 
     try {
-        // Un log auto-créé est reconstruit depuis sa session à chaque passage
-        // dans autoCreateLogsFromSessions : sans marquage, la suppression est
-        // annulée au prochain rendu du carnet. On écarte donc la séance de la
-        // synchro (la réservation elle-même reste au calendrier).
         await prisma.$transaction(async (tx) => {
             await tx.flight_logs.delete({ where: { id: logID } });
-            if (log.sessionID && !log.isManualEntry) {
-                await tx.flight_sessions.updateMany({
-                    where: { id: log.sessionID, clubID: auth.user.clubID as string },
-                    data: { logDismissed: true },
+
+            // Si l'entrée supprimée était la dernière lecture du compteur, on
+            // revient à son début : sinon une fin erronée resterait gravée dans
+            // plane.hobbsTotal et polluerait tous les vols suivants.
+            if (log.planeID) {
+                const plane = await tx.planes.findUnique({
+                    where: { id: log.planeID },
+                    select: { hobbsTotal: true },
                 });
+                const current = plane?.hobbsTotal ?? null;
+                const next = rollbackHobbsTotal(current, log);
+                if (next !== current) {
+                    await tx.planes.update({
+                        where: { id: log.planeID },
+                        data: { hobbsTotal: next },
+                    });
+                }
             }
         });
         revalidatePath("/logbook");
@@ -492,7 +534,6 @@ export const deleteFlightLog = async (logID: string) => {
         return { error: "Erreur lors de la suppression" };
     }
 };
-
 // ─── Totaux cumulés ───
 
 export const getRunningTotals = async (pilotID: string, clubID: string) => {
@@ -555,23 +596,6 @@ export const getRunningTotals = async (pilotID: string, clubID: string) => {
     }
 };
 
-// ─── Flight log par session + pilote ───
-
-export const getFlightLogBySession = async (sessionID: string, pilotID: string) => {
-    const auth = await requireAuth(LOGBOOK_ROLES);
-    if ("error" in auth) return { error: auth.error };
-
-    try {
-        const log = await prisma.flight_logs.findFirst({
-            // 1 log par session (instructeur), accessible aussi par l'élève via studentID.
-            where: { sessionID, OR: [{ pilotID }, { studentID: pilotID }] },
-        });
-        return { success: true, log: log ?? null };
-    } catch {
-        return { error: "Erreur lors de la récupération du log" };
-    }
-};
-
 // ─── Hobbs courant d'un avion ───
 
 export const getPlaneHobbs = async (planeID: string): Promise<number | null> => {
@@ -583,218 +607,6 @@ export const getPlaneHobbs = async (planeID: string): Promise<number | null> => 
         return plane?.hobbsTotal ?? null;
     } catch {
         return null;
-    }
-};
-
-// ─── Vols incomplets (non signés, date passée) ───
-
-export const getIncompleteFlightLogs = async (pilotID: string, clubID: string) => {
-    const auth = await requireAuth(LOGBOOK_ROLES);
-    if ("error" in auth) return { error: auth.error };
-
-    if (auth.user.id !== pilotID && !MANAGEMENT_ROLES.includes(auth.user.role)) {
-        return { error: "Permissions insuffisantes" };
-    }
-
-    try {
-        // `flight_logs.date` est de type PG `DATE` (cf. schema.prisma : @db.Date) :
-        // l'heure est tronquée. Filtrer avec `lt: new Date()` rejette les vols
-        // du jour parce que la comparaison se fait au niveau date pure
-        // (`aujourd'hui < aujourd'hui` = false). On compare donc au début du
-        // lendemain. Les logs ne sont créés que pour des sessions déjà
-        // commencées (cf. autoCreateLogsFromSessions), donc un log daté
-        // d'aujourd'hui correspond bien à un vol passé.
-        const tomorrow = new Date();
-        tomorrow.setUTCHours(0, 0, 0, 0);
-        tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-
-        const logs = await prisma.flight_logs.findMany({
-            where: {
-                pilotID,
-                clubID,
-                pilotSigned: false,
-                date: { lt: tomorrow },
-            },
-            // Ordre chronologique asc : on signe les plus anciens d'abord pour
-            // que le hobbsStart lu à la signature (= plane.hobbsTotal courant)
-            // soit cohérent vol après vol.
-            orderBy: { date: "asc" },
-            take: 20,
-        });
-        return { success: true, logs };
-    } catch {
-        return { error: "Erreur lors de la récupération" };
-    }
-};
-
-// ─── Auto-création depuis les sessions passées ───
-
-// Compatibilité avec flight_sessions qui utilise encore l'enum legacy
-// NatureOfTheft / flightType. Mapping vers le nouveau modèle. Voir le ticket
-// futur "alignement flight_sessions" pour la refonte complète.
-export async function mapFlightType(
-    ft: string | null
-): Promise<{ nature: flightNature; subType: instructionSubType | null }> {
-    switch (ft) {
-        case "TRAINING": return { nature: "INSTRUCTION", subType: "LOCAL" };
-        case "PRIVATE": return { nature: "CDB", subType: null };
-        case "SIGHTSEEING": return { nature: "INSTRUCTION", subType: "LOCAL" };
-        case "DISCOVERY": return { nature: "INSTRUCTION", subType: "BAPTEME" };
-        case "EXAM": return { nature: "INSTRUCTION", subType: "EXAM" };
-        case "FIRST_FLIGHT": return { nature: "INSTRUCTION", subType: "BAPTEME" };
-        case "INITATION": return { nature: "INSTRUCTION", subType: "BAPTEME" };
-        default: return { nature: "INSTRUCTION", subType: "LOCAL" };
-    }
-}
-
-export const autoCreateLogsFromSessions = async (clubID: string) => {
-    try {
-        // Vérification rapide : comparer le nombre de sessions éligibles vs logs existants
-        const [sessionCount, logCount] = await Promise.all([
-            prisma.flight_sessions.count({
-                where: {
-                    clubID,
-                    studentID: { not: null },
-                    // Un hold de baptême en attente ne doit jamais générer de log.
-                    NOT: { studentID: BAPTEME_HOLD_STUDENT_ID },
-                    logDismissed: false,
-                    sessionDateStart: { lt: new Date(), gte: REGULATION_START },
-                },
-            }),
-            prisma.flight_logs.count({
-                where: { clubID, isManualEntry: false },
-            }),
-        ]);
-
-        // 1 log par session (l'instructeur, avec studentID rempli).
-        if (logCount >= sessionCount) {
-            return { created: 0 };
-        }
-
-        // Sessions passées avec un élève, depuis l'entrée en vigueur
-        const sessions = await prisma.flight_sessions.findMany({
-            where: {
-                clubID,
-                studentID: { not: null },
-                // Un hold de baptême en attente (studentID sentinelle) n'est pas un
-                // vol réel : jamais de log tant qu'il n'est pas confirmé.
-                NOT: { studentID: BAPTEME_HOLD_STUDENT_ID },
-                // Séances dont le log auto-créé a été supprimé (élève absent) :
-                // ne jamais les re-loguer (cf. deleteFlightLog).
-                logDismissed: false,
-                sessionDateStart: {
-                    lt: new Date(),
-                    gte: REGULATION_START,
-                },
-            },
-            select: {
-                id: true,
-                sessionDateStart: true,
-                sessionDateDuration_min: true,
-                pilotID: true,
-                pilotFirstName: true,
-                pilotLastName: true,
-                studentID: true,
-                studentFirstName: true,
-                studentLastName: true,
-                studentPlaneID: true,
-                flightType: true,
-                student_type: true,
-                classes: true,
-            },
-        });
-
-        if (sessions.length === 0) return { created: 0 };
-
-        // Récupérer les sessionIDs déjà logués (1 log par session attendu)
-        const existingLogs = await prisma.flight_logs.findMany({
-            where: {
-                clubID,
-                sessionID: { in: sessions.map((s) => s.id) },
-            },
-            select: { sessionID: true },
-        });
-
-        const loggedSet = new Set(existingLogs.map((l) => l.sessionID).filter((id): id is string => !!id));
-
-        // Récupérer infos avions
-        const planeIDs = [...new Set(sessions.map((s) => s.studentPlaneID).filter((id): id is string => !!id && id !== "classroomSession" && id !== LEGACY_NO_PLANE_ID))];
-        const planesMap = new Map<string, { name: string; immatriculation: string; classes: number; hobbsTotal: number | null }>();
-        if (planeIDs.length > 0) {
-            const planes = await prisma.planes.findMany({
-                where: { id: { in: planeIDs } },
-                select: { id: true, name: true, immatriculation: true, classes: true, hobbsTotal: true },
-            });
-            planes.forEach((p) => planesMap.set(p.id, p));
-        }
-
-        // Terrain par défaut du club = son id (convention : Club.id == code OACI).
-        const defaultAirfield = clubID;
-
-        const logsToCreate: Parameters<typeof prisma.flight_logs.create>[0]["data"][] = [];
-
-        for (const session of sessions) {
-            const planeInfo = session.studentPlaneID ? planesMap.get(session.studentPlaneID) : null;
-            const isClassroom = session.studentPlaneID === "classroomSession";
-            // Séances historiques uniquement (cf. LEGACY_NO_PLANE_ID) : l'option
-            // « sans appareil » n'existe plus dans les formulaires.
-            const isNoPlane = session.studentPlaneID === LEGACY_NO_PLANE_ID;
-            const { nature, subType } = await mapFlightType(session.flightType ?? session.student_type ?? null);
-
-            const basePlane = {
-                planeID: isClassroom || isNoPlane ? null : session.studentPlaneID,
-                planeRegistration: planeInfo?.immatriculation ?? (isClassroom ? "THEORIQUE" : isNoPlane ? "PERSO" : "N/A"),
-                planeName: planeInfo?.name ?? (isClassroom ? "Théorique" : isNoPlane ? "Perso" : "Inconnu"),
-                planeClass: planeInfo?.classes ?? null,
-            };
-
-            // hobbsStart sera rempli à la signature (cf. signFlightLog) en
-            // lisant plane.hobbsTotal courant.
-            // 1 seul log par session : l'instructeur, avec studentID rempli.
-            // Le carnet de l'élève récupère ce log via studentID (cf.
-            // getLogbookByPilot avec OR pilotID/studentID).
-            if (!loggedSet.has(session.id)) {
-                logsToCreate.push({
-                    clubID,
-                    sessionID: session.id,
-                    date: session.sessionDateStart,
-                    ...basePlane,
-                    pilotID: session.pilotID,
-                    pilotFirstName: session.pilotFirstName,
-                    pilotLastName: session.pilotLastName,
-                    pilotFunction: "I",
-                    studentID: session.studentID,
-                    studentFirstName: session.studentFirstName,
-                    studentLastName: session.studentLastName,
-                    flightNature: nature,
-                    instructionSubType: subType,
-                    takeoffs: 1,
-                    landings: 1,
-                    hobbsStart: null,
-                    hobbsEnd: null,
-                    departureAirfield: defaultAirfield,
-                    arrivalAirfield: defaultAirfield,
-                    isManualEntry: false,
-                });
-            }
-        }
-
-        if (logsToCreate.length === 0) return { created: 0 };
-
-        // Batch create
-        const batchSize = 100;
-        let created = 0;
-        for (let i = 0; i < logsToCreate.length; i += batchSize) {
-            const batch = logsToCreate.slice(i, i + batchSize);
-            const result = await prisma.$transaction(
-                batch.map((data) => prisma.flight_logs.create({ data }))
-            );
-            created += result.length;
-        }
-
-        return { created };
-    } catch {
-        return { error: "Erreur lors de la synchronisation des carnets" };
     }
 };
 

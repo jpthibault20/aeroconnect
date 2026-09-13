@@ -194,8 +194,8 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
         setEditDefaultHobbsStart(undefined);
         setEditOpen(true);
 
-        // Pré-remplir l'heure moteur de début avec le hobbsTotal courant de
-        // l'avion (cohérent avec la popup auto via PendingFlightsPrompt).
+        // Entrée historique sans début figé : pré-remplir avec le hobbsTotal
+        // courant de l'avion (figé ensuite à la signature).
         if (log.planeID && log.hobbsStart == null) {
             const hobbs = await getPlaneHobbs(log.planeID);
             if (hobbs != null) setEditDefaultHobbsStart(hobbs);

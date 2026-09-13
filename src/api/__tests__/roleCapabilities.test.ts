@@ -16,7 +16,6 @@ import {
     canAddManualLogEntry,
     canSeeAircraftLogbook,
     isLogbookReadOnly,
-    shouldPromptToSignFlights,
 } from "@/lib/logbookPermissions";
 
 /**
@@ -288,40 +287,6 @@ describe("Général — visibilité des machines privées", () => {
     it("isPrivatePlane distingue club (ownerID null) et privée", () => {
         expect(isPrivatePlane(clubPlane)).toBe(false);
         expect(isPrivatePlane(myPrivatePlane)).toBe(true);
-    });
-});
-
-describe("Général — popup automatique « vols à signer »", () => {
-    it("ne s'ouvre PAS pour un élève : il ne peut ni compléter ni signer", () => {
-        expect(shouldPromptToSignFlights(userRole.STUDENT)).toBe(false);
-        // Cohérence avec la lecture seule du carnet : même règle, une seule source.
-        expect(isLogbookReadOnly(userRole.STUDENT)).toBe(true);
-    });
-
-    it("ne s'ouvre pas non plus pour un USER (aucun accès au carnet)", () => {
-        expect(shouldPromptToSignFlights(userRole.USER)).toBe(false);
-        expect(shouldPromptToSignFlights(undefined)).toBe(false);
-    });
-
-    it("s'ouvre pour tous les rôles qui signent réellement des vols", () => {
-        for (const role of [
-            userRole.PILOT, userRole.INSTRUCTOR,
-            userRole.MANAGER, userRole.OWNER, userRole.ADMIN,
-        ]) {
-            expect(shouldPromptToSignFlights(role)).toBe(true);
-        }
-    });
-
-    it("invariant : jamais proposée à quelqu'un en lecture seule", () => {
-        for (const role of ALL_ROLES) {
-            if (isLogbookReadOnly(role)) {
-                expect(shouldPromptToSignFlights(role)).toBe(false);
-            }
-        }
-    });
-
-    it("l'élève garde l'accès à la page carnet (la popup seule est masquée)", () => {
-        expect(canAccessLogbookPage(userRole.STUDENT)).toBe(true);
     });
 });
 

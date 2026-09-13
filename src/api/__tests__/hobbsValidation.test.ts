@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 
 /**
- * Logique de validation des heures moteur extraite des composants
- * CompleteFlightDialog et SessionPopup.
+ * Logique de validation des heures moteur extraite du composant
+ * CompleteFlightDialog (côté client, avant appel du server action).
  * On teste la logique pure, pas les composants.
  */
 

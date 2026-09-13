@@ -7,7 +7,6 @@ import UpdateContext from "@/components/UpdateContext";
 import Navigation from "@/components/navigation";
 import prisma from "@/api/prisma";
 import { CurrentClubWrapper } from "../context/useCurrentClub";
-import PendingFlightsPrompt from "@/components/logbook/PendingFlightsPrompt";
 
 export default async function ProtectLayout({
     children,
@@ -34,7 +33,6 @@ export default async function ProtectLayout({
             <CurrentUserWrapper>
                 <CurrentClubWrapper>
                     <UpdateContext userProp={user} clubProp={clubs.filter(club => club.id === user.clubID)[0]} />
-                    <PendingFlightsPrompt />
                     <Navigation clubsProp={clubs}>{children}</Navigation>
                 </CurrentClubWrapper>
             </CurrentUserWrapper>
