@@ -97,6 +97,9 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
     const [loading, setLoading] = useState(false);
     const [signing, setSigning] = useState(false);
     const [hobbsStartUnlocked, setHobbsStartUnlocked] = useState(false);
+    // Compteur de la machine inconnu (jamais loguée) : la première entrée
+    // l'initialise, le champ début est alors saisissable par tout le monde.
+    const [planeHobbsUnknown, setPlaneHobbsUnknown] = useState(false);
     // Format de saisie du compteur (HH:MM par défaut). N'affecte que l'UI : la
     // valeur reste stockée en heures décimales canoniques.
     const [hobbsFormat, setHobbsFormat] = useState<HobbsFormat>("HMS");
@@ -196,12 +199,14 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
     useEffect(() => {
         if (!form.planeID) {
             updateField("hobbsStart", "");
+            setPlaneHobbsUnknown(false);
             return;
         }
         let cancelled = false;
         getPlaneHobbs(form.planeID).then((hobbs) => {
             if (cancelled) return;
             updateField("hobbsStart", hobbs != null ? String(hobbs) : "");
+            setPlaneHobbsUnknown(hobbs == null);
         });
         return () => {
             cancelled = true;
@@ -212,6 +217,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         setForm(buildInitialForm());
         setError("");
         setHobbsStartUnlocked(false);
+        setPlaneHobbsUnknown(false);
         setActingUserID("");
     };
 
@@ -230,6 +236,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         if (!actingUser) return fail("Pilote concerné introuvable.");
         if (!form.date) return fail("Veuillez saisir une date.");
         if (!form.planeID) return fail("Veuillez sélectionner un aéronef.");
+        if (planeHobbsUnknown && (!form.hobbsStart || isNaN(parseFloat(form.hobbsStart)))) return fail("Compteur de la machine inconnu : saisissez les heures moteur de début lues sur l'aéronef.");
         if (!form.hobbsEnd || isNaN(parseFloat(form.hobbsEnd))) return fail("Les heures moteur de fin sont obligatoires.");
         if (form.hobbsStart && parseFloat(form.hobbsEnd) <= parseFloat(form.hobbsStart)) return fail("Les heures moteur de fin doivent être supérieures à celles de début.");
         if (form.nature === "INSTRUCTION" && !form.subType) return fail("Veuillez sélectionner un sous-type d'instruction.");
@@ -300,15 +307,16 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
             landings: form.movements,
             departureAirfield: form.departure || undefined,
             arrivalAirfield: form.arrival || undefined,
+            // Envoyé seulement quand il a un sens côté serveur : override
+            // OWNER/ADMIN, ou initialisation d'un compteur inconnu.
             hobbsStart:
-                canEditHobbsStart && hobbsStartUnlocked && form.hobbsStart
+                ((canEditHobbsStart && hobbsStartUnlocked) || planeHobbsUnknown) && form.hobbsStart
                     ? parseFloat(form.hobbsStart)
                     : undefined,
             hobbsEnd: parseFloat(form.hobbsEnd),
             fuelAdded: form.fuel ? parseFloat(form.fuel) : undefined,
             machineAnomalies: form.machineAnomalies || undefined,
             personalObservation: form.personalObservation || undefined,
-            isManualEntry: true,
         };
 
         try {
@@ -709,15 +717,17 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                                     format={hobbsFormat}
                                     value={form.hobbsStart ? parseFloat(form.hobbsStart) : null}
                                     onChange={(d) => updateField("hobbsStart", d != null ? String(d) : "")}
-                                    readOnly={!hobbsStartUnlocked}
+                                    readOnly={!hobbsStartUnlocked && !planeHobbsUnknown}
                                     placeholder="—"
                                     inputClassName={
-                                        hobbsStartUnlocked
+                                        hobbsStartUnlocked || planeHobbsUnknown
                                             ? "bg-slate-50 border-slate-200 focus:ring-[#774BBE] font-mono"
                                             : "bg-slate-100 border-slate-200 text-slate-500 cursor-default font-mono"
                                     }
                                 />
-                                {!hobbsStartUnlocked && (
+                                {planeHobbsUnknown ? (
+                                    <p className="text-xs text-amber-600">Compteur inconnu : saisissez la valeur lue sur l&apos;aéronef, elle initialisera le compteur.</p>
+                                ) : !hobbsStartUnlocked && (
                                     <p className="text-xs text-slate-400">Lu automatiquement depuis l&apos;aéronef.</p>
                                 )}
                             </div>

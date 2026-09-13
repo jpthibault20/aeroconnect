@@ -63,7 +63,6 @@ const makeSession = (overrides: Partial<flight_sessions> = {}): flight_sessions 
     classes: [],
     flightComment: null,
     natureOfTheft: [],
-    logDismissed: false,
     finalReccurence: null,
     studentEmail: null,
     studentPhone: null,
@@ -164,33 +163,6 @@ describe("Admins et managers exclus de la liste des étudiants", () => {
 
         const result = getFreePlanesUsers(session, [session], [manager], []);
         expect(result.students.map(s => s.id)).not.toContain("mgr-1");
-    });
-});
-
-// --- RÈGLE : Pas de flight_log pour une session sans élève ---
-
-describe("Auto-création des flight_logs", () => {
-    it("une session sans studentID ne doit pas générer de log (vérifié par la condition dans autoCreateLogsFromSessions)", () => {
-        // autoCreateLogsFromSessions filtre : studentID: { not: null }
-        // On teste la condition de filtrage
-        const sessionWithStudent = makeSession({ studentID: "stu-1" });
-        const sessionWithout = makeSession({ studentID: null });
-
-        const eligible = [sessionWithStudent, sessionWithout].filter(s => s.studentID !== null);
-        expect(eligible).toHaveLength(1);
-        expect(eligible[0].studentID).toBe("stu-1");
-    });
-
-    it("une session dont le log a été supprimé (logDismissed) ne doit pas être re-loguée", () => {
-        // autoCreateLogsFromSessions filtre : logDismissed: false.
-        // Cas d'usage : élève absent, l'instructeur supprime le log auto-créé —
-        // il ne doit pas réapparaître au prochain rendu du carnet.
-        const normale = makeSession({ id: "s1", studentID: "stu-1" });
-        const ecartee = makeSession({ id: "s2", studentID: "stu-2", logDismissed: true });
-
-        const eligible = [normale, ecartee].filter(s => s.studentID !== null && !s.logDismissed);
-        expect(eligible).toHaveLength(1);
-        expect(eligible[0].id).toBe("s1");
     });
 });
 

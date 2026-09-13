@@ -63,8 +63,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
 
     const didMountRef = useRef(false);
     // Resynchronise l'état local avec les données serveur à chaque nouveau
-    // rendu RSC (revalidatePath après une mutation, ou vol complété via la
-    // popup globale PendingFlightsPrompt montée dans le layout). Sans ça,
+    // rendu RSC (revalidatePath après une mutation). Sans ça,
     // useState reste figé sur le premier rendu et les changements n'appa-
     // raissent qu'après un rechargement manuel de la page. logsProp ne change
     // de référence que lorsque le serveur renvoie de nouvelles données, donc
