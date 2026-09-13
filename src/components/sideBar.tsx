@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import Image from "next/image";
 import { ChevronDown, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -21,17 +21,14 @@ import { useSearchParams } from "next/navigation";
 import { updateUserClub } from "@/api/db/users";
 import packageJson from "../../package.json";
 import { cn } from "@/lib/utils";
-import { getAllUserRequestedClubID } from "@/api/db/club";
-import { getMaintenanceAlerts } from "@/api/db/maintenance";
-import { getPendingBaptemeCount } from "@/api/db/bapteme";
-import { MAINTENANCE_ALERTS_EVENT } from "@/lib/maintenanceEvents";
-import { BAPTEME_REQUESTS_EVENT } from "@/lib/baptemeEvents";
+import type { NavigationCounts } from "@/hooks/useNavigationCounts";
 
 interface props {
     clubsProp: Club[]
+    counts: NavigationCounts
 }
 
-const SideBar = ({ clubsProp }: props) => {
+const SideBar = ({ clubsProp, counts }: props) => {
     const pathname = usePathname();
     const router = useRouter();
     const { currentUser } = useCurrentUser();
@@ -39,95 +36,7 @@ const SideBar = ({ clubsProp }: props) => {
     const searchParams = useSearchParams();
     const clubID = searchParams.get("clubID");
     const [clubForAdmin, setClubForAdmin] = React.useState<string | null>(clubID);
-    const [refreshTrigger, setRefreshTrigger] = React.useState(0);
-
-    // Nouvel état pour le nombre de demandes en attente
-    const [requestCount, setRequestCount] = React.useState(0);
-    // Nombre d'avions ayant au moins un rappel de maintenance en retard.
-    const [maintenanceCount, setMaintenanceCount] = React.useState(0);
-    // Nombre de demandes de baptême en attente que l'utilisateur peut traiter.
-    const [baptemeCount, setBaptemeCount] = React.useState(0);
-
-    // --- EFFECT: Récupérer les demandes en attente ---
-    useEffect(() => {
-        const fetchRequests = async () => {
-            // Définition explicite des rôles pour TypeScript
-            const allowedRoles: userRole[] = [userRole.ADMIN, userRole.OWNER, userRole.MANAGER];
-
-            // Vérification si l'utilisateur a le droit de voir les demandes
-            const canManage = currentUser?.role && allowedRoles.includes(currentUser.role);
-
-            if (clubID && canManage) {
-                try {
-                    const requests = await getAllUserRequestedClubID(clubID);
-                    // Mise à jour du compteur si la réponse est un tableau
-                    if (Array.isArray(requests)) {
-                        setRequestCount(requests.length);
-                    }
-                } catch (error) {
-                }
-            }
-        };
-
-        // Appel immédiat au chargement du composant
-        fetchRequests();
-
-        // --- GESTION DE L'AUTO-REFRESH ---
-
-        // Fonction qui sera appelée quand l'événement est déclenché
-        const handleRefresh = () => {
-            // On incrémente ce compteur, ce qui modifie une dépendance du useEffect
-            // et force React à relancer 'fetchRequests()'
-            setRefreshTrigger((prev) => prev + 1);
-        };
-
-        // On écoute l'événement global personnalisé
-        window.addEventListener('refresh-club-requests', handleRefresh);
-
-        // Fonction de nettoyage (très important pour éviter les fuites de mémoire)
-        return () => {
-            window.removeEventListener('refresh-club-requests', handleRefresh);
-        };
-
-    }, [clubID, currentUser, refreshTrigger]);
-
-    // --- EFFECT: Récupérer les rappels de maintenance en retard ---
-    useEffect(() => {
-        if (!clubID) return;
-
-        const fetchAlerts = async () => {
-            try {
-                const res = await getMaintenanceAlerts(clubID);
-                setMaintenanceCount(res.count);
-            } catch {
-            }
-        };
-
-        fetchAlerts();
-
-        // Recalcul quand la maintenance change (ajout/suppression rappel/intervention).
-        window.addEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
-        return () => window.removeEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
-    }, [clubID, currentUser]);
-
-    // --- EFFECT: Récupérer les baptêmes en attente ---
-    useEffect(() => {
-        if (!clubID) return;
-
-        const fetchBaptemes = async () => {
-            try {
-                const res = await getPendingBaptemeCount(clubID);
-                setBaptemeCount(res.count);
-            } catch {
-            }
-        };
-
-        fetchBaptemes();
-
-        // Recalcul quand une demande de baptême est validée/refusée.
-        window.addEventListener(BAPTEME_REQUESTS_EVENT, fetchBaptemes);
-        return () => window.removeEventListener(BAPTEME_REQUESTS_EVENT, fetchBaptemes);
-    }, [clubID, currentUser]);
+    const { requestCount, maintenanceCount, baptemeCount } = counts;
 
     const handleNavigation = (href: string) => {
         router.push(href);
