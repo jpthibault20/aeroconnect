@@ -110,6 +110,128 @@ export function computeDurationMinutes(
     return Math.round(diff * 60);
 }
 
+// ─── Compteur moteur de l'aéronef (plane.hobbsTotal) ───
+// Invariant : le compteur ne recule JAMAIS par effet de bord d'une saisie.
+// Chaque entrée de carnet est une lecture du compteur physique par le pilote :
+// son hobbsStart est figé à la création (= compteur courant), et sa fin fait
+// avancer le compteur dès la création, signée ou non, pour que le pilote
+// suivant voie un début à jour. La signature ne fait que verrouiller l'entrée.
+//
+// Signer/créer un vol antérieur APRÈS un vol postérieur (fin plus petite que
+// le compteur) ne doit donc pas ramener le compteur en arrière — c'est
+// exactement le bug qui a corrompu les débuts de tous les vols suivants.
+
+// Égalité de deux lectures de compteur (valeurs arrondies à 4 décimales,
+// cf. hoursMinutesToDecimal) avec une tolérance sous la minute.
+function sameHobbs(a: number, b: number): boolean {
+    return Math.abs(a - b) < 1e-6;
+}
+
+// Nouveau compteur après création ou modification d'une entrée.
+//   current     : plane.hobbsTotal courant (null = compteur inconnu)
+//   previousEnd : hobbsEnd stocké de l'entrée AVANT modification (null en création)
+//   nextEnd     : hobbsEnd après modification (null = inchangé / non saisi)
+// Si l'entrée était « en tête » (sa fin précédente EST le compteur courant),
+// sa nouvelle fin remplace le compteur : c'est le seul cas où il peut
+// baisser, et c'est une correction explicite de la dernière lecture (faute
+// de frappe). Sinon : max(courant, fin), jamais de recul.
+export function advanceHobbsTotal(
+    current: number | null | undefined,
+    previousEnd: number | null | undefined,
+    nextEnd: number | null | undefined
+): number | null {
+    if (nextEnd == null) return current ?? null;
+    if (current == null) return nextEnd;
+    if (previousEnd != null && sameHobbs(previousEnd, current)) return nextEnd;
+    return Math.max(current, nextEnd);
+}
+
+// Compteur après suppression d'une entrée (non signée). Si elle était en
+// tête, on revient à son début (dernière lecture connue avant ce vol) ; sinon
+// un autre vol a déjà poussé le compteur plus loin et on n'y touche pas.
+export function rollbackHobbsTotal(
+    current: number | null | undefined,
+    log: { hobbsStart: number | null; hobbsEnd: number | null }
+): number | null {
+    if (current == null || log.hobbsEnd == null) return current ?? null;
+    if (!sameHobbs(log.hobbsEnd, current)) return current;
+    return log.hobbsStart ?? current;
+}
+
+// ─── Règles de résolution du début (hobbsStart) côté serveur ───
+// Extraites des server actions createFlightLog / updateFlightLog /
+// signFlightLog pour être testables sans base.
+
+export const HOBBS_END_BEFORE_START_ERROR =
+    "Les heures moteur de fin doivent être supérieures à celles de début";
+export const HOBBS_START_UNRESOLVED_ERROR =
+    "Impossible de déterminer l'heure moteur de début : le compteur de l'aéronef est déjà au-delà de la fin saisie. Un président ou un administrateur doit renseigner l'heure de début.";
+
+export type HobbsRuleResult<T> = ({ ok: true } & T) | { ok: false; error: string };
+
+// fin > début, uniquement quand les deux sont connus.
+export function validateHobbsRange(
+    hobbsStart: number | null | undefined,
+    hobbsEnd: number | null | undefined
+): HobbsRuleResult<object> {
+    if (hobbsEnd != null && hobbsStart != null && hobbsEnd <= hobbsStart) {
+        return { ok: false, error: HOBBS_END_BEFORE_START_ERROR };
+    }
+    return { ok: true };
+}
+
+// Création : le début est le compteur courant de la machine, point. La valeur
+// envoyée par le client n'est prise en compte que :
+//  - par un OWNER/ADMIN (override, mauvaise pratique assumée : correction de
+//    saisie ou vol antérieur saisi en retard) ;
+//  - quand le compteur est inconnu (machine jamais loguée) : la première
+//    entrée l'initialise avec la valeur lue sur l'aéronef, quel que soit le rôle.
+export function resolveCreateHobbsStart(args: {
+    planeHobbsTotal: number | null;
+    requested: number | undefined;
+    canOverride: boolean;
+}): number | null {
+    if (args.requested !== undefined && (args.canOverride || args.planeHobbsTotal == null)) {
+        return args.requested;
+    }
+    return args.planeHobbsTotal;
+}
+
+// Modification : seul un OWNER/ADMIN peut toucher au début ; pour les autres
+// rôles la valeur envoyée est ignorée silencieusement (le client est censé
+// bloquer le champ) et la validation se fait contre le début stocké.
+// startOverride : valeur à écrire en base (undefined = ne pas toucher).
+export function resolveUpdateHobbs(args: {
+    existing: { hobbsStart: number | null; hobbsEnd: number | null };
+    requestedStart: number | undefined;
+    requestedEnd: number | undefined;
+    canOverride: boolean;
+}): HobbsRuleResult<{ hobbsStart: number | null; hobbsEnd: number | null; startOverride: number | undefined }> {
+    const startOverride = args.canOverride ? args.requestedStart : undefined;
+    const hobbsStart = startOverride !== undefined ? startOverride : args.existing.hobbsStart;
+    const hobbsEnd = args.requestedEnd !== undefined ? args.requestedEnd : args.existing.hobbsEnd;
+    const range = validateHobbsRange(hobbsStart, hobbsEnd);
+    if (!range.ok) return range;
+    return { ok: true, hobbsStart, hobbsEnd, startOverride };
+}
+
+// Signature : le début a normalement été figé à la création. Reste le cas des
+// entrées historiques (auto-créées, début null) : on le fige sur le compteur
+// courant si c'est encore cohérent (compteur < fin), sinon le compteur a déjà
+// dépassé ce vol et seul un OWNER/ADMIN peut renseigner le début à la main.
+export function resolveSignHobbsStart(args: {
+    logStart: number | null;
+    logEnd: number | null;
+    planeHobbsTotal: number | null;
+}): HobbsRuleResult<{ hobbsStart: number | null }> {
+    if (args.logStart != null) return { ok: true, hobbsStart: args.logStart };
+    const hobbsStart = args.planeHobbsTotal;
+    if (hobbsStart != null && args.logEnd != null && args.logEnd <= hobbsStart) {
+        return { ok: false, error: HOBBS_START_UNRESOLVED_ERROR };
+    }
+    return { ok: true, hobbsStart };
+}
+
 export interface FlightTimes {
     durationMinutes: number;
     timeDC: number;

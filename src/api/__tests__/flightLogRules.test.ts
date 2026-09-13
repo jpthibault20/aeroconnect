@@ -12,24 +12,14 @@ import {
     parseHobbsInput,
     formatHobbsValue,
     computeFlightTimesWithFallback,
+    advanceHobbsTotal,
+    rollbackHobbsTotal,
 } from "@/lib/logbookCalc";
 
 /**
  * Tests des règles du carnet de vol (flight_logs).
  * Logique extraite de logbook.ts + helpers logbookCalc.ts.
  */
-
-// --- Mapping planeID spéciaux ---
-
-function mapPlaneInfo(studentPlaneID: string | null, planeInfo: { immatriculation: string; name: string } | null) {
-    const isClassroom = studentPlaneID === "classroomSession";
-    const isNoPlane = studentPlaneID === "noPlane";
-    return {
-        planeID: isClassroom || isNoPlane ? null : studentPlaneID,
-        planeRegistration: planeInfo?.immatriculation ?? (isClassroom ? "THEORIQUE" : isNoPlane ? "PERSO" : "N/A"),
-        planeName: planeInfo?.name ?? (isClassroom ? "Théorique" : isNoPlane ? "Perso" : "Inconnu"),
-    };
-}
 
 // --- Signature ---
 
@@ -66,70 +56,6 @@ function canDeleteFlightLog(
     const canOverride = OVERRIDE_ROLES.includes(role);
     if (!canOverride && authUserID !== logPilotID) return { allowed: false, reason: "Permissions insuffisantes" };
     return { allowed: true };
-}
-
-// Effet de bord de la suppression : une séance dont le log auto-créé est
-// supprimé (élève absent) doit être écartée de la synchro (logDismissed=true)
-// pour ne pas être re-loguée au prochain autoCreateLogsFromSessions. Les entrées
-// manuelles (isManualEntry) et les logs sans session ne marquent rien.
-function shouldDismissSession(sessionID: string | null, isManualEntry: boolean): boolean {
-    return sessionID !== null && !isManualEntry;
-}
-
-// --- Auto-création : filtrage sessions éligibles ---
-
-// Aligné sur la valeur prod (cf. src/api/db/logbook.ts) — fixée à la date de
-// déploiement de la feature pour ne pas backfill des sessions historiques.
-const REGULATION_START = new Date("2026-05-25");
-
-function isSessionEligibleForLog(sessionDate: Date, studentID: string | null, now: Date): boolean {
-    return studentID !== null && sessionDate < now && sessionDate >= REGULATION_START;
-}
-
-// --- Auto-signature du log élève (EP) quand l'instructeur (I) signe ---
-
-interface SignableLog {
-    id: string;
-    sessionID: string | null;
-    pilotFunction: "I" | "EP" | "P";
-    pilotSigned: boolean;
-}
-
-function shouldAlsoSignEPSibling(signedLog: SignableLog): boolean {
-    return signedLog.pilotFunction === "I" && signedLog.sessionID !== null;
-}
-
-function findEPSiblingsToSign(signedLog: SignableLog, allLogs: SignableLog[]): SignableLog[] {
-    if (!shouldAlsoSignEPSibling(signedLog)) return [];
-    return allLogs.filter(
-        (l) =>
-            l.id !== signedLog.id &&
-            l.sessionID === signedLog.sessionID &&
-            l.pilotFunction === "EP" &&
-            !l.pilotSigned
-    );
-}
-
-// --- Filtrage des vols incomplets (popup carnet de vol) ---
-
-function startOfTomorrowUTC(now: Date): Date {
-    const t = new Date(now);
-    t.setUTCHours(0, 0, 0, 0);
-    t.setUTCDate(t.getUTCDate() + 1);
-    return t;
-}
-
-function isLogIncomplete(
-    log: { pilotSigned: boolean; date: Date; pilotFunction: string; pilotID: string; clubID: string },
-    queryPilotID: string,
-    queryClubID: string,
-    now: Date
-): boolean {
-    if (log.pilotID !== queryPilotID) return false;
-    if (log.clubID !== queryClubID) return false;
-    if (log.pilotSigned) return false;
-    if (log.pilotFunction === "EP") return false;
-    return log.date < startOfTomorrowUTC(now);
 }
 
 // --- Tests ---
@@ -384,36 +310,6 @@ describe("Règles du carnet de vol", () => {
         });
     });
 
-    describe("Mapping des avions spéciaux", () => {
-        it("classroomSession → THEORIQUE, planeID null", () => {
-            const info = mapPlaneInfo("classroomSession", null);
-            expect(info.planeID).toBeNull();
-            expect(info.planeRegistration).toBe("THEORIQUE");
-            expect(info.planeName).toBe("Théorique");
-        });
-
-        it("noPlane → PERSO, planeID null", () => {
-            const info = mapPlaneInfo("noPlane", null);
-            expect(info.planeID).toBeNull();
-            expect(info.planeRegistration).toBe("PERSO");
-            expect(info.planeName).toBe("Perso");
-        });
-
-        it("avion normal avec info → registration et nom de l'avion", () => {
-            const info = mapPlaneInfo("plane-1", { immatriculation: "F-GXYZ", name: "DR400" });
-            expect(info.planeID).toBe("plane-1");
-            expect(info.planeRegistration).toBe("F-GXYZ");
-            expect(info.planeName).toBe("DR400");
-        });
-
-        it("avion normal sans info (supprimé?) → N/A et Inconnu", () => {
-            const info = mapPlaneInfo("plane-1", null);
-            expect(info.planeID).toBe("plane-1");
-            expect(info.planeRegistration).toBe("N/A");
-            expect(info.planeName).toBe("Inconnu");
-        });
-    });
-
     describe("Signature", () => {
         it("le pilote peut signer son propre vol non signé", () => {
             expect(canSignFlight("pilot-1", "pilot-1", false).allowed).toBe(true);
@@ -515,192 +411,108 @@ describe("Règles du carnet de vol", () => {
                 expect(r.reason).toBe("Impossible de supprimer une entrée signée");
             });
         });
+    });
 
-        describe("Effet de bord : écarter la séance de la synchro (logDismissed)", () => {
-            it("log auto-créé lié à une séance → la séance est écartée", () => {
-                expect(shouldDismissSession("session-1", false)).toBe(true);
+    describe("Compteur moteur de l'aéronef (advanceHobbsTotal / rollbackHobbsTotal)", () => {
+        describe("avancement", () => {
+            it("compteur inconnu : la première fin l'initialise", () => {
+                expect(advanceHobbsTotal(null, null, 1338.6667)).toBe(1338.6667);
             });
 
-            it("entrée manuelle liée à une séance → aucune séance écartée", () => {
-                expect(shouldDismissSession("session-1", true)).toBe(false);
+            it("fin non saisie : compteur inchangé", () => {
+                expect(advanceHobbsTotal(1346, null, null)).toBe(1346);
+                expect(advanceHobbsTotal(null, null, undefined)).toBeNull();
             });
 
-            it("log sans session (saisie manuelle libre) → aucune séance écartée", () => {
-                expect(shouldDismissSession(null, true)).toBe(false);
-                expect(shouldDismissSession(null, false)).toBe(false);
+            it("création dans l'ordre : le compteur avance à la fin saisie", () => {
+                expect(advanceHobbsTotal(1345, null, 1346)).toBe(1346);
+            });
+
+            it("vol antérieur saisi en retard (fin < compteur) : le compteur ne recule PAS", () => {
+                // Cas prod : BOUR signe son 06/09 (fin 1345) après le 08/09 (fin 1346).
+                expect(advanceHobbsTotal(1346, null, 1345)).toBe(1346);
+            });
+
+            it("correction de la fin de l'entrée en tête : sa nouvelle fin remplace le compteur", () => {
+                // L'entrée en tête (fin 1349.0167 = compteur) est corrigée à 1347.
+                expect(advanceHobbsTotal(1349.0167, 1349.0167, 1347)).toBe(1347);
+            });
+
+            it("correction de la fin d'une entrée qui n'est plus en tête : max, jamais de recul", () => {
+                expect(advanceHobbsTotal(1349, 1346, 1345.5)).toBe(1349);
+                expect(advanceHobbsTotal(1349, 1346, 1350)).toBe(1350);
+            });
+
+            it("égalité de tête tolérante aux arrondis à 4 décimales", () => {
+                expect(advanceHobbsTotal(1349.0167, 1349.01670000001, 1347)).toBe(1347);
             });
         });
-    });
 
-    describe("Éligibilité pour l'auto-création de logs", () => {
-        const now = new Date("2026-08-15T10:00:00Z");
+        describe("suppression d'une entrée non signée", () => {
+            it("entrée en tête : le compteur revient à son début", () => {
+                expect(rollbackHobbsTotal(1349.0167, { hobbsStart: 1346, hobbsEnd: 1349.0167 })).toBe(1346);
+            });
 
-        it("session passée avec élève après la réglementation = éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2026-06-15"), "stu-1", now)).toBe(true);
+            it("entrée dépassée par un vol suivant : compteur inchangé", () => {
+                expect(rollbackHobbsTotal(1350, { hobbsStart: 1346, hobbsEnd: 1349.0167 })).toBe(1350);
+            });
+
+            it("entrée sans fin ou compteur inconnu : compteur inchangé", () => {
+                expect(rollbackHobbsTotal(1350, { hobbsStart: 1346, hobbsEnd: null })).toBe(1350);
+                expect(rollbackHobbsTotal(null, { hobbsStart: 1346, hobbsEnd: 1349 })).toBeNull();
+            });
+
+            it("entrée en tête sans début connu : on garde le compteur plutôt que de le perdre", () => {
+                expect(rollbackHobbsTotal(1349, { hobbsStart: null, hobbsEnd: 1349 })).toBe(1349);
+            });
         });
 
-        it("session passée SANS élève = non éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2026-06-15"), null, now)).toBe(false);
+        it("rejoue la chronologie prod du 05 au 13/09 sans corrompre le compteur", () => {
+            // Chaque étape = plane.hobbsTotal après l'action, avec la nouvelle règle.
+            let counter: number | null = 1344.25;                 // 05/09 signé 1344 -> 1344:15
+
+            counter = advanceHobbsTotal(counter, null, 1345);     // 06/09 BOUR crée (non signé) 1344:15 -> 1345
+            expect(counter).toBe(1345);
+
+            counter = advanceHobbsTotal(counter, null, 1346);     // 08/09 JP crée+signe 1345 -> 1346
+            expect(counter).toBe(1346);
+
+            counter = advanceHobbsTotal(counter, null, 1345);     // 08/09 BOUR signe enfin son 06/09
+            expect(counter).toBe(1346);                           // ← ne recule plus (bug B)
+
+            // 12/09 : le début proposé est 1346, pas 1345.
+            const start12 = counter;
+            expect(start12).toBe(1346);
+            counter = advanceHobbsTotal(counter, null, 1347.5);   // 12/09 JP crée (non signé)
+            expect(counter).toBe(1347.5);
+
+            // Il s'aperçoit d'une faute de frappe et supprime l'entrée : retour au début.
+            counter = rollbackHobbsTotal(counter, { hobbsStart: start12, hobbsEnd: 1347.5 });
+            expect(counter).toBe(1346);                           // ← plus de compteur fantôme (bug A)
         });
 
-        it("session AVANT la date de réglementation = non éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2026-03-15"), "stu-1", now)).toBe(false);
-        });
+        it("deux pilotes croisés : correction et suppression ne touchent que l'entrée en tête", () => {
+            let counter: number | null = 1346;
 
-        it("session future = non éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2027-01-01"), "stu-1", now)).toBe(false);
-        });
+            // A crée 1346 -> 1347, puis B crée 1347 -> 1348.5 : B est en tête.
+            const a = { hobbsStart: 1346, hobbsEnd: 1347 };
+            counter = advanceHobbsTotal(counter, null, a.hobbsEnd);
+            const b = { hobbsStart: counter as number, hobbsEnd: 1348.5 };
+            expect(b.hobbsStart).toBe(1347);
+            counter = advanceHobbsTotal(counter, null, b.hobbsEnd);
+            expect(counter).toBe(1348.5);
 
-        it("session exactement à la date de réglementation = éligible", () => {
-            expect(isSessionEligibleForLog(new Date("2026-05-25"), "stu-1", now)).toBe(true);
-        });
-    });
+            // A corrige sa fin (faute de frappe 1347 -> 1346.75) : plus en tête, pas de recul.
+            counter = advanceHobbsTotal(counter, a.hobbsEnd, 1346.75);
+            expect(counter).toBe(1348.5);
 
-    describe("Auto-signature du log élève quand l'instructeur signe", () => {
-        const instructorLog: SignableLog = {
-            id: "log-I-1",
-            sessionID: "session-1",
-            pilotFunction: "I",
-            pilotSigned: false,
-        };
-        const studentLog: SignableLog = {
-            id: "log-EP-1",
-            sessionID: "session-1",
-            pilotFunction: "EP",
-            pilotSigned: false,
-        };
-        const otherSessionStudentLog: SignableLog = {
-            id: "log-EP-2",
-            sessionID: "session-2",
-            pilotFunction: "EP",
-            pilotSigned: false,
-        };
+            // A supprime son entrée : pas en tête, compteur inchangé.
+            counter = rollbackHobbsTotal(counter, { ...a, hobbsEnd: 1346.75 });
+            expect(counter).toBe(1348.5);
 
-        it("instructeur signe → log élève de la même session est auto-signé", () => {
-            const siblings = findEPSiblingsToSign(instructorLog, [instructorLog, studentLog]);
-            expect(siblings).toHaveLength(1);
-            expect(siblings[0].id).toBe("log-EP-1");
-        });
-
-        it("ne signe pas les logs EP d'autres sessions", () => {
-            const siblings = findEPSiblingsToSign(instructorLog, [instructorLog, studentLog, otherSessionStudentLog]);
-            expect(siblings.map((s) => s.id)).toEqual(["log-EP-1"]);
-        });
-
-        it("ne re-signe pas un log EP déjà signé", () => {
-            const alreadySigned: SignableLog = { ...studentLog, pilotSigned: true };
-            const siblings = findEPSiblingsToSign(instructorLog, [instructorLog, alreadySigned]);
-            expect(siblings).toHaveLength(0);
-        });
-
-        it("pilote solo (P) ne déclenche PAS l'auto-signature", () => {
-            const pilotSoloLog: SignableLog = {
-                id: "log-P-1",
-                sessionID: "session-1",
-                pilotFunction: "P",
-                pilotSigned: false,
-            };
-            const siblings = findEPSiblingsToSign(pilotSoloLog, [pilotSoloLog, studentLog]);
-            expect(siblings).toHaveLength(0);
-        });
-
-        it("entrée manuelle sans sessionID ne déclenche PAS l'auto-signature", () => {
-            const manualInstructorLog: SignableLog = {
-                id: "log-I-manual",
-                sessionID: null,
-                pilotFunction: "I",
-                pilotSigned: false,
-            };
-            const siblings = findEPSiblingsToSign(manualInstructorLog, [manualInstructorLog, studentLog]);
-            expect(siblings).toHaveLength(0);
-        });
-
-        it("plusieurs élèves dans la même session → tous signés", () => {
-            const studentLog2: SignableLog = {
-                id: "log-EP-1b",
-                sessionID: "session-1",
-                pilotFunction: "EP",
-                pilotSigned: false,
-            };
-            const siblings = findEPSiblingsToSign(instructorLog, [instructorLog, studentLog, studentLog2]);
-            expect(siblings).toHaveLength(2);
-            expect(siblings.map((s) => s.id).sort()).toEqual(["log-EP-1", "log-EP-1b"]);
-        });
-    });
-
-    describe("Popup vols incomplets — filtrage cohérent avec PG DATE", () => {
-        const baseLog = {
-            pilotSigned: false,
-            pilotFunction: "I",
-            pilotID: "pilot-1",
-            clubID: "club-1",
-        };
-        const now = new Date("2026-05-06T18:46:00.000Z");
-
-        it("vol du jour (date = aujourd'hui 00:00Z) → inclus dans la popup", () => {
-            const log = { ...baseLog, date: new Date("2026-05-06T00:00:00.000Z") };
-            expect(isLogIncomplete(log, "pilot-1", "club-1", now)).toBe(true);
-        });
-
-        it("vol d'hier → inclus", () => {
-            const log = { ...baseLog, date: new Date("2026-05-05T00:00:00.000Z") };
-            expect(isLogIncomplete(log, "pilot-1", "club-1", now)).toBe(true);
-        });
-
-        it("vol de demain → exclu", () => {
-            const log = { ...baseLog, date: new Date("2026-05-07T00:00:00.000Z") };
-            expect(isLogIncomplete(log, "pilot-1", "club-1", now)).toBe(false);
-        });
-
-        it("vol déjà signé → exclu", () => {
-            const log = { ...baseLog, pilotSigned: true, date: new Date("2026-05-06T00:00:00.000Z") };
-            expect(isLogIncomplete(log, "pilot-1", "club-1", now)).toBe(false);
-        });
-
-        it("entrée élève (pilotFunction = EP) → exclue", () => {
-            const log = { ...baseLog, pilotFunction: "EP", date: new Date("2026-05-06T00:00:00.000Z") };
-            expect(isLogIncomplete(log, "pilot-1", "club-1", now)).toBe(false);
-        });
-
-        it("vol d'un autre pilote → exclu", () => {
-            const log = { ...baseLog, pilotID: "other", date: new Date("2026-05-06T00:00:00.000Z") };
-            expect(isLogIncomplete(log, "pilot-1", "club-1", now)).toBe(false);
-        });
-
-        it("vol d'un autre club → exclu", () => {
-            const log = { ...baseLog, clubID: "other-club", date: new Date("2026-05-06T00:00:00.000Z") };
-            expect(isLogIncomplete(log, "pilot-1", "club-1", now)).toBe(false);
-        });
-
-        it("startOfTomorrowUTC est strictement > tout instant d'aujourd'hui", () => {
-            const tomorrow = startOfTomorrowUTC(now);
-            expect(tomorrow > now).toBe(true);
-            const endOfToday = new Date("2026-05-06T23:59:59.999Z");
-            expect(tomorrow > endOfToday).toBe(true);
-            expect(tomorrow.toISOString()).toBe("2026-05-07T00:00:00.000Z");
-        });
-    });
-
-    describe("Mise à jour du hobbsTotal sur l'avion", () => {
-        it("hobbsEnd met à jour le total si planeID existe", () => {
-            const planeID = "plane-1";
-            const hobbsEnd = 1500.5;
-            const shouldUpdate = !!planeID && !!hobbsEnd;
-            expect(shouldUpdate).toBe(true);
-        });
-
-        it("pas de mise à jour si planeID est null (noPlane)", () => {
-            const planeID = null;
-            const hobbsEnd = 1500.5;
-            const shouldUpdate = !!planeID && !!hobbsEnd;
-            expect(shouldUpdate).toBe(false);
-        });
-
-        it("pas de mise à jour si hobbsEnd non renseigné", () => {
-            const planeID = "plane-1";
-            const hobbsEnd = undefined;
-            const shouldUpdate = !!planeID && !!hobbsEnd;
-            expect(shouldUpdate).toBe(false);
+            // B supprime la sienne : en tête, retour au début de B (1347), pas à celui de A.
+            counter = rollbackHobbsTotal(counter, b);
+            expect(counter).toBe(1347);
         });
     });
 });

@@ -58,7 +58,6 @@ const makeSession = (overrides: Partial<flight_sessions> = {}): flight_sessions 
     classes: [],
     flightComment: null,
     natureOfTheft: [],
-    logDismissed: false,
     finalReccurence: null,
     studentEmail: null,
     studentPhone: null,

@@ -42,12 +42,11 @@ interface Props {
     // Appelé après une suppression réussie (retire la ligne côté parent / avance
     // la file des vols en attente). Le bouton "Supprimer" n'apparaît que si fourni.
     onDeleted?: (deleted: flight_logs) => void;
-    queueInfo?: string;
     defaultAirfield?: string;
     defaultHobbsStart?: number;
 }
 
-const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted, queueInfo, defaultAirfield, defaultHobbsStart }: Props) => {
+const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted, defaultAirfield, defaultHobbsStart }: Props) => {
     const { currentUser } = useCurrentUser();
     const isStudent = currentUser?.role === userRole.STUDENT;
     const canEditHobbsStart =
@@ -255,9 +254,6 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
                             Signé le {new Date(log.pilotSignedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                         </div>
                     )}
-                    {queueInfo && (
-                        <div className="mt-2 ml-11 text-xs text-[#774BBE] font-medium">{queueInfo}</div>
-                    )}
                 </div>
 
                 {/* Body — scrollable */}
@@ -343,7 +339,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
                                             }
                                         />
                                         {log.hobbsStart == null && !isReadOnly && !hobbsStartUnlocked && (
-                                            <p className="text-xs text-slate-400 italic">Valeur lue sur l&apos;aéronef, figée à la signature.</p>
+                                            <p className="text-xs text-slate-400 italic">Entrée historique sans début : valeur lue sur l&apos;aéronef, figée à la signature.</p>
                                         )}
                                     </div>
                                     <div className="space-y-2">
