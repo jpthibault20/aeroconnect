@@ -4,6 +4,8 @@ import { Spinner } from './ui/SpinnerVariants'
 import { Club, flight_sessions, User } from '@prisma/client'
 import { removeSessionsByID } from '@/api/db/sessions'
 import { toast } from '@/hooks/use-toast';
+import { sendNotificationsOrWarn } from '@/lib/notifications';
+import { warnNotificationFailure } from '@/lib/notificationToast';
 import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail'
 import { useCurrentClub } from '@/app/context/useCurrentClub'
 import { Trash2, AlertTriangle } from 'lucide-react'
@@ -81,20 +83,20 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
                     }
                 }
 
-                // On attend que les notifs soient parties (ou échouées, sans bloquer l'UI)
-                await Promise.allSettled(notifications);
-
                 toast({
                     title: "Succès",
                     description: sessions.length === 1 ? "Le vol a été supprimé." : "Les vols ont été supprimés.",
                     className: "bg-green-600 text-white border-none"
                 });
 
+                // Notifications en arrière-plan : l'utilisateur est prévenu si l'une échoue.
+                void sendNotificationsOrWarn(notifications, warnNotificationFailure);
+
                 // Mise à jour de l'état local
                 setSessions(prevSessions => prevSessions.filter(session => !sessionIDs.includes(session.id)));
                 setIsOpen(false);
             }
-        } catch (error) {
+        } catch {
             toast({
                 title: "Erreur technique",
                 description: "Impossible de supprimer le vol.",

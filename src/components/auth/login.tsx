@@ -19,21 +19,24 @@ import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 export const Login = () => {
     const [loading, setLoading] = React.useState(false);
-    const [message, setMessage] = React.useState('');
-    const [messageG, setMessageG] = React.useState('');
     const [showPassword, setShowPassword] = React.useState(false); // État pour la visibilité du mot de passe
     const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
+    const [message, setMessage] = React.useState(() => searchParams.get('message') ?? '');
+    const [messageG, setMessageG] = React.useState(() => searchParams.get('messageG') ?? '');
     const router = useRouter();
 
     // Précharge la page de destination
     useEffect(() => {
-        router.prefetch('/Calendar'); // Ou ta page de destination
+        router.prefetch('/calendar'); // Page de destination après connexion
     }, [router]);
-    useEffect(() => {
+    // Messages transmis par redirection (?message= / ?messageG=) : resynchronisés
+    // quand l'URL change (ajusté pendant le rendu plutôt que dans un effet).
+    const [prevSearchParams, setPrevSearchParams] = React.useState(searchParams);
+    if (prevSearchParams !== searchParams) {
+        setPrevSearchParams(searchParams);
         setMessage(searchParams.get('message') ?? '');
         setMessageG(searchParams.get('messageG') ?? '');
-        // setLoading(false); // Réinitialiser le loading à false après avoir récupéré les paramètres de recherche
-    }, [searchParams]);
+    }
 
     const {
         register,

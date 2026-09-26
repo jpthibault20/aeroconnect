@@ -321,7 +321,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                 });
                 setIsPopoverOpen(false);
             }
-        } catch (error) {
+        } catch {
             setError("Une erreur technique est survenue.");
         } finally {
             setLoading(false);

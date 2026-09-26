@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -26,12 +26,13 @@ interface Props {
 const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, confirmAction, loading, style }: Props) => {
     const [isOpen, setIsOpen] = useState(false);
 
-    // Ferme la modale automatiquement quand le chargement se termine
-    useEffect(() => {
-        if (loading === false) {
-            setIsOpen(false);
-        }
-    }, [loading]);
+    // Ferme la modale automatiquement quand le chargement se termine (ajusté
+    // pendant le rendu plutôt que dans un effet).
+    const [prevLoading, setPrevLoading] = useState(loading);
+    if (prevLoading !== loading) {
+        setPrevLoading(loading);
+        if (loading === false) setIsOpen(false);
+    }
 
     const handleConfirm = (e: React.MouseEvent) => {
         e.preventDefault();

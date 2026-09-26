@@ -33,7 +33,7 @@ const NoClubID = () => {
         try {
             const fetchedClubs = await getAllClubs();
             setClubs(fetchedClubs);
-        } catch (err) {
+        } catch {
             setError("Impossible de charger les clubs. Veuillez réessayer.");
         } finally {
             setLoading(false);

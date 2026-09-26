@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { Spinner } from '../ui/SpinnerVariants';
 import { Logo } from '../Logo';
 import { Eye, EyeOff } from 'lucide-react';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 const Register = () => {
     const [loading, setLoading] = useState(false);
@@ -48,6 +49,10 @@ const Register = () => {
             await signup(formData);
 
         } catch (error) {
+            // Le redirect() de l'action (succès comme erreur métier) doit suivre son cours.
+            if (isRedirectError(error)) throw error;
+            // Erreur réseau / serveur inattendue (les cas métier passent par redirect).
+            setMessage("Une erreur technique est survenue. Veuillez réessayer.");
         } finally {
             reset();
             setLoading(false);

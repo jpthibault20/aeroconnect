@@ -132,7 +132,7 @@ describe("filterPilotePlane", () => {
 describe("getFreePlanesUsers", () => {
     it("retourne vide si props invalides", () => {
         const session = makeSession();
-        const result = getFreePlanesUsers(session, [], null as any, null as any);
+        const result = getFreePlanesUsers(session, [], null as unknown as User[], null as unknown as planes[]);
         expect(result).toEqual({ students: [], planes: [] });
     });
 

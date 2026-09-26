@@ -109,7 +109,7 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
             } else {
                 toast({ title: "Erreur", description: res.error, variant: "destructive" });
             }
-        } catch (error) {
+        } catch {
             toast({ title: "Erreur technique", variant: "destructive" });
         } finally {
             setLoading(false);
@@ -138,8 +138,9 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                 setPlaneState(prev => ({ ...prev, operational: !newState }));
                 toast({ title: "Erreur", variant: "destructive" });
             }
-        } catch (error) {
+        } catch {
             setPlaneState(prev => ({ ...prev, operational: !newState }));
+            toast({ title: "Erreur technique", description: "Le statut de la machine n'a pas été modifié.", variant: "destructive" });
         } finally {
             setLoading(false);
         }

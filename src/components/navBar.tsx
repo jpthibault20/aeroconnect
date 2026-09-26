@@ -9,6 +9,7 @@ import { Button } from './ui/button'
 import { LogOut, Menu, X, ChevronDown } from 'lucide-react'
 import { signOut } from '@/app/auth/login/action'
 import { updateUserClub } from '@/api/db/users'
+import { toast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import Image from 'next/image'
 import packageJson from "../../package.json";
@@ -48,8 +49,14 @@ const NavBar = ({ clubsProp, counts }: NavBarProps) => {
         setClubForAdmin(newClubID);
         setIsOpen(false);
         if (currentUser?.id) {
-            await updateUserClub(currentUser.id, newClubID);
-            window.location.href = `/calendar?clubID=${newClubID}`;
+            const res = await updateUserClub(currentUser.id, newClubID);
+            if ('error' in res) {
+                setClubForAdmin(clubID);
+                toast({ title: "Changement de club impossible", description: res.error, variant: "destructive" });
+                return;
+            }
+            // Rechargement complet : les contextes utilisateur / club sont relus côté serveur.
+            window.location.assign(`/calendar?clubID=${newClubID}`);
         }
     };
 

@@ -41,21 +41,28 @@ const PlanesPage = ({ PlanesProps, ownerNames }: Props) => {
     // privée ; les gestionnaires peuvent en plus créer des machines du club.
     const canCreate = !!currentUser && canCreateAnyPlane(currentUser.role);
 
-    const fetchOverdue = useCallback(async () => {
-        if (!currentUser?.clubID) return;
-        try {
-            const res = await getMaintenanceAlerts(currentUser.clubID);
-            setOverduePlaneIDs(res.overduePlaneIDs);
-        } catch {
-        }
-    }, [currentUser?.clubID]);
+    const clubID = currentUser?.clubID;
 
     useEffect(() => {
-        fetchOverdue();
+        if (!clubID) return;
+        let cancelled = false;
+        const fetchOverdue = async () => {
+            try {
+                const res = await getMaintenanceAlerts(clubID);
+                if (!cancelled) setOverduePlaneIDs(res.overduePlaneIDs);
+            } catch {
+                // Non bloquant : le badge « maintenance en retard » est indicatif,
+                // la modale de maintenance affiche l'état détaillé.
+            }
+        };
+        void fetchOverdue();
         // Recalcul après toute modification de maintenance (via la modale).
         window.addEventListener(MAINTENANCE_ALERTS_EVENT, fetchOverdue);
-        return () => window.removeEventListener(MAINTENANCE_ALERTS_EVENT, fetchOverdue);
-    }, [fetchOverdue]);
+        return () => {
+            cancelled = true;
+            window.removeEventListener(MAINTENANCE_ALERTS_EVENT, fetchOverdue);
+        };
+    }, [clubID]);
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 p-4 md:p-8 font-sans">

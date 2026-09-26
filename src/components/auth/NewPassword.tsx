@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { Spinner } from '../ui/SpinnerVariants';
 import { Eye, EyeOff } from 'lucide-react';
 import { updatePassword } from '@/app/auth/newPassword/action';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 const NewPassword = () => {
     const [loading, setLoading] = React.useState(false);
@@ -51,6 +52,11 @@ const NewPassword = () => {
             // Réinitialiser le formulaire après une soumission réussie
             reset();
         } catch (error) {
+            // Le redirect() de l'action (succès comme erreur métier) doit suivre son cours.
+            if (isRedirectError(error)) throw error;
+            // Erreur réseau / serveur inattendue (les cas métier passent par redirect).
+            setMessageG('');
+            setMessage("Une erreur technique est survenue. Veuillez réessayer.");
         } finally {
             setLoading(false); // Désactiver le chargement après la soumission
         }

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useSearchParams } from "next/navigation";
 import { updateUserClub } from "@/api/db/users";
+import { toast } from "@/hooks/use-toast";
 import packageJson from "../../package.json";
 import { cn } from "@/lib/utils";
 import type { NavigationCounts } from "@/hooks/useNavigationCounts";
@@ -51,11 +52,17 @@ const SideBar = ({ clubsProp, counts }: props) => {
         signOut();
     };
 
-    const handleClubChange = async (clubID: string) => {
-        setClubForAdmin(clubID);
+    const handleClubChange = async (newClubID: string) => {
+        setClubForAdmin(newClubID);
         if (currentUser?.id) {
-            await updateUserClub(currentUser.id, clubID);
-            window.location.href = `/calendar?clubID=${clubID}`;
+            const res = await updateUserClub(currentUser.id, newClubID);
+            if ('error' in res) {
+                setClubForAdmin(clubID);
+                toast({ title: "Changement de club impossible", description: res.error, variant: "destructive" });
+                return;
+            }
+            // Rechargement complet : les contextes utilisateur / club sont relus côté serveur.
+            window.location.assign(`/calendar?clubID=${newClubID}`);
         }
     };
 

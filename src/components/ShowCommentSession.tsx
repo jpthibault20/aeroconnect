@@ -108,7 +108,7 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp, descrip
                     });
                 }
             }
-        } catch (error) {
+        } catch {
             setError("Une erreur est survenue lors de l'envoi des données.");
         } finally {
             setLoading(false);

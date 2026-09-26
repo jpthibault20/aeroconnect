@@ -34,7 +34,7 @@ const WaitingClubResponse = ({ clubIDprops }: props) => {
             } else {
                 setError("Le club demandé est introuvable.");
             }
-        } catch (err) {
+        } catch {
             setError("Impossible de charger les informations du club.");
         } finally {
             setLoading(false);

@@ -50,7 +50,7 @@ const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequ
                 setError(null);
                 setRequestClubID(true);
             }
-        } catch (err) {
+        } catch {
             setError("Une erreur est survenue.");
         } finally {
             setLoading(false);

@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Plane, BookOpen, ChevronLeft, ChevronRight, ArrowRight, RotateCw, ArrowUp, ArrowDown } from "lucide-react";
+import { Plane, ChevronLeft, ChevronRight, ArrowRight, RotateCw, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { shouldShowStudent } from "@/lib/logbookDisplay";
 
@@ -75,9 +75,14 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = fal
         return sorted;
     }, [logsProp, selectedPlaneID, natureFilter, onlyUnsigned, sortDir]);
 
-    useEffect(() => {
+    // Retour à la première page quand les filtres ou le tri changent (ajusté
+    // pendant le rendu plutôt que dans un effet : pas de rendu intermédiaire).
+    const pageResetKey = JSON.stringify([selectedPlaneID, natureFilter, onlyUnsigned, sortDir]);
+    const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey);
+    if (prevPageResetKey !== pageResetKey) {
+        setPrevPageResetKey(pageResetKey);
         setPage(0);
-    }, [selectedPlaneID, natureFilter, onlyUnsigned, sortDir]);
+    }
 
     // Hobbs courant par avion, pour estimer une durée provisoire des vols non
     // signés (hobbsStart pas encore figé).

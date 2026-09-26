@@ -16,12 +16,9 @@ interface Props {
 const AircraftClassSelector = ({ disabled, classes, setClasses }: Props) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const { currentClub } = useCurrentClub();
-    const [classesList, setClassesList] = useState(aircraftClasses.filter(c => currentClub?.classes.includes(c.id)));
+    // Classes proposées : celles activées pour le club courant.
+    const classesList = aircraftClasses.filter(c => currentClub?.classes.includes(c.id));
     const dropdownRef = useRef<HTMLDivElement>(null); // Typage explicite
-
-    useEffect(() => {
-        setClassesList(aircraftClasses.filter(c => currentClub?.classes.includes(c.id)))
-    }, [currentClub])
 
     // Fermer le dropdown si on clique à l'extérieur
     const handleClickOutside = (event: MouseEvent) => {

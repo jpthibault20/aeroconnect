@@ -18,7 +18,6 @@ import {
     MessageSquareMore,
     ArrowRight,
     Trash2,
-    UserPlus,
     User as UserIcon,
     GraduationCap,
     PlaneTakeoff,

@@ -199,7 +199,7 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
                         className: "bg-green-600 text-white border-none"
                     });
                 }
-            } catch (error) {
+            } catch {
                 toast({ title: "Erreur technique", variant: "destructive" });
             } finally {
                 setLoading(false);

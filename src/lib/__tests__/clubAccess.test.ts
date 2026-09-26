@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { userRole } from "@prisma/client";
-import { canEditClubSettings, canManageClub, clubTabsFor, overviewKindFor, resolveClubTab } from "../clubAccess";
+import { canEditClubSettings, canManageClub, canSwitchClub, clubTabsFor, overviewKindFor, resolveClubTab } from "../clubAccess";
 
 // ─── canManageClub ───
 
@@ -90,5 +90,28 @@ describe("overviewKindFor", () => {
         expect(overviewKindFor(userRole.PILOT)).toBe("pilot");
         expect(overviewKindFor(userRole.USER)).toBe("member");
         expect(overviewKindFor(undefined)).toBe("member");
+    });
+});
+
+// ─── canSwitchClub ───
+
+describe("canSwitchClub", () => {
+    it("autorise un admin à changer son propre club", () => {
+        expect(canSwitchClub({ id: "u1", role: userRole.ADMIN }, "u1")).toBe(true);
+    });
+
+    it("refuse à un admin de déplacer un autre utilisateur", () => {
+        expect(canSwitchClub({ id: "u1", role: userRole.ADMIN }, "u2")).toBe(false);
+    });
+
+    it("refuse aux autres rôles, même pour eux-mêmes", () => {
+        for (const role of [userRole.OWNER, userRole.MANAGER, userRole.INSTRUCTOR, userRole.PILOT, userRole.STUDENT, userRole.USER]) {
+            expect(canSwitchClub({ id: "u1", role }, "u1")).toBe(false);
+        }
+    });
+
+    it("refuse sans utilisateur", () => {
+        expect(canSwitchClub(null, "u1")).toBe(false);
+        expect(canSwitchClub(undefined, "u1")).toBe(false);
     });
 });

@@ -9,6 +9,8 @@ import InstructorSelect from "./InstructorSelect";
 import PlaneSelect from "./PlaneSelect";
 import SubmitButton from "./SubmitButton";
 import { toast } from "@/hooks/use-toast";
+import { sendNotificationsOrWarn } from "@/lib/notifications";
+import { warnNotificationFailure } from "@/lib/notificationToast";
 import { filterPilotePlane } from "@/api/popupCalendar";
 import { filterBookablePlanes, filterPlanesForBeneficiary, resolveOfferedPlaneIDs, sessionOffersPlane } from "@/lib/planeVisibility";
 import { studentRegistration } from "@/api/db/sessions";
@@ -115,7 +117,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 setAllPlanes(bookable);
                 setAvailableInstructors(pilotes);
                 setAvailablePlanes(bookable);
-            } catch (err) {
+            } catch {
+                setError("Impossible de charger les instructeurs et les machines disponibles.");
             }
         };
         loadPilotsAndPlanes();
@@ -207,7 +210,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                     )
                 );
 
-                // Notifications logic (kept as is)
+                // Notifications : l'utilisateur est prévenu si l'une d'elles échoue.
                 const endDate = new Date(session!.sessionDateStart);
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
                 const instructorFull = usersProps.find(user => user.id === session.pilotID);
@@ -215,7 +218,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                     planesProp.find((p) => p.id === plane)?.name;
                 const pilotComment = session.pilotComment as string;
 
-                Promise.all([
+                void sendNotificationsOrWarn([
                     sendNotificationBooking(
                         instructorFull?.email || "",
                         currentUser?.firstName || "",
@@ -236,9 +239,9 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                         pilotComment as string,
                         studentComment as string
                     ),
-                ]);
+                ], warnNotificationFailure);
             }
-        } catch (err) {
+        } catch {
             setError("Une erreur technique est survenue.");
         } finally {
             setLoading(false);

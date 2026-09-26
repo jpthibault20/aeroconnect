@@ -253,8 +253,8 @@ describe("Actions sensibles par rôle", () => {
             for (const role of ALL_ROLES) {
                 // La signature est liée à l'identité, pas au rôle
                 const canSign = (authID: string, pilotID: string) => authID === pilotID;
-                expect(canSign("pilot-1", "pilot-1")).toBe(true);
-                expect(canSign("pilot-1", "pilot-2")).toBe(false);
+                expect(canSign("pilot-1", "pilot-1"), role).toBe(true);
+                expect(canSign("pilot-1", "pilot-2"), role).toBe(false);
             }
         });
     });

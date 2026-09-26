@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Download, Calendar, User, AlertTriangle, FileDown } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Button } from '../ui/button'
@@ -23,7 +23,7 @@ interface Props {
 const Export = ({ usersProps, flightsSessions, planes }: Props) => {
     const { currentClub } = useCurrentClub()
     const { currentUser } = useCurrentUser()
-    const [errorMessage, setErrorMessage] = useState("")
+    const [pdfError, setPdfError] = useState("")
     const [isOpenPopover, setIsPopoverOpen] = useState(false)
     const [isOpenCal1, setIsOpenCal1] = useState(false)
     const [isOpenCal2, setIsOpenCal2] = useState(false)
@@ -31,15 +31,12 @@ const Export = ({ usersProps, flightsSessions, planes }: Props) => {
     const [endDate, setEndDate] = useState(new Date())
     const [instructorsId, setInstructorsId] = useState("all")
 
-    useEffect(() => {
-        if (startDate >= endDate) {
-            setErrorMessage("La date de fin doit être après la date de début")
-        } else {
-            setErrorMessage("")
-        }
-    }, [startDate, endDate])
+    // Erreur de saisie dérivée des dates (bloque le téléchargement).
+    const dateError = startDate >= endDate ? "La date de fin doit être après la date de début" : ""
+    const errorMessage = dateError || pdfError
 
     const handleDownloadPDF = async () => {
+        setPdfError("")
         try {
             const blob = await pdf(
                 <MyDocument
@@ -61,7 +58,8 @@ const Export = ({ usersProps, flightsSessions, planes }: Props) => {
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
             setIsPopoverOpen(false);
-        } catch (error) {
+        } catch {
+            setPdfError("Impossible de générer le PDF. Veuillez réessayer.");
         }
     };
 
@@ -186,7 +184,7 @@ const Export = ({ usersProps, flightsSessions, planes }: Props) => {
                     </Button>
                     <Button
                         onClick={handleDownloadPDF}
-                        disabled={!!errorMessage}
+                        disabled={!!dateError}
                         className="bg-[#774BBE] hover:bg-[#6538a5] text-white gap-2"
                     >
                         <Download className="w-4 h-4" />

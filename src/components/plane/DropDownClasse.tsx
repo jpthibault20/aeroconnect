@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -20,15 +20,7 @@ export const DropDownClasse = ({ planeProp, setPlaneProp }: Props) => {
     const { currentClub } = useCurrentClub();
 
     // Filtrer les classes disponibles selon le club
-    const [classesList, setClassesList] = useState(
-        aircraftClasses.filter(c => currentClub?.classes.includes(c.id))
-    );
-
-    useEffect(() => {
-        setClassesList(
-            aircraftClasses.filter(c => currentClub?.classes.includes(c.id))
-        );
-    }, [currentClub]);
+    const classesList = aircraftClasses.filter(c => currentClub?.classes.includes(c.id));
 
     // Trouver le label actuel pour l'afficher
     const currentLabel = classesList.find(c => c.id === planeProp.classes)?.label || "Sélectionner une classe";

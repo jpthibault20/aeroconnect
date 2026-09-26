@@ -152,11 +152,13 @@ export const getFlightSessionsForDay = (dayDate: Date, sessions: flight_sessions
     });
 };
 
+// Heure décimale -> "HH:MM" (8.5 -> "08:30", 8.25 -> "08:15").
+// La partie décimale est une fraction d'heure, pas des minutes.
 export const formatTime = (numberValue: number) => {
-    const [hours, minutes] = numberValue.toString().split('.');
-    const formattedHours = hours.padStart(2, '0');
-    const formattedMinutes = minutes ? minutes.padEnd(2, '0') : '00';
-    return `${formattedHours}:${formattedMinutes}`;
+    const totalMinutes = Math.round(numberValue * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 };
 
 export const formatDate = (date: Date) => {

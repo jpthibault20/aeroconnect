@@ -3,7 +3,6 @@ import { cn, getPlaneName } from "@/lib/utils"
 import { BAPTEME_HOLD_STUDENT_ID } from "@/lib/bapteme"
 import { flight_sessions, planes, User as PrismaUser } from '@prisma/client'
 import SessionPopup from '@/components/SessionPopup'
-import { useEffect, useState } from 'react'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { formatSessionTime } from '@/api/global function/dateServeur'
 
@@ -15,26 +14,23 @@ interface SessionProps {
 }
 
 export function Session({ session, setSessions, PlaneProps, userProps }: SessionProps) {
-    const [planesString, setPlanesString] = useState("");
     const { currentUser } = useCurrentUser()
     const filterdPlanes = PlaneProps.filter((p) => currentUser?.classes.includes(p.classes))
 
-    useEffect(() => {
+    // Libellé machine : celle réservée, l'unique proposée, ou le nombre proposé.
+    const getPlanesString = () => {
         if (session.studentPlaneID) {
-            setPlanesString(getPlaneName(session.studentPlaneID, PlaneProps).name as string);
+            return getPlaneName(session.studentPlaneID, PlaneProps).name as string;
         }
-        else if (session.planeID.length === 1) {
-            setPlanesString(getPlaneName(session.planeID[0], PlaneProps).name as string);
+        if (session.planeID.length === 1) {
+            return getPlaneName(session.planeID[0], PlaneProps).name as string;
         }
-        else {
-            const planes = filterdPlanes
-            let planesNumber = planes.filter((p) => session.planeID.includes(p.id)).length;
-            if (session.planeID.includes("classroomSession"))
-                planesNumber++;
-
-            setPlanesString(planesNumber + " avions");
-        }
-    }, [PlaneProps, filterdPlanes, session.planeID, session.studentPlaneID])
+        let planesNumber = filterdPlanes.filter((p) => session.planeID.includes(p.id)).length;
+        if (session.planeID.includes("classroomSession"))
+            planesNumber++;
+        return planesNumber + " avions";
+    };
+    const planesString = getPlanesString();
 
     const endSessionDate = new Date(
         session.sessionDateStart.getFullYear(),

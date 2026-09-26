@@ -43,14 +43,26 @@ interface props {
 const PageComponent = ({ sessionsprops, planesProp, clubIDUrl, usersProps }: props) => {
     const isMobile = useScreenSize();
     const { currentUser } = useCurrentUser();
-    const [sessions, setSessions] = useState<flight_sessions[]>([]);
+    const userClasses = currentUser?.classes;
+    // Sessions visibles : celles qui proposent au moins une classe de l'utilisateur.
+    const filterSessions = () => sessionsprops.filter((s) => {
+        const offeredClasses = resolveOfferedClasses(s.planeID, s.classes, planesProp);
+        return userClasses?.some(cls => offeredClasses.includes(cls));
+    });
+    const [sessions, setSessions] = useState<flight_sessions[]>(filterSessions);
 
-    useEffect(() => {
-        setSessions(sessionsprops.filter((s) => {
-            const offeredClasses = resolveOfferedClasses(s.planeID, s.classes, planesProp);
-            return currentUser?.classes.some(cls => offeredClasses.includes(cls));
-        }));
-    }, [currentUser?.classes, sessionsprops, planesProp]);
+    // Les sources changent : on recalcule la liste (ajusté pendant le rendu
+    // plutôt que dans un effet). Les mutations locales via setSessions restent
+    // possibles entre deux changements de sources.
+    const [prevSources, setPrevSources] = useState({ sessionsprops, planesProp, userClasses });
+    if (
+        prevSources.sessionsprops !== sessionsprops ||
+        prevSources.planesProp !== planesProp ||
+        prevSources.userClasses !== userClasses
+    ) {
+        setPrevSources({ sessionsprops, planesProp, userClasses });
+        setSessions(filterSessions());
+    }
 
 
     // Rendu conditionnel en fonction de la taille de l'écran

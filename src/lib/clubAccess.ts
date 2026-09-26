@@ -87,3 +87,19 @@ export function overviewKindFor(role: userRole | undefined | null): OverviewKind
     if (role === userRole.STUDENT || role === userRole.PILOT) return "pilot";
     return "member";
 }
+
+// ─── Changement de club ───
+
+/**
+ * Seul un administrateur (rôle transverse à tous les clubs) peut changer de
+ * club, et uniquement pour lui-même (sélecteur de club de la navigation).
+ * Autoriser OWNER / MANAGER ouvrirait une escalade multi-tenant : un gérant
+ * pourrait se rattacher à un autre club en gardant son rôle, ou déplacer les
+ * membres d'un autre club.
+ */
+export function canSwitchClub(
+    caller: { id: string; role: userRole } | null | undefined,
+    targetUserID: string
+): boolean {
+    return !!caller && caller.role === userRole.ADMIN && caller.id === targetUserID;
+}

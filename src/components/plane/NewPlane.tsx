@@ -20,7 +20,7 @@ import { toast } from '@/hooks/use-toast';
 import { IoIosWarning } from 'react-icons/io';
 import { IoMdAdd } from 'react-icons/io';
 import { Plane, Lock, Users } from 'lucide-react';
-import { planes, userRole } from '@prisma/client';
+import { planes } from '@prisma/client';
 import { DropDownClasse } from './DropDownClasse';
 import { clearCache } from '@/lib/cache';
 import { CLUB_PLANE_MANAGE_ROLES, CLUB_USAGE_VALUES } from '@/lib/planeVisibility';

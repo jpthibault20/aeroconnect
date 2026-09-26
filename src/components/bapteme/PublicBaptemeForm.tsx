@@ -205,7 +205,10 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
 
     // Machines défilant dans le carrousel : tout le parc à l'entrée « par
     // appareil » (le choix se fait dessus), sinon celles du créneau retenu.
-    const carouselPlanes = entryPoint === "plane" ? allPlanes : selectedSlot?.planes ?? [];
+    const carouselPlanes = useMemo(
+        () => (entryPoint === "plane" ? allPlanes : selectedSlot?.planes ?? []),
+        [entryPoint, allPlanes, selectedSlot]
+    );
 
     const currentPlaneIndex = useMemo(() => {
         const index = carouselPlanes.findIndex((p) => p.id === selectedPlaneID);
@@ -223,6 +226,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     const selectedPlaneOptions = selectedPlane?.baptemeOptions ?? [];
 
     const selectedOption = selectedPlaneOptions.find((o) => o.id === selectedOptionID);
+    const hasFormulaScreen = selectedPlaneOptions.length > 0;
 
     // ─── Navigation du wizard ───
 
@@ -232,10 +236,10 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
             if (key === "day" && months.length > 1) base.push("month");
             base.push(key);
         }
-        if (selectedPlaneOptions.length > 0) base.push("formula");
+        if (hasFormulaScreen) base.push("formula");
         base.push("contact");
         return base;
-    }, [entryPoint, months, selectedPlaneOptions.length]);
+    }, [entryPoint, months, hasFormulaScreen]);
     const currentScreen = screens[Math.min(stepIndex, screens.length - 1)];
 
     const isScreenComplete = (screen: ScreenKey) => {

@@ -6,6 +6,7 @@ import prisma from '../prisma';
 import { resolveBaptemeHold } from './baptemeHold';
 import { canViewPlane, isPrivatePlane } from '@/lib/planeVisibility';
 import { managerBookingWarning } from '@/lib/wallet';
+import { canSwitchClub } from '@/lib/clubAccess';
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
@@ -372,10 +373,16 @@ export const updateUserClub = async (userID: string, clubID: string) => {
         return { error: "Une erreur est survenue (E_001: userID is undefined)" };
     }
 
-    const auth = await requireAuth(MANAGEMENT_ROLES);
+    const auth = await requireAuth([userRole.ADMIN]);
     if ('error' in auth) return { error: auth.error };
+    if (!canSwitchClub(auth.user, userID)) {
+        return { error: "Permissions insuffisantes" };
+    }
 
     try {
+        const club = await prisma.club.findUnique({ where: { id: clubID }, select: { id: true } });
+        if (!club) return { error: "Club introuvable" };
+
         await prisma.user.update({
             where: { id: userID },
             data: { clubID }

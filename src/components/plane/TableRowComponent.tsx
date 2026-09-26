@@ -94,7 +94,7 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                     variant: "destructive"
                 });
             }
-        } catch (error) {
+        } catch {
             toast({ title: "Erreur technique", variant: "destructive" });
         } finally {
             setLoading(false);
@@ -123,8 +123,9 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                 setPlaneState(prev => ({ ...prev, operational: !newState }));
                 toast({ title: "Erreur lors de la mise à jour", variant: "destructive" });
             }
-        } catch (error) {
+        } catch {
             setPlaneState(prev => ({ ...prev, operational: !newState }));
+            toast({ title: "Erreur technique", description: "Le statut de la machine n'a pas été modifié.", variant: "destructive" });
         } finally {
             setLoading(false);
         }

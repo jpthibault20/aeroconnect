@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { Spinner } from './ui/SpinnerVariants'
 import { toast } from '@/hooks/use-toast';
+import { sendNotificationsOrWarn } from '@/lib/notifications';
+import { warnNotificationFailure } from '@/lib/notificationToast';
 import { Club, flight_sessions, User } from '@prisma/client';
 import { UserMinus, AlertTriangle, Trash2 } from 'lucide-react';
 import { removeStudentFromSessionID } from '@/api/db/sessions';
@@ -70,7 +72,7 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
                 const endDate = new Date(session.sessionDateStart);
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
-                Promise.all([
+                void sendNotificationsOrWarn([
                     student?.email && sendNotificationRemoveAppointment(
                         student.email,
                         session.sessionDateStart as Date,
@@ -83,7 +85,7 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
                         endDate,
                         currentClub as Club
                     ),
-                ]);
+                ], warnNotificationFailure);
 
                 setIsOpen(false);
             } else if (res.error) {
@@ -93,7 +95,7 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
                     variant: "destructive"
                 });
             }
-        } catch (error) {
+        } catch {
             toast({
                 title: "Erreur technique",
                 description: "Impossible de retirer l'élève pour le moment.",

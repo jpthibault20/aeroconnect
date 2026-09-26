@@ -109,11 +109,14 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
         return sorted;
     }, [logsProp, selectedPilotID, natureFilter, planeFilter, onlyUnsigned, sortDir]);
 
-    // Reset pagination quand les filtres ou le tri changent (anti-pattern de
-    // setPage dans le useMemo précédent).
-    useEffect(() => {
+    // Reset pagination quand les filtres ou le tri changent (ajusté pendant le
+    // rendu plutôt que dans un effet : pas de rendu intermédiaire).
+    const pageResetKey = JSON.stringify([selectedPilotID, natureFilter, planeFilter, onlyUnsigned, sortDir]);
+    const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey);
+    if (prevPageResetKey !== pageResetKey) {
+        setPrevPageResetKey(pageResetKey);
         setPage(0);
-    }, [selectedPilotID, natureFilter, planeFilter, onlyUnsigned, sortDir]);
+    }
 
     // Pilote dont on regarde le carnet (pour calculer la fonction effective
     // EP/P/I de chaque ligne). En mode "ALL" pour un manager, on garde la

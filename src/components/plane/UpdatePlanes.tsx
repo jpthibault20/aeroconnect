@@ -168,7 +168,7 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
 
             clearCache(`planes:${plane.clubID}`);
             setShowPopup(false);
-        } catch (error) {
+        } catch {
             setError("Une erreur inattendue est survenue.");
         } finally {
             setLoading(false);

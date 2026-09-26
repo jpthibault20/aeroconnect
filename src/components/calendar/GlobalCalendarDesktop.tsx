@@ -2,7 +2,7 @@
  * @file GlobalCalendarDesktop.tsx
  * @brief Composant principal du calendrier pour la vue Desktop (Refondu UI/UX).
  */
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import { monthFr } from '@/config/config';
 import { getSessionsOfWeek } from '@/api/date';
 import { useBaptemePrefetch } from './BaptemePendingContext';
@@ -38,15 +38,18 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
 
     // Les mutations (inscription, validation de baptême, suppression) remontent
     // dans `sessions` : on rafraîchit les entrées affichées à l'identique plutôt
-    // que de tout remplacer, pour ne pas écraser un filtre actif.
-    useEffect(() => {
+    // que de tout remplacer, pour ne pas écraser un filtre actif. Ajusté pendant
+    // le rendu plutôt que dans un effet (pas de rendu intermédiaire périmé).
+    const [prevSessions, setPrevSessions] = useState(sessions);
+    if (prevSessions !== sessions) {
+        setPrevSessions(sessions);
         const byID = new Map(sessions.map(s => [s.id, s]));
         setSessionsFiltered(prev =>
             prev
                 .filter(s => byID.has(s.id))
                 .map(s => byID.get(s.id) as flight_sessions)
         );
-    }, [sessions]);
+    }
 
     // Préchargement en arrière-plan des baptêmes en attente de la semaine
     // affichée : la popup d'un créneau les a alors déjà sous la main.

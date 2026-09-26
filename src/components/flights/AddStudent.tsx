@@ -5,6 +5,8 @@ import { addStudentToSession, InvitedStudent } from '@/api/db/users';
 import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import { Button } from '../ui/button';
 import { toast } from '@/hooks/use-toast';
+import { sendNotificationsOrWarn } from '@/lib/notifications';
+import { warnNotificationFailure } from '@/lib/notificationToast';
 import { Spinner } from '../ui/SpinnerVariants';
 import { getFreePlanesUsers } from '@/api/popupCalendar';
 import { getPlanesForStudentOnSession } from '@/api/db/planes';
@@ -244,7 +246,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         const instructor = usersProp.find((user) => user.id === session.pilotID);
                         const planeName = planeId === "classroomSession" ? "Théorique" : planesProp.find((p) => p.id === planeId)?.name;
 
-                        Promise.all([
+                        void sendNotificationsOrWarn([
                             sendNotificationBooking(
                                 instructor?.email || "",
                                 studentId === 'invited' ? invitedStudent.firstName : selectedUser?.firstName as string,
@@ -265,7 +267,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                 session.pilotComment as string,
                                 session.studentComment as string
                             ),
-                        ]);
+                        ], warnNotificationFailure);
 
                         setSessions(prevSessions => {
                             return prevSessions.map(s =>
@@ -284,7 +286,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         setPlaneId(" ");
                         setIsOpen(false);
                     }
-                } catch (err) {
+                } catch {
                     setError("Une erreur technique est survenue.");
                 } finally {
                     setLoading(false);

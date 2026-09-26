@@ -71,7 +71,7 @@ const TableRowComponent = ({ user, setUsers }: Props) => {
                     variant: "destructive"
                 });
             }
-        } catch (error) {
+        } catch {
             toast({ title: "Erreur technique", variant: "destructive" });
         } finally {
             setLoading(false);

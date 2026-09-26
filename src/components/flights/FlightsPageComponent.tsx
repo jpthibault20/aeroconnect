@@ -6,7 +6,7 @@
  */
 
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import TableComponent from "@/components/flights/TableComponent";
 import Filter from '@/components/flights/Filter';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
@@ -48,12 +48,11 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
         }
     });
 
-    const [filteredSessions, setFilteredSessions] = useState(sessions);
     const planes = planesProp.filter((p) => currentUser?.classes.includes(p.classes));
 
-    // Logique de filtrage (inchangé)
-    useEffect(() => {
-        const filtered = sessions.filter(session => {
+    // Logique de filtrage : liste dérivée des sessions et des filtres actifs.
+    const filteredSessions = useMemo(() => {
+        return sessions.filter(session => {
             let isValid = true;
             if (status === "available") isValid = isValid && session.studentID === null;
             if (status === "unavailable") isValid = isValid && session.studentID !== null;
@@ -66,7 +65,6 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
             }
             return isValid;
         });
-        setFilteredSessions(filtered);
     }, [status, filterDate, sessions, selectedPlane, selectedInstructor, selectedStudents]);
 
 

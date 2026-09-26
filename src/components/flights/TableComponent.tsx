@@ -8,7 +8,7 @@
  * - Horizontal scrolling on mobile without breaking layout.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import TableRowComponent from './TableRowComponent';
@@ -26,19 +26,22 @@ interface Props {
 const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, usersProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const [isAllChecked, setIsAllChecked] = useState(false);
-    const [sessionsSorted, setSessionsSorted] = useState<flight_sessions[]>([]);
-
     // Sort sessions chronologically
-    useEffect(() => {
-        const sortedSessions = [...sessions].sort((a, b) => {
+    const sessionsSorted = useMemo(() => {
+        return [...sessions].sort((a, b) => {
             const dateA = new Date(a.sessionDateStart).getTime();
             const dateB = new Date(b.sessionDateStart).getTime();
             return dateA - dateB;
         });
-
-        setSessionsSorted(sortedSessions);
-        setIsAllChecked(false);
     }, [sessions]);
+
+    // La liste change : on décoche « tout sélectionner » (ajustement pendant le
+    // rendu plutôt que dans un effet, cf. doc React « You Might Not Need an Effect »).
+    const [prevSessions, setPrevSessions] = useState(sessions);
+    if (prevSessions !== sessions) {
+        setPrevSessions(sessions);
+        setIsAllChecked(false);
+    }
 
     // Handle "select all"
     const handleSelectAll = (checked: boolean) => {

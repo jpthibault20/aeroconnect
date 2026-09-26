@@ -27,6 +27,16 @@ if (!process.env.SENDER_EMAIL) {
 const resend = new Resend(process.env.RESEND_API_KEY);
 const senderMailAdress = process.env.SENDER_EMAIL;
 
+// Resend ne lève pas d'exception en cas d'échec : il renvoie `{ error }`. On la
+// transforme en exception pour que l'appelant (cf. lib/notifications) puisse
+// prévenir l'utilisateur.
+const sendEmailOrThrow = async (payload: Parameters<typeof resend.emails.send>[0]) => {
+  const { error } = await resend.emails.send(payload);
+  if (error) {
+    throw new Error(`Envoi de l'e-mail impossible : ${error.message}`);
+  }
+}
+
 const formattedDate = (date: Date) => {
   const formatedDateString = date.toISOString();
 
@@ -76,6 +86,7 @@ export const sendVerificationEmail = async (email: string, token: string, clubID
 };
 
 export const sendNotificationBooking = async (email: string, studentFirstname: string, studentLastname: string, startDate: Date, endDate: Date, clubID: string, planeName: string, pilotComment: string, studentComment: string) => {
+  if (!email) return;
   const formatedStartDate = formattedDate(startDate)
   const formatedEndDate = formattedDate(endDate)
   const clubData = await getClubData(clubID);
@@ -86,7 +97,7 @@ export const sendNotificationBooking = async (email: string, studentFirstname: s
 
   const { name, adress } = clubData;
 
-  await resend.emails.send({
+  await sendEmailOrThrow({
     from: senderMailAdress,
     to: email,
     subject: "Un élève s'est inscrit un vol",
@@ -105,6 +116,7 @@ export const sendNotificationBooking = async (email: string, studentFirstname: s
 }
 
 export const sendStudentNotificationBooking = async (email: string, startDate: Date, endDate: Date, clubID: string, planeName: string, pilotComment: string, studentComment: string) => {
+  if (!email) return;
   const formatedStartDate = formattedDate(startDate)
   const formatedEndDate = formattedDate(endDate)
   const clubData = await getClubData(clubID);
@@ -115,7 +127,7 @@ export const sendStudentNotificationBooking = async (email: string, startDate: D
 
   const { name, adress } = clubData;
 
-  await resend.emails.send({
+  await sendEmailOrThrow({
     from: senderMailAdress,
     to: email,
     subject: "Confirmation de votre inscription a un vol",
@@ -142,34 +154,31 @@ export const sendNotificationRemoveAppointment = async (
     return;
   }
 
-  try {
-    // Déstructuration et formatage en une seule étape
-    const {
-      Name: clubName,
-      Country: countrie,
-      ZipCode: zipCode,
-      City: city,
-      Address: adress
-    } = club;
+  // Déstructuration et formatage en une seule étape
+  const {
+    Name: clubName,
+    Country: countrie,
+    ZipCode: zipCode,
+    City: city,
+    Address: adress
+  } = club;
 
-    const formatedStartDate = formattedDate(startDate);
-    const formatedEndDate = formattedDate(endDate);
+  const formatedStartDate = formattedDate(startDate);
+  const formatedEndDate = formattedDate(endDate);
 
-    // Configuration minimale pour réduire la charge
-    await resend.emails.send({
-      from: senderMailAdress,
-      to: email,
-      subject: "Vol annulé",
-      react: NotificationSudentRemove({
-        startDate: formatedStartDate,
-        endDate: formatedEndDate,
-        clubName,
-        clubAdress: { countrie, zipCode, city, adress }
-      })
-    });
-  } catch {
-    // silently fail - email is non-critical
-  }
+  // L'échec est remonté à l'appelant, qui prévient l'utilisateur sans annuler
+  // l'action déjà enregistrée (cf. lib/notifications).
+  await sendEmailOrThrow({
+    from: senderMailAdress,
+    to: email,
+    subject: "Vol annulé",
+    react: NotificationSudentRemove({
+      startDate: formatedStartDate,
+      endDate: formatedEndDate,
+      clubName,
+      clubAdress: { countrie, zipCode, city, adress }
+    })
+  });
 };
 
 export const sendNotificationSudentRemoveForPilot = async (
@@ -183,34 +192,31 @@ export const sendNotificationSudentRemoveForPilot = async (
     return;
   }
 
-  try {
-    // Déstructuration et formatage en une seule étape
-    const {
-      Name: clubName,
-      Country: countrie,
-      ZipCode: zipCode,
-      City: city,
-      Address: adress
-    } = club;
+  // Déstructuration et formatage en une seule étape
+  const {
+    Name: clubName,
+    Country: countrie,
+    ZipCode: zipCode,
+    City: city,
+    Address: adress
+  } = club;
 
-    const formatedStartDate = formattedDate(startDate);
-    const formatedEndDate = formattedDate(endDate);
+  const formatedStartDate = formattedDate(startDate);
+  const formatedEndDate = formattedDate(endDate);
 
-    // Configuration minimale pour réduire la charge
-    await resend.emails.send({
-      from: senderMailAdress,
-      to: email,
-      subject: "Vol annulé",
-      react: NotificationSudentRemoveForPilot({
-        startDate: formatedStartDate,
-        endDate: formatedEndDate,
-        clubName,
-        clubAdress: { countrie, zipCode, city, adress }
-      })
-    });
-  } catch {
-    // silently fail - email is non-critical
-  }
+  // L'échec est remonté à l'appelant, qui prévient l'utilisateur sans annuler
+  // l'action déjà enregistrée (cf. lib/notifications).
+  await sendEmailOrThrow({
+    from: senderMailAdress,
+    to: email,
+    subject: "Vol annulé",
+    react: NotificationSudentRemoveForPilot({
+      startDate: formatedStartDate,
+      endDate: formatedEndDate,
+      clubName,
+      clubAdress: { countrie, zipCode, city, adress }
+    })
+  });
 };
 
 export const sendNotificationRequestClub = async (email: string, clubID: string) => {

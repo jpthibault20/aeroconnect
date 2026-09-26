@@ -19,6 +19,8 @@ import { removeSessionsByID } from "@/api/db/sessions";
 import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from "@/lib/mail";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { toast } from "@/hooks/use-toast";
+import { sendNotificationsOrWarn } from "@/lib/notifications";
+import { warnNotificationFailure } from "@/lib/notificationToast";
 
 // Enregistrement de la locale française pour être sûr
 registerLocale('fr', fr);
@@ -110,7 +112,9 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                 return;
             }
 
-            // Notifications
+            // Notifications : envoyées en arrière-plan, l'utilisateur est prévenu
+            // si l'une d'elles échoue (la suppression reste acquise).
+            const notifications = [];
             for (const session of sessionsToDelete) {
                 if (session.studentID) {
                     const student = usersProps.find(item => item.id === session.studentID);
@@ -118,15 +122,15 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                     const endSessionDate = new Date(session.sessionDateStart);
                     endSessionDate.setUTCMinutes(endSessionDate.getUTCMinutes() + session.sessionDateDuration_min);
 
-                    try {
-                        Promise.all([
-                            sendNotificationRemoveAppointment(student?.email as string, session.sessionDateStart, endSessionDate, currentClub as Club),
-                            sendNotificationSudentRemoveForPilot(pilot?.email as string, session.sessionDateStart, endSessionDate, currentClub as Club),
-                        ]);
-                    } catch (notificationError) {
+                    if (student?.email) {
+                        notifications.push(sendNotificationRemoveAppointment(student.email, session.sessionDateStart, endSessionDate, currentClub as Club));
+                    }
+                    if (pilot?.email) {
+                        notifications.push(sendNotificationSudentRemoveForPilot(pilot.email, session.sessionDateStart, endSessionDate, currentClub as Club));
                     }
                 }
             }
+            void sendNotificationsOrWarn(notifications, warnNotificationFailure);
 
             toast({
                 title: "Succès",
@@ -138,7 +142,7 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
             setSessionsToDelete([]);
             setIsOpen(false);
 
-        } catch (error) {
+        } catch {
             setError("Une erreur est survenue.");
         } finally {
             setLoading(false);

@@ -12,6 +12,7 @@ import { Logo } from '../Logo';
 import Image from 'next/image';
 import { Spinner } from '../ui/SpinnerVariants';
 import { forgotPassword } from '@/app/auth/forgotPassword/action';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 
 const ForgotPassword = () => {
@@ -34,19 +35,23 @@ const ForgotPassword = () => {
         resolver: zodResolver(newPasswordSchema),
     });
 
-    const onSubmit = (data: NewPasswordSchema) => {
+    const onSubmit = async (data: NewPasswordSchema) => {
         setLoading(true);
 
         try {
             // Logique de soumission du formulaire, comme un appel API
             const formData = new FormData();
             formData.append('email', data.email);
-            forgotPassword(formData);
-
+            await forgotPassword(formData);
         } catch (error) {
+            // Le redirect() de l'action (succès comme erreur métier) doit suivre son cours.
+            if (isRedirectError(error)) throw error;
+            // Erreur réseau / serveur inattendue (les cas métier passent par redirect).
+            setMessageG('');
+            setMessage("Une erreur technique est survenue. Veuillez réessayer.");
         } finally {
             reset();
-
+            setLoading(false);
         }
     };
 

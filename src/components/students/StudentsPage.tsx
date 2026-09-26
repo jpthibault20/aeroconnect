@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { User, userRole } from '@prisma/client';
 import TableComponent from './TableComponent';
 import MobileStudentList from './MobileStudentList'; // <-- IMPORT DU NOUVEAU COMPOSANT
@@ -14,41 +14,42 @@ interface props {
     userProps: User[]
 }
 
+// --- Logique de tri et filtre ---
+const sortUser = (
+    users: User[],
+    roleFilter: 'all' | userRole,
+    searchQuery: string
+) => {
+    let filteredUsers = users;
+
+    if (roleFilter !== 'all') {
+        filteredUsers = filteredUsers.filter((user) => user.role === roleFilter);
+    }
+
+    if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filteredUsers = filteredUsers.filter(
+            (user) =>
+                user.firstName?.toLowerCase().includes(query) ||
+                user.lastName?.toLowerCase().includes(query)
+        );
+    }
+
+    return filteredUsers;
+};
+
 const StudentsPage = ({ userProps }: props) => {
     const { currentUser } = useCurrentUser();
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState<User[]>(userProps);
-    const [sortedUsers, setSortedUsers] = useState<User[]>(userProps);
     const [roleFilter, setRoleFilter] = useState<userRole | 'all'>('all');
     const router = useRouter();
 
-    // --- Logic de tri et filtre ---
-    useEffect(() => {
-        setSortedUsers(sortUser(users, roleFilter, searchQuery));
-    }, [users, roleFilter, searchQuery]);
-
-    const sortUser = (
-        users: User[],
-        roleFilter: 'all' | userRole,
-        searchQuery: string
-    ) => {
-        let filteredUsers = users;
-
-        if (roleFilter !== 'all') {
-            filteredUsers = filteredUsers.filter((user) => user.role === roleFilter);
-        }
-
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filteredUsers = filteredUsers.filter(
-                (user) =>
-                    user.firstName?.toLowerCase().includes(query) ||
-                    user.lastName?.toLowerCase().includes(query)
-            );
-        }
-
-        return filteredUsers;
-    };
+    // Liste affichée : dérivée des membres, du filtre de rôle et de la recherche.
+    const sortedUsers = useMemo(
+        () => sortUser(users, roleFilter, searchQuery),
+        [users, roleFilter, searchQuery]
+    );
 
     const handleRoleFilterChange = (value: 'all' | userRole) => {
         setRoleFilter(value);

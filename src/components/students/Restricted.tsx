@@ -22,7 +22,7 @@ const Restricted = ({ user }: props) => {
                     setBlocked(!blocked)
                     clearCache(`users:${user.clubID}`)
                 }
-            } catch (error) {
+            } catch {
                 toast({
                     title: "Oups, une erreur est survenue",
                     duration: 5000,

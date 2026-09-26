@@ -8,7 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import UpdateUserComponent from './UpdateUserComponent';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import Restricted from './Restricted';
-import { Phone, Mail, Pencil, Trash2, Shield, User as UserIcon } from 'lucide-react';
+import { Phone, Mail, Pencil, Trash2, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import MemberWalletLink from '../wallet/MemberWalletLink';
 
@@ -46,7 +46,7 @@ const MobileStudentList = ({ users, setUsers }: Props) => {
             } else {
                 toast({ title: "Erreur", description: res.error, variant: "destructive" });
             }
-        } catch (e) {
+        } catch {
             toast({ title: "Erreur technique", variant: "destructive" });
         } finally {
             setLoadingMap(prev => ({ ...prev, [user.id]: false }));

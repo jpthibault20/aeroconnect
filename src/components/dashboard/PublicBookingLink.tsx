@@ -35,7 +35,9 @@ const PublicBookingLink = ({ clubID, initialToken, embedded = false, onTokenChan
     const { currentClub } = useCurrentClub();
     const clubName = currentClub?.Name ?? null;
     const [token, setToken] = useState<string | null>(initialToken);
-    const [qrDataUrl, setQrDataUrl] = useState<string>("");
+    // QR mémorisé avec l'URL qu'il encode : un QR périmé (lien régénéré, ou
+    // génération encore en cours) n'est jamais affiché.
+    const [qr, setQr] = useState<{ url: string; dataUrl: string }>({ url: "", dataUrl: "" });
     const [loading, setLoading] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -43,14 +45,15 @@ const PublicBookingLink = ({ clubID, initialToken, embedded = false, onTokenChan
     // incohérence de variable d'environnement de base URL).
     const url = token ? `${typeof window !== "undefined" ? window.location.origin : ""}/reservation/${clubID}/${token}` : "";
 
+    const qrDataUrl = url && qr.url === url ? qr.dataUrl : "";
+
     useEffect(() => {
-        if (!url) {
-            setQrDataUrl("");
-            return;
-        }
+        if (!url) return;
+        let cancelled = false;
         QRCode.toDataURL(url, { width: 512, margin: 1 })
-            .then(setQrDataUrl)
-            .catch(() => setQrDataUrl(""));
+            .then((dataUrl) => { if (!cancelled) setQr({ url, dataUrl }); })
+            .catch(() => { if (!cancelled) setQr({ url, dataUrl: "" }); });
+        return () => { cancelled = true; };
     }, [url]);
 
     if (!currentUser) return null;
