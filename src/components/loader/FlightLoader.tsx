@@ -9,21 +9,21 @@ import FlightLoaderView from "./FlightLoaderView";
 import { flightCoordinator, resolveBackground, useFlightMessage } from "./flightStore";
 
 interface Props {
-    /** "page" : chargement d'écran complet ; "inline" : zone de contenu dans une page. */
+    /** "page": full screen loading; "inline": content area inside a page. */
     variant?: LoaderVariant;
     className?: string;
     showMessages?: boolean;
 }
 
 /**
- * Animation de chargement AeroConnect (AER-70) : un ULM décolle, vole puis
- * atterrit en boucle tant que le contenu charge.
+ * AeroConnect loading animation (AER-70): an ultralight takes off, flies and
+ * lands in a loop while the content loads.
  *
- * - Affiché au minimum MIN_DISPLAY_MS, atterrissage compris : si le contenu
- *   arrive plus tôt, FlightLandingHost prolonge le vol par-dessus.
- * - Plusieurs loaders successifs (loading.tsx → Suspense → InitialLoading →
- *   données client) partagent le même vol : pas de redémarrage entre deux.
- * - À la fin du chargement, l'avion atterrit en accéléré puis s'efface.
+ * - Shown for at least MIN_DISPLAY_MS, landing included: if the content arrives
+ *   earlier, FlightLandingHost extends the flight on top.
+ * - Successive loaders (loading.tsx → Suspense → InitialLoading → client data)
+ *   share the same flight: no restart in between.
+ * - When loading ends, the plane lands fast then fades out.
  */
 export default function FlightLoader({ variant = "page", className, showMessages = true }: Props) {
     const rootRef = useRef<HTMLDivElement>(null);
@@ -32,7 +32,8 @@ export default function FlightLoader({ variant = "page", className, showMessages
         flightCoordinator.getStartedAt,
         () => null,
     );
-    // Vol déjà en cours (relais d'un loader précédent) : affichage immédiat, sans fondu.
+    // Flight already in progress (handoff from a previous loader): shown immediately,
+    // no fade.
     const [instant] = useState(() => typeof window !== "undefined" && flightCoordinator.isFlying());
     const reducedMotion = useReducedMotion() ?? false;
 
@@ -40,7 +41,7 @@ export default function FlightLoader({ variant = "page", className, showMessages
         flightCoordinator.join();
         const el = rootRef.current;
         return () => {
-            // Mesuré ici : le DOM du loader est encore en place pendant ce nettoyage.
+            // Measured here: the loader's DOM is still in place during this cleanup.
             const rect = el?.getBoundingClientRect();
             const displayed = el && rect && rect.width > 0 && rect.height > 0;
             flightCoordinator.leave(

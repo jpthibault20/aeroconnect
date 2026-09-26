@@ -16,8 +16,8 @@ interface Props {
 }
 
 /**
- * « Comment recharger mon compte » : contact du club (Club › Paramètres).
- * Réutilisé par la page portefeuille et le blocage de réservation.
+ * "How to top up my account": club contact (Club › Settings). Reused by the
+ * wallet page and the booking block.
  */
 const ClubPaymentContact = ({ contact, intro = "Les paiements (espèces, chèque, virement, CB) se font directement auprès du club :", className }: Props) => {
     const name = [contact.firstNameContact, contact.lastNameContact?.toUpperCase()].filter(Boolean).join(" ");

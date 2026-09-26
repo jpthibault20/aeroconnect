@@ -1,8 +1,7 @@
 /**
- * Événement global (window) émis quand un solde change (paiement enregistré,
- * vol signé, correction). Navigation, calendrier et page portefeuille
- * l'écoutent pour se rafraîchir. Module sans dépendance UI, comme
- * maintenanceEvents.ts.
+ * Global (window) event fired when a balance changes (payment recorded, flight
+ * signed, correction). Navigation, calendar and wallet page listen to it to
+ * refresh. Module without UI dependency, like maintenanceEvents.ts.
  */
 export const WALLET_EVENT = "refresh-wallet";
 

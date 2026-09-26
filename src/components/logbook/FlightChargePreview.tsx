@@ -28,18 +28,17 @@ type Quote = Extract<Awaited<ReturnType<typeof getFlightChargeQuote>>, { success
 
 interface PreviewProps {
     flight: FlightInfo;
-    /** Durée calculée depuis les heures moteur saisies ; null tant qu'incomplètes. */
+    /** Duration computed from the entered Hobbs; null while incomplete. */
     minutes: number | null;
-    /** Remonte l'état « signature bloquée » (tarif manquant) au parent. */
+    /** Reports the "signing blocked" state (missing rate) to the parent. */
     onBlockedChange?: (blocked: boolean) => void;
 }
 
 /**
- * Bloc « Débit à la signature » (AER-66), placé dans le pied des fenêtres du
- * carnet, à côté du bouton « Enregistrer et signer » : l'instructeur (ou le
- * pilote) voit ce qu'il déclenche avant de signer. Même calcul que le débit
- * serveur. Rien n'est affiché si le portefeuille est désactivé ou si le vol
- * n'est pas facturable (baptême, CDB).
+ * "Debit on signing" block (AER-66), in the logbook dialogs' footer next to the
+ * "Save and sign" button: the instructor (or pilot) sees what they trigger before
+ * signing. Same computation as the server debit. Nothing shown if the wallet is
+ * disabled or the flight is not billable (discovery flight, CDB).
  */
 export const FlightChargePreview = ({ flight, minutes, onBlockedChange }: PreviewProps) => {
     const { currentClub } = useCurrentClub();
@@ -47,8 +46,8 @@ export const FlightChargePreview = ({ flight, minutes, onBlockedChange }: Previe
     const billable = !!currentClub?.walletEnabled && !!flight.flightNature && !!payerID && !!flight.planeID
         && isBillableFlight({ flightNature: flight.flightNature, instructionSubType: flight.instructionSubType });
 
-    // Devis rattaché à sa clé (machine + payeur) : un devis obtenu pour une
-    // autre sélection n'est jamais affiché.
+    // Quote tied to its key (plane + payer): a quote obtained for another selection
+    // is never shown.
     const quoteKey = billable ? `${flight.planeID}:${payerID}` : null;
     const [fetched, setFetched] = useState<{ key: string; quote: Quote | null } | null>(null);
 
@@ -121,7 +120,7 @@ export const FlightChargePreview = ({ flight, minutes, onBlockedChange }: Previe
     );
 };
 
-/** Montant débité sur un vol signé (débit + corrections éventuelles). */
+/** Amount debited on a signed flight (debit + any corrections). */
 export const FlightChargeSummary = ({ logID }: { logID: string }) => {
     const { currentClub } = useCurrentClub();
     const [data, setData] = useState<{ movements: WalletTransaction[]; payerName: string | null } | null>(null);

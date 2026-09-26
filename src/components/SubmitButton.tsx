@@ -17,7 +17,7 @@ interface SubmitButtonProps {
 const SubmitButton = ({ submitDisabled, onSubmit, loading, error, disabledMessage }: SubmitButtonProps) => {
     const { currentUser } = useCurrentUser()
 
-    // Override local si l'utilisateur n'a pas les droits (Sécurité UI)
+    // Local override when the user lacks the rights (UI safety)
     let isBtnDisabled = submitDisabled;
     let localDisabledMessage = disabledMessage;
 
@@ -28,7 +28,6 @@ const SubmitButton = ({ submitDisabled, onSubmit, loading, error, disabledMessag
 
     return (
         <div className="flex flex-col gap-3 w-full">
-            {/* Zone de messages (Warning / Info) */}
             {isBtnDisabled && localDisabledMessage && (
                 <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 flex items-start gap-3 text-sm text-amber-800 animate-in fade-in slide-in-from-top-1">
                     <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -36,7 +35,6 @@ const SubmitButton = ({ submitDisabled, onSubmit, loading, error, disabledMessag
                 </div>
             )}
 
-            {/* Message d'erreur API */}
             {error && (
                 <div className="bg-red-50 border border-red-100 rounded-lg p-3 flex items-start gap-3 text-sm text-red-800 animate-in fade-in slide-in-from-top-1">
                     <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -44,7 +42,6 @@ const SubmitButton = ({ submitDisabled, onSubmit, loading, error, disabledMessag
                 </div>
             )}
 
-            {/* Bouton d'action */}
             <Button
                 className={cn(
                     "w-full h-11 text-base font-medium transition-all shadow-sm",

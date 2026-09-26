@@ -4,9 +4,9 @@ import React from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 /**
- * Histogramme d'une ou deux séries par tranche (semaine / mois), lisible sur
- * téléphone : pas de légende Recharts (la légende est rendue en HTML au-dessus),
- * étiquettes d'axe masquées automatiquement si elles se chevauchent.
+ * Bar chart of one or two series per bucket (week / month), readable on phones:
+ * no Recharts legend (the legend is rendered in HTML above), axis labels hidden
+ * automatically when they overlap.
  */
 
 export interface ChartSeries {

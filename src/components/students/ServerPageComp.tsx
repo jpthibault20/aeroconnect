@@ -1,11 +1,6 @@
 /**
- * @file Page.tsx
- * @brief A React component that serves as a container for the StudentsPage.
- * 
- * This component wraps the StudentsPage component with an InitialLoading 
- * component, which handles the loading state while the student data is being fetched.
- * 
- * @returns The rendered page component containing the StudentsPage.
+ * @file ServerPageComp.tsx
+ * @brief Container for the StudentsPage, wrapped in InitialLoading.
  */
 
 import InitialLoading from '@/components/InitialLoading';

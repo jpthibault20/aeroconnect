@@ -6,12 +6,11 @@ import { aircraftClasses, dayFr } from "@/config/config";
 import { Building2, Mail, MapPin, Phone, Clock, CalendarDays, Plane, Timer } from "lucide-react";
 
 /**
- * Informations non confidentielles du club, en lecture seule.
+ * Non-confidential club information, read-only.
  *
- * Visible par TOUS les membres : ce sont les informations pratiques dont un
- * pilote / élève / instructeur a besoin (contact du club, adresse, horaires
- * d'ouverture, règles d'inscription). Aucune donnée nominative de membre n'y
- * figure. La modification reste dans l'onglet « Paramètres » (président/admin).
+ * Visible to ALL members: the practical info a pilot / student / instructor needs
+ * (club contact, address, opening hours, booking rules). No personal member data.
+ * Editing stays in the "Settings" tab (president/admin).
  */
 const ClubInfoCard = ({ title }: { title?: string }) => {
     const { currentClub } = useCurrentClub();
@@ -24,8 +23,8 @@ const ClubInfoCard = ({ title }: { title?: string }) => {
             ? `${String(hours[0]).padStart(2, "0")}:00 → ${String(hours[hours.length - 1]).padStart(2, "0")}:00`
             : null;
 
-    // DaysOn stocke les libellés français (cf. dayFr) : on les réordonne pour
-    // toujours afficher la semaine dans l'ordre, quel que soit l'ordre en base.
+    // DaysOn stores the French labels (see dayFr): reorder them so the week always
+    // shows in order, whatever the order in the DB.
     const openDays = dayFr.filter((day) => (currentClub.DaysOn ?? []).includes(day));
 
     const clubClasses = aircraftClasses.filter((c) => (currentClub.classes ?? []).includes(c.id));
@@ -56,11 +55,10 @@ const ClubInfoCard = ({ title }: { title?: string }) => {
 
     const labelClass = "text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2";
 
-    // Sur téléphone, la carte parente est transparente et sans bordure (pour ne
-    // pas empiler carte dans carte) : sans conteneur propre, les sections
-    // s'enchaînent sans aucune séparation visuelle. Chacune devient donc une
-    // carte à part entière en dessous de `md`, comme les listes mobiles du
-    // reste de l'app. À partir de `md`, la grille suffit et on les efface.
+    // On phones the parent card is transparent and borderless (to avoid nested
+    // cards): without their own container, sections would run together with no
+    // visual separation. Each one therefore becomes a full card below `md`, like the
+    // app's other mobile lists. From `md` up, the grid is enough and they are removed.
     const sectionClass =
         "space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none";
 
@@ -80,7 +78,6 @@ const ClubInfoCard = ({ title }: { title?: string }) => {
             <CardContent className="p-0 md:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
 
-                    {/* Contact */}
                     <div className={sectionClass}>
                         <h3 className={labelClass}>
                             <Phone className="w-4 h-4 text-[#774BBE]" /> Contact
@@ -111,7 +108,6 @@ const ClubInfoCard = ({ title }: { title?: string }) => {
                         </div>
                     </div>
 
-                    {/* Localisation */}
                     <div className={sectionClass}>
                         <h3 className={labelClass}>
                             <MapPin className="w-4 h-4 text-[#774BBE]" /> Localisation
@@ -126,7 +122,6 @@ const ClubInfoCard = ({ title }: { title?: string }) => {
                         </div>
                     </div>
 
-                    {/* Ouverture */}
                     <div className={sectionClass}>
                         <h3 className={labelClass}>
                             <Clock className="w-4 h-4 text-[#774BBE]" /> Ouverture
@@ -149,7 +144,6 @@ const ClubInfoCard = ({ title }: { title?: string }) => {
                         </div>
                     </div>
 
-                    {/* Classes ULM */}
                     <div className={sectionClass}>
                         <h3 className={labelClass}>
                             <Plane className="w-4 h-4 text-[#774BBE]" /> Classes ULM du club
@@ -171,7 +165,6 @@ const ClubInfoCard = ({ title }: { title?: string }) => {
                         </div>
                     </div>
 
-                    {/* Règles de réservation */}
                     <div className={`${sectionClass} md:col-span-2`}>
                         <h3 className={labelClass}>
                             <CalendarDays className="w-4 h-4 text-[#774BBE]" /> Règles de réservation

@@ -31,7 +31,7 @@ const Export = ({ usersProps, flightsSessions, planes }: Props) => {
     const [endDate, setEndDate] = useState(new Date())
     const [instructorsId, setInstructorsId] = useState("all")
 
-    // Erreur de saisie dérivée des dates (bloque le téléchargement).
+    // Input error derived from the dates (blocks the download).
     const dateError = startDate >= endDate ? "La date de fin doit être après la date de début" : ""
     const errorMessage = dateError || pdfError
 
@@ -73,7 +73,6 @@ const Export = ({ usersProps, flightsSessions, planes }: Props) => {
     return (
         <Dialog open={isOpenPopover} onOpenChange={setIsPopoverOpen}>
             <DialogTrigger asChild>
-                {/* Nouveau style "Toolbar Item" : Discret mais clair */}
                 <Button
                     variant="ghost"
                     size="sm"
@@ -99,7 +98,6 @@ const Export = ({ usersProps, flightsSessions, planes }: Props) => {
                 </DialogHeader>
 
                 <div className="py-4 space-y-6">
-                    {/* Sélection des dates */}
                     <div className="space-y-3">
                         <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Période</Label>
                         <div className="grid grid-cols-2 gap-4">
@@ -140,7 +138,6 @@ const Export = ({ usersProps, flightsSessions, planes }: Props) => {
                         </div>
                     </div>
 
-                    {/* Sélection Instructeur */}
                     <div className="space-y-3">
                         <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Filtres</Label>
                         <div className="space-y-1.5">

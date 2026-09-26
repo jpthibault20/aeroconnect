@@ -7,13 +7,13 @@ interface HeaderProps {
   tabs: ClubTab[];
   active: ClubTab;
   onSelect: (tab: ClubTab) => void;
-  // Pastille de compteur par onglet (ex. demandes à traiter).
+  // Counter badge per tab (e.g. requests to handle).
   badges?: Partial<Record<ClubTab, number>>;
 }
 
 /**
- * En-tête collant de la page Club : nom du club et barre d'onglets, défilable
- * horizontalement sur téléphone. Masquée quand un seul onglet est accessible.
+ * Sticky header of the Club page: club name and tab bar, horizontally scrollable
+ * on phones. Hidden when only one tab is accessible.
  */
 const Header: FC<HeaderProps> = ({ tabs, active, onSelect, badges = {} }) => {
   const { currentClub } = useCurrentClub();

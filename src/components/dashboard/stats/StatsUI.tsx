@@ -5,13 +5,13 @@ import { cn } from "@/lib/utils";
 import { percentChange, RankRow, STATS_PERIODS, StatsPeriod } from "@/lib/clubStats";
 
 /**
- * Briques d'affichage communes aux statistiques de la page « Club » (AER-68) :
- * sélecteur de période, cartes de chiffres clés, classements en barres.
+ * Display building blocks shared by the "Club" page statistics (AER-68): period
+ * selector, key figure cards, bar rankings.
  */
 
 export const BRAND = "#774BBE";
 
-// ─── Sélecteurs ───
+// ─── Selectors ───
 
 interface SegmentedProps<T extends string> {
     options: { id: T; label: string }[];
@@ -54,7 +54,7 @@ export function PeriodSelector({ value, onChange, className }: { value: StatsPer
     return <Segmented options={STATS_PERIODS} value={value} onChange={onChange} ariaLabel="Période" className={className} />;
 }
 
-// ─── Chiffres clés ───
+// ─── Key figures ───
 
 export type DeltaTone = "up" | "down" | "neutral";
 
@@ -63,7 +63,7 @@ export interface Delta {
     tone: DeltaTone;
 }
 
-/** « +8 % vs août » ; null si pas de base de comparaison. */
+/** "+8 % vs August"; null if there is no comparison base. */
 export function percentDelta(current: number, previous: number, comparisonLabel: string): Delta | null {
     const pct = percentChange(current, previous);
     if (pct == null) return null;
@@ -73,7 +73,7 @@ export function percentDelta(current: number, previous: number, comparisonLabel:
     };
 }
 
-/** « +2 vs août » pour un compte. */
+/** "+2 vs August" for a count. */
 export function countDelta(current: number, previous: number, comparisonLabel: string): Delta {
     const diff = current - previous;
     return {
@@ -119,7 +119,7 @@ export function StatCard({ label, value, delta, sub, valueClassName, onClick }: 
     );
 }
 
-// ─── Cartes ───
+// ─── Cards ───
 
 export function SectionCard({ title, right, children, className }: { title: string; right?: React.ReactNode; children: React.ReactNode; className?: string }) {
     return (
@@ -141,12 +141,12 @@ export function EmptyHint({ children }: { children: React.ReactNode }) {
     return <p className="py-6 text-center text-sm text-slate-500">{children}</p>;
 }
 
-// ─── Classements ───
+// ─── Rankings ───
 
 interface RankListProps {
     rows: RankRow[];
     format: (value: number) => string;
-    // Texte complémentaire à gauche de la valeur (ex. « 4 vols »).
+    // Extra text left of the value (e.g. "4 flights").
     detail?: (row: RankRow) => string | null;
     limit?: number;
     emptyText: string;
@@ -200,7 +200,7 @@ export function RankList({ rows, format, detail, limit = 5, emptyText, color = B
     );
 }
 
-// ─── Chargement ───
+// ─── Loading ───
 
 export function StatsSkeleton({ cards = 4 }: { cards?: number }) {
     return (

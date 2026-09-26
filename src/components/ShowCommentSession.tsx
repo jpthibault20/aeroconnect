@@ -7,12 +7,12 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { IoIosWarning, IoMdCreate } from 'react-icons/io';
-import { FaUserTie, FaUserGraduate } from "react-icons/fa6"; // Ajout d'icônes pour le design
+import { FaUserTie, FaUserGraduate } from "react-icons/fa6";
 import { updateCommentSession } from '@/api/db/sessions';
 import { sendNotificationUpdateNoteHandler } from '@/lib/mail';
 import { receiveType } from '@/lib/utils';
 import { useCurrentClub } from '@/app/context/useCurrentClub';
-import { cn } from '@/lib/utils'; // Assurez-vous d'avoir cn, sinon retirez-le et utilisez des string templates classiques
+import { cn } from '@/lib/utils';
 
 interface Props {
     children: React.ReactNode;
@@ -29,11 +29,10 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp, descrip
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // Initialisation des états locaux
     const [pilotComment, setPilotComment] = useState(session.pilotComment);
     const [studentComment, setStudentComment] = useState(session.studentComment);
 
-    // Synchroniser les états locaux si la session change depuis le parent
+    // Sync local state when the session changes in the parent
     useEffect(() => {
         setPilotComment(session.pilotComment);
         setStudentComment(session.studentComment);
@@ -125,7 +124,7 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp, descrip
     }
 
     const isAdminOrStaff = ([userRole.ADMIN, userRole.OWNER, userRole.MANAGER] as userRole[]).includes(currentUser?.role as userRole);
-    const PRIMARY_COLOR = "#774BBE"; // Votre couleur de thème
+    const PRIMARY_COLOR = "#774BBE";
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -133,7 +132,6 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp, descrip
                 {children}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden gap-0">
-                {/* Header stylisé */}
                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-start gap-4">
                     <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 hidden sm:block">
                         <IoMdCreate className="w-6 h-6 text-slate-600" />
@@ -149,7 +147,6 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp, descrip
                 </div>
 
                 <div className='flex flex-col gap-6 p-6'>
-                    {/* Section Instructeur */}
                     <div className='flex flex-col gap-3 group'>
                         <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
                             <span className="p-1.5 rounded-md bg-purple-50 text-[#774BBE]">
@@ -174,10 +171,8 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp, descrip
                         />
                     </div>
 
-                    {/* Separator Visuel (optionnel, ou juste l'espace) */}
                     <div className="h-px bg-slate-100 w-full" />
 
-                    {/* Section Élève */}
                     <div className='flex flex-col gap-3 group'>
                         <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
                             <span className="p-1.5 rounded-md bg-blue-50 text-blue-600">
@@ -196,7 +191,7 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp, descrip
                             onChange={(e) => setStudentComment(e.target.value)}
                             className={cn(
                                 "w-full min-h-[120px] text-sm resize-none border-slate-200 bg-slate-50/50 focus:bg-white transition-all duration-200",
-                                "focus-visible:ring-blue-500 focus-visible:border-blue-500", // Ring bleu pour l'élève pour différencier
+                                "focus-visible:ring-blue-500 focus-visible:border-blue-500", // blue ring to set the student apart
                                 (!isAdminOrStaff && currentUser?.id !== session.studentID) && "opacity-70 bg-slate-100 text-slate-500 cursor-not-allowed"
                             )}
                         />

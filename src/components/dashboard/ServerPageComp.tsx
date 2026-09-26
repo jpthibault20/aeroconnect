@@ -18,18 +18,17 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
     if (ClubIDprop) {
         const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
 
-        // La page « Club » est ouverte à tous les membres, mais les données
-        // sensibles ne sont même pas chargées pour les autres rôles : on résout
-        // d'abord l'utilisateur pour ne demander que ce qu'il a le droit de voir.
-        // Les statistiques (AER-68) sont chargées par les onglets eux-mêmes, selon
-        // la période choisie (cf. src/api/db/stats.ts).
+        // The "Club" page is open to every member, but sensitive data is not even loaded
+        // for other roles: the user is resolved first so only what they may see is
+        // requested. Statistics (AER-68) are loaded by the tabs themselves, for the
+        // chosen period (see src/api/db/stats.ts).
         const userRes = await getUser();
         const currentUser = 'user' in userRes ? userRes.user : null;
         const isMember = currentUser?.clubID === clubID;
         const isManagement = isMember && canManageClub(currentUser?.role);
         const canEditSettings = isMember && canEditClubSettings(currentUser?.role);
 
-        // Données de la page, filtrées selon le rôle
+        // Page data, filtered by role
         const [
             UsersRequestedClubID,
             uers,
@@ -42,7 +41,6 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             getPublicBookingToken(clubID),
         ]);
 
-        // Gestion des erreurs pour `UsersRequestedClubID`
         if ('error' in UsersRequestedClubID) {
             return (
                 <div className="h-full">
@@ -51,13 +49,12 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             );
         }
 
-        // Baptêmes en attente / jeton public : non bloquants (dépendent du rôle),
-        // on retombe sur des valeurs par défaut en cas d'erreur ou de permission.
+        // Pending discovery flights / public token: non-blocking (role dependent), fall
+        // back to defaults on error or missing permission.
         const pendingBaptemes = Array.isArray(pendingBaptemesRes) ? pendingBaptemesRes : [];
         const publicBookingToken: string | null =
             (publicTokenRes && 'token' in publicTokenRes ? publicTokenRes.token : null) ?? null;
 
-        // Rendu du composant avec les données récupérées
         return (
             <InitialLoading clubIDURL={clubID} className="h-full w-full">
                 <PageComponent
@@ -70,7 +67,7 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             </InitialLoading>
         );
     } else {
-        // Si aucun clubID n'est fourni
+        // No clubID provided
         return (
             <div className="h-full">
                 <NoClubID />

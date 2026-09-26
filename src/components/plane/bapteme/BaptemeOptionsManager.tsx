@@ -13,15 +13,14 @@ import BaptemeOptionForm from "./BaptemeOptionForm";
 
 interface Props {
     plane: Pick<planes, "id">;
-    /** Recharge la liste à chaque passage à true (ouverture de la fenêtre / de l'onglet). */
+    /** Reloads the list every time it becomes true (dialog / tab opened). */
     active: boolean;
 }
 
 /**
- * Formules de baptême d'une machine du club (durée + tarif) : liste, ajout,
- * modification, suppression. Chaque formule est enregistrée immédiatement
- * par son propre server action. Utilisé dans la fenêtre « Tarifs » de la
- * liste des machines et dans la fiche de la machine.
+ * Discovery-flight packages of a club plane (duration + price): list, add, edit,
+ * delete. Each package is saved immediately by its own server action. Used in the
+ * plane list's "Rates" dialog and in the plane form.
  */
 const BaptemeOptionsManager = ({ plane, active }: Props) => {
     const [loading, setLoading] = useState(true);

@@ -1,37 +1,33 @@
 /**
- * Photo d'une machine : règles pures (chemin de stockage, URL publique,
- * validation du fichier).
+ * Plane photo: pure rules (storage path, public URL, file validation).
  *
- * Le fichier vit dans un bucket PUBLIC de Supabase Storage. La base ne stocke
- * que le CHEMIN (`planes.imagePath`), jamais l'URL complète : le projet ou le
- * bucket peuvent changer sans réécrire une seule ligne de données.
+ * The file lives in a PUBLIC Supabase Storage bucket. The DB only stores the
+ * PATH (`planes.imagePath`), never the full URL: the project or bucket can change
+ * without rewriting a single data row.
  *
- * Le nom du fichier embarque un identifiant aléatoire régénéré à chaque envoi
- * (`{planeID}/{uuid}.{ext}`). Conséquence utile : remplacer la photo change
- * l'URL, donc aucun cache (navigateur, CDN, next/image) à invalider — et
- * l'ancien fichier est supprimé dans la foulée par le server action.
+ * The file name embeds a random ID regenerated on every upload
+ * (`{planeID}/{uuid}.{ext}`). Useful consequence: replacing the photo changes the
+ * URL, so there is no cache (browser, CDN, next/image) to invalidate, and the old
+ * file is deleted right away by the server action.
  *
- * Attention : bucket public = quiconque connaît l'URL voit l'image, même sans
- * lien de réservation. Les chemins ne sont pas devinables (uuid), mais ces
- * photos ne sont pas des données confidentielles. Pour rendre une photo
- * réellement privée il faudrait passer par des URL signées.
+ * Caution: public bucket = anyone who knows the URL sees the image, even without
+ * a booking link. Paths are not guessable (uuid), but these photos are not
+ * confidential data. Making a photo truly private would require signed URLs.
  */
 
-// Bucket Supabase Storage hébergeant les photos (à créer en public côté
-// dashboard Supabase).
+// Supabase Storage bucket holding the photos (create it as public in the
+// Supabase dashboard).
 export const PLANE_IMAGE_BUCKET = "planes";
 
-// Taille maximale acceptée par le serveur, APRÈS redimensionnement côté client
-// (qui vise ~1,2 Mo, cf. PlaneImageInput). La marge absorbe les cas où le
-// navigateur ne sait pas ré-encoder en WebP. Plafonné à 2 Mo pour limiter le
-// volume du bucket Supabase Storage. Le plafond par défaut des Server Actions
-// (1 Mo) est explicitement relevé dans next.config.mjs pour laisser passer ce
-// volume.
+// Max size accepted by the server, AFTER client-side resizing (which targets
+// ~1.2 MB, see PlaneImageInput). The margin absorbs cases where the browser
+// cannot re-encode to WebP. Capped at 2 MB to limit the bucket's volume. The
+// default Server Actions limit (1 MB) is explicitly raised in next.config.mjs to
+// allow it.
 export const PLANE_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 
-// Types acceptés. WebP est la cible du redimensionnement ; JPEG et PNG sont
-// conservés en repli pour les navigateurs qui ne savent pas encoder en WebP
-// (vieux Safari retombe silencieusement sur PNG).
+// Accepted types. WebP is the resize target; JPEG and PNG are kept as fallbacks
+// for browsers that cannot encode WebP (old Safari silently falls back to PNG).
 export const PLANE_IMAGE_MIME_TYPES = ["image/webp", "image/jpeg", "image/png"] as const;
 
 export type PlaneImageMimeType = (typeof PLANE_IMAGE_MIME_TYPES)[number];
@@ -46,15 +42,15 @@ export function isPlaneImageMimeType(mime: string): mime is PlaneImageMimeType {
     return (PLANE_IMAGE_MIME_TYPES as readonly string[]).includes(mime);
 }
 
-// Extension de fichier associée à un type MIME accepté.
+// File extension for an accepted MIME type.
 export function planeImageExtension(mime: PlaneImageMimeType): string {
     return EXTENSION_BY_MIME[mime];
 }
 
 /**
- * Valide un fichier avant envoi. Appliquée deux fois : côté client pour un
- * message immédiat, côté serveur parce que le client n'est jamais une barrière.
- * Retourne un message d'erreur, ou null si le fichier est acceptable.
+ * Validates a file before upload. Applied twice: client-side for an immediate
+ * message, server-side because the client is never a barrier.
+ * Returns an error message, or null if the file is acceptable.
  */
 export function validatePlaneImage(file: { type: string; size: number }): string | null {
     if (!isPlaneImageMimeType(file.type)) {
@@ -71,26 +67,25 @@ export function validatePlaneImage(file: { type: string; size: number }): string
 }
 
 /**
- * Chemin de stockage d'une photo. `fileID` doit être aléatoire (uuid) : c'est
- * lui qui rend l'URL non devinable et qui évite les collisions de cache.
+ * Storage path of a photo. `fileID` must be random (uuid): it makes the URL
+ * unguessable and avoids cache collisions.
  */
 export function buildPlaneImagePath(planeID: string, fileID: string, mime: PlaneImageMimeType): string {
     return `${planeID}/${fileID}.${planeImageExtension(mime)}`;
 }
 
 /**
- * Une machine ne peut supprimer/remplacer que SES propres fichiers. Garde-fou
- * contre un `imagePath` corrompu en base qui ferait supprimer le fichier d'une
- * autre machine.
+ * A plane can only delete/replace ITS OWN files. Safeguard against a corrupted
+ * `imagePath` in the DB that would delete another plane's file.
  */
 export function isPlaneImagePathOwnedBy(imagePath: string, planeID: string): boolean {
     return imagePath.startsWith(`${planeID}/`);
 }
 
 /**
- * URL publique d'une photo. `supabaseUrl` est injectable pour les tests ; en
- * production elle vient de NEXT_PUBLIC_SUPABASE_URL (donc disponible aussi bien
- * côté serveur que côté navigateur).
+ * Public URL of a photo. `supabaseUrl` is injectable for tests; in production it
+ * comes from NEXT_PUBLIC_SUPABASE_URL (so available both server-side and in the
+ * browser).
  */
 export function planeImagePublicUrl(
     imagePath: string | null | undefined,

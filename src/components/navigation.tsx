@@ -11,7 +11,7 @@ interface props {
     clubsProp: Club[]
 }
 const Navigation = ({ children, clubsProp }: props) => {
-    // Compteurs partagés par les deux barres : un seul jeu d'appels serveur.
+    // Counters shared by both bars: a single set of server calls.
     const counts = useNavigationCounts();
 
     return (

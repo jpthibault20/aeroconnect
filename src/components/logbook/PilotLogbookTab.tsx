@@ -30,10 +30,10 @@ const PAGE_SIZE = 50;
 export interface PilotExportInfo {
     logs: flight_logs[];
     pilotName: string;
-    // lastName du pilote sélectionné (undefined si "Tous"), pour le nom de fichier.
+    // Selected pilot's lastName (undefined for "All"), for the file name.
     pilotLastName?: string;
-    // Pour calcul de la pilotFunction effective dans le PDF (EP si user est studentID).
-    // null en mode "ALL" pour un manager (on affiche la fonction stockée).
+    // To compute the effective pilotFunction in the PDF (EP if the user is the
+    // studentID). null in "ALL" mode for a manager (the stored function is shown).
     displayedPilotID?: string | null;
 }
 
@@ -61,8 +61,8 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
     const [planeFilter, setPlaneFilter] = useState<string>("ALL");
     const [onlyUnsigned, setOnlyUnsigned] = useState(false);
     const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-    // Incrémenté à chaque "Réinitialiser filtres" pour forcer le remount du
-    // LogbookFilter (uncontrolled defaultValue="ALL").
+    // Incremented on every "Reset filters" to force a remount of LogbookFilter
+    // (uncontrolled defaultValue="ALL").
     const [filtersKey, setFiltersKey] = useState(0);
 
     const [page, setPage] = useState(0);
@@ -76,14 +76,14 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
         currentUser?.role === userRole.MANAGER ||
         currentUser?.role === userRole.INSTRUCTOR;
 
-    // Élève : page d'information uniquement. Pas d'édition, pas de bouton de
-    // signature, pas de colonne "signé". L'élève vole toujours avec un
-    // instructeur : c'est l'instructeur qui saisit et signe le vol.
+    // Student: information page only. No editing, no sign button, no "signed"
+    // column. A student always flies with an instructor, who enters and signs the
+    // flight.
     const isStudent = currentUser?.role === userRole.STUDENT;
 
-    // Filter logs by selected pilot — match aussi sur l'élève pour qu'un nom
-    // sélectionné dans la liste retrouve les vols où la personne était élève
-    // (et pas seulement pilote/instructeur).
+    // Filter logs by selected pilot, also matching the student so a name picked in
+    // the list finds the flights where that person was the student (not only
+    // pilot/instructor).
     const pilotLogs = useMemo(() => {
         let filtered = logsProp;
         if (selectedPilotID !== "ALL") {
@@ -100,7 +100,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
         if (onlyUnsigned) {
             filtered = filtered.filter((l) => !l.pilotSigned);
         }
-        // Tri par date (asc/desc). On copie pour ne pas muter logsProp.
+        // Sort by date (asc/desc). Copy so logsProp is not mutated.
         const sorted = [...filtered].sort((a, b) => {
             const da = new Date(a.date).getTime();
             const db = new Date(b.date).getTime();
@@ -109,8 +109,8 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
         return sorted;
     }, [logsProp, selectedPilotID, natureFilter, planeFilter, onlyUnsigned, sortDir]);
 
-    // Reset pagination quand les filtres ou le tri changent (ajusté pendant le
-    // rendu plutôt que dans un effet : pas de rendu intermédiaire).
+    // Reset pagination when filters or sorting change (adjusted during render rather
+    // than in an effect: no intermediate render).
     const pageResetKey = JSON.stringify([selectedPilotID, natureFilter, planeFilter, onlyUnsigned, sortDir]);
     const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey);
     if (prevPageResetKey !== pageResetKey) {
@@ -118,18 +118,18 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
         setPage(0);
     }
 
-    // Pilote dont on regarde le carnet (pour calculer la fonction effective
-    // EP/P/I de chaque ligne). En mode "ALL" pour un manager, on garde la
-    // fonction stockée (vue brute). Pour un user simple, on prend currentUser.
+    // Pilot whose logbook is shown (to compute each row's effective EP/P/I
+    // function). In "ALL" mode for a manager, the stored function is kept (raw
+    // view). For a regular user, currentUser is used.
     const displayedPilotID: string | null = useMemo(() => {
         if (selectedPilotID !== "ALL") return selectedPilotID;
         if (canSelectPilot) return null;
         return currentUser?.id ?? null;
     }, [selectedPilotID, canSelectPilot, currentUser?.id]);
 
-    // 1 seul log par session d'instruction : si le pilote affiché est dans
-    // studentID, sa fonction effective est EP (pas la fonction stockée du log,
-    // qui est celle de l'instructeur).
+    // 1 log per instruction session: if the displayed pilot is the studentID, their
+    // effective function is EP (not the log's stored function, which is the
+    // instructor's).
     const effectiveFunction = useCallback(
         (log: flight_logs): pilotFunction => {
             if (displayedPilotID && log.studentID === displayedPilotID) return "EP";
@@ -138,15 +138,15 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
         [displayedPilotID]
     );
 
-    // Pilote sélectionné pour l'export (reflète la sélection du tab).
+    // Pilot selected for export (mirrors the tab's selection).
     const exportSelectedPilot = useMemo(() => {
         if (!canSelectPilot) return currentUser ?? null;
         if (selectedPilotID === "ALL") return null;
         return users.find((u) => u.id === selectedPilotID) ?? currentUser ?? null;
     }, [canSelectPilot, selectedPilotID, users, currentUser]);
 
-    // Hobbs courant par avion, pour estimer une durée provisoire des vols non
-    // signés (hobbsStart pas encore figé).
+    // Current Hobbs per plane, to estimate a provisional duration for unsigned
+    // flights (hobbsStart not frozen yet).
     const planeHobbsMap = useMemo(() => {
         const m = new Map<string, number | null>();
         for (const p of planesList) m.set(p.id, p.hobbsTotal ?? null);
@@ -158,7 +158,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
             ? `${exportSelectedPilot.lastName} ${exportSelectedPilot.firstName}`
             : "Tous les pilotes / eleves";
         onExportInfoChange?.({
-            // Export officiel : on n'exporte que les vols signés (durée définitive).
+            // Official export: only signed flights are exported (final duration).
             logs: pilotLogs.filter((l) => l.pilotSigned),
             pilotName,
             pilotLastName: exportSelectedPilot?.lastName,
@@ -175,7 +175,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
     const goNext = useCallback(() => setPage((p) => Math.min(p + 1, totalPages - 1)), [totalPages]);
     const goPrev = useCallback(() => setPage((p) => Math.max(p - 1, 0)), []);
 
-    // Unique pilots + élèves from logs for dropdown
+    // Unique pilots + students from logs for the dropdown
     const pilotsInLogs = useMemo(() => {
         const ids = new Set<string>();
         for (const l of logsProp) {
@@ -190,15 +190,15 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
     }, [onLogUpdated]);
 
     const handleRowClick = useCallback(async (log: flight_logs) => {
-        // Lecture seule pour les élèves : ne pas ouvrir le dialog d'édition.
+        // Read-only for students: do not open the edit dialog.
         if (isStudent) return;
 
         setEditingLog(log);
         setEditDefaultHobbsStart(undefined);
         setEditOpen(true);
 
-        // Entrée historique sans début figé : pré-remplir avec le hobbsTotal
-        // courant de l'avion (figé ensuite à la signature).
+        // Historical entry without a frozen start: prefill with the plane's current
+        // hobbsTotal (frozen later on signing).
         if (log.planeID && log.hobbsStart == null) {
             const hobbs = await getPlaneHobbs(log.planeID);
             if (hobbs != null) setEditDefaultHobbsStart(hobbs);
@@ -219,7 +219,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
         setEditDefaultHobbsStart(undefined);
     }, [onLogDeleted]);
 
-    // Nom affiché "Prénom Nom" à partir des champs dénormalisés du log.
+    // "Firstname Lastname" built from the log's denormalized fields.
     const fullName = (first?: string | null, last?: string | null): string =>
         `${first ?? ""} ${last ?? ""}`.trim();
 
@@ -496,7 +496,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                     )}
                                     onClick={isStudent ? undefined : () => handleRowClick(log)}
                                 >
-                                    {/* Ligne 1 : date + statut signé */}
+                                    {/* Line 1: date + signed status */}
                                     <div className="flex items-center justify-between gap-2">
                                         <span className="text-sm font-semibold text-slate-800">
                                             {new Date(log.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
@@ -510,7 +510,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                         )}
                                     </div>
 
-                                    {/* Ligne 2 : avion + badge fonction + durée */}
+                                    {/* Line 2: plane + function badge + duration */}
                                     <div className="flex items-center gap-2">
                                         <Plane className="w-4 h-4 text-slate-400 flex-shrink-0" />
                                         <span className="text-sm font-medium text-slate-800 truncate">{log.planeName}</span>
@@ -530,7 +530,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                         </span>
                                     </div>
 
-                                    {/* Ligne 3 : nature + trajet */}
+                                    {/* Line 3: flight type + route */}
                                     <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
                                         <span>{formatNature(log.flightNature, log.instructionSubType)}</span>
                                         {log.departureAirfield && (
@@ -560,7 +560,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                                         )}
                                     </div>
 
-                                    {/* Ligne 4 : pilote + élève */}
+                                    {/* Line 4: pilot + student */}
                                     <div className="text-xs text-slate-400 space-y-0.5">
                                         <div>
                                             Pilote : <span className="text-slate-600">{fullName(log.pilotFirstName, log.pilotLastName) || "-"}</span>
@@ -578,7 +578,7 @@ const PilotLogbookTab = ({ logs: logsProp, users, planes: planesList, onExportIn
                 </>
             )}
 
-            {/* Dialog d'édition au clic sur une ligne */}
+            {/* Edit dialog on row click */}
             <CompleteFlightDialog
                 log={editingLog}
                 open={editOpen}

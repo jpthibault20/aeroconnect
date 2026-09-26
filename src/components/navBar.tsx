@@ -55,7 +55,7 @@ const NavBar = ({ clubsProp, counts }: NavBarProps) => {
                 toast({ title: "Changement de club impossible", description: res.error, variant: "destructive" });
                 return;
             }
-            // Rechargement complet : les contextes utilisateur / club sont relus côté serveur.
+            // Full reload: user / club contexts are re-read server-side.
             window.location.assign(`/calendar?clubID=${newClubID}`);
         }
     };
@@ -65,26 +65,25 @@ const NavBar = ({ clubsProp, counts }: NavBarProps) => {
         && (!link.requiresWallet || !!currentClub?.walletEnabled)
     )
 
-    // --- Indicateur de défilement du menu ---
-    // Le panneau ne montre que quelques entrées à la fois sur un petit écran, et
-    // rien n'indiquait qu'il y en avait d'autres en dessous : la barre de
-    // défilement de Radix ne s'affiche qu'au survol, donc jamais sur tactile.
-    // D'où le défilement natif (meilleure inertie au doigt) + ce dégradé.
+    // --- Menu scroll indicator ---
+    // On a small screen the panel only shows a few entries at a time, and nothing
+    // hinted there were more below: Radix's scrollbar only shows on hover, so never
+    // on touch. Hence native scrolling (better touch inertia) + this gradient.
     const listRef = useRef<HTMLDivElement>(null);
     const [canScrollDown, setCanScrollDown] = useState(false);
 
     const updateScrollHint = () => {
         const el = listRef.current;
         if (!el) return;
-        // 8 px de marge : évite de laisser le dégradé allumé en fin de course à
-        // cause des arrondis de hauteur.
+        // 8 px margin: avoids leaving the gradient on at the end because of height
+        // rounding.
         setCanScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 8);
     };
 
     useEffect(() => {
         if (!isOpen) return;
-        // La liste n'est montée qu'à l'ouverture du panneau : on mesure une fois
-        // la première image peinte.
+        // The list is only mounted when the panel opens: measure once on the first
+        // painted frame.
         const frame = requestAnimationFrame(updateScrollHint);
         return () => cancelAnimationFrame(frame);
     }, [isOpen, filteredLinks.length]);
@@ -124,12 +123,9 @@ const NavBar = ({ clubsProp, counts }: NavBarProps) => {
                         <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
                     </div>
 
-                    {/* En-tête et pied de panneau volontairement compacts : chaque
-                        pixel repris ici est une entrée de menu visible en plus. */}
+                    {/* Panel header and footer deliberately compact: every pixel saved here is one more visible menu entry. */}
                     <SheetHeader className="px-6 pt-2 pb-4 text-left">
-                        {/* Titre et description réservés aux lecteurs d'écran : le
-                            panneau se passe d'en-tête visible, mais Radix exige les
-                            deux pour renseigner aria-labelledby / aria-describedby. */}
+                        {/* Title and description for screen readers only: the panel has no visible header, but Radix requires both to fill aria-labelledby / aria-describedby. */}
                         <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
                         <SheetDescription className="sr-only">
                             Accédez aux différentes pages de l&apos;application et à votre profil.
@@ -165,7 +161,7 @@ const NavBar = ({ clubsProp, counts }: NavBarProps) => {
                         </div>
                     </SheetHeader>
 
-                    {/* --- SECTION ADMIN : SELECTEUR CLUB --- */}
+                    {/* --- ADMIN SECTION: CLUB SELECTOR --- */}
                     {currentUser?.role === userRole.ADMIN && (
                         <div className="px-6 pb-4">
                             <DropdownMenu>
@@ -215,29 +211,26 @@ const NavBar = ({ clubsProp, counts }: NavBarProps) => {
                                     const isWalletAlert = item.path === "/wallet" && walletAlert;
                                     const showBadge = badgeCount > 0 || isWalletAlert;
 
-                                    // 4. Déterminer si le lien est actif
                                     const isActive = pathname === item.path;
 
                                     return (
                                         <Link
                                             key={item.path}
                                             href={`${item.path}?clubID=${currentUser?.clubID}`}
-                                            // 5. Application des styles conditionnels
                                             className={cn(
                                                 "flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all active:scale-[0.98] group justify-between",
                                                 isActive
-                                                    ? "bg-[#774BBE]/10 text-[#774BBE]" // Style Actif : Fond violet très clair + texte violet
-                                                    : "text-slate-600 hover:bg-purple-50 hover:text-[#774BBE]" // Style Inactif
+                                                    ? "bg-[#774BBE]/10 text-[#774BBE]"
+                                                    : "text-slate-600 hover:bg-purple-50 hover:text-[#774BBE]"
                                             )}
                                             onClick={() => setIsOpen(false)}
                                         >
                                             <div className="flex items-center gap-3">
-                                                {/* Pastille compacte : à l'ancienne taille, trois
-                                                    entrées seulement tenaient à l'écran. */}
+                                                {/* Compact badge: at the old size, only three entries fit on screen. */}
                                                 <span className={cn(
                                                     "p-1.5 rounded-lg transition-all",
                                                     isActive
-                                                        ? "bg-white shadow-sm text-[#774BBE]" // Icône Active : Fond blanc + icône violette
+                                                        ? "bg-white shadow-sm text-[#774BBE]"
                                                         : "bg-slate-50 text-slate-500 group-hover:bg-white group-hover:shadow-sm group-hover:text-[#774BBE]"
                                                 )}>
                                                     <item.icon className="h-4 w-4" />
@@ -255,8 +248,7 @@ const NavBar = ({ clubsProp, counts }: NavBarProps) => {
                                 })}
                             </div>
 
-                            {/* « Il y a d'autres entrées en dessous » : dégradé + chevron,
-                                masqués dès qu'on atteint le bas de la liste. */}
+                            {/* "There are more entries below": gradient + chevron, hidden once the bottom of the list is reached. */}
                             {canScrollDown && (
                                 <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-12 items-end justify-center bg-gradient-to-t from-white via-white/80 to-transparent">
                                     <ChevronDown className="h-4 w-4 animate-bounce text-slate-400" />

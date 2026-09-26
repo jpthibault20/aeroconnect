@@ -40,7 +40,7 @@ interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     members: OperationMember[];
-    /** Membre présélectionné (et verrouillé) quand on vient d'une ligne. */
+    /** Member preselected (and locked) when coming from a row. */
     memberID?: string | null;
     initialKind?: OperationKind;
     onDone?: (memberID: string, balanceCents: number) => void;
@@ -49,9 +49,9 @@ interface Props {
 const memberName = (m: OperationMember) => `${m.firstName} ${m.lastName.toUpperCase()}`;
 
 /**
- * Crédit (paiement reçu) ou retrait / correction d'un portefeuille, par la
- * gestion (AER-66). Le montant est toujours saisi en positif : c'est la tuile
- * choisie qui donne le sens. Une opération validée n'est plus supprimable.
+ * Credit (payment received) or withdrawal / correction of a wallet by management
+ * (AER-66). The amount is always entered as positive: the chosen tile sets the
+ * direction. A validated operation can no longer be deleted.
  */
 const WalletOperationDialog = ({ open, onOpenChange, members, memberID, initialKind = "CREDIT", onDone }: Props) => {
     const [selectedID, setSelectedID] = useState<string>("");
@@ -63,7 +63,7 @@ const WalletOperationDialog = ({ open, onOpenChange, members, memberID, initialK
     const [loading, setLoading] = useState(false);
     const [confirmNegative, setConfirmNegative] = useState(false);
 
-    // Réinitialise le formulaire à chaque ouverture.
+    // Reset the form on every open.
     useEffect(() => {
         if (!open) return;
         setSelectedID(memberID ?? "");
@@ -105,7 +105,7 @@ const WalletOperationDialog = ({ open, onOpenChange, members, memberID, initialK
             setError(invalid);
             return;
         }
-        // Retrait qui fait passer le solde sous 0 : confirmation explicite.
+        // Withdrawal taking the balance below 0: explicit confirmation.
         if (!isCredit && newBalance != null && newBalance < 0 && !confirmNegative) {
             setConfirmNegative(true);
             return;
@@ -160,7 +160,7 @@ const WalletOperationDialog = ({ open, onOpenChange, members, memberID, initialK
                     </div>
 
                     <div className="p-4 sm:p-5 space-y-5 overflow-y-auto flex-1 min-h-0">
-                        {/* Membre */}
+                        {/* Member */}
                         <div className="space-y-1.5">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Membre</Label>
                             <Select value={selectedID} onValueChange={setSelectedID} disabled={!!memberID || loading}>
@@ -189,7 +189,7 @@ const WalletOperationDialog = ({ open, onOpenChange, members, memberID, initialK
 
                         <div className="h-px bg-slate-100" />
 
-                        {/* Type d'opération */}
+                        {/* Operation type */}
                         <div className="space-y-1.5">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Type d&apos;opération</Label>
                             <div className="grid grid-cols-2 gap-3">
@@ -224,7 +224,7 @@ const WalletOperationDialog = ({ open, onOpenChange, members, memberID, initialK
                             </div>
                         </div>
 
-                        {/* Montant */}
+                        {/* Amount */}
                         <div className="space-y-1.5">
                             <Label htmlFor="walletAmount" className="text-xs font-semibold uppercase tracking-wider text-slate-400">Montant (€)</Label>
                             <Input
@@ -262,7 +262,7 @@ const WalletOperationDialog = ({ open, onOpenChange, members, memberID, initialK
                             )}
                         </div>
 
-                        {/* Moyen de paiement */}
+                        {/* Payment method */}
                         <div className="space-y-1.5">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                                 {isCredit ? "Moyen de paiement" : "Moyen de remboursement (si remboursement)"}
@@ -285,7 +285,7 @@ const WalletOperationDialog = ({ open, onOpenChange, members, memberID, initialK
                             </div>
                         </div>
 
-                        {/* Commentaire */}
+                        {/* Comment */}
                         <div className="space-y-1.5">
                             <Label htmlFor="walletComment" className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                                 {isCredit ? "Commentaire" : "Motif (obligatoire)"}
@@ -300,7 +300,7 @@ const WalletOperationDialog = ({ open, onOpenChange, members, memberID, initialK
                             />
                         </div>
 
-                        {/* Récapitulatif : ancien → nouveau solde */}
+                        {/* Summary: old → new balance */}
                         {member && newBalance != null && (
                             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 text-center">
                                 <div>

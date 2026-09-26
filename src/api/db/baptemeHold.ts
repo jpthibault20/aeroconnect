@@ -2,18 +2,17 @@ import prisma from "../prisma";
 import { BAPTEME_HOLD_STUDENT_ID } from "@/lib/bapteme";
 
 /**
- * Gestion du « hold » qu'une demande de baptême PENDING pose sur un créneau
- * (flight_sessions.studentID = sentinelle). Isolé dans son propre module pour
- * être importable par bapteme.ts, sessions.ts ET users.ts sans créer d'import
- * circulaire (users.ts <-> bapteme.ts via requireAuth).
+ * Handles the "hold" a PENDING discovery-flight request places on a slot
+ * (flight_sessions.studentID = sentinel). Kept in its own module so bapteme.ts,
+ * sessions.ts AND users.ts can import it without a circular import
+ * (users.ts <-> bapteme.ts via requireAuth).
  *
- * PAS de directive "use server" : ce module n'expose que des helpers internes
- * appelés depuis d'autres modules serveur (jamais depuis un composant client).
- * Un fichier "use server" ne peut exporter que des fonctions async, or on
- * exporte aussi la donnée RELEASE_SESSION_DATA.
+ * NO "use server" directive: this module only exposes internal helpers called
+ * from other server modules (never from a client component). A "use server"
+ * file can only export async functions, and RELEASE_SESSION_DATA is data.
  */
 
-// Données de « déblocage » d'un créneau : remet la session à l'état libre.
+// Data that "releases" a slot: puts the session back to a free state.
 export const RELEASE_SESSION_DATA = {
     studentID: null,
     studentFirstName: null,
@@ -25,9 +24,9 @@ export const RELEASE_SESSION_DATA = {
 } as const;
 
 /**
- * Expiration paresseuse : passe à EXPIRED les demandes PENDING échues ET libère
- * les créneaux qu'elles tenaient (studentID sentinelle -> null). Scope optionnel
- * par club et/ou par créneau. Exécutée à la lecture / avant toute écriture.
+ * Lazy expiry: sets expired PENDING requests to EXPIRED AND frees the slots they
+ * held (sentinel studentID -> null). Optionally scoped by club and/or slot.
+ * Run on read / before any write.
  */
 export async function expireStaleHolds(
     now: Date,
@@ -60,10 +59,10 @@ export async function expireStaleHolds(
 }
 
 /**
- * Libère un créneau si son hold de baptême a expiré, puis indique s'il reste
- * bloqué par un hold ACTIF. Utilisé par les chemins d'inscription classiques
- * (studentRegistration / addStudentToSession) pour empêcher qu'un élève ou un
- * invité ne prenne un créneau tenu par une demande de baptême en attente.
+ * Frees a slot if its discovery-flight hold has expired, then says whether an
+ * ACTIVE hold still blocks it. Used by the regular booking paths
+ * (studentRegistration / addStudentToSession) so no student or guest takes a
+ * slot held by a pending discovery-flight request.
  */
 export const resolveBaptemeHold = async (sessionID: string) => {
     if (!sessionID) return { held: false };
@@ -75,7 +74,7 @@ export const resolveBaptemeHold = async (sessionID: string) => {
         });
         return { held: activeHolds > 0 };
     } catch {
-        // En cas d'erreur, ne pas bloquer l'inscription (fail-open).
+        // On error, do not block the booking (fail-open).
         return { held: false };
     }
 };

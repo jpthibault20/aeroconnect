@@ -1,11 +1,10 @@
 import { flight_logs } from "@prisma/client";
 
-// Une session d'instruction génère deux flight_logs (instructeur "I" + élève
-// "EP") pour le même vol. Ce helper consolide chaque paire en une seule ligne
-// pour éviter les doublons (compteur, totaux, listes). L'entrée non-EP sert
-// de base et hérite des champs complémentaires de l'entrée élève (studentID,
-// etc.). Les logs sans sessionID (entrées manuelles, vols privés) passent
-// inchangés.
+// An instruction session generates two flight_logs (instructor "I" + student
+// "EP") for the same flight. This helper merges each pair into a single row to
+// avoid duplicates (counter, totals, lists). The non-EP entry is the base and
+// inherits the extra fields of the student entry (studentID, etc.). Logs without
+// a sessionID (manual entries, private flights) pass through unchanged.
 export function mergeSessionLogs(logs: flight_logs[]): flight_logs[] {
     const bySession = new Map<string, flight_logs>();
 
@@ -17,8 +16,8 @@ export function mergeSessionLogs(logs: flight_logs[]): flight_logs[] {
             continue;
         }
 
-        // L'entrée pilote/instructeur (I ou P) sert de base ; l'entrée élève
-        // (EP) ne fait que compléter les références aux personnes manquantes.
+        // The pilot/instructor entry (I or P) is the base; the student entry (EP) only
+        // fills in missing person references.
         const isLogPrimary = log.pilotFunction !== "EP";
         const base = isLogPrimary ? log : existing;
         const other = isLogPrimary ? existing : log;

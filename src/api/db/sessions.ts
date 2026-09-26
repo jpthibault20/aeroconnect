@@ -17,8 +17,8 @@ import { bookingWalletBlock, isBookingGatedRole } from '@/lib/wallet';
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
 const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
-// Message de blocage si l'utilisateur (STUDENT / PILOT) a un solde ≤ 0 dans un
-// club dont le portefeuille est activé ; null sinon.
+// Blocking message if the user (STUDENT / PILOT) has a balance ≤ 0 in a club
+// whose wallet is enabled; null otherwise.
 async function checkWalletBooking(user: User): Promise<string | null> {
     if (!user.clubID || !isBookingGatedRole(user.role)) return null;
     const club = await prisma.club.findUnique({ where: { id: user.clubID } });
@@ -27,7 +27,7 @@ async function checkWalletBooking(user: User): Promise<string | null> {
         where: { clubID_userID: { clubID: club.id, userID: user.id } },
         select: { balanceCents: true },
     });
-    // Décision pure et testée (cf. bookingWalletBlock dans src/lib/wallet.ts).
+    // Pure, tested decision (see bookingWalletBlock in src/lib/wallet.ts).
     return bookingWalletBlock({ walletEnabled: club.walletEnabled, role: user.role, balanceCents: wallet?.balanceCents ?? 0, contact: club });
 }
 
@@ -43,8 +43,8 @@ export interface interfaceSessions {
     planeId: string[];
     classes: number[];
     comment: string;
-    // Types de vol du créneau (sélection multiple). DISCOVERY marque un créneau
-    // baptême, exposé au public via le lien de réservation.
+    // Flight types of the slot (multi-select). DISCOVERY marks a discovery-flight
+    // slot, exposed to the public through the booking link.
     natureOfTheft: NatureOfTheft[];
 }
 
@@ -57,8 +57,8 @@ export const checkSessionDate = async (sessionData: interfaceSessions, instructo
         return { error: "L'instructeur est obligatoire" };
     }
 
-    // Seul l'identifiant de l'instructeur vient du client : il est relu en
-    // base et doit appartenir au club de l'utilisateur connecté (AER-67).
+    // Only the instructor ID comes from the client: it is re-read from the DB and
+    // must belong to the signed-in user's club (AER-67).
     const auth = await requireAuth(MANAGEMENT_ROLES);
     if ('error' in auth) return { error: auth.error };
     const user = await prisma.user.findUnique({ where: { id: instructorInput.id } });
@@ -131,7 +131,7 @@ export const checkSessionDate = async (sessionData: interfaceSessions, instructo
         }
     }
 
-    // Vérifier les conflits pour chaque session à créer avec une seule requête
+    // Check conflicts for every session to create in a single query
     const existingSessions = await prisma.flight_sessions.findMany({
         where: {
             clubID: user.clubID as string,
@@ -160,9 +160,9 @@ export const newSession = async (sessionData: interfaceSessions, instructorInput
     const auth = await requireAuth(MANAGEMENT_ROLES);
     if ('error' in auth) return { error: auth.error };
 
-    // ADMIN/OWNER/MANAGER peuvent créer pour n'importe quel instructeur du même
-    // club, les autres pour eux-mêmes. L'instructeur (nom, club) est relu en
-    // base : seul son identifiant vient du client (AER-67).
+    // ADMIN/OWNER/MANAGER can create for any instructor of the same club, others for
+    // themselves. The instructor (name, club) is re-read from the DB: only its ID
+    // comes from the client (AER-67).
     const instructor = await prisma.user.findUnique({ where: { id: instructorInput.id } });
     const allowed = canCreateSessionsFor(auth.user, instructor, ADMIN_ROLES);
     if (!allowed.ok) return { error: allowed.error };
@@ -178,11 +178,10 @@ export const newSession = async (sessionData: interfaceSessions, instructorInput
     ));
 
     const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
-    const sessionDurationMs = sessionData.duration * 60 * 1000; // Convertir la durée en ms
+    const sessionDurationMs = sessionData.duration * 60 * 1000;
     const sessionsToCreate: { sessionDateStart: Date; sessionDateDuration_min: number }[] = [];
 
     if (sessionData.endReccurence) {
-        // Préparer la date de fin récurrence
         const endReccurence = new Date(sessionData.endReccurence);
         endReccurence.setUTCDate(endReccurence.getUTCDate() + 1);
 
@@ -198,7 +197,6 @@ export const newSession = async (sessionData: interfaceSessions, instructorInput
             }
         }
     } else {
-        // Calculer la date de fin pour une session unique
         const dateEndSession = new Date(Date.UTC(
             baseSessionDateStart.getUTCFullYear(),
             baseSessionDateStart.getUTCMonth(),
@@ -273,9 +271,9 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
 };
 
 /**
- * Désinscription d'un élève d'un créneau. Seul l'identifiant du créneau vient
- * du client : session, club et utilisateur sont relus en base (AER-67). Règles
- * dans checkStudentRemoval (src/lib/sessionRules.ts).
+ * Removes a student from a slot. Only the slot ID comes from the client: session,
+ * club and user are re-read from the DB (AER-67). Rules in checkStudentRemoval
+ * (src/lib/sessionRules.ts).
  */
 export const removeStudentFromSessionID = async (sessionID: string) => {
     const auth = await requireAuth();
@@ -317,10 +315,10 @@ export const removeStudentFromSessionID = async (sessionID: string) => {
 };
 
 /**
- * Inscription de l'utilisateur CONNECTÉ à un créneau. Seuls le créneau, la
- * machine et le commentaire viennent du client : utilisateur, club, créneau et
- * machine sont relus en base (AER-67). Inscrire un tiers passe par
- * addStudentToSession (gestion). Règles dans checkStudentRegistration.
+ * Books the SIGNED-IN user on a slot. Only the slot, plane and comment come from
+ * the client: user, club, slot and plane are re-read from the DB (AER-67).
+ * Booking someone else goes through addStudentToSession (management). Rules in
+ * checkStudentRegistration.
  */
 export const studentRegistration = async (sessionID: string, planeID: string, studentComment: string) => {
     const auth = await requireAuth();
@@ -342,7 +340,7 @@ export const studentRegistration = async (sessionID: string, planeID: string, st
             prisma.club.findUnique({ where: { id: session.clubID } }),
             isClassroom ? null : prisma.planes.findUnique({ where: { id: planeID } }),
             prisma.planes.findMany({ where: { clubID: session.clubID }, select: { id: true, ownerID: true } }),
-            // Élève ou machine déjà pris au même horaire.
+            // Student or plane already taken at the same time.
             prisma.flight_sessions.findMany({
                 where: {
                     sessionDateStart: session.sessionDateStart,
@@ -371,14 +369,14 @@ export const studentRegistration = async (sessionID: string, planeID: string, st
         });
         if (!check.ok) return { error: check.error };
 
-        // Portefeuille (AER-66) : un élève / pilote à solde nul ou négatif ne
-        // peut plus s'inscrire. Club et solde relus en base pour l'utilisateur
-        // CONNECTÉ (jamais les objets envoyés par le client).
+        // Wallet (AER-66): a student / pilot with a zero or negative balance can no
+        // longer book. Club and balance are re-read from the DB for the SIGNED-IN user
+        // (never the objects sent by the client).
         const walletBlock = await checkWalletBooking(student);
         if (walletBlock) return { error: walletBlock, code: "WALLET_EMPTY" as const };
 
-        // Écriture conditionnelle : si quelqu'un a pris le créneau entre la
-        // lecture et l'écriture, rien n'est modifié.
+        // Conditional write: if someone took the slot between the read and the write,
+        // nothing is changed.
         const updated = await prisma.flight_sessions.updateMany({
             where: { id: session.id, studentID: null },
             data: {
@@ -400,9 +398,9 @@ export const studentRegistration = async (sessionID: string, planeID: string, st
 };
 
 /**
- * Notes d'un créneau. Seul l'identifiant du créneau vient du client : la
- * session est relue en base, et chacun ne modifie que sa note (gestion : les
- * deux), cf. resolveCommentUpdate (AER-67).
+ * Slot notes. Only the slot ID comes from the client: the session is re-read from
+ * the DB, and each party only edits their own note (management: both), see
+ * resolveCommentUpdate (AER-67).
  */
 export const updateCommentSession = async (sessionID: string, pilotComment: string, studentComment: string) => {
     if (!sessionID) {

@@ -19,16 +19,15 @@ import { ROLE_LABELS } from "./roleLabels";
 type WalletData = Extract<Awaited<ReturnType<typeof getMemberWallet>>, { success: true }>;
 
 interface Props {
-    /** null => son propre portefeuille. */
+    /** null => own wallet. */
     userID: string | null;
-    /** Ouvre directement la fenêtre de crédit (raccourci de la page Utilisateurs). */
+    /** Opens the credit dialog directly (shortcut from the Users page). */
     openCredit?: boolean;
 }
 
 /**
- * Détail d'un portefeuille : « Mon portefeuille » pour l'élève / le pilote,
- * ou la fiche d'un membre pour la gestion (avec auteur et actions) et
- * l'instructeur (lecture seule).
+ * Wallet details: "My wallet" for students / pilots, or a member's card for
+ * management (with author and actions) and instructors (read-only).
  */
 const MemberWalletDetail = ({ userID, openCredit = false }: Props) => {
     const { currentClub } = useCurrentClub();
@@ -90,7 +89,7 @@ const MemberWalletDetail = ({ userID, openCredit = false }: Props) => {
     }
 
     const { member, isSelf, canOperate, state, balanceCents, month, year } = data;
-    // À 0 € : inscriptions bloquées mais pas de dette (ambre, pas rouge).
+    // At 0 €: bookings blocked but no debt (amber, not red).
     const style = state === "empty" && balanceCents === 0 ? BALANCE_STATE_STYLES.low : BALANCE_STATE_STYLES[state];
     const readOnlyViewer = !isSelf && !canOperate;
     const contactOpen = showContact || state !== "ok";
@@ -98,7 +97,7 @@ const MemberWalletDetail = ({ userID, openCredit = false }: Props) => {
 
     return (
         <div className="space-y-6">
-            {/* En-tête */}
+            {/* Header */}
             {isSelf ? (
                 <div>
                     <h1 className="font-bold text-2xl md:text-3xl text-slate-900 tracking-tight">Mon portefeuille</h1>
@@ -143,7 +142,7 @@ const MemberWalletDetail = ({ userID, openCredit = false }: Props) => {
                 </div>
             )}
 
-            {/* Solde + synthèse */}
+            {/* Balance + summary */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-2">
                     <div className="flex items-center gap-2">
@@ -201,7 +200,7 @@ const MemberWalletDetail = ({ userID, openCredit = false }: Props) => {
                     : "Aucune opération pour ce membre."}
             />
 
-            {/* Mobile : actions en barre fixe (à gauche du bouton de menu flottant) */}
+            {/* Mobile: actions in a fixed bar (left of the floating menu button) */}
             {canOperate && !isSelf && (
                 <div className="md:hidden sticky bottom-0 -mx-4 bg-white/95 backdrop-blur border-t border-slate-200 p-3 pr-24 grid grid-cols-2 gap-2">
                     <Button onClick={() => setDialog("CREDIT")} className="bg-[#774BBE] hover:bg-[#6538a5] text-white gap-1">
@@ -234,7 +233,7 @@ interface PeriodSummary {
     flightMinutes: number;
 }
 
-/** Synthèse d'une période : ce qui a été payé au club / ce que les vols ont coûté. */
+/** Period summary: what was paid to the club / what the flights cost. */
 const PeriodCard = ({ title, summary, large }: { title: string; summary: PeriodSummary; large?: boolean }) => (
     <div className={cn("rounded-2xl border border-slate-200 bg-white shadow-sm space-y-2", large ? "p-5" : "p-4")}>
         <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">

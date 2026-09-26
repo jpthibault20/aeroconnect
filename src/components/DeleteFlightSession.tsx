@@ -26,7 +26,7 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
     const handleRemoveFlight = async () => {
         if (sessions.length === 0) return;
 
-        // Vérification date passée (basée sur la première session)
+        // Past-date check (based on the first session)
         const sessionDate = new Date(sessions[0].sessionDateStart);
         const nowDate = new Date();
 
@@ -53,7 +53,7 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
                     variant: "destructive"
                 });
             } else if (res.success) {
-                // Envoi des notifications pour chaque session avec élève
+                // Send a notification for each session with a student
                 const notifications = [];
 
                 for (const session of sessions) {
@@ -89,10 +89,9 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
                     className: "bg-green-600 text-white border-none"
                 });
 
-                // Notifications en arrière-plan : l'utilisateur est prévenu si l'une échoue.
+                // Background notifications: the user is warned if one fails.
                 void sendNotificationsOrWarn(notifications, warnNotificationFailure);
 
-                // Mise à jour de l'état local
                 setSessions(prevSessions => prevSessions.filter(session => !sessionIDs.includes(session.id)));
                 setIsOpen(false);
             }
@@ -114,7 +113,6 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
             </AlertDialogTrigger>
             <AlertDialogContent className="sm:max-w-[500px] bg-white rounded-xl shadow-2xl p-0 gap-0 overflow-hidden border-none">
 
-                {/* Header Danger */}
                 <AlertDialogHeader className="bg-red-50 p-6 border-b border-red-100">
                     <AlertDialogTitle className="flex items-center gap-2 text-xl font-bold text-red-900">
                         <div className="p-2 bg-red-100 rounded-lg border border-red-200">
@@ -127,7 +125,6 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 
-                {/* Warning Content */}
                 <div className="p-6">
                     <div className="bg-slate-50 border border-slate-100 rounded-lg p-4 flex items-start gap-3">
                         <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
@@ -140,7 +137,6 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
                     </div>
                 </div>
 
-                {/* Footer Actions */}
                 <AlertDialogFooter className="bg-slate-50 p-4 border-t border-slate-100 flex sm:justify-end gap-3">
                     <AlertDialogCancel
                         onClick={() => setIsOpen(false)}
@@ -151,7 +147,7 @@ const DeleteFlightSession = ({ children, sessions, setSessions, usersProp, descr
                     </AlertDialogCancel>
                     <AlertDialogAction
                         onClick={(e) => {
-                            e.preventDefault(); // Empêche la fermeture automatique pour gérer le loading
+                            e.preventDefault(); // Prevent auto-close so loading can be handled
                             handleRemoveFlight();
                         }}
                         disabled={loading}

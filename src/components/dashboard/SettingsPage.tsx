@@ -26,7 +26,7 @@ import { emitWalletChanged } from '@/lib/walletEvents'
 import WalletConfirmDialog from '../wallet/WalletConfirmDialog'
 import PublicBookingLink from './PublicBookingLink'
 
-// --- Schéma Zod (Inchangé pour la logique) ---
+// --- Zod schema ---
 const configSchema = z.object({
     clubName: z.string().min(1, "Le nom du club est requis"),
     clubId: z.string().nonempty("L'identifiant du club est requis"),
@@ -63,10 +63,10 @@ const configSchema = z.object({
 
 const classesULM = ["Paramoteur", "Pendulaire", "Multiaxe", "Autogire", "Aérostat ULM", "Hélicoptère ULM"];
 
-// --- Sections (AER-68) : accordéon sur téléphone, menu latéral sur ordinateur ---
+// --- Sections (AER-68): accordion on phones, side menu on desktop ---
 type SectionId = 'infos' | 'horaires' | 'flotte' | 'regles' | 'paiement' | 'presidence' | 'bapteme';
 
-// Champs en erreur -> section à ouvrir pour les montrer.
+// Fields in error -> section to open to show them.
 const SECTION_FIELDS: Record<SectionId, string[]> = {
     infos: ['clubName', 'clubId', 'firstNameContact', 'lastNameContact', 'mailContact', 'phoneContact'],
     horaires: ['hourStart', 'hourEnd', 'totalHours'],
@@ -120,21 +120,21 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
-    // Section dépliée (téléphone) / affichée (ordinateur, première par défaut).
+    // Expanded section (phone) / displayed section (desktop, first one by default).
     const [openSection, setOpenSection] = useState<SectionId | null>(null);
 
-    // --- Portefeuille élève (AER-66) ---
+    // --- Student wallet (AER-66) ---
     const [walletEnabled, setWalletEnabled] = useState<boolean>(currentClub?.walletEnabled ?? false);
     const [instructorRate, setInstructorRate] = useState<string>(centsToInput(currentClub?.instructorHourlyRateCents));
     const [walletConfirm, setWalletConfirm] = useState<"enable" | "disable" | null>(null);
     const [planesWithoutRate, setPlanesWithoutRate] = useState<{ id: string; name: string; immatriculation: string }[]>([]);
 
-    // Modifications non enregistrées : comparaison avec le dernier état enregistré.
+    // Unsaved changes: compared with the last saved state.
     const snapshot = JSON.stringify({ config, walletEnabled, instructorRate });
     const [savedSnapshot, setSavedSnapshot] = useState(snapshot);
     const isDirty = snapshot !== savedSnapshot;
 
-    // Machines d'école du club sans tarif : la signature de leurs vols serait bloquée.
+    // Club training planes without a rate: signing their flights would be blocked.
     useEffect(() => {
         if (!walletEnabled || !currentClub?.id) return;
         getPlanes(currentClub.id).then((res) => {
@@ -189,7 +189,7 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
                 if (result.error) {
                     toast({ title: "Erreur", description: result.error, variant: "destructive" });
                 } else {
-                    // Le menu, le calendrier… lisent walletEnabled dans le contexte club.
+                    // The menu, the calendar… read walletEnabled from the club context.
                     setCurrentClub(prev => prev ? { ...prev, walletEnabled, instructorHourlyRateCents: rateCents } : prev);
                     emitWalletChanged();
                     setSavedSnapshot(snapshot);
@@ -219,7 +219,7 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
     const inputStyle = "bg-slate-50 border-slate-200 focus:ring-[#774BBE] focus:border-[#774BBE]";
     const subTitleStyle = "text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4";
 
-    // --- Contenu des sections ---
+    // --- Section contents ---
 
     const infosContent = (
         <div className="space-y-6">
@@ -578,7 +578,7 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
     return (
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-8">
 
-            {/* Menu des sections (ordinateur) */}
+            {/* Section menu (desktop) */}
             <nav aria-label="Sections des paramètres" className="hidden lg:sticky lg:top-40 lg:flex lg:w-64 lg:flex-shrink-0 lg:flex-col lg:gap-1">
                 {sections.map((s) => {
                     const active = s.id === desktopSection;
@@ -615,7 +615,7 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
                                 s.id !== desktopSection && "lg:hidden"
                             )}
                         >
-                            {/* En-tête repliable (téléphone) */}
+                            {/* Collapsible header (phone) */}
                             <button
                                 type="button"
                                 onClick={() => setOpenSection(open ? null : s.id)}
@@ -633,7 +633,7 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
                                 <ChevronDown className={cn("h-5 w-5 flex-shrink-0 text-slate-400 transition-transform", open && "rotate-180")} />
                             </button>
 
-                            {/* En-tête fixe (ordinateur) */}
+                            {/* Fixed header (desktop) */}
                             <div className="hidden items-center gap-3 border-b border-slate-100 px-6 py-4 lg:flex">
                                 <span className="rounded-lg bg-purple-50 p-2 text-[#774BBE]"><Icon className="h-5 w-5" /></span>
                                 <h2 className="text-lg font-semibold text-slate-800">{s.title}</h2>
@@ -646,8 +646,7 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
                     );
                 })}
 
-                {/* Barre d'enregistrement : dans le flux sur téléphone (le bouton de menu flottant
-                    occupe le bas de l'écran), collante en bas sur ordinateur. */}
+                {/* Save bar: in the flow on phones (the floating menu button takes the bottom of the screen), sticky at the bottom on desktop. */}
                 <div className="relative z-20 mt-2 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between lg:sticky lg:bottom-4">
                     <span className={cn("text-sm font-semibold", isDirty ? "text-amber-700" : "text-slate-500")}>
                         {isDirty ? "Modifications non enregistrées" : "Configuration à jour"}

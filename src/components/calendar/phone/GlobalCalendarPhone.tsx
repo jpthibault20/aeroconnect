@@ -18,9 +18,9 @@ interface Props {
     usersProps: User[]
 }
 
-// Nombre de mois affichés de part et d'autre du mois courant : le bandeau de jours
-// est une plage continue et bornée (les sessions sont déjà toutes en mémoire, donc
-// c'est purement du rendu). Slider traverse les mois sans "borne" de fin de mois.
+// Number of months shown on each side of the current month: the day strip is a
+// continuous, bounded range (all sessions are already in memory, so it is pure
+// rendering). Sliding crosses months without a month-end boundary.
 const MONTHS_RANGE = 12;
 
 // Helper function moved outside to be stable for useMemo
@@ -37,8 +37,8 @@ const addDays = (date: Date, days: number) => {
     return result;
 };
 
-// Les jours du bandeau sont générés à minuit : on normalise "aujourd'hui" de la même
-// façon pour que la date sélectionnée corresponde exactement à une entrée de la plage.
+// Strip days are generated at midnight: "today" is normalized the same way so
+// the selected date matches a range entry exactly.
 const startOfDay = (date: Date) => {
     const result = new Date(date);
     result.setHours(0, 0, 0, 0);
@@ -53,8 +53,8 @@ interface DayButtonProps {
     registerRef: (element: HTMLButtonElement | null, date: Date) => void;
 }
 
-// Bouton de jour mémoïsé : pendant un slide seule la sélection change, donc seuls
-// les 2 boutons concernés (ancien / nouveau jour au centre) se re-rendent réellement.
+// Memoized day button: during a slide only the selection changes, so only the 2
+// affected buttons (old / new centered day) actually re-render.
 const DayButton = React.memo(function DayButton({ date, isSelected, barColor, onSelect, registerRef }: DayButtonProps) {
     return (
         <button
@@ -94,23 +94,23 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
     const [selectedDate, setSelectedDate] = useState<Date>(() => startOfDay(new Date()));
 
-    // --- Refs de navigation du bandeau ---
+    // --- Strip navigation refs ---
     const scrollRef = useRef<HTMLDivElement>(null);
     const itemsRef = useRef<Map<string, HTMLButtonElement | null>>(new Map());
-    // Centres horizontaux (px, coordonnées de contenu) de chaque jour, mis en cache
-    // pour que la synchro au scroll soit du pur calcul (pas de reflow par frame).
+    // Horizontal centers (px, content coordinates) of each day, cached so the scroll
+    // sync is pure computation (no reflow per frame).
     const centersRef = useRef<number[]>([]);
     const rafRef = useRef<number | null>(null);
-    // Vrai pendant un défilement déclenché par le code (tap / flèches / "Auj.") :
-    // on n'écoute pas la sélection "live" tant que l'animation programmée n'est pas finie.
+    // True during a code-driven scroll (tap / arrows / "Today"): the "live" selection
+    // is ignored until the programmatic animation ends.
     const programmaticRef = useRef(false);
     const programmaticTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-    // Miroir de la clé sélectionnée pour comparer dans le handler de scroll sans closure périmée.
+    // Mirror of the selected key, compared in the scroll handler without a stale closure.
     const selectedKeyRef = useRef<string>(formatDateAsKey(selectedDate));
     const didInitRef = useRef(false);
     const initCheckTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Plage continue de jours autour d'aujourd'hui (bornée mais large).
+    // Continuous range of days around today (bounded but wide).
     const dates = useMemo<Date[]>(() => {
         const anchor = new Date();
         const start = new Date(anchor.getFullYear(), anchor.getMonth() - MONTHS_RANGE, 1);
@@ -141,7 +141,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         return grouped;
     }, [sessionsFlitered]);
 
-    // Couleur de pastille par jour, précalculée pour éviter de rescanner à chaque frame de slide.
+    // Dot color per day, precomputed to avoid rescanning on every slide frame.
     const barColorByKey = useMemo(() => {
         const map: Record<string, string | null> = {};
         for (const key in sessionsGroupedByDate) {
@@ -158,8 +158,8 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         return sessionsGroupedByDate[dateString] || [];
     };
 
-    // Préchargement en arrière-plan des baptêmes en attente du SEUL jour
-    // affiché : la popup d'un créneau les a alors déjà sous la main.
+    // Background prefetch of the pending discovery flights of the ONE displayed day:
+    // a slot's popup then already has them at hand.
     useBaptemePrefetch(useMemo(
         () => sessionsGroupedByDate[formatDateAsKey(selectedDate)] || [],
         [sessionsGroupedByDate, selectedDate]
@@ -185,8 +185,8 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         }
     }, []);
 
-    // Position de scroll (absolue, bornée) qui met le jour `key` au centre du bandeau.
-    // Renvoie null tant que le conteneur ou le bouton ne sont pas mesurables.
+    // Scroll position (absolute, clamped) that puts day `key` at the center of the
+    // strip. Returns null while the container or the button cannot be measured.
     const getCenterOffset = useCallback((key: string) => {
         const container = scrollRef.current;
         const el = itemsRef.current.get(key);
@@ -197,10 +197,10 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         return Math.min(Math.max(target, 0), max);
     }, []);
 
-    // Centre le jour `key` dans le bandeau (scroll limité au conteneur horizontal).
-    // On vise une position absolue plutôt qu'un delta : un scroll relatif calculé sur un
-    // conteneur pas encore stabilisé envoyait le bandeau à une extrémité de la plage
-    // (donc à ~1 an d'écart, sans jour sélectionné visible).
+    // Centers day `key` in the strip (scroll limited to the horizontal container).
+    // Targets an absolute position rather than a delta: a relative scroll computed on
+    // a not-yet-settled container sent the strip to one end of the range (~1 year
+    // off, with no selected day visible).
     const centerOnKey = useCallback((key: string, smooth: boolean) => {
         const container = scrollRef.current;
         const target = getCenterOffset(key);
@@ -217,7 +217,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         }
     }, [getCenterOffset]);
 
-    // Sélectionne un jour (met à jour l'état + éventuellement recentre le bandeau).
+    // Selects a day (updates state + optionally recenters the strip).
     const selectDate = useCallback((date: Date, opts?: { scroll?: boolean; smooth?: boolean }) => {
         const key = formatDateAsKey(date);
         if (key !== selectedKeyRef.current) {
@@ -227,8 +227,8 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         if (opts?.scroll) centerOnKey(key, opts.smooth ?? true);
     }, [centerOnKey]);
 
-    // Handler stable passé aux boutons de jour : indispensable pour que React.memo
-    // fasse son travail (sans ça, chaque frame de slide re-rendrait tous les jours).
+    // Stable handler passed to the day buttons: required for React.memo to work
+    // (otherwise every slide frame would re-render every day).
     const handleSelect = useCallback((date: Date) => {
         selectDate(date, { scroll: true, smooth: true });
     }, [selectDate]);
@@ -240,11 +240,11 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         return date;
     }, [dates]);
 
-    // Flèches jour (côtés du bandeau) : ±1 jour, puis recentrage.
+    // Day arrows (strip sides): ±1 day, then recenter.
     const goToPreviousDay = () => selectDate(clampToRange(addDays(selectedDate, -1)), { scroll: true, smooth: true });
     const goToNextDay = () => selectDate(clampToRange(addDays(selectedDate, 1)), { scroll: true, smooth: true });
 
-    // Flèches mois (en-tête) : saute au même quantième dans le mois cible (borné à sa fin de mois).
+    // Month arrows (header): jump to the same day of the target month (clamped to its end).
     const changeMonth = (increment: number) => {
         const target = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + increment, 1);
         const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
@@ -254,7 +254,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
 
     const goToToday = () => selectDate(startOfDay(new Date()), { scroll: true, smooth: true });
 
-    // Recalcule les centres en cache (après rendu / redimensionnement).
+    // Recomputes the cached centers (after render / resize).
     const recomputeCenters = useCallback(() => {
         centersRef.current = dates.map((d) => {
             const el = itemsRef.current.get(formatDateAsKey(d));
@@ -262,8 +262,8 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         });
     }, [dates]);
 
-    // Synchro "live" : pendant que l'utilisateur slide, le jour dont le centre est le plus
-    // proche du centre du bandeau devient le jour sélectionné (surlignage + mois + liste suivent).
+    // "Live" sync: while the user slides, the day whose center is closest to the
+    // strip's center becomes the selected day (highlight + month + list follow).
     const handleScroll = useCallback(() => {
         if (programmaticRef.current) return;
         if (rafRef.current !== null) return;
@@ -275,7 +275,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
 
             const center = container.scrollLeft + container.clientWidth / 2;
 
-            // Recherche binaire (centres croissants) du jour le plus proche du centre.
+            // Binary search (increasing centers) for the day closest to the center.
             let lo = 0;
             let hi = centers.length - 1;
             while (lo < hi) {
@@ -298,11 +298,10 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         });
     }, [dates]);
 
-    // Au montage : cache des centres + centrage instantané sur aujourd'hui.
-    // Le bandeau couvre ~2 ans de jours ; tant que le conteneur n'a pas sa largeur
-    // définitive (1er paint, polices, layout parent) le centrage tombe à côté. On
-    // réessaie donc frame par frame jusqu'à ce que la position visée soit atteinte,
-    // puis on revérifie une fois (le snap CSS peut recorriger après coup).
+    // On mount: cache the centers + instantly center on today. The strip covers ~2
+    // years of days; until the container has its final width (first paint, fonts,
+    // parent layout) the centering misses. So retry frame by frame until the target
+    // position is reached, then check once more (CSS snap may correct afterwards).
     useLayoutEffect(() => {
         recomputeCenters();
         if (didInitRef.current) return;
@@ -320,8 +319,8 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
 
                 if (Math.abs(container.scrollLeft - target) <= 2) {
                     didInitRef.current = true;
-                    // Filet de sécurité : si la mise en page bouge juste après (snap,
-                    // barre d'URL mobile), on recentre une dernière fois.
+                    // Safety net: if the layout shifts right after (snap, mobile URL bar), recenter
+                    // one last time.
                     initCheckTimeout.current = setTimeout(() => {
                         const finalTarget = getCenterOffset(selectedKeyRef.current);
                         const el = itemsRef.current.get(selectedKeyRef.current);
@@ -350,7 +349,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         return () => cancelAnimationFrame(raf);
     }, [recomputeCenters, centerOnKey, getCenterOffset]);
 
-    // Redimensionnement / rotation : on recalcule les centres et on recentre le jour sélectionné.
+    // Resize / rotation: recompute the centers and recenter the selected day.
     useEffect(() => {
         const onResize = () => {
             recomputeCenters();
@@ -360,7 +359,6 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
         return () => window.removeEventListener('resize', onResize);
     }, [recomputeCenters, centerOnKey]);
 
-    // Nettoyage.
     useEffect(() => () => {
         if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
         if (programmaticTimeout.current) clearTimeout(programmaticTimeout.current);
@@ -370,16 +368,15 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
     const selectedKey = formatDateAsKey(selectedDate);
 
     return (
-        // CONTENEUR PRINCIPAL : Hauteur fixe écran (100dvh) et pas de scroll global
+        // MAIN CONTAINER: fixed screen height (100dvh) and no global scroll
         <div className="flex flex-col w-full h-[100dvh] bg-slate-50 font-sans overflow-hidden">
 
-            {/* --- SECTION FIXE (HEADER + BANDEAU JOURS) --- */}
+            {/* --- FIXED SECTION (HEADER + DAY STRIP) --- */}
             <div className="flex-none bg-white z-20 shadow-sm relative">
 
-                {/* 1. HEADER: MOIS & NAVIGATION */}
                 <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3">
                     <div className="flex items-center justify-between mb-3">
-                        {/* Navigation Mois (synchronisée avec le jour au centre) */}
+                        {/* Month navigation (synced with the centered day) */}
                         <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
                             <Button
                                 variant="ghost"
@@ -402,7 +399,6 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
                             </Button>
                         </div>
 
-                        {/* Bouton Aujourd'hui */}
                         <Button
                             variant="outline"
                             size="sm"
@@ -414,7 +410,6 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
                         </Button>
                     </div>
 
-                    {/* --- TOOLBAR: ACTIONS --- */}
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex-1">
                             <Filter
@@ -440,7 +435,7 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
 
                 <CalendarWalletNotice className="px-4 py-2 bg-white" />
 
-                {/* 2. CALENDRIER HORIZONTAL (STRIP) — carrousel centré, slide continu inter-mois */}
+                {/* 2. HORIZONTAL CALENDAR (STRIP): centered carousel, continuous cross-month slide */}
                 <div className='bg-white border-b border-slate-100 py-3'>
                     <div className="flex items-center">
                         <button
@@ -480,11 +475,9 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
                 </div>
             </div>
 
-            {/* --- SECTION DÉFILANTE (LISTE DES SESSIONS) --- */}
-            {/* overflow-y-auto ici permet de scroller uniquement cette partie */}
+            {/* --- SCROLLING SECTION (SESSION LIST): only this part scrolls --- */}
             <div className="flex-1 overflow-y-auto pb-32 bg-slate-50">
                 <div className="flex flex-col min-h-full">
-                    {/* En-tête de date sélectionnée */}
                     <div className="px-6 py-5 flex items-center gap-4 sticky top-0 bg-slate-50 z-10">
                         <div className="h-px flex-1 bg-slate-200" />
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
@@ -493,7 +486,6 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
                         <div className="h-px flex-1 bg-slate-200" />
                     </div>
 
-                    {/* Liste */}
                     <div className="px-4 space-y-4 pb-4">
                         {getSessionsForDate(selectedDate).length > 0 ? (
                             getSessionsForDate(selectedDate).map((session, index) => (

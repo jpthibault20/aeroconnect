@@ -46,13 +46,13 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
     const [classes, setClasses] = useState<number[]>(user.classes);
     const [userState, setUserState] = useState<User>(user);
 
-    // Vérification des droits
+    // Rights check
     useEffect(() => {
         const canModify = ["ADMIN", "OWNER", "INSTRUCTOR", "MANAGER"].includes(currentUser?.role || "");
         setAutorisedModifyRole(canModify);
     }, [currentUser]);
 
-    // Synchro des classes
+    // Sync classes
     useEffect(() => {
         setUserState(prev => ({ ...prev, classes }));
     }, [classes]);
@@ -123,7 +123,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                 {/* --- Content Scrollable --- */}
                 <div className='p-6 space-y-8 overflow-y-auto'>
 
-                    {/* 1. Identité */}
+                    {/* 1. Identity */}
                     <div>
                         <span className={labelStyle}>Identité & Contact</span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -148,7 +148,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
 
                     <div className="h-px bg-slate-100 w-full" />
 
-                    {/* 2. Adresse (Pliable ou simplifié) */}
+                    {/* 2. Address */}
                     <div>
                         <span className={labelStyle}>Adresse</span>
                         <div className="space-y-3">
@@ -162,7 +162,7 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
 
                     <div className="h-px bg-slate-100 w-full" />
 
-                    {/* 3. Administration (Visible seulement pour Admin/Owner) */}
+                    {/* 3. Administration (Admin/Owner only) */}
                     <div>
                         <span className={labelStyle}>Administration</span>
                         <div className="space-y-4">
@@ -189,7 +189,6 @@ const UpdateUserComponent = ({ children, showPopup, setShowPopup, setUsers, user
                                 </Select>
                             </div>
 
-                            {/* Switches Design "Carte" */}
                             <div className="grid grid-cols-1 gap-3">
 
                                 {/* Restricted Switch */}

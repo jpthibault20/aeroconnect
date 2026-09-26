@@ -28,7 +28,7 @@ import {
 const ProfilePage = () => {
     const [loading, setLoading] = useState(false);
     const { currentUser } = useCurrentUser();
-    // Solde (AER-66) : pastille pour l'élève / le pilote, portefeuille activé.
+    // Balance (AER-66): badge for students / pilots, wallet enabled.
     const wallet = useWallet();
     const showBalance = wallet.enabled && isBookingGatedRole(currentUser?.role) && wallet.balanceCents != null;
     const [classes, setClasses] = useState<number[]>(currentUser?.classes || []);
@@ -89,7 +89,6 @@ const ProfilePage = () => {
     return (
         <div className="h-full w-full overflow-y-auto bg-slate-50 p-4 md:p-8 font-sans">
 
-            {/* Titre de page */}
             <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Mon Profil</h1>
@@ -97,38 +96,29 @@ const ProfilePage = () => {
                 </div>
             </div>
 
-            {/* Carte Principale */}
             <div className="w-full bg-white rounded-2xl shadow-[0_2px_15px_rgba(0,0,0,0.03)] border border-slate-200 overflow-hidden mb-10">
 
-                {/* --- HEADER VISUEL --- */}
                 <div className="relative bg-slate-50/50 p-8 md:p-10 border-b border-slate-100">
                     <div className="flex flex-col md:flex-row items-center gap-8">
 
-                        {/* --- AVATAR 100% INITIALES / DESIGN PREMIUM --- */}
                         <div className="relative group cursor-default select-none">
-                            {/* 1. Halo lumineux derrière (Glow) */}
                             <div className="absolute -inset-2 bg-[#774BBE] rounded-full blur-xl opacity-10 group-hover:opacity-20 transition duration-700"></div>
 
-                            {/* 2. Cercle Principal (Effet Verre Violet) */}
                             <div className="relative h-28 w-28 md:h-32 md:w-32 rounded-full flex items-center justify-center
                                 bg-gradient-to-br from-[#774BBE]/90 to-[#502c84]/80 backdrop-blur-md
                                 shadow-xl shadow-purple-200/40
                                 border-[6px] border-white ring-1 ring-slate-100
                                 overflow-hidden">
 
-                                {/* Reflet supérieur (Lumière) */}
                                 <div className="absolute -top-10 -left-10 w-full h-full bg-white/20 blur-2xl rotate-45"></div>
 
-                                {/* Reflet inférieur (Profondeur) */}
                                 <div className="absolute bottom-0 inset-x-0 h-1/3 bg-black/10 blur-md"></div>
 
-                                {/* Les Initiales : Grosses, Blanches, Nettes */}
                                 <span className="relative z-10 text-4xl md:text-5xl font-bold tracking-widest text-white drop-shadow-md" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
                                     {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
                                 </span>
                             </div>
 
-                            {/* 3. Badge de statut (Point Vert) */}
                             <div className="absolute bottom-2 right-2 z-20">
                                 <span className="relative flex h-6 w-6">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -136,7 +126,6 @@ const ProfilePage = () => {
                                 </span>
                             </div>
                         </div>
-                        {/* ------------------------------------------- */}
 
                         <div className="text-center md:text-left space-y-2">
                             <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
@@ -164,9 +153,7 @@ const ProfilePage = () => {
                 <form onSubmit={handleSubmit}>
                     <div className="p-6 md:p-10 grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-10">
 
-                        {/* Colonne Gauche */}
                         <div className="space-y-8">
-                            {/* Section Identité */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2">
                                     <UserIcon className="w-4 h-4 text-[#774BBE]" /> Identité
@@ -183,7 +170,6 @@ const ProfilePage = () => {
                                 </div>
                             </div>
 
-                            {/* Section Contact */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2">
                                     <Phone className="w-4 h-4 text-[#774BBE]" /> Contact
@@ -201,9 +187,7 @@ const ProfilePage = () => {
                             </div>
                         </div>
 
-                        {/* Colonne Droite */}
                         <div className="space-y-8">
-                            {/* Section Adresse */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2">
                                     <MapPin className="w-4 h-4 text-[#774BBE]" /> Adresse
@@ -230,7 +214,6 @@ const ProfilePage = () => {
                                 </div>
                             </div>
 
-                            {/* Section Qualifications */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2">
                                     <ShieldCheck className="w-4 h-4 text-[#774BBE]" /> Qualifications
@@ -247,7 +230,6 @@ const ProfilePage = () => {
                         </div>
                     </div>
 
-                    {/* Footer Actions */}
                     <div className="bg-slate-50 p-6 md:px-10 border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-between items-center gap-4">
                         <Button
                             variant="ghost"

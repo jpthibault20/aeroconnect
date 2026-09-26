@@ -1,44 +1,44 @@
 /**
- * Animation de chargement « avion qui décolle puis atterrit » (AER-70).
+ * "Plane taking off then landing" loading animation (AER-70).
  *
- * Tout ce qui décide de la trajectoire est ici, en fonctions pures du temps :
- * le composant (src/components/loader/) se contente de projeter une pose sur
- * le SVG. Deux loaders qui lisent la même horloge affichent donc exactement la
- * même image, ce qui permet de passer d'un loader à l'autre (loading.tsx →
- * Suspense → InitialLoading → chargement client) sans saut visible.
+ * Everything that decides the trajectory lives here, as pure functions of time:
+ * the component (src/components/loader/) only projects a pose onto the SVG. Two
+ * loaders reading the same clock therefore show exactly the same frame, which
+ * allows switching from one loader to another (loading.tsx → Suspense →
+ * InitialLoading → client loading) without a visible jump.
  *
- * Conventions :
- * - `altitude` va de 0 (roues sur la piste) à 1 (croisière) ;
- * - `pitch` est en degrés, négatif = nez haut (sens trigonométrique du SVG,
- *   l'avion regardant vers la droite) ;
- * - `speed` va de 0 (arrêt) à 1 (vitesse de croisière) ;
- * - `advance` est la position de l'avion dans le cadre : 0 au roulage, puis
- *   il avance quand il monte (la caméra le suit avec un léger retard).
+ * Conventions:
+ * - `altitude` goes from 0 (wheels on the runway) to 1 (cruise);
+ * - `pitch` is in degrees, negative = nose up (SVG's trigonometric direction,
+ *   with the plane facing right);
+ * - `speed` goes from 0 (stopped) to 1 (cruise speed);
+ * - `advance` is the plane's position in the frame: 0 while taxiing, then it
+ *   moves forward as it climbs (the camera follows with a slight lag).
  */
 
-/** Durée d'un cycle complet roulage → décollage → croisière → atterrissage. */
+/** Duration of a full taxi → takeoff → cruise → landing cycle. */
 export const CYCLE_MS = 5200;
-/** Atterrissage accéléré joué quand le chargement se termine en plein vol. */
+/** Accelerated landing played when loading ends mid-flight. */
 export const LANDING_MS = 700;
-/** Atterrissage plus court quand l'avion est déjà au sol (simple freinage). */
+/** Shorter landing when the plane is already on the ground (just braking). */
 export const GROUND_STOP_MS = 320;
-/** Fondu de sortie, une fois l'avion immobilisé. */
+/** Fade-out once the plane has stopped. */
 export const FADE_MS = 180;
 /**
- * Délai laissé à un loader suivant pour « reprendre le vol » avant de lancer
- * l'atterrissage (ex. loading.tsx qui cède la place à un Suspense imbriqué).
+ * Delay left for a following loader to "resume the flight" before starting the
+ * landing (e.g. loading.tsx giving way to a nested Suspense).
  */
 export const HANDOFF_GRACE_MS = 120;
 /**
- * Durée minimale d'affichage, atterrissage compris : même si le contenu est
- * prêt plus tôt, le loader reste 2 s (décollage puis atterrissage complets).
+ * Minimum display time, landing included: even if the content is ready earlier,
+ * the loader stays 2 s (full takeoff then landing).
  */
 export const MIN_DISPLAY_MS = 2000;
-/** Rotation des messages sous l'animation. */
+/** Rotation of the messages under the animation. */
 export const MESSAGE_INTERVAL_MS = 1800;
-/** Au-delà, un message rassure sur un chargement anormalement long. */
+/** Beyond this, a message reassures about an unusually long load. */
 export const SLOW_LOADING_MS = 8000;
-/** Vitesse de défilement de la piste à `speed = 1`, en unités SVG par ms. */
+/** Runway scroll speed at `speed = 1`, in SVG units per ms. */
 export const CRUISE_PX_PER_MS = 0.16;
 
 export const LOADING_MESSAGES = [
@@ -66,7 +66,7 @@ interface Keyframe {
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
-/** Smoothstep : dérivée nulle aux extrémités, donc raccords sans à-coup. */
+/** Smoothstep: zero derivative at both ends, so seamless joins. */
 const smoothstep = (x: number) => {
     const k = clamp01(x);
     return k * k * (3 - 2 * k);
@@ -74,7 +74,7 @@ const smoothstep = (x: number) => {
 
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 
-/** Interpolation lissée entre clés triées ; la première clé est à 0, la dernière à 1. */
+/** Smoothed interpolation between sorted keys; the first key is at 0, the last at 1. */
 function sample(keys: readonly Keyframe[], t: number): number {
     for (let i = 1; i < keys.length; i++) {
         if (t <= keys[i].t) {
@@ -86,31 +86,30 @@ function sample(keys: readonly Keyframe[], t: number): number {
     return keys[keys.length - 1].v;
 }
 
-// Les clés en 0 et en 1 sont identiques : le cycle boucle sans raccord.
-// Le décollage est volontairement tôt dans le cycle : sur un affichage
-// minimal (MIN_DISPLAY_MS), l'avion a nettement pris de la hauteur avant
-// d'atterrir.
+// The keys at 0 and 1 are identical: the cycle loops seamlessly. Takeoff is
+// deliberately early in the cycle: on a minimal display (MIN_DISPLAY_MS) the
+// plane has clearly climbed before landing.
 const ALTITUDE: readonly Keyframe[] = [
     { t: 0, v: 0 },
-    { t: 0.1, v: 0 }, // roulage
-    { t: 0.3, v: 1 }, // montée
-    { t: 0.6, v: 1 }, // croisière
-    { t: 0.845, v: 0 }, // descente + arrondi, toucher des roues
-    { t: 1, v: 0 }, // décélération
+    { t: 0.1, v: 0 }, // taxi
+    { t: 0.3, v: 1 }, // climb
+    { t: 0.6, v: 1 }, // cruise
+    { t: 0.845, v: 0 }, // descent + flare, touchdown
+    { t: 1, v: 0 }, // deceleration
 ];
 
 const PITCH: readonly Keyframe[] = [
     { t: 0, v: 0 },
     { t: 0.06, v: 0 },
-    { t: 0.11, v: -11 }, // rotation sur le train principal
+    { t: 0.11, v: -11 }, // rotation on the main gear
     { t: 0.23, v: -8 },
     { t: 0.33, v: 0 },
     { t: 0.6, v: 0 },
-    { t: 0.67, v: 3 }, // descente, léger piqué
+    { t: 0.67, v: 3 }, // descent, slight nose down
     { t: 0.79, v: 2 },
-    { t: 0.845, v: -5 }, // arrondi
+    { t: 0.845, v: -5 }, // flare
     { t: 0.9, v: -4 },
-    { t: 0.94, v: 0 }, // la roulette avant se pose
+    { t: 0.94, v: 0 }, // nose wheel touches down
     { t: 1, v: 0 },
 ];
 
@@ -127,7 +126,7 @@ const cycleProgress = (elapsedMs: number) => {
     return p < 0 ? p + 1 : p;
 };
 
-/** Pose de l'avion à un instant du cycle (`progress` dans [0, 1[). */
+/** Plane pose at a point of the cycle (`progress` in [0, 1[). */
 export function cyclePose(progress: number): FlightPose {
     const t = clamp01(progress);
     const altitude = sample(ALTITUDE, t);
@@ -139,13 +138,13 @@ export function cyclePose(progress: number): FlightPose {
     };
 }
 
-/** Pose après `elapsedMs` de vol, cycles enchaînés. */
+/** Pose after `elapsedMs` of flight, cycles chained. */
 export function flightPose(elapsedMs: number): FlightPose {
     return cyclePose(cycleProgress(Math.max(0, elapsedMs)));
 }
 
-// Distance parcourue le long d'un cycle, intégrée une fois pour toutes :
-// le défilement de la piste et des nuages ne dépend ainsi que du temps écoulé.
+// Distance traveled along a cycle, integrated once and for all: the runway and
+// cloud scrolling thus only depends on elapsed time.
 const DISTANCE_SAMPLES = 512;
 const CYCLE_DISTANCE_TABLE: number[] = (() => {
     const table = [0];
@@ -159,7 +158,7 @@ const CYCLE_DISTANCE_TABLE: number[] = (() => {
 })();
 const CYCLE_DISTANCE = CYCLE_DISTANCE_TABLE[DISTANCE_SAMPLES];
 
-/** Distance (unités SVG) parcourue après `elapsedMs` de vol. */
+/** Distance (SVG units) traveled after `elapsedMs` of flight. */
 export function flightDistance(elapsedMs: number): number {
     const elapsed = Math.max(0, elapsedMs);
     const cycles = Math.floor(elapsed / CYCLE_MS);
@@ -171,30 +170,30 @@ export function flightDistance(elapsedMs: number): number {
 
 const isAirborne = (pose: FlightPose) => pose.altitude > 0.02;
 
-/** Durée de l'atterrissage accéléré depuis une pose donnée. */
+/** Duration of the accelerated landing from a given pose. */
 export function landingDuration(from: FlightPose): number {
     return isAirborne(from) ? LANDING_MS : GROUND_STOP_MS;
 }
 
-/** Instant du toucher des roues dans l'atterrissage (0 si l'avion roule déjà). */
+/** Touchdown point within the landing (0 if the plane is already taxiing). */
 const touchdownAt = (from: FlightPose) => (isAirborne(from) ? 0.6 : 0);
 
 /**
- * Avance de l'avion dans le cadre pendant l'atterrissage : la caméra cesse de
- * le suivre, il continue donc vers l'avant en ralentissant jusqu'à l'arrêt.
- * Jamais de recul, quelle que soit l'altitude perdue.
+ * Plane advance in the frame during landing: the camera stops following it, so
+ * it keeps moving forward while slowing down to a stop. Never backwards, however
+ * much altitude is lost.
  */
 const LANDING_ADVANCE = 0.7;
 
 /**
- * Atterrissage accéléré depuis n'importe quelle pose (`k` dans [0, 1]) :
- * approche à vitesse constante, arrondi (vitesse verticale nulle au toucher,
- * léger cabré), puis freinage une fois les roues au sol jusqu'à l'arrêt.
+ * Accelerated landing from any pose (`k` in [0, 1]): constant-speed approach,
+ * flare (zero vertical speed at touchdown, slight nose up), then braking once the
+ * wheels are on the ground until it stops.
  */
 export function landingPose(from: FlightPose, k: number): FlightPose {
     const x = clamp01(k);
     const touch = touchdownAt(from);
-    // Plein régime jusqu'au toucher, puis freinage progressif.
+    // Full power until touchdown, then progressive braking.
     const speed = from.speed * (1 - smoothstep((x - touch) / (1 - touch)));
     const advance = from.advance + LANDING_ADVANCE * (1 - (1 - x) * (1 - x));
     if (!isAirborne(from)) {
@@ -213,25 +212,25 @@ export function landingPose(from: FlightPose, k: number): FlightPose {
     return { altitude, pitch, speed, advance };
 }
 
-/** Distance parcourue pendant l'atterrissage (intégrale exacte de `speed`). */
+/** Distance traveled during landing (exact integral of `speed`). */
 export function landingDistance(from: FlightPose, k: number): number {
     const x = clamp01(k);
     const touch = touchdownAt(from);
     const scale = from.speed * CRUISE_PX_PER_MS * landingDuration(from);
     if (x <= touch) return scale * x;
-    // ∫ (1 - smoothstep(u)) du = u - u³ + u⁴/2, avec u = (x - touch) / (1 - touch).
+    // ∫ (1 - smoothstep(u)) du = u - u³ + u⁴/2, with u = (x - touch) / (1 - touch).
     const u = (x - touch) / (1 - touch);
     return scale * (touch + (1 - touch) * (u - u ** 3 + u ** 4 / 2));
 }
 
-/** Index du message à afficher après `elapsedMs` de chargement. */
+/** Index of the message to show after `elapsedMs` of loading. */
 export function messageIndex(elapsedMs: number): number {
     const step = Math.floor(Math.max(0, elapsedMs) / MESSAGE_INTERVAL_MS);
     return step % LOADING_MESSAGES.length;
 }
 
 // ---------------------------------------------------------------------------
-// Coordination entre loaders
+// Coordination between loaders
 // ---------------------------------------------------------------------------
 
 export interface LoaderRect {
@@ -243,7 +242,7 @@ export interface LoaderRect {
 
 export type LoaderVariant = "page" | "inline";
 
-/** Ce qu'un loader visible transmet en se démontant, pour que l'atterrissage se joue à sa place. */
+/** What a visible loader hands over when unmounting, so the landing plays in its place. */
 export interface LoaderSnapshot {
     rect: LoaderRect;
     background: string;
@@ -254,31 +253,31 @@ export interface LoaderSnapshot {
 export interface Handoff extends LoaderSnapshot {
     id: number;
     /**
-     * Élément parent du loader. S'il quitte le DOM (dialogue fermé, navigation
-     * ailleurs), l'atterrissage n'a plus de sens et s'arrête aussitôt.
+     * Parent element of the loader. If it leaves the DOM (dialog closed, navigated
+     * elsewhere), the landing no longer makes sense and stops immediately.
      */
     anchor: Element | null;
-    /** Début du vol (horloge partagée), pour poursuivre le cycle sans saut. */
+    /** Flight start (shared clock), to continue the cycle without a jump. */
     startedAt: number;
-    /** Instant où l'atterrissage commence, si aucun loader n'a repris le vol d'ici là. */
+    /** Instant the landing starts, unless a loader resumes the flight before then. */
     landingAt: number;
 }
 
 export interface FlightCoordinator {
-    /** Un loader apparaît : reprend le vol en cours s'il y en a un, sinon en démarre un. */
+    /** A loader appears: resumes the ongoing flight if any, otherwise starts one. */
     join(): { startedAt: number; continuing: boolean };
     /**
-     * Un loader disparaît. `snapshot` vaut null s'il n'était pas affiché
-     * (élément de taille nulle) : le vol s'arrête alors sans animation.
-     * Sinon l'atterrissage est programmé, jamais avant MIN_DISPLAY_MS.
+     * A loader disappears. `snapshot` is null if it was not displayed (zero-size
+     * element): the flight then stops without animation. Otherwise the landing is
+     * scheduled, never before MIN_DISPLAY_MS.
      */
     leave(snapshot: LoaderSnapshot | null, anchor?: Element | null): void;
-    /** Vrai si un vol est en cours (loader affiché ou atterrissage en attente). */
+    /** True if a flight is in progress (loader shown or landing pending). */
     isFlying(): boolean;
-    /** Début du vol en cours (horloge partagée), null hors chargement. */
+    /** Start of the ongoing flight (shared clock), null outside loading. */
     getStartedAt(): number | null;
     getHandoff(): Handoff | null;
-    /** L'atterrissage est terminé : le vol est clos. */
+    /** The landing is over: the flight is closed. */
     finishHandoff(id: number): void;
     subscribe(listener: () => void): () => void;
 }
@@ -302,7 +301,7 @@ export function createFlightCoordinator(
             const continuing = startedAt !== null && (active > 0 || handoff !== null);
             if (!continuing) startedAt = now();
             active++;
-            // Un loader reprend le vol : l'atterrissage prévu est annulé.
+            // A loader resumes the flight: the scheduled landing is cancelled.
             const cancelled = handoff !== null;
             handoff = null;
             if (!continuing || cancelled) notify();
@@ -312,7 +311,7 @@ export function createFlightCoordinator(
             active = Math.max(0, active - 1);
             if (active > 0) return;
             if (snapshot && startedAt !== null) {
-                // L'atterrissage (LANDING_MS) se termine au plus tôt à MIN_DISPLAY_MS.
+                // The landing (LANDING_MS) ends at MIN_DISPLAY_MS at the earliest.
                 const earliestLanding = startedAt + minDisplayMs - LANDING_MS;
                 handoff = {
                     ...snapshot,

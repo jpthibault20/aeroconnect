@@ -13,7 +13,7 @@ import { TaskInput } from "@/schemas/maintenance";
 interface Props {
     planeID: string;
     currentHobbs: number | null;
-    // Rappel à éditer ; absent => création.
+    // Reminder to edit; absent => creation.
     task?: MaintenanceTask;
     onSaved: (task: MaintenanceTask) => void;
     onCancel: () => void;

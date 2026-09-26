@@ -47,7 +47,6 @@ interface SessionStats {
     totalSessions: number;
 }
 
-// Interface pour le composant interne TimeSelect pour éviter les 'any'
 interface TimeSelectProps {
     value: string;
     onChange: (value: string) => void;
@@ -59,7 +58,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
     const { currentUser } = useCurrentUser()
     const { currentClub } = useCurrentClub()
 
-    // --- States Logic ---
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
     const [isOpenPopover, setIsPopoverOpen] = useState(false)
@@ -84,13 +82,12 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         planeId: planesProp.map(plane => plane.id),
         classes: Array.from(new Set(planesProp.map(plane => plane.classes))),
         comment: "",
-        // Visible par défaut sur le lien public de réservation baptême (cf.
-        // src/lib/bapteme.ts) : un vol créé sans y toucher doit pouvoir être
-        // pris par un client externe, désactivable via le switch.
+        // Visible by default on the public discovery-flight booking link (see
+        // src/lib/bapteme.ts): a flight created without touching it must be bookable by
+        // an external customer; can be turned off with the switch.
         natureOfTheft: natureOfTheftForBapteme(true)
     });
 
-    // --- Effects ---
     useEffect(() => {
         if (currentUser?.role === userRole.ADMIN) {
             setInstructors(usersProps.filter(user => user.role === userRole.INSTRUCTOR || user.role === userRole.OWNER || user.role === userRole.ADMIN))
@@ -135,8 +132,8 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         setSessionData(prev => ({ ...prev, endHour: String(endTime.getHours()), endMinute: endTime.getMinutes() === 0 ? "00" : String(endTime.getMinutes()) }))
     }, [sessionData.duration, sessionData.startHour, sessionData.startMinute])
 
-    // Machines avec une maintenance en retard (AER-43) : rechargées à chaque
-    // ouverture pour refléter une intervention saisie entre-temps.
+    // Planes with overdue maintenance (AER-43): reloaded on every open to reflect an
+    // intervention entered in the meantime.
     useEffect(() => {
         if (!isOpenPopover || !currentUser?.clubID) return
         let cancelled = false
@@ -147,7 +144,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
     }, [isOpenPopover, currentUser?.clubID])
 
 
-    // --- Helpers ---
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR) || currentUser?.role.includes(userRole.MANAGER))) {
         return null
     }
@@ -245,8 +241,8 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         });
     };
 
-    // Le créneau baptême est porté par le seul marqueur DISCOVERY dans
-    // natureOfTheft : c'est lui que le lien public interroge (cf. api/db/bapteme).
+    // The discovery-flight slot is carried solely by the DISCOVERY marker in
+    // natureOfTheft: that is what the public link queries (see api/db/bapteme).
     const toggleBapteme = (checked: boolean) => {
         setSessionData(prev => ({
             ...prev,
@@ -256,7 +252,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
 
     const onConfirm = async () => {
         setLoading(true);
-        setError(""); // Reset error
+        setError("");
         let successNewSessions = 0;
 
         if (!sessionData.date) {
@@ -271,11 +267,10 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         }
 
         try {
-            // « Tout sélectionner » : on stocke un marqueur résolu dynamiquement
-            // à la lecture plutôt que la liste figée des avions du moment, pour
-            // qu'une machine créée après coup soit proposée sur ce créneau (y
-            // compris sur les occurrences déjà créées d'une série récurrente).
-            // Un sous-ensemble choisi délibérément par l'instructeur reste figé.
+            // "Select all": store a marker resolved dynamically on read rather than the
+            // current fixed list of planes, so a plane created later is offered on this slot
+            // (including already created occurrences of a recurring series). A subset picked
+            // deliberately by the instructor stays fixed.
             const basePlaneIds = allPlanesSelected ? [ALL_CLUB_PLANES_SENTINEL] : sessionData.planeId;
             const finalSessionData = {
                 ...sessionData,
@@ -328,8 +323,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         }
     };
 
-    // --- Render Components Helper ---
-    // Composant pour l'affichage propre des selects de temps, typé correctement
     const TimeSelect = ({ value, onChange, options, placeholder }: TimeSelectProps) => (
         <Select value={value} onValueChange={onChange}>
             <SelectTrigger className="w-[70px] border-none shadow-none focus:ring-0 bg-transparent px-1 justify-center font-medium text-slate-700">
@@ -358,9 +351,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                 )}
             </DialogTrigger>
 
-            {/* Mobile: w-[95%] pour ne pas toucher les bords, max-w-[600px] pour desktop */}
             <DialogContent className="w-[95%] sm:max-w-[600px] max-h-[85vh] p-0 gap-0 bg-white rounded-xl sm:rounded-2xl border-none shadow-2xl flex flex-col">
-                {/* Header fixe */}
                 <div className="bg-slate-50 p-4 sm:p-6 border-b border-slate-100 flex-shrink-0 rounded-t-xl sm:rounded-t-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -375,14 +366,11 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                     </DialogHeader>
                 </div>
 
-                {/* Contenu scrollable */}
                 <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 overflow-y-auto flex-grow">
-                    {/* Section 1: Qui et Quand */}
                     <div className="space-y-4">
                         <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2 sm:mb-3">Détails du vol</h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Instructeur */}
                             <div className="space-y-2">
                                 <Label className="text-slate-600 flex items-center gap-2 text-sm">
                                     <UserIcon className="w-4 h-4" /> Instructeur
@@ -410,7 +398,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                                 </Select>
                             </div>
 
-                            {/* Date */}
                             <div className="space-y-2 flex flex-col">
                                 <Label className="text-slate-600 flex items-center gap-2 text-sm">
                                     <CalendarIcon className="w-4 h-4" /> Date
@@ -437,12 +424,10 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                             </div>
                         </div>
 
-                        {/* Horaires - Bloc unifié et responsive */}
                         <div className="space-y-2">
                             <Label className="text-slate-600 flex items-center gap-2 text-sm">
                                 <Clock className="w-4 h-4" /> Créneau horaire
                             </Label>
-                            {/* Mobile: flex-col, Desktop: flex-row */}
                             <div className="flex flex-col sm:flex-row items-center justify-between p-2 sm:p-1 bg-slate-50 border border-slate-200 rounded-lg gap-3 sm:gap-0">
                                 <div className="flex items-center w-full sm:w-auto justify-center">
                                     <span className="text-xs text-slate-400 mr-2 sm:hidden">Début</span>
@@ -459,7 +444,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                                     />
                                 </div>
 
-                                {/* Flèche responsive: Bas sur mobile, Droite sur desktop */}
                                 <ArrowRight className="text-slate-300 w-4 h-4 hidden sm:block" />
                                 <ArrowDown className="text-slate-300 w-4 h-4 block sm:hidden" />
 
@@ -483,7 +467,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
 
                     <div className="h-px bg-slate-100 w-full" />
 
-                    {/* Section 2: Contexte et Appareils */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">Ressources</h3>
@@ -512,7 +495,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                                         {allPlanesSelected ? "Tout désélectionner" : "Tout sélectionner"}
                                     </Button>
                                 </div>
-                                {/* Grid responsive: 2 colonnes sur mobile, 3 sur desktop */}
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                     {planesProp?.map((plane) => {
                                         const isSelected = sessionData.planeId.includes(plane.id);
@@ -594,7 +576,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
 
                     <div className="h-px bg-slate-100 w-full" />
 
-                    {/* Section 3: Options avancées */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
                             <Switch
@@ -660,7 +641,6 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                     </div>
                 </div>
 
-                {/* Footer fixe */}
                 <div className="bg-slate-50 p-4 sm:p-6 border-t border-slate-100 flex flex-col gap-4 flex-shrink-0 rounded-b-xl sm:rounded-b-2xl">
                     {error && (
                         <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-md text-sm">

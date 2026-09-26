@@ -10,8 +10,8 @@ import { canSwitchClub } from '@/lib/clubAccess';
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
-// Avertissement (non bloquant) quand la gestion inscrit un élève / pilote dont
-// le solde est nul ou négatif, portefeuille activé (AER-66).
+// Non-blocking warning when management books a student / pilot whose balance is
+// zero or negative, with the wallet enabled (AER-66).
 async function walletBookingWarning(memberID: string, clubID: string | null): Promise<string | null> {
     if (!clubID) return null;
     const [club, member, wallet] = await Promise.all([
@@ -19,7 +19,7 @@ async function walletBookingWarning(memberID: string, clubID: string | null): Pr
         prisma.user.findUnique({ where: { id: memberID }, select: { clubID: true, role: true, firstName: true, lastName: true } }),
         prisma.wallet.findUnique({ where: { clubID_userID: { clubID, userID: memberID } }, select: { balanceCents: true } }),
     ]);
-    // Décision pure et testée (cf. managerBookingWarning dans src/lib/wallet.ts).
+    // Pure, tested decision (see managerBookingWarning in src/lib/wallet.ts).
     return managerBookingWarning({
         walletEnabled: !!club?.walletEnabled,
         clubID,
@@ -100,7 +100,6 @@ export const getAllUser = async (clubID: string) => {
 
 }
 
-// récupération de la session de l'utilisateur
 export const getSession = async () => {
     const supabase = await createClient()
     try {
@@ -159,7 +158,7 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
     }
 
     try {
-        // Étape 1 : Charger les données critiques
+        // Step 1: load the critical data
         const [session, plane] = await Promise.all([
             prisma.flight_sessions.findUnique({
                 where: { id: sessionID },
@@ -176,7 +175,6 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             })
         ]);
 
-        // Vérifications critiques
         if (!session) {
             return { error: "Session introuvable." };
         }
@@ -185,8 +183,8 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             return { error: "Permissions insuffisantes." };
         }
 
-        // Un créneau tenu par une demande de baptême en attente ne peut pas être
-        // attribué à un élève / invité tant que le hold n'est pas levé.
+        // A slot held by a pending discovery-flight request cannot be given to a
+        // student / guest until the hold is released.
         const holdState = await resolveBaptemeHold(sessionID);
         if (holdState.held) {
             return { error: "Ce créneau est réservé pour un baptême en attente de validation." };
@@ -196,10 +194,10 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             return { error: "L'avion est désactivé par l'administrateur du club." };
         }
 
-        // Défense en profondeur, symétrique de studentRegistration : la machine
-        // est validée du point de vue de l'ÉLÈVE inscrit, pas du gestionnaire qui
-        // saisit. Une machine privée n'est donc attribuable qu'à son propriétaire
-        // — et un invité externe (pas de compte) n'a droit qu'aux machines club.
+        // Defense in depth, symmetric with studentRegistration: the plane is validated
+        // from the booked STUDENT's point of view, not the manager entering it. A private
+        // plane can therefore only go to its owner, and an external guest (no account)
+        // only gets club planes.
         if (plane && isPrivatePlane(plane)) {
             const beneficiary = await prisma.user.findUnique({ where: { id: student.id } });
             if (!beneficiary || !canViewPlane(plane, beneficiary)) {
@@ -211,7 +209,7 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             return { error: "La date de la session est passée." };
         }
 
-        // Étape 2 : Mise à jour rapide de la session
+        // Step 2: update the session
         await prisma.flight_sessions.update({
             where: { id: sessionID },
             data: {
@@ -224,7 +222,7 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             },
         });
 
-        // Portefeuille : inscription autorisée même à solde ≤ 0, mais on prévient.
+        // Wallet: booking is allowed even with a balance ≤ 0, but a warning is returned.
         const warning = await walletBookingWarning(student.id, auth.user.clubID);
 
         return { success: "L'élève a été ajouté au vol !", ...(warning && { warning }) };

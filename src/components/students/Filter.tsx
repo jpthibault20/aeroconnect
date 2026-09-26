@@ -16,7 +16,6 @@ interface Props {
     handle: (value: userRole | 'all') => void;
 }
 
-// Configuration des labels pour éviter les répétitions
 const roleOptions: { value: userRole | 'all'; label: string }[] = [
     { value: 'all', label: 'Tous les membres' },
     { value: 'OWNER', label: 'Président' },
@@ -28,7 +27,6 @@ const roleOptions: { value: userRole | 'all'; label: string }[] = [
 
 const Filter = ({ roleFilter, handle }: Props) => {
 
-    // Trouver le label actif pour l'afficher dans le bouton
     const activeLabel = roleOptions.find(r => r.value === roleFilter)?.label;
 
     return (
@@ -38,7 +36,7 @@ const Filter = ({ roleFilter, handle }: Props) => {
                     variant="outline"
                     className={cn(
                         "w-full sm:w-[180px] justify-between bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900",
-                        roleFilter !== 'all' && "border-[#774BBE] text-[#774BBE] bg-purple-50 hover:bg-purple-100" // Style actif
+                        roleFilter !== 'all' && "border-[#774BBE] text-[#774BBE] bg-purple-50 hover:bg-purple-100"
                     )}
                 >
                     <div className="flex items-center gap-2 truncate">
@@ -53,7 +51,7 @@ const Filter = ({ roleFilter, handle }: Props) => {
                 {roleOptions.map((option, index) => {
                     const isSelected = roleFilter === option.value;
 
-                    // Ajout d'un séparateur après "Tous les membres" pour la clarté
+                    // Separator after "All members" for clarity
                     if (index === 1) {
                         return (
                             <React.Fragment key={option.value}>

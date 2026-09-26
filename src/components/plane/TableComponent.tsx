@@ -17,20 +17,19 @@ interface Props {
 const TableComponent = ({ planes, setPlanes, ownerNames, onOwnerNameResolved, overduePlaneIDs }: Props) => {
     const { currentUser } = useCurrentUser();
 
-    // Président (OWNER) et admin voient toutes les machines du club : on leur
-    // indique le propriétaire de chaque machine (colonne dédiée).
+    // President (OWNER) and admin see every club plane: they are shown each plane's
+    // owner (dedicated column).
     const canViewOwner =
         currentUser?.role === userRole.OWNER ||
         currentUser?.role === userRole.ADMIN;
 
-    // La colonne "Actions" s'affiche dès que l'utilisateur peut gérer au moins
-    // une machine de la liste (une machine club s'il est gestionnaire, ou sa
-    // propre machine privée).
+    // The "Actions" column shows as soon as the user can manage at least one plane
+    // in the list (a club plane if management, or their own private plane).
     const canManage = !!currentUser &&
         !!planes?.some((p) => canManagePlane(p, currentUser));
 
-    // La colonne « Actions » apparaît aussi pour les accès maintenance (ex. un
-    // instructeur voit la maintenance des machines club sans pouvoir gérer l'avion).
+    // The "Actions" column also shows for maintenance access (e.g. an instructor sees
+    // club planes' maintenance without being able to manage the plane).
     const canShowActions = !!currentUser &&
         !!planes?.some((p) => canManagePlane(p, currentUser) || canAccessMaintenance(p, currentUser));
 
@@ -42,64 +41,53 @@ const TableComponent = ({ planes, setPlanes, ownerNames, onOwnerNameResolved, ov
         currentUser?.role === userRole.PILOT ||
         currentUser?.role === userRole.INSTRUCTOR;
 
-    // Style standardisé pour les headers. Le fond est porté par les cellules ET
-    // par le <thead> : un thead sticky en border-collapse ne peint pas toujours
-    // son propre fond selon le navigateur.
+    // Standard header style. The background is set on the cells AND the <thead>: a
+    // sticky thead with border-collapse does not always paint its own background,
+    // depending on the browser.
     const headerClass = "text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 bg-slate-100";
 
     return (
         <div className="flex flex-col h-full">
-            {/* Conteneur scrollable avec la même logique que les vols */}
             <div className="relative w-full overflow-auto rounded-b-2xl">
 
                 <Table className="w-full text-sm text-left border-collapse">
-                    {/* Sticky Header : Reste en haut au scroll */}
+                    {/* Sticky header: stays on top while scrolling */}
                     <TableHeader className="sticky top-0 z-10 bg-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                        {/* Trait de 2px : il doit se lire différemment des
-                            séparateurs de lignes (1px), sinon l'en-tête se fond
-                            dans le contenu. Pas de hover : un en-tête n'est pas
-                            cliquable et s'éclaircissait au survol. */}
+                        {/* 2px rule: it must read differently from the row separators (1px), otherwise the header blends into the content. No hover: a header is not clickable and used to lighten on hover. */}
                         <TableRow className="border-b-2 border-slate-300 hover:bg-transparent">
 
-                            {/* Colonne Icône (Visuel) */}
                             <TableHead className={`${headerClass} w-[50px] text-center`}>
                             </TableHead>
 
-                            {/* Colonne Nom */}
                             <TableHead className={`${headerClass} pl-4`}>
                                 Nom
                             </TableHead>
 
-                            {/* Colonne Propriétaire (président/admin uniquement) */}
+                            {/* Owner column (president/admin only) */}
                             {canViewOwner && (
                                 <TableHead className={`${headerClass} pl-4`}>
                                     Propriétaire
                                 </TableHead>
                             )}
 
-                            {/* Colonne Immatriculation */}
                             <TableHead className={`${headerClass} text-center`}>
                                 Immatriculation
                             </TableHead>
 
-                            {/* Colonne Classe */}
                             <TableHead className={`${headerClass} text-center hidden sm:table-cell`}>
                                 Classe
                             </TableHead>
 
-                            {/* Colonne Heures moteur */}
                             <TableHead className={`${headerClass} text-center hidden sm:table-cell`}>
                                 Heures moteur
                             </TableHead>
 
-                            {/* Colonne État */}
                             {canViewStatus && (
                                 <TableHead className={`${headerClass} text-center`}>
                                     État
                                 </TableHead>
                             )}
 
-                            {/* Colonne Actions */}
                             {canShowActions && (
                                 <TableHead className={`${headerClass} text-right pr-6`}>
                                 </TableHead>
@@ -107,16 +95,12 @@ const TableComponent = ({ planes, setPlanes, ownerNames, onOwnerNameResolved, ov
                         </TableRow>
                     </TableHeader>
 
-                    {/* Pas de `divide-y` ici : TableRow porte déjà `border-b` et
-                        TableBody neutralise celui de la dernière ligne. Cumuler les
-                        deux mécanismes donnait un seul séparateur visible (celui de
-                        la 1re ligne), les suivants passant en border-top slate-100
-                        quasi invisible. Même réglage que la page Vols. */}
+                    {/* No `divide-y` here: TableRow already has `border-b` and TableBody removes the last row's. Combining both left a single visible separator (the first row's), the others turning into a nearly invisible slate-100 border-top. Same setup as the Flights page. */}
                     <TableBody className="bg-white">
                         {planes && planes.length > 0 ? (
                             planes.map((plane, index) => (
                                 <TableRowComponent
-                                    key={plane.id || index} // Préférer l'ID si dispo, sinon index
+                                    key={plane.id || index}
                                     plane={plane}
                                     planes={planes}
                                     setPlanes={setPlanes}
@@ -127,7 +111,6 @@ const TableComponent = ({ planes, setPlanes, ownerNames, onOwnerNameResolved, ov
                                 />
                             ))
                         ) : (
-                            // État vide (Empty State)
                             <TableRow>
                                 <td colSpan={8} className="h-32 text-center text-slate-400 bg-slate-50/50">
                                     <div className="flex flex-col items-center justify-center gap-2">

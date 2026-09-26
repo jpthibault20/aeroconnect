@@ -73,8 +73,8 @@ interface FormData {
     movements: number;
     instructorID: string;
     studentID: string;
-    // Mode "passager externe" (uniquement pour BAPTÊME) : si studentMode === "external",
-    // on ignore studentID et on lit les 3 champs ci-dessous à la place.
+    // "External passenger" mode (DISCOVERY FLIGHT only): if studentMode ===
+    // "external", studentID is ignored and the 3 fields below are read instead.
     studentMode: "club" | "external";
     externalFirstName: string;
     externalLastName: string;
@@ -93,38 +93,38 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
     const { currentClub } = useCurrentClub();
     const canEditHobbsStart =
         currentUser?.role === userRole.OWNER || currentUser?.role === userRole.ADMIN;
-    // Saisie pour le compte d'un autre pilote / élève : réservé au président
-    // (OWNER) et à l'admin. Cas d'usage : un élève ne peut pas saisir ses heures
-    // (bug sur son app), un responsable le fait à sa place. L'entrée est créée
-    // NON signée — seul le pilote concerné pourra la signer depuis son carnet.
+    // Entry on behalf of another pilot / student: president (OWNER) and admin only.
+    // Use case: a student cannot enter their hours (their app is broken), a manager
+    // does it for them. The entry is created UNSIGNED: only the pilot concerned can
+    // sign it from their logbook.
     const canActForOthers =
         currentUser?.role === userRole.OWNER || currentUser?.role === userRole.ADMIN;
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [signing, setSigning] = useState(false);
     const [hobbsStartUnlocked, setHobbsStartUnlocked] = useState(false);
-    // Compteur de la machine inconnu (jamais loguée) : la première entrée
-    // l'initialise, le champ début est alors saisissable par tout le monde.
+    // Unknown plane counter (never logged): the first entry initializes it, so the
+    // start field is editable by everyone.
     const [planeHobbsUnknown, setPlaneHobbsUnknown] = useState(false);
-    // Format de saisie du compteur (HH:MM par défaut). N'affecte que l'UI : la
-    // valeur reste stockée en heures décimales canoniques.
+    // Hobbs input format (HH:MM by default). UI only: the value is still stored as
+    // canonical decimal hours.
     const [hobbsFormat, setHobbsFormat] = useState<HobbsFormat>("HMS");
     const [error, setError] = useState("");
-    // "" => saisie pour soi-même. Sinon, id du pilote / élève ciblé.
+    // "" => entry for oneself. Otherwise, ID of the targeted pilot / student.
     const [actingUserID, setActingUserID] = useState<string>("");
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Pilote / élève pour le compte duquel on saisit (défaut : soi-même). Le
-    // président/admin peut en choisir un autre via le sélecteur en tête de
-    // formulaire ; sinon actingUser === currentUser.
+    // Pilot / student the entry is made for (default: oneself). The president/admin
+    // can pick someone else with the selector at the top of the form; otherwise
+    // actingUser === currentUser.
     const actingUser = useMemo(
         () => (actingUserID ? users.find((u) => u.id === actingUserID) ?? currentUser : currentUser),
         [actingUserID, users, currentUser]
     );
     const actingForSelf = !actingUserID || actingUserID === currentUser?.id;
-    // La fonction (EP/P/I) et la logique instructeur/élève suivent le rôle du
-    // pilote ciblé, pas celui du responsable qui saisit.
+    // The function (EP/P/I) and the instructor/student logic follow the targeted
+    // pilot's role, not the manager entering it.
     const userIsInstructor = actingUser ? isInstructorRole(actingUser.role) : false;
 
     const buildInitialForm = (): FormData => ({
@@ -150,9 +150,8 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
     const [form, setForm] = useState<FormData>(buildInitialForm());
 
-    // Hydrate départ/arrivée avec le code OACI du club (= Club.id par
-    // convention) dès qu'il est disponible (cas où currentClub arrive après le
-    // mount initial).
+    // Hydrate departure/arrival with the club's ICAO code (= Club.id by convention)
+    // as soon as it is available (when currentClub arrives after the initial mount).
     useEffect(() => {
         const code = currentClub?.id;
         if (!code) return;
@@ -163,9 +162,9 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         }));
     }, [currentClub?.id]);
 
-    // Liste des "compagnons" affichés selon la situation : si l'utilisateur
-    // connecté est instructeur, on lui demande l'élève ; sinon (élève-pilote),
-    // on lui demande l'instructeur.
+    // "Companions" listed depending on the situation: if the signed-in user is an
+    // instructor, ask for the student; otherwise (student pilot), ask for the
+    // instructor.
     const instructors = useMemo(
         () =>
             users.filter(
@@ -180,8 +179,8 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         () => users.filter((u) => u.role === userRole.STUDENT || u.role === userRole.PILOT),
         [users]
     );
-    // Candidats à la saisie déléguée : tout le monde sauf les simples USER
-    // (qui n'ont pas de carnet de vol).
+    // Candidates for delegated entry: everyone except plain USERs (who have no
+    // logbook).
     const actingCandidates = useMemo(
         () => users.filter((u) => u.role !== userRole.USER),
         [users]
@@ -189,8 +188,8 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
     const showInstructionCompanion = form.nature === "INSTRUCTION";
 
-    // Aperçu du débit portefeuille (AER-66) : mêmes champs que ceux envoyés à
-    // createFlightLog, pour que le payeur affiché soit celui qui sera débité.
+    // Wallet debit preview (AER-66): same fields as those sent to createFlightLog, so
+    // the payer shown is the one who will be debited.
     const [chargeBlocked, setChargeBlocked] = useState(false);
     const isExternalPassenger = userIsInstructor && form.subType === "BAPTEME" && form.studentMode === "external";
     const chargeFlight = {
@@ -205,10 +204,10 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         ? computeDurationMinutes(parseFloat(form.hobbsStart), parseFloat(form.hobbsEnd))
         : null;
 
-    // Machines proposées : celles du club + la machine privée du pilote ou de
-    // l'élève (président / admin : toutes), même règle que le serveur
-    // (canLogFlightOnPlane). La machine privée de l'élève n'est pas dans la
-    // liste de la page pour un instructeur : on la charge à la sélection.
+    // Offered planes: club planes + the pilot's or student's private plane
+    // (president / admin: all), same rule as the server (canLogFlightOnPlane). An
+    // instructor's page list does not include the student's private plane: it is
+    // loaded on selection.
     const [memberPlanes, setMemberPlanes] = useState<{ studentID: string; planes: planes[] }>({ studentID: "", planes: [] });
     const flightStudentID = chargeFlight.studentID;
     useEffect(() => {
@@ -227,13 +226,13 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         return all.filter((p) => canLogFlightOnPlane(p, { actor: currentUser, pilotID: actingUser.id, studentID: flightStudentID }));
     }, [planesList, memberPlanes, flightStudentID, currentUser, actingUser]);
 
-    // Machine devenue interdite (changement d'élève / de pilote) : on la retire.
+    // Plane no longer allowed (student / pilot changed): remove it.
     const planeStillAllowed = !form.planeID || planeOptions.some((p) => p.id === form.planeID);
     useEffect(() => {
         if (!planeStillAllowed) setForm((prev) => ({ ...prev, planeID: "" }));
     }, [planeStillAllowed]);
 
-    // Soldes des élèves (portefeuille activé, rôles autorisés à les voir).
+    // Student balances (wallet enabled, roles allowed to see them).
     const showBalances = !!currentClub?.walletEnabled && canViewClubWallets(currentUser?.role);
     const [balances, setBalances] = useState<Record<string, number> | null>(null);
     useEffect(() => {
@@ -245,10 +244,10 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         return () => { cancelled = true; };
     }, [open, showBalances]);
 
-    // Gating : USER et STUDENT ne peuvent pas créer d'entrée manuelle. L'élève
-    // vole toujours avec un instructeur (session auto-loguée), il ne saisit ni ne
-    // signe. Le PILOT et les rôles de gestion peuvent saisir. Côté serveur, la
-    // création est bornée à LOGBOOK_ROLES + contrôle « pour soi-même ».
+    // Gating: USER and STUDENT cannot create a manual entry. A student always flies
+    // with an instructor (auto-logged session), they neither enter nor sign. PILOT
+    // and management roles can enter flights. Server-side, creation is limited to
+    // LOGBOOK_ROLES + the "for oneself" check.
     const canCreate = !currentUser
         || (currentUser.role !== userRole.USER && currentUser.role !== userRole.STUDENT);
 
@@ -256,8 +255,8 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         setForm((prev) => ({ ...prev, [key]: value }));
     };
 
-    // Pré-remplit hobbsStart avec le hobbsTotal courant de l'avion. Verrouillé
-    // côté serveur de toute façon, mais on affiche la valeur pour transparence.
+    // Prefill hobbsStart with the plane's current hobbsTotal. Locked server-side
+    // anyway, but shown for transparency.
     useEffect(() => {
         if (!form.planeID) {
             updateField("hobbsStart", "");
@@ -312,9 +311,9 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
         const selectedPlane = planeOptions.find((p) => p.id === form.planeID);
         if (!selectedPlane) return fail("Aéronef introuvable.");
 
-        // pilotID = pilote ciblé (soi-même par défaut, ou un autre en saisie
-        // déléguée président/admin). La fonction (EP/P/I) est déduite côté
-        // serveur à partir de la nature + du rôle de ce pilote.
+        // pilotID = targeted pilot (oneself by default, or someone else in delegated
+        // president/admin entry). The function (EP/P/I) is derived server-side from the
+        // flight type + that pilot's role.
         let instructorID: string | undefined;
         let instructorFirstName: string | undefined;
         let instructorLastName: string | undefined;
@@ -325,7 +324,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
         if (form.nature === "INSTRUCTION") {
             if (isExternalBapteme) {
-                // Passager externe (baptême) : pas d'ID, on persiste les champs saisis.
+                // External passenger (discovery flight): no ID, the entered fields are persisted.
                 studentFirstName = form.externalFirstName || undefined;
                 studentLastName = form.externalLastName || undefined;
                 studentEmail = form.externalEmail || undefined;
@@ -369,8 +368,8 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
             landings: form.movements,
             departureAirfield: form.departure || undefined,
             arrivalAirfield: form.arrival || undefined,
-            // Envoyé seulement quand il a un sens côté serveur : override
-            // OWNER/ADMIN, ou initialisation d'un compteur inconnu.
+            // Only sent when it matters server-side: OWNER/ADMIN override, or initializing an
+            // unknown counter.
             hobbsStart:
                 ((canEditHobbsStart && hobbsStartUnlocked) || planeHobbsUnknown) && form.hobbsStart
                     ? parseFloat(form.hobbsStart)
@@ -394,8 +393,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
             if (andSign) {
                 const signRes = await signFlightLog(res.log.id);
                 if ("error" in signRes) {
-                    // L'entrée a bien été créée, mais la signature a échoué :
-                    // on remonte l'info en toast et on ferme tout de même.
+                    // The entry was created but signing failed: report it in a toast and close anyway.
                     toast({
                         title: "Entrée créée, signature échouée",
                         description: signRes.error,
@@ -434,8 +432,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
             }}
         >
             <DialogTrigger asChild>
-                {/* Sur mobile : bouton icône seule (le libellé ferait déborder la
-                    barre d'actions et rognerait le bouton). */}
+                {/* On mobile: icon-only button (the label would overflow the action bar and clip the button). */}
                 <Button className="bg-[#774BBE] hover:bg-[#6538a5] text-white shadow-md gap-2 transition-colors flex-shrink-0 px-2.5 sm:px-4">
                     <PlusIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">Nouvelle entrée</span>
@@ -461,17 +458,17 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
                 {/* Scrollable content */}
                 <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 overflow-y-auto flex-grow">
-                    {/* Section 0 : saisie déléguée (président / admin) */}
+                    {/* Section 0: delegated entry (president / admin) */}
                     {canActForOthers && (
                         <div className="space-y-2">
                             <Label className="text-slate-600 text-sm">Saisir pour le pilote / élève</Label>
                             <Select
                                 value={actingUserID || currentUser?.id || ""}
                                 onValueChange={(val) => {
-                                    // "moi" = currentUser => on repasse en saisie perso ("").
+                                    // "me" = currentUser => back to personal entry ("").
                                     setActingUserID(val === currentUser?.id ? "" : val);
-                                    // Le rôle du pilote ciblé peut basculer la branche
-                                    // instructeur/élève : on réinitialise les champs personnel.
+                                    // The targeted pilot's role may switch the instructor/student branch: reset the
+                                    // crew fields.
                                     updateField("instructorID", "");
                                     updateField("studentID", "");
                                     updateField("studentMode", "club");
@@ -508,7 +505,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                         </div>
                     )}
 
-                    {/* Section 1: Vol */}
+                    {/* Section 1: Flight */}
                     <div className="space-y-4">
                         <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">
                             Vol
@@ -611,7 +608,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                         </div>
                     </div>
 
-                    {/* Section 2: Personnel — visible uniquement pour les vols d'instruction */}
+                    {/* Section 2: Crew (instruction flights only) */}
                     {showInstructionCompanion && (
                         <>
                             <div className="h-px bg-slate-100 w-full" />
@@ -622,7 +619,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
                                 {userIsInstructor ? (
                                     <div className="space-y-4">
-                                        {/* Toggle club / externe — visible uniquement pour BAPTÊME */}
+                                        {/* Club / external toggle (DISCOVERY FLIGHT only) */}
                                         {form.subType === "BAPTEME" && (
                                             <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
                                                 <button
@@ -742,7 +739,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
                     <div className="h-px bg-slate-100 w-full" />
 
-                    {/* Section 3: Aérodromes */}
+                    {/* Section 3: Airfields */}
                     <div className="space-y-4">
                         <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">
                             Aérodromes
@@ -774,7 +771,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
                     <div className="h-px bg-slate-100 w-full" />
 
-                    {/* Section 4: Machine */}
+                    {/* Section 4: Plane */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between gap-2">
                             <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">
@@ -903,8 +900,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                         >
                             Annuler
                         </Button>
-                        {/* Enregistrement sans signature : uniquement en saisie pour
-                            soi-même (l'utilisateur signera plus tard depuis son carnet). */}
+                        {/* Save without signing: only when entering for oneself (the user will sign later from their logbook). */}
                         {actingForSelf && (
                             <Button
                                 onClick={() => onConfirm(false)}
@@ -922,8 +918,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                                 )}
                             </Button>
                         )}
-                        {/* Enregistrer + signer. En saisie déléguée (président/admin),
-                            c'est la seule option : le vol est signé au nom du pilote. */}
+                        {/* Save + sign. In delegated entry (president/admin) this is the only option: the flight is signed on the pilot's behalf. */}
                         <Button
                             onClick={() => onConfirm(true)}
                             disabled={loading || signing || chargeBlocked}

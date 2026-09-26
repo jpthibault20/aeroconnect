@@ -22,7 +22,6 @@ import { toast } from "@/hooks/use-toast";
 import { sendNotificationsOrWarn } from "@/lib/notifications";
 import { warnNotificationFailure } from "@/lib/notificationToast";
 
-// Enregistrement de la locale française pour être sûr
 registerLocale('fr', fr);
 
 interface Prop {
@@ -38,11 +37,10 @@ interface DatePickerCustomInputProps {
     placeholder?: string;
 }
 
-// --- COMPOSANT CUSTOM INPUT POUR LE DATEPICKER ---
-// Cela remplace l'input moche par défaut par un joli bouton qui s'intègre au design system
+// --- Custom DatePicker input: a button matching the design system ---
 const DatePickerCustomInput = forwardRef<HTMLButtonElement, DatePickerCustomInputProps>(({ value, onClick, className, placeholder }, ref) => (
     <Button
-        type="button" // Important pour ne pas submit le formulaire si dans un form
+        type="button" // Do not submit the enclosing form
         variant="outline"
         className={cn(
             "w-full justify-start text-left font-normal bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300 shadow-sm h-10 px-3",
@@ -74,7 +72,7 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
     const [sessionsToDelete, setSessionsToDelete] = useState<flight_sessions[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Calcul des sessions à supprimer
+    // Compute the sessions to delete
     useEffect(() => {
         if (!startDate || !endDate || !piloteID) {
             setSessionsToDelete([]);
@@ -82,18 +80,16 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
         }
 
         const sessions = sessionsProps.filter((session) => {
-            // Filtre par pilote
             if (piloteID !== session.pilotID) return false;
 
             const sessionDate = new Date(session.sessionDateStart);
-            // Comparaison simple des dates
             return sessionDate >= startDate && sessionDate <= endDate;
         });
 
         setSessionsToDelete(sessions);
     }, [startDate, endDate, piloteID, sessionsProps]);
 
-    // Sécurité Rôle
+    // Role check
     if (currentUser?.role === userRole.USER || currentUser?.role === userRole.STUDENT || currentUser?.role === userRole.PILOT) {
         return null
     }
@@ -112,8 +108,8 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                 return;
             }
 
-            // Notifications : envoyées en arrière-plan, l'utilisateur est prévenu
-            // si l'une d'elles échoue (la suppression reste acquise).
+            // Notifications are sent in the background; the user is warned if one fails
+            // (the deletion stands).
             const notifications = [];
             for (const session of sessionsToDelete) {
                 if (session.studentID) {
@@ -178,7 +174,6 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                 </DialogHeader>
 
                 <div className="py-6 space-y-6">
-                    {/* --- ZONE SÉLECTION DATE PROPRE --- */}
                     <div className="space-y-3">
                         <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Période à nettoyer</Label>
                         <div className="grid grid-cols-2 gap-4">
@@ -194,7 +189,7 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                                     locale="fr"
                                     customInput={<DatePickerCustomInput placeholder="Date de début" />}
                                     wrapperClassName="w-full"
-                                    popperClassName="z-50" // Assure que le calendrier passe au dessus
+                                    popperClassName="z-50" // Keep the calendar on top
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -216,7 +211,7 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                         </div>
                     </div>
 
-                    {/* Sélecteur Instructeur (Admin Only) */}
+                    {/* Instructor picker (Admin only) */}
                     {(currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER) && (
                         <div className="space-y-3">
                             <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cible</Label>
@@ -240,7 +235,6 @@ const DeleteManySessions = ({ usersProps, sessionsProps, setSessions }: Prop) =>
                         </div>
                     )}
 
-                    {/* Résumé Impact */}
                     {sessionsToDelete.length > 0 ? (
                         <div className="bg-red-50 border border-red-100 rounded-lg p-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                             <AlertOctagon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />

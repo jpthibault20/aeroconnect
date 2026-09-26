@@ -29,9 +29,9 @@ import { walletOperationSchema } from "@/schemas/wallet";
 
 describe("computeFlightChargeCents", () => {
     it("prorata des minutes, arrondi au centime", () => {
-        expect(computeFlightChargeCents(20, 15_000)).toBe(5_000); // 20 min à 150 €/h
-        expect(computeFlightChargeCents(45, 12_000)).toBe(9_000); // 45 min à 120 €/h
-        expect(computeFlightChargeCents(7, 10_000)).toBe(1_167); // 11,666… -> 11,67 €
+        expect(computeFlightChargeCents(20, 15_000)).toBe(5_000); // 20 min at 150 €/h
+        expect(computeFlightChargeCents(45, 12_000)).toBe(9_000); // 45 min at 120 €/h
+        expect(computeFlightChargeCents(7, 10_000)).toBe(1_167); // 11.666… -> 11.67 €
         expect(computeFlightChargeCents(60, 13_550)).toBe(13_550);
     });
 
@@ -103,8 +103,8 @@ describe("seuil et état du solde", () => {
     const planes = [
         { ownerID: null, usageTypes: [MachineUsage.INSTRUCTION], instructionHourlyRateCents: 15_000 },
         { ownerID: null, usageTypes: [MachineUsage.INSTRUCTION, MachineUsage.LOCATION], instructionHourlyRateCents: 12_000 },
-        { ownerID: null, usageTypes: [MachineUsage.LOCATION], instructionHourlyRateCents: 5_000 }, // pas d'école
-        { ownerID: "u1", usageTypes: [], instructionHourlyRateCents: 1_000 }, // privée
+        { ownerID: null, usageTypes: [MachineUsage.LOCATION], instructionHourlyRateCents: 5_000 }, // not a training plane
+        { ownerID: "u1", usageTypes: [], instructionHourlyRateCents: 1_000 }, // private
         { ownerID: null, usageTypes: [MachineUsage.INSTRUCTION], instructionHourlyRateCents: null },
     ];
 
@@ -124,9 +124,9 @@ describe("seuil et état du solde", () => {
     it("passage sous le seuil détecté une seule fois", () => {
         expect(crossedLowThreshold(20_000, 5_000, 12_000)).toBe(true);
         expect(crossedLowThreshold(20_000, -500, 12_000)).toBe(true);
-        expect(crossedLowThreshold(5_000, 1_000, 12_000)).toBe(false); // déjà faible
-        expect(crossedLowThreshold(5_000, 20_000, 12_000)).toBe(false); // remonte
-        expect(crossedLowThreshold(500, 0, null)).toBe(true); // sans seuil : épuisé
+        expect(crossedLowThreshold(5_000, 1_000, 12_000)).toBe(false); // already low
+        expect(crossedLowThreshold(5_000, 20_000, 12_000)).toBe(false); // going back up
+        expect(crossedLowThreshold(500, 0, null)).toBe(true); // no threshold: depleted
     });
 
     it("inscription : solde strictement positif", () => {
@@ -258,7 +258,7 @@ describe("computeFlightAdjustmentCents (vol signé corrigé)", () => {
     });
 
     it("tient compte des corrections déjà passées", () => {
-        // débit -90 puis correction -20 : déjà prélevé 110 € pour 55 min => rien à faire
+        // debit -90 then correction -20: 110 € already charged for 55 min => nothing to do
         expect(computeFlightAdjustmentCents({ billable: true, durationMin: 55, frozenRateCents: 12_000, movementsSumCents: -11_000 })).toBe(0);
     });
 
@@ -267,7 +267,7 @@ describe("computeFlightAdjustmentCents (vol signé corrigé)", () => {
     });
 
     it("le tarif figé fait foi, même si le tarif de la machine a changé depuis", () => {
-        // durée inchangée : aucune régularisation, quel que soit le tarif actuel
+        // unchanged duration: no adjustment, whatever the current rate
         expect(computeFlightAdjustmentCents({ billable: true, durationMin: 45, frozenRateCents: 12_000, movementsSumCents: -9_000 })).toBe(0);
     });
 });

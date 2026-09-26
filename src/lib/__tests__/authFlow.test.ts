@@ -13,17 +13,15 @@ import {
 } from "@/lib/authFlow";
 
 /**
- * Verrou de non-régression des trois flux d'authentification : création de
- * compte, connexion, mot de passe perdu.
+ * Non-regression lock of the three auth flows: sign-up, login, forgotten password.
  *
- * Ce qui est couvert ici, ce sont les DÉCISIONS (destination + message + type de
- * message). L'appel à Supabase lui-même n'est pas testé : les server actions se
- * contentent de lui passer la main puis d'appeler `redirect()` avec le résultat
- * de ces fonctions.
+ * What is covered here are the DECISIONS (destination + message + message type).
+ * The Supabase call itself is not tested: the server actions just hand over to it
+ * then call `redirect()` with the result of these functions.
  */
 
-// Lit le message décodé d'une URL de redirection, et dit s'il est présenté
-// comme une erreur (`message`) ou comme un succès (`messageG`).
+// Reads the decoded message of a redirect URL, and whether it is presented as an
+// error (`message`) or a success (`messageG`).
 const parse = (url: string) => {
     const [path, query] = url.split("?");
     const params = new URLSearchParams(query ?? "");
@@ -52,7 +50,7 @@ describe("authRedirect — convention message / messageG", () => {
     });
 });
 
-// ─── Création de compte ───
+// ─── Sign-up ───
 
 describe("Création de compte", () => {
     it("échec Supabase → page de connexion, avec le code E_009", () => {
@@ -63,8 +61,8 @@ describe("Création de compte", () => {
     });
 
     it("échec de création du profil → retour au formulaire, avec le code E_010", () => {
-        // Le compte Supabase existe déjà à ce stade : on renvoie vers
-        // l'inscription et non vers la connexion. Comportement historique.
+        // The Supabase account already exists at this point: redirect to sign-up, not
+        // login. Historical behavior.
         const r = parse(signupRedirect("profileError"));
         expect(r.path).toBe(AUTH_ROUTES.register);
         expect(r.kind).toBe("error");
@@ -83,7 +81,7 @@ describe("Création de compte", () => {
     });
 });
 
-// ─── Connexion ───
+// ─── Login ───
 
 describe("Connexion", () => {
     it("identifiants refusés → réponse d'échec au formulaire, pas de redirection", () => {
@@ -97,15 +95,15 @@ describe("Connexion", () => {
     });
 
     it("utilisateur sans club → calendrier avec un clubID vide", () => {
-        // Cas réel : compte créé mais pas encore rattaché à un club. La page
-        // calendrier gère ce cas, il ne faut donc pas bloquer la connexion.
+        // Real case: account created but not attached to a club yet. The calendar page
+        // handles it, so login must not be blocked.
         expect(loginRedirect(null)).toBe("/calendar?clubID=");
         expect(loginRedirect(undefined)).toBe("/calendar?clubID=");
         expect(loginRedirect("")).toBe("/calendar?clubID=");
     });
 });
 
-// ─── Mot de passe perdu : demande ───
+// ─── Forgotten password: request ───
 
 describe("Mot de passe perdu — demande de réinitialisation", () => {
     it("email absent → on reste sur le formulaire avec un message d'erreur", () => {
@@ -144,14 +142,13 @@ describe("Mot de passe perdu — demande de réinitialisation", () => {
     });
 
     it("variable d'env absente : le lien est relatif (symptôme à surveiller)", () => {
-        // Documenté volontairement : c'est le même défaut que le lien baptême
-        // cassé (cf. lib/appUrl). Si ce test change, c'est que la source de
-        // l'URL de base a été revue.
+        // Documented on purpose: same flaw as the broken discovery-flight link (see
+        // lib/appUrl). If this test changes, the base URL source has been revisited.
         expect(passwordResetRedirectTo(undefined)).toBe("/auth/newPassword");
     });
 });
 
-// ─── Mot de passe perdu : nouveau mot de passe ───
+// ─── Forgotten password: new password ───
 
 describe("Mot de passe perdu — saisie du nouveau mot de passe", () => {
     it("les deux champs concordants passent", () => {
@@ -176,8 +173,8 @@ describe("Mot de passe perdu — saisie du nouveau mot de passe", () => {
     });
 
     it("la validation ne juge PAS la longueur (c'est le rôle du schéma zod)", () => {
-        // Régression possible : dupliquer la règle des 6 caractères ici la
-        // ferait diverger de updatePasswordSchema.
+        // Possible regression: duplicating the 6-character rule here would make it
+        // diverge from updatePasswordSchema.
         expect(validateNewPassword("abc", "abc")).toEqual({ ok: true });
     });
 
@@ -201,7 +198,7 @@ describe("Mot de passe perdu — saisie du nouveau mot de passe", () => {
     });
 });
 
-// ─── Invariants transverses ───
+// ─── Cross-cutting invariants ───
 
 describe("Invariants des flux d'authentification", () => {
     const allRedirects = [

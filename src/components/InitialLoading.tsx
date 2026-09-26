@@ -33,14 +33,14 @@ const InitialLoading = ({ children, className, clubIDURL }: props) => {
     useEffect(() => {
         if (!currentUser) return;
         if (
-            // Cas 1 : Si clubIDURL a une valeur mais qu'elle ne correspond pas à currentUser?.clubID
+            // Case 1: clubIDURL is set but does not match currentUser?.clubID
             (clubIDURL && currentUser?.clubID !== clubIDURL) ||
-            // Cas 2 : Si les deux ont une valeur mais qu'elles ne correspondent pas
+            // Case 2: both are set but do not match
             (currentUser?.clubID && clubIDURL && currentUser.clubID !== clubIDURL) ||
-            // Cas 3 : Si currentUser?.clubID a une valeur mais pas clubIDURL
+            // Case 3: currentUser?.clubID is set but clubIDURL is not
             (currentUser?.clubID && !clubIDURL)
         ) {
-            router.replace("/"); // Redirection
+            router.replace("/");
         }
         else {
             setIsLoading(false);

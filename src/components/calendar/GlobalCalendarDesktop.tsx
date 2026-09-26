@@ -1,6 +1,6 @@
 /**
  * @file GlobalCalendarDesktop.tsx
- * @brief Composant principal du calendrier pour la vue Desktop (Refondu UI/UX).
+ * @brief Main calendar component for the desktop view.
  */
 import React, { useState, useMemo } from 'react'
 import { monthFr } from '@/config/config';
@@ -31,15 +31,14 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
     const [date, setDate] = useState(new Date());
     const [sessionsFlitered, setSessionsFiltered] = useState<flight_sessions[]>(sessions);
 
-    // Optimisation avec useMemo
     const filterdPlanes = useMemo(() =>
         planesProp.filter((p) => currentUser?.classes.includes(p.classes)),
         [planesProp, currentUser]);
 
-    // Les mutations (inscription, validation de baptême, suppression) remontent
-    // dans `sessions` : on rafraîchit les entrées affichées à l'identique plutôt
-    // que de tout remplacer, pour ne pas écraser un filtre actif. Ajusté pendant
-    // le rendu plutôt que dans un effet (pas de rendu intermédiaire périmé).
+    // Mutations (booking, discovery-flight validation, deletion) flow back into
+    // `sessions`: the displayed entries are refreshed in place rather than replaced
+    // wholesale, so an active filter is not overwritten. Adjusted during render
+    // rather than in an effect (no stale intermediate render).
     const [prevSessions, setPrevSessions] = useState(sessions);
     if (prevSessions !== sessions) {
         setPrevSessions(sessions);
@@ -51,8 +50,8 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
         );
     }
 
-    // Préchargement en arrière-plan des baptêmes en attente de la semaine
-    // affichée : la popup d'un créneau les a alors déjà sous la main.
+    // Background prefetch of the displayed week's pending discovery flights: a slot's
+    // popup then already has them at hand.
     useBaptemePrefetch(useMemo(
         () => getSessionsOfWeek(date, sessionsFlitered),
         [date, sessionsFlitered]
@@ -83,17 +82,14 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
     return (
         <div className='hidden lg:flex flex-col h-full bg-slate-50/50 w-full'>
 
-            {/* --- HEADER & TOOLBAR --- */}
             <header className="flex-none px-6 py-5 flex items-center justify-between gap-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
 
-                {/* Gauche: Titre & Navigation Date */}
                 <div className="flex items-center gap-6">
                     <h1 className="text-3xl font-bold text-slate-800 capitalize flex items-baseline gap-2 min-w-fit">
                         {monthFr[date.getMonth()]}
                         <span className="text-slate-400 font-light text-2xl">{date.getFullYear()}</span>
                     </h1>
 
-                    {/* Séparateur visuel */}
                     <div className="h-8 w-px bg-slate-200 hidden xl:block" />
 
                     <DaySelector
@@ -104,9 +100,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
                     />
                 </div>
 
-                {/* Droite: Actions */}
                 <div className='flex items-center gap-3'>
-                    {/* Groupe d'outils secondaires (Unifié visuellement) */}
                     <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
                         <Export usersProps={usersProps} flightsSessions={sessions} planes={planesProp} />
 
@@ -120,13 +114,11 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
                             planesProp={filterdPlanes}
                         />
 
-                        {/* On affiche DeleteManySessions seulement si nécessaire, mais supposons qu'il gère sa propre visibilité ou est toujours là */}
                         <div className="w-px h-5 bg-slate-100 mx-1" />
 
                         <DeleteManySessions usersProps={usersProps} sessionsProps={sessions} setSessions={setSessions} />
                     </div>
 
-                    {/* Action Principale */}
                     <div className="shadow-sm shadow-purple-200 rounded-lg">
                         <NewSession
                             display='desktop'
@@ -140,9 +132,7 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
 
             <CalendarWalletNotice className="flex-none px-6 pt-3" />
 
-            {/* --- CALENDAR CONTENT --- */}
             <main className='flex-1 overflow-hidden'>
-                {/* Le calendrier prend tout l'espace restant */}
                 <TabCalendar
                     date={date}
                     sessions={sessionsFlitered}

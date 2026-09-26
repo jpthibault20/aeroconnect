@@ -33,7 +33,7 @@ import {
 import { cn } from "@/lib/utils";
 import codeNewClubIsValid from "@/api/client/newClubValidation";
 
-// --- Schéma de validation ---
+// --- Validation schema ---
 const clubFormSchema = z.object({
     name: z.string().min(1, "Le nom du club est requis"),
     id: z.string().min(3, "L'ID du club doit faire 3 caractères min.").toUpperCase(),
@@ -103,17 +103,15 @@ const NewClub = ({ setNewClub }: Props) => {
         }
     };
 
-    // Styles Helpers
     const inputStyle = "bg-slate-50 border-slate-200 focus:ring-[#774BBE] focus:border-[#774BBE]";
     const sectionTitleStyle = "text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-3 pb-1 border-b border-slate-100";
 
-    // --- ÉCRAN 1 : FORMULAIRE CRÉATION ---
+    // --- SCREEN 1: CREATION FORM ---
     if (authorizedCreateNewClub) {
         return (
             <div className="animate-in slide-in-from-right-4 duration-300">
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
-                    {/* Identité */}
                     <div>
                         <h3 className={sectionTitleStyle}>
                             <Building2 className="w-4 h-4 text-[#774BBE]" /> Identité du Club
@@ -132,7 +130,6 @@ const NewClub = ({ setNewClub }: Props) => {
                         </div>
                     </div>
 
-                    {/* Localisation */}
                     <div>
                         <h3 className={sectionTitleStyle}>
                             <MapPin className="w-4 h-4 text-[#774BBE]" /> Localisation
@@ -155,7 +152,6 @@ const NewClub = ({ setNewClub }: Props) => {
                         </div>
                     </div>
 
-                    {/* Horaires */}
                     <div>
                         <h3 className={sectionTitleStyle}>
                             <Clock className="w-4 h-4 text-[#774BBE]" /> Paramètres par défaut
@@ -170,7 +166,7 @@ const NewClub = ({ setNewClub }: Props) => {
                                         <Select onValueChange={field.onChange} value={field.value}>
                                             <SelectTrigger className={inputStyle}><SelectValue placeholder="09:00" /></SelectTrigger>
 
-                                            {/* CORRECTION ICI : z-[10000] et max-h pour le scroll */}
+                                            {/* z-[10000] to stay above the dialog, max-h for scrolling */}
                                             <SelectContent className="max-h-[200px] z-[10000]">
                                                 {hours.map(h => <SelectItem key={h} value={h}>{h}:00</SelectItem>)}
                                             </SelectContent>
@@ -187,7 +183,7 @@ const NewClub = ({ setNewClub }: Props) => {
                                         <Select onValueChange={field.onChange} value={field.value}>
                                             <SelectTrigger className={inputStyle}><SelectValue placeholder="18:00" /></SelectTrigger>
 
-                                            {/* CORRECTION ICI : z-[10000] et max-h pour le scroll */}
+                                            {/* z-[10000] to stay above the dialog, max-h for scrolling */}
                                             <SelectContent className="max-h-[200px] z-[10000]">
                                                 {hours.map(h => <SelectItem key={h} value={h}>{h}:00</SelectItem>)}
                                             </SelectContent>
@@ -199,14 +195,12 @@ const NewClub = ({ setNewClub }: Props) => {
                         {errors.workEndTime && <p className="text-xs text-red-500 mt-1">{errors.workEndTime.message}</p>}
                     </div>
 
-                    {/* Erreur API */}
                     {formError && (
                         <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center gap-2">
                             <span>⚠️</span> {formError}
                         </div>
                     )}
 
-                    {/* Footer Buttons */}
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                         <Button
                             variant="ghost"
@@ -230,7 +224,7 @@ const NewClub = ({ setNewClub }: Props) => {
         );
     }
 
-    // --- ÉCRAN 2 : VÉRIFICATION OTP ---
+    // --- SCREEN 2: OTP VERIFICATION ---
     else {
         return (
             <div className="flex flex-col items-center justify-center py-6 space-y-6 animate-in zoom-in-95 duration-300">

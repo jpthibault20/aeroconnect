@@ -20,7 +20,7 @@ import {
 
 const STEP = 1 / 2000;
 
-/** Écart maximal entre deux échantillons consécutifs : détecte les sauts d'image. */
+/** Max gap between two consecutive samples: detects frame jumps. */
 function maxJump(f: (k: number) => FlightPose, from = 0, to = 1) {
     let prev = f(from);
     const jump = { altitude: 0, pitch: 0, speed: 0 };
@@ -219,7 +219,7 @@ describe("createFlightCoordinator", () => {
         advance(100);
         coordinator.leave(snapshot);
         const { landingAt } = coordinator.getHandoff()!;
-        // Fin de l'atterrissage à 2 s pile après le début du vol.
+        // Landing ends exactly 2 s after the flight started.
         expect(landingAt + LANDING_MS).toBe(1000 + 2000);
     });
 
@@ -277,11 +277,11 @@ describe("createFlightCoordinator", () => {
         const { coordinator } = setup();
         let calls = 0;
         const unsubscribe = coordinator.subscribe(() => calls++);
-        coordinator.join(); // nouveau vol
-        coordinator.join(); // second loader, même vol : rien ne change
+        coordinator.join(); // new flight
+        coordinator.join(); // second loader, same flight: nothing changes
         coordinator.leave(null);
-        coordinator.leave(snapshot); // atterrissage programmé
-        coordinator.join(); // repris
+        coordinator.leave(snapshot); // landing scheduled
+        coordinator.join(); // resumed
         unsubscribe();
         coordinator.leave(snapshot);
         expect(calls).toBe(3);

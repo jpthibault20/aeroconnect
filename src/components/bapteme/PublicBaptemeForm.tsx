@@ -38,9 +38,9 @@ import {
 } from "@/lib/bapteme";
 import { formatSessionDate } from "@/api/global function/dateServeur";
 
-// Formule (durée + tarif) proposée sur une machine. Une machine sans formule
-// configurée n'en propose aucune : le client passe directement à ses
-// coordonnées, sans écran de choix.
+// Package (duration + price) offered on a plane. A plane with no package
+// configured offers none: the customer goes straight to their contact details,
+// with no choice screen.
 export interface PublicBaptemeOption extends BaptemeOptionLike {
     id: string;
 }
@@ -51,12 +51,12 @@ export interface PublicSlot {
     durationMin: number;
     pilotFirstName: string;
     pilotLastName: string;
-    // imageUrl est null tant qu'aucune photo n'a été ajoutée à la machine.
+    // imageUrl is null until a photo has been added to the plane.
     planes: { id: string; name: string; imageUrl: string | null; baptemeOptions: PublicBaptemeOption[] }[];
 }
 
-// Coordonnées publiques du club (toutes optionnelles : un club peut n'en
-// renseigner aucune). Miroir de ce que renvoie `getPublicBaptemeSlots`.
+// Club's public contact details (all optional: a club may fill none). Mirrors
+// what `getPublicBaptemeSlots` returns.
 export interface ClubContact {
     firstNameContact: string | null;
     lastNameContact: string | null;
@@ -76,23 +76,23 @@ interface Props {
     slots: PublicSlot[];
 }
 
-// Instantané figé au moment de l'envoi : sert à composer le « billet
-// d'embarquement » de confirmation, indépendamment des sélections.
+// Snapshot frozen at submit time: used to build the confirmation "boarding pass",
+// independently of the selections.
 interface Confirmation {
     passenger: string;
     dateLabel: string;
     timeLabel: string;
     planeName: string;
     pilotName: string;
-    // Formule choisie, ex. "30 min – 90 €". null si la machine n'en proposait pas.
+    // Chosen package, e.g. "30 min – 90 €". null if the plane offered none.
     optionLabel: string | null;
 }
 
 const inputClass =
     "h-12 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-[#774BBE] focus:ring-2 focus:ring-[#774BBE]/20";
 
-// CTA principal (Continuer / Envoyer) — même rendu pour le bouton d'avance et le
-// bouton submit, pour une barre d'action homogène.
+// Main CTA (Continue / Send): same look for the advance and submit buttons, for a
+// consistent action bar.
 const ctaClass =
     "flex h-[52px] flex-1 items-center justify-center gap-2 rounded-xl bg-[#774BBE] text-[15px] font-bold text-white shadow-lg shadow-[#774BBE]/30 transition hover:bg-[#6538A5] disabled:pointer-events-none disabled:opacity-50";
 
@@ -102,20 +102,19 @@ const AVATAR_GRADIENTS = [
     "from-[#5fb4d4] to-[#3a86b0]",
 ];
 
-// Le point d'entrée = un sélecteur segmenté non bloquant (l'ordre des étapes en
-// découle). « Par date » par défaut : les disponibilités s'affichent d'emblée.
+// The entry point is a non-blocking segmented selector (the step order follows
+// from it). "By date" by default: availabilities show right away.
 const ENTRY_POINTS: { value: BaptemeEntryPoint; label: string; Icon: typeof CalendarDays }[] = [
     { value: "date", label: "Par date", Icon: CalendarDays },
     { value: "plane", label: "Par appareil", Icon: Plane },
     { value: "pilot", label: "Par pilote", Icon: UserRound },
 ];
 
-// Écrans du wizard (un par étape). L'ordre dépend du point d'entrée mais
-// reproduit exactement l'ordonnancement métier existant ; « formula » (si la
-// machine choisie propose des formules) puis « contact » clôturent toujours
-// le parcours. « month » est inséré dynamiquement devant « day » quand les
-// disponibilités s'étalent sur plusieurs mois (cf. `screens` plus bas) : sur
-// un seul mois, il n'apporterait rien et on garde la liste de jours directe.
+// Wizard screens (one per step). The order depends on the entry point but follows
+// the existing business ordering exactly; "formula" (if the chosen plane offers
+// packages) then "contact" always end the flow. "month" is inserted dynamically
+// before "day" when availabilities span several months (see `screens` below): on
+// a single month it would add nothing, so the day list is shown directly.
 type ScreenKey = "month" | "day" | "slot" | "plane" | "pilot" | "formula" | "contact";
 
 const SELECTION_SCREENS: Record<BaptemeEntryPoint, ScreenKey[]> = {
@@ -139,8 +138,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     const [selectedDayKey, setSelectedDayKey] = useState("");
     const [selectedTimeKey, setSelectedTimeKey] = useState("");
     const [selectedSessionID, setSelectedSessionID] = useState("");
-    // Doublonne `planeID` du formulaire : react-hook-form ne re-rend pas au
-    // changement de valeur, et il faut savoir quel appareil est à l'écran.
+    // Duplicates the form's `planeID`: react-hook-form does not re-render on value
+    // change, and we need to know which plane is on screen.
     const [selectedPlaneID, setSelectedPlaneID] = useState("");
     const [selectedOptionID, setSelectedOptionID] = useState("");
     const carouselRef = useRef<HTMLDivElement>(null);
@@ -155,15 +154,15 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         defaultValues: { sessionID: "", planeID: "", baptemeOptionID: "" },
     });
 
-    // Catalogues complets, toutes dates confondues : ce sont eux qui servent de
-    // première étape aux entrées « par appareil » et « par pilote ».
+    // Full catalogs, all dates included: they are the first step of the "by plane"
+    // and "by pilot" entry points.
     const allPlanes = useMemo(() => listBaptemePlanes(slots), [slots]);
     const allPilots = useMemo(() => listBaptemePilots(slots), [slots]);
 
     /**
-     * Créneaux encore compatibles avec le critère d'entrée déjà retenu. C'est ce
-     * filtre qui fait « le chemin idéal » : par appareil, on ne propose que les
-     * jours où cette machine vole ; par pilote, que ses journées.
+     * Slots still compatible with the entry criterion already chosen. This filter
+     * makes the "ideal path": by plane, only the days that plane flies; by pilot,
+     * only their days.
      */
     const scopedSlots = useMemo(() => {
         if (entryPoint === "plane" && selectedPlaneID) {
@@ -179,8 +178,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
 
     const allDays = useMemo(() => groupBaptemeSlots(scopedSlots), [scopedSlots]);
 
-    // Mois distincts sur l'horizon proposé. Un seul mois → l'écran « month »
-    // est retiré du parcours (cf. `screens`) et `days` reste la liste complète.
+    // Distinct months over the offered horizon. A single month → the "month" screen
+    // is dropped from the flow (see `screens`) and `days` stays the full list.
     const months = useMemo(() => groupBaptemeDaysByMonth(allDays), [allDays]);
 
     const days = useMemo(() => {
@@ -203,8 +202,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         [slots, selectedSessionID]
     );
 
-    // Machines défilant dans le carrousel : tout le parc à l'entrée « par
-    // appareil » (le choix se fait dessus), sinon celles du créneau retenu.
+    // Planes in the carousel: the whole fleet for the "by plane" entry (the choice is
+    // made there), otherwise those of the chosen slot.
     const carouselPlanes = useMemo(
         () => (entryPoint === "plane" ? allPlanes : selectedSlot?.planes ?? []),
         [entryPoint, allPlanes, selectedSlot]
@@ -215,20 +214,20 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         return index >= 0 ? index : 0;
     }, [carouselPlanes, selectedPlaneID]);
 
-    // Nom de l'appareil retenu (récap + confirmation) : cherché dans le créneau
-    // puis dans le parc complet (entrée « par appareil »).
+    // Name of the chosen plane (recap + confirmation): looked up in the slot, then in
+    // the whole fleet ("by plane" entry).
     const selectedPlane =
         selectedSlot?.planes.find((p) => p.id === selectedPlaneID) ??
         allPlanes.find((p) => p.id === selectedPlaneID);
 
-    // Formules proposées par l'appareil retenu. Vide => aucun écran de choix
-    // (la machine n'a pas de config baptême, on va directement aux coordonnées).
+    // Packages offered by the chosen plane. Empty => no choice screen (the plane has
+    // no discovery-flight config, go straight to contact details).
     const selectedPlaneOptions = selectedPlane?.baptemeOptions ?? [];
 
     const selectedOption = selectedPlaneOptions.find((o) => o.id === selectedOptionID);
     const hasFormulaScreen = selectedPlaneOptions.length > 0;
 
-    // ─── Navigation du wizard ───
+    // ─── Wizard navigation ───
 
     const screens = useMemo<ScreenKey[]>(() => {
         const base: ScreenKey[] = [];
@@ -268,13 +267,13 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     };
     const goBack = () => setStepIndex((i) => Math.max(0, i - 1));
 
-    // Remonte en haut à chaque changement d'écran (et à la confirmation) : sans
-    // ça, un choix pris en bas d'une longue liste laisse le nouvel écran hors vue.
+    // Scroll to top on every screen change (and on confirmation): otherwise a choice
+    // made at the bottom of a long list leaves the new screen out of view.
     useEffect(() => {
         window.scrollTo({ top: 0 });
     }, [stepIndex, confirmation]);
 
-    // ─── Sélection : chaque étape invalide les suivantes ───
+    // ─── Selection: each step invalidates the following ones ───
 
     const clearOption = () => {
         setSelectedOptionID("");
@@ -289,7 +288,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     const setPlaneValue = (planeID: string) => {
         setSelectedPlaneID(planeID);
         setValue("planeID", planeID, { shouldValidate: true });
-        // Une formule est propre à un appareil : en changer invalide le choix.
+        // A package belongs to a plane: changing plane invalidates the choice.
         clearOption();
     };
 
@@ -304,7 +303,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         clearOption();
     };
 
-    // Remet tout le parcours à zéro, sans toucher au point d'entrée.
+    // Resets the whole flow, without touching the entry point.
     const clearSelections = () => {
         setSelectedPilotKey("");
         setSelectedMonthKey("");
@@ -318,8 +317,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         setEntryPoint(value);
         clearSelections();
         setStepIndex(0);
-        // Le carrousel du parc est visible d'emblée : la vue affichée valant
-        // sélection, on retient la première machine.
+        // The fleet carousel is visible right away: the displayed view counts as the
+        // selection, so the first plane is picked.
         if (value === "plane") {
             setPlaneValue(allPlanes[0]?.id ?? "");
             carouselRef.current?.scrollTo({ left: 0 });
@@ -330,8 +329,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         setSelectedSessionID(sessionID);
         setValue("sessionID", sessionID, { shouldValidate: true });
 
-        // Entrée « par appareil » : la machine est déjà choisie, on n'y touche
-        // pas. Sinon le carrousel arrive ensuite et affiche la première vue.
+        // "By plane" entry: the plane is already chosen, leave it. Otherwise the carousel
+        // comes next and shows the first view.
         if (entryPoint !== "plane") {
             const slot = slots.find((s) => s.sessionID === sessionID);
             setPlaneValue(slot?.planes[0]?.id ?? "");
@@ -342,7 +341,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     const onSelectTime = (timeKey: string) => {
         setSelectedTimeKey(timeKey);
         const group = selectedDay?.times.find((t) => t.timeKey === timeKey);
-        // Un seul pilote sur cet horaire : aucun choix à faire, on enchaîne.
+        // Only one pilot at that time: nothing to choose, move on.
         if (group?.sessions.length === 1) {
             onSelectSession(group.sessions[0].sessionID);
         } else {
@@ -381,9 +380,9 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         clearSession();
     };
 
-    // ─── Auto-avance : sélectionner suffit à passer à l'étape suivante ───
-    // Pas de clic « Continuer » sur jour / horaire / pilote : le simple choix
-    // enchaîne. (Le carrousel appareil, lui, se choisit au swipe → CTA explicite.)
+    // ─── Auto-advance: selecting is enough to go to the next step ───
+    // No "Continue" click on day / time / pilot: the choice itself moves on. (The
+    // plane carousel is chosen by swiping → explicit CTA.)
 
     const handleSelectMonth = (monthKey: string) => {
         onSelectMonth(monthKey);
@@ -397,8 +396,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
 
     const handleSelectTime = (timeKey: string) => {
         onSelectTime(timeKey);
-        // Un seul pilote → le créneau est arrêté, on enchaîne. Sinon on reste sur
-        // l'écran pour choisir le pilote (qui déclenchera l'avance à son tour).
+        // Only one pilot → the slot is settled, move on. Otherwise stay on the screen to
+        // pick the pilot (which triggers the advance in turn).
         const group = selectedDay?.times.find((t) => t.timeKey === timeKey);
         if (group?.sessions.length === 1) advance();
     };
@@ -418,10 +417,10 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         advance();
     };
 
-    // ─── Carrousel ───
+    // ─── Carousel ───
 
-    // Vue courante déduite de la largeur d'une vue (chacune fait 100 % du
-    // conteneur), donc valable aussi bien au swipe qu'aux flèches.
+    // Current view derived from a view's width (each is 100% of the container), so it
+    // works for both swipes and arrows.
     const onCarouselScroll = () => {
         const scroller = carouselRef.current;
         if (!scroller || carouselPlanes.length === 0) return;
@@ -460,8 +459,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
             setServerError(res.error ?? "Une erreur est survenue.");
             return;
         }
-        // Fige les infos affichées sur le billet avant de basculer sur l'écran
-        // de confirmation.
+        // Freeze the info shown on the pass before switching to the confirmation screen.
         setConfirmation({
             passenger: `${data.firstName} ${data.lastName}`.trim(),
             dateLabel: selectedSlot ? formatSessionDate(selectedSlot.sessionDateStart) : "",
@@ -475,12 +473,12 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     };
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Blocs présentationnels
+    //  Presentational blocks
     // ─────────────────────────────────────────────────────────────────────────
 
     const renderHero = () => (
         <header className="relative overflow-hidden bg-gradient-to-br from-[#8256cf] via-[#774BBE] to-[#5A32A0] text-white">
-            {/* halo doré discret, « heure dorée » */}
+            {/* subtle golden "golden hour" halo */}
             <div
                 aria-hidden
                 className="pointer-events-none absolute inset-0 opacity-70"
@@ -571,8 +569,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         </div>
     );
 
-    // Bandeau récap : rappelle les choix déjà faits (dont le jour sur l'écran
-    // horaire) et permet d'y revenir d'un tap pour les modifier.
+    // Recap strip: reminds the choices already made (including the day on the time
+    // screen) and lets the user go back to change them with a tap.
     const renderRecapStrip = () => {
         if (stepIndex === 0) return null;
         const chips: { idx: number; icon: typeof CalendarDays; text: string }[] = [];
@@ -743,8 +741,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
             </div>
         );
 
-    // Choix du pilote parmi ceux qui proposent l'horaire retenu. Inutile à
-    // l'entrée « par pilote » (il est déjà fixé) ou s'il n'y en a qu'un.
+    // Pilot choice among those offering the chosen time. Useless for the "by pilot"
+    // entry (already set) or when there is only one.
     const renderPilotStep = () => {
         if (!selectedTime) return null;
 
@@ -846,9 +844,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         <div className="space-y-3">
             <p className="px-1 text-sm font-bold text-slate-700">Votre appareil</p>
             <div className="relative overflow-hidden rounded-2xl border border-slate-200">
-                {/* Carrousel en défilement natif : swipe au doigt sur mobile,
-                    flèches sur desktop, et aucune librairie embarquée sur une
-                    page publique. */}
+                {/* Native scrolling carousel: finger swipe on mobile, arrows on desktop, and no library shipped on a public page. */}
                 <div
                     ref={carouselRef}
                     onScroll={onCarouselScroll}
@@ -869,13 +865,13 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
                                     className="object-cover"
                                 />
                             ) : (
-                                // Placeholder « heure dorée » quand aucune photo n'est chargée.
+                                // "Golden hour" placeholder when no photo is loaded.
                                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-[#8256cf] via-[#a765a6] to-[#f0a066] text-white/90">
                                     <PlaneTakeoff className="h-10 w-10" />
                                     <span className="text-xs">Photo à venir</span>
                                 </div>
                             )}
-                            {/* voile bas pour lisibilité du nom */}
+                            {/* bottom veil so the name stays readable */}
                             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" />
                             <div className="absolute inset-x-4 bottom-3 text-white">
                                 <p className="text-base font-extrabold leading-tight drop-shadow">{p.name}</p>
@@ -962,7 +958,6 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
 
     const renderContact = () => (
         <div className="space-y-4">
-            {/* Récap : rassure avant la saisie */}
             <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div className="flex items-center gap-2 bg-[#774BBE]/[0.08] px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide text-[#774BBE]">
                     <CheckCircle2 className="h-4 w-4" />
@@ -1050,10 +1045,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
                 {errors.comment && <p className="text-xs text-red-500">{errors.comment.message}</p>}
             </div>
 
-            {/* Emplacement captcha (différé en V1) */}
-            {/* TODO: intégrer ici le widget Cloudflare Turnstile
-                (NEXT_PUBLIC_TURNSTILE_SITE_KEY) et passer le token à
-                createBaptemeRequest via captchaToken. */}
+            {/* Captcha slot (deferred in V1) */}
+            {/* TODO: add the Cloudflare Turnstile widget here (NEXT_PUBLIC_TURNSTILE_SITE_KEY) and pass the token to createBaptemeRequest via captchaToken. */}
 
             {serverError && (
                 <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{serverError}</p>
@@ -1061,7 +1054,6 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         </div>
     );
 
-    // Contenu de l'écran courant.
     const renderScreen = () => {
         switch (currentScreen) {
             case "month":
@@ -1086,8 +1078,8 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         }
     };
 
-    // Barre d'action collante : uniquement là où un tap ne suffit pas — écran
-    // appareil (sélection au swipe) et coordonnées (envoi).
+    // Sticky action bar: only where a tap is not enough, i.e. the plane screen
+    // (swipe selection) and contact details (submit).
     const renderActionBar = () => {
         const onContact = currentScreen === "contact";
         return (
@@ -1130,9 +1122,9 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         );
     };
 
-    // Carte « Contact du club » : affichée en pied de page publique. Chaque ligne
-    // n'apparaît que si le champ correspondant est renseigné ; téléphone et email
-    // sont cliquables, l'adresse ouvre une recherche cartographique.
+    // "Club contact" card shown at the bottom of the public page. Each line only
+    // appears if the field is filled; phone and email are clickable, the address
+    // opens a map search.
     const renderClubContact = () => {
         const { firstNameContact, lastNameContact, mailContact, phoneContact, Address, City, ZipCode, Country } = clubContact;
 
@@ -1141,7 +1133,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
         const addressLines = [Address, cityLine || null, Country].filter(Boolean) as string[];
         const hasAddress = addressLines.length > 0;
 
-        // Rien à afficher si le club n'a renseigné aucune coordonnée.
+        // Nothing to show if the club filled no contact details.
         if (!contactName && !mailContact && !phoneContact && !hasAddress) return null;
 
         const mapsQuery = encodeURIComponent(addressLines.join(", "));
@@ -1212,7 +1204,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     };
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Écran de confirmation — « carte d'embarquement »
+    //  Confirmation screen: "boarding pass"
     // ─────────────────────────────────────────────────────────────────────────
     if (confirmation) {
         return (
@@ -1300,7 +1292,7 @@ const PublicBaptemeForm = ({ clubID, token, clubName, clubContact, slots }: Prop
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Parcours
+    //  Flow
     // ─────────────────────────────────────────────────────────────────────────
     return (
         <main className="flex min-h-[100dvh] flex-col bg-slate-50">

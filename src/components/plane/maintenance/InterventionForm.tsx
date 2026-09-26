@@ -22,7 +22,7 @@ import {
     MaintenanceIntervention,
 } from "@/schemas/maintenance";
 
-// Libellés FR des types de maintenance.
+// French labels of the maintenance types.
 const TYPE_LABELS: Record<string, string> = {
     VIDANGE: "Vidange",
     REVISION: "Révision",
@@ -37,10 +37,10 @@ const NO_TASK = "__none__";
 interface Props {
     planeID: string;
     currentHobbs: number | null;
-    // Rappels de la machine, proposés en association (l'intervention peut clôturer
-    // un rappel et réinitialiser son compteur).
+    // Plane reminders, offered for linking (the intervention can close a reminder
+    // and reset its counter).
     tasks: MaintenanceTask[];
-    // Intervention à éditer ; absente => création.
+    // Intervention to edit; absent => creation.
     intervention?: MaintenanceIntervention;
     onSaved: (interventions: MaintenanceIntervention[]) => void;
     onCancel: () => void;
@@ -52,7 +52,7 @@ const InterventionForm = ({ planeID, currentHobbs, tasks, intervention, onSaved,
     const [date, setDate] = useState(
         intervention ? new Date(intervention.date).toISOString().slice(0, 10) : todayISO()
     );
-    const [type, setType] = useState<string>(intervention?.type ?? MAINTENANCE_TYPES[1]); // REVISION par défaut
+    const [type, setType] = useState<string>(intervention?.type ?? MAINTENANCE_TYPES[1]); // REVISION by default
     const [description, setDescription] = useState(intervention?.description ?? "");
     const [comment, setComment] = useState(intervention?.comment ?? "");
     const [engineHours, setEngineHours] = useState<string>(
@@ -140,9 +140,9 @@ const InterventionForm = ({ planeID, currentHobbs, tasks, intervention, onSaved,
             </div>
 
             {tasks.length > 0 && !intervention ? (
-                // Libellés et champs placés en cellules directes de la grille : chaque
-                // ligne (libellés puis inputs) s'aligne même si un libellé passe sur
-                // deux lignes. `self-end` colle les libellés juste au-dessus des inputs.
+                // Labels and inputs placed as direct grid cells: each row (labels then inputs)
+                // lines up even if a label wraps onto two lines. `self-end` keeps labels right
+                // above the inputs.
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 items-start">
                     <Label className="text-slate-700 font-medium self-end">Heures moteur</Label>
                     <Label className="text-slate-700 font-medium self-end">

@@ -1,7 +1,7 @@
 import LoadingPage from '@/components/LoadingPage';
 
-// Affiché dès le clic dans la navigation, le temps que le serveur rende la
-// page suivante : sans lui, l'écran restait figé et semblait planté (AER-70).
+// Shown as soon as a navigation link is clicked, while the server renders the
+// next page: without it the screen froze and looked broken (AER-70).
 export default function Loading() {
     return <LoadingPage />;
 }

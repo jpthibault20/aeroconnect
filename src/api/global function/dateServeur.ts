@@ -3,16 +3,15 @@ export const convertMinutesToHours = (totalMinutes: number) => {
         throw new Error("Le nombre de minutes ne peut pas être négatif.");
     }
 
-    const hours = Math.floor(totalMinutes / 60); // Calcule les heures
-    const minutes = totalMinutes % 60; // Calcule les minutes restantes
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
 
-    // Formate et retourne la chaîne "HH:mm"
     return `${String(hours).padStart(2, "0")}H${String(minutes).padStart(2, "0")}`;
 }
 
-// Les sessions sont stockées en UTC en utilisant l'heure « wall-clock » saisie
-// (cf. setUTCHours dans api/db/sessions.ts). Tous les affichages d'heure de
-// session doivent donc lire en UTC pour rester cohérents entre eux.
+// Sessions are stored in UTC using the wall-clock hour entered (see setUTCHours
+// in api/db/sessions.ts). Every session time display must therefore read in UTC
+// to stay consistent.
 export const formatSessionTime = (date: Date | string): string => {
     const d = new Date(date);
     const h = d.getUTCHours().toString().padStart(2, "0");
@@ -20,10 +19,9 @@ export const formatSessionTime = (date: Date | string): string => {
     return `${h}:${m}`;
 };
 
-// Pendant de formatSessionTime pour la date : même convention UTC. Sans
-// `timeZone: "UTC"`, toLocaleDateString applique le fuseau du navigateur et
-// décale l'affichage (+2 h en France l'été), jusqu'à changer de jour pour un
-// créneau de fin de soirée.
+// Date counterpart of formatSessionTime: same UTC convention. Without
+// `timeZone: "UTC"`, toLocaleDateString applies the browser time zone and shifts
+// the display (+2 h in France in summer), even changing day for a late slot.
 export const formatSessionDate = (
     date: Date | string,
     options: Intl.DateTimeFormatOptions = { weekday: "long", day: "2-digit", month: "long" }

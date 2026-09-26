@@ -16,8 +16,8 @@ interface Props {
 }
 
 /**
- * Raccourci de la page Utilisateurs vers la fiche portefeuille d'un membre,
- * fenêtre de crédit ouverte (AER-66). Gestion uniquement, portefeuille activé.
+ * Shortcut from the Users page to a member's wallet card, credit dialog open
+ * (AER-66). Management only, wallet enabled.
  */
 const MemberWalletLink = ({ member, variant = "icon", className }: Props) => {
     const { currentUser } = useCurrentUser();

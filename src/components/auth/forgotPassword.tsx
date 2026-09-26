@@ -4,7 +4,7 @@ import React, { useEffect } from 'react'
 import Link from 'next/link'
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { newPasswordSchema, NewPasswordSchema } from "../../schemas/newPasswordSchema"; // Assure-toi que le chemin est correct
+import { newPasswordSchema, NewPasswordSchema } from "../../schemas/newPasswordSchema";
 import { useSearchParams } from 'next/navigation';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -19,7 +19,7 @@ const ForgotPassword = () => {
     const [loading, setLoading] = React.useState(false);
     const [message, setMessage] = React.useState('');
     const [messageG, setMessageG] = React.useState('');
-    const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
+    const searchParams = useSearchParams();
 
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
@@ -39,14 +39,13 @@ const ForgotPassword = () => {
         setLoading(true);
 
         try {
-            // Logique de soumission du formulaire, comme un appel API
             const formData = new FormData();
             formData.append('email', data.email);
             await forgotPassword(formData);
         } catch (error) {
-            // Le redirect() de l'action (succès comme erreur métier) doit suivre son cours.
+            // The action's redirect() (success or business error) must propagate.
             if (isRedirectError(error)) throw error;
-            // Erreur réseau / serveur inattendue (les cas métier passent par redirect).
+            // Unexpected network / server error (business cases go through redirect).
             setMessageG('');
             setMessage("Une erreur technique est survenue. Veuillez réessayer.");
         } finally {

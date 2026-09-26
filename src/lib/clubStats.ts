@@ -3,18 +3,17 @@ import { computeDurationMinutes } from "./logbookCalc";
 import { toClubWallClock } from "./clubTime";
 
 /**
- * Statistiques de la page « Club » (AER-68) : helpers purs, testés.
+ * "Club" page statistics (AER-68): pure, tested helpers.
  *
- * Toutes les dates manipulées ici sont des JOURS du club, représentés par un
- * `Date` à minuit UTC (même convention que `flight_logs.date`, colonne @db.Date).
- * Un instant réel (ex. `WalletTransaction.createdAt`) se ramène à son jour du
- * club via `clubDay`.
+ * Every date handled here is a club DAY, represented as a `Date` at UTC midnight
+ * (same convention as `flight_logs.date`, a @db.Date column). A real instant
+ * (e.g. `WalletTransaction.createdAt`) is mapped to its club day via `clubDay`.
  *
- * Les server actions (src/api/db/stats.ts) ne font que charger les lignes et
- * appeler ces fonctions : toute la logique de période et d'agrégation est ici.
+ * The server actions (src/api/db/stats.ts) only load the rows and call these
+ * functions: all period and aggregation logic lives here.
  */
 
-// ─── Périodes ───
+// ─── Periods ───
 
 export type StatsPeriod = "month" | "year" | "rolling12";
 
@@ -29,8 +28,8 @@ export function isStatsPeriod(value: unknown): value is StatsPeriod {
 }
 
 export interface DayRange {
-    from: Date; // inclus
-    to: Date; // inclus
+    from: Date; // inclusive
+    to: Date; // inclusive
 }
 
 export interface StatsBucket extends DayRange {
@@ -39,20 +38,19 @@ export interface StatsBucket extends DayRange {
 
 export interface PeriodWindow {
     period: StatsPeriod;
-    // Période en cours, jusqu'à aujourd'hui inclus.
+    // Current period, up to and including today.
     current: DayRange;
-    // Période précédente « à date » : même durée écoulée, pour que la
-    // comparaison des chiffres clés soit équitable (le 10 septembre se compare
-    // au 1er–10 août, pas au mois d'août entier).
+    // Previous period "to date": same elapsed duration, so the key figures compare
+    // fairly (September 10 compares with August 1–10, not the whole of August).
     previous: DayRange;
-    // Découpage du graphique : période en cours (les tranches futures restent à 0)
-    // et période précédente complète, tranche par tranche.
+    // Chart buckets: current period (future buckets stay at 0) and the full previous
+    // period, bucket by bucket.
     buckets: StatsBucket[];
     previousBuckets: StatsBucket[];
     bucketUnit: "week" | "month";
     currentLabel: string;
     previousLabel: string;
-    // Libellé court pour les variations : « vs août », « vs 2025 »…
+    // Short label for changes: "vs août", "vs 2025"…
     comparisonLabel: string;
 }
 
@@ -61,7 +59,7 @@ const MONTH_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juil
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Jour du club (minuit UTC) à partir d'année / mois / jour ; mois et jour peuvent déborder. */
+/** Club day (UTC midnight) from year / month / day; month and day may overflow. */
 export function utcDay(year: number, month: number, day: number): Date {
     return new Date(Date.UTC(year, month, day));
 }
@@ -70,19 +68,22 @@ function daysInMonth(year: number, month: number): number {
     return utcDay(year, month + 1, 0).getUTCDate();
 }
 
-/** Même jour du mois, borné au dernier jour du mois visé (31 mars -> 28/29 février). */
+/**
+ * Same day of the month, clamped to the target month's last day (March 31 ->
+ * February 28/29).
+ */
 function sameDayInMonth(year: number, month: number, day: number): Date {
     const first = utcDay(year, month, 1);
     return utcDay(first.getUTCFullYear(), first.getUTCMonth(), Math.min(day, daysInMonth(first.getUTCFullYear(), first.getUTCMonth())));
 }
 
-/** Jour du club d'un instant réel. */
+/** Club day of a real instant. */
 export function clubDay(instant: Date): Date {
     const wall = toClubWallClock(instant);
     return utcDay(wall.getUTCFullYear(), wall.getUTCMonth(), wall.getUTCDate());
 }
 
-/** Tranches mensuelles : `count` mois se terminant par le mois (year, month). */
+/** Monthly buckets: `count` months ending with month (year, month). */
 export function monthBuckets(year: number, month: number, count: number): StatsBucket[] {
     return Array.from({ length: count }, (_, i) => {
         const from = utcDay(year, month - (count - 1) + i, 1);
@@ -92,7 +93,7 @@ export function monthBuckets(year: number, month: number, count: number): StatsB
     });
 }
 
-/** Semaines du mois : 1–7, 8–14, 15–21, 22–28, 29–fin. */
+/** Weeks of the month: 1–7, 8–14, 15–21, 22–28, 29–end. */
 function weekBuckets(year: number, month: number): StatsBucket[] {
     const last = daysInMonth(year, month);
     const buckets: StatsBucket[] = [];
@@ -103,7 +104,7 @@ function weekBuckets(year: number, month: number): StatsBucket[] {
 }
 
 /**
- * Fenêtre d'une période, à partir du jour du club `today` (cf. clubDay).
+ * Window of a period, from the club day `today` (see clubDay).
  */
 export function resolvePeriodWindow(period: StatsPeriod, today: Date): PeriodWindow {
     const y = today.getUTCFullYear();
@@ -141,7 +142,7 @@ export function resolvePeriodWindow(period: StatsPeriod, today: Date): PeriodWin
         };
     }
 
-    // 12 mois glissants : le mois en cours et les 11 précédents.
+    // Rolling 12 months: the current month and the 11 previous ones.
     return {
         period,
         current: { from: utcDay(y, m - 11, 1), to: today },
@@ -155,7 +156,7 @@ export function resolvePeriodWindow(period: StatsPeriod, today: Date): PeriodWin
     };
 }
 
-/** Plus petit et plus grand jour couverts par la fenêtre (bornes de requête). */
+/** Smallest and largest day covered by the window (query bounds). */
 export function windowBounds(w: PeriodWindow): DayRange {
     const days = [w.current, w.previous, ...w.buckets, ...w.previousBuckets];
     return {
@@ -165,9 +166,8 @@ export function windowBounds(w: PeriodWindow): DayRange {
 }
 
 /**
- * Bornes en instants réels pour interroger une colonne timestamptz : on
- * élargit d'un jour de chaque côté (décalage horaire), le tri fin se fait
- * ensuite par `clubDay`.
+ * Real-instant bounds to query a timestamptz column: widened by one day on each
+ * side (time zone offset), fine filtering then happens via `clubDay`.
  */
 export function instantBounds(range: DayRange): { gte: Date; lt: Date } {
     return { gte: new Date(range.from.getTime() - DAY_MS), lt: new Date(range.to.getTime() + 2 * DAY_MS) };
@@ -178,7 +178,7 @@ export function inRange(day: Date, range: DayRange): boolean {
     return t >= range.from.getTime() && t <= range.to.getTime();
 }
 
-// ─── Agrégations génériques ───
+// ─── Generic aggregations ───
 
 export function sumInRange<T>(items: T[], range: DayRange, day: (t: T) => Date, value: (t: T) => number): number {
     let total = 0;
@@ -194,11 +194,11 @@ export interface RankRow {
     key: string;
     label: string;
     sub: string | null;
-    value: number; // minutes ou centimes selon le classement
-    count: number; // nombre de vols / d'opérations
+    value: number; // minutes or cents depending on the ranking
+    count: number; // number of flights / operations
 }
 
-/** Classement décroissant par valeur (lignes à 0 exclues), départage alphabétique. */
+/** Descending ranking by value (zero rows excluded), ties broken alphabetically. */
 export function rankBy<T>(
     items: T[],
     key: (t: T) => string | null,
@@ -220,15 +220,15 @@ export function rankBy<T>(
         .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
 }
 
-/** Variation relative en % (arrondie) ; null si la période précédente est vide. */
+/** Relative change in % (rounded); null if the previous period is empty. */
 export function percentChange(current: number, previous: number): number | null {
     if (previous === 0) return null;
     return Math.round(((current - previous) / previous) * 100);
 }
 
-// ─── Carnet de vol ───
+// ─── Logbook ───
 
-/** Champs de flight_logs utiles aux statistiques. */
+/** flight_logs fields used by the statistics. */
 export interface FlightLogStatInput {
     date: Date;
     hobbsStart: number | null;
@@ -263,9 +263,9 @@ const shortName = (first: string | null, last: string | null) =>
     `${(last ?? "").toUpperCase()} ${first ? first.charAt(0).toUpperCase() + "." : ""}`.trim();
 
 /**
- * Normalise une ligne du carnet. Un vol d'instruction est UNE ligne : le pilote
- * enregistré est l'instructeur (fonction I) ou l'élève (fonction EP) ; les
- * champs instructor* / student* complètent l'autre partie.
+ * Normalizes a logbook row. An instruction flight is ONE row: the recorded pilot
+ * is the instructor (function I) or the student (function EP); the instructor* /
+ * student* fields fill in the other party.
  */
 export function toStatLog(log: FlightLogStatInput): StatLog {
     const isInstruction = log.flightNature === flightNature.INSTRUCTION;
@@ -309,9 +309,9 @@ export interface FlightStats {
     previousMinutes: number;
     flights: number;
     previousFlights: number;
-    students: number; // élèves distincts ayant volé en instruction
+    students: number; // distinct students who flew in instruction
     previousStudents: number;
-    series: SeriesPoint[]; // minutes par tranche
+    series: SeriesPoint[]; // minutes per bucket
     byPlane: RankRow[];
     byInstructor: RankRow[];
     byStudent: RankRow[];
@@ -347,12 +347,12 @@ export function computeFlightStats(logs: StatLog[], w: PeriodWindow): FlightStat
     };
 }
 
-// ─── Portefeuilles ───
+// ─── Wallets ───
 
 export type WalletMode = "cashed" | "billed";
 
 export interface StatTransaction {
-    day: Date; // jour du club (cf. clubDay)
+    day: Date; // club day (see clubDay)
     type: WalletTransactionType;
     amountCents: number;
     flightLogID: string | null;
@@ -362,10 +362,9 @@ export interface StatTransaction {
 }
 
 /**
- * Encaissé : paiements reçus (crédits). Facturé : montant net des vols
- * (débits de signature et corrections automatiques rattachées à un vol),
- * compté en positif. Les retraits / corrections manuels ne sont ni l'un ni
- * l'autre.
+ * Cashed: payments received (credits). Billed: net amount of flights (signing
+ * debits and automatic corrections tied to a flight), counted as positive.
+ * Manual withdrawals / corrections are neither.
  */
 export function transactionAmount(t: StatTransaction, mode: WalletMode): number {
     if (mode === "cashed") return t.type === WalletTransactionType.CREDIT ? t.amountCents : 0;
@@ -375,10 +374,10 @@ export function transactionAmount(t: StatTransaction, mode: WalletMode): number 
 export interface WalletModeStats {
     total: number;
     previousTotal: number;
-    count: number; // paiements (encaissé) ou vols débités (facturé)
+    count: number; // payments (cashed) or debited flights (billed)
     series: SeriesPoint[];
     byMember: RankRow[];
-    byPlane: RankRow[]; // vide en mode encaissé : un paiement n'est rattaché à aucune machine
+    byPlane: RankRow[]; // empty in cashed mode: a payment is not tied to any plane
 }
 
 export interface WalletStats {
@@ -419,7 +418,7 @@ export function computeWalletStats(txs: StatTransaction[], w: PeriodWindow, memb
     };
 }
 
-// ─── Aperçu gestion : activité des derniers mois ───
+// ─── Management overview: activity of the last months ───
 
 export interface ActivityPoint {
     label: string;
@@ -433,9 +432,9 @@ export function computeActivity(logs: StatLog[], txs: StatTransaction[], buckets
     return buckets.map((b, i) => ({ label: b.label, minutes: minutes[i], cashedCents: cashed[i] }));
 }
 
-// ─── Formats d'affichage ───
+// ─── Display formats ───
 
-/** 390 -> « 6 h 30 », 60 -> « 1 h », 45 -> « 45 min ». */
+/** 390 -> "6 h 30", 60 -> "1 h", 45 -> "45 min". */
 export function formatMinutes(minutes: number): string {
     const safe = Math.max(0, Math.round(minutes));
     const h = Math.floor(safe / 60);
@@ -444,7 +443,7 @@ export function formatMinutes(minutes: number): string {
     return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, "0")}`;
 }
 
-/** Écart signé en durée : « +1 h 45 », « −30 min », « stable » si nul. */
+/** Signed duration delta: "+1 h 45", "−30 min", "stable" if zero. */
 export function formatMinutesDelta(delta: number): string {
     if (Math.round(delta) === 0) return "stable";
     return `${delta > 0 ? "+" : "−"}${formatMinutes(Math.abs(delta))}`;
@@ -452,13 +451,13 @@ export function formatMinutesDelta(delta: number): string {
 
 const euroNoDecimals = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 
-/** Montant arrondi à l'euro : 124050 -> « 1 241 € ». */
+/** Amount rounded to the euro: 124050 -> "1 241 €". */
 export function formatEuros(cents: number): string {
     const formatted = euroNoDecimals.format(Math.abs(cents) / 100).replace(/[  ]/g, " ");
     return cents < 0 ? `−${formatted}` : formatted;
 }
 
-/** Montant compact pour les axes et étiquettes : « 850 € », « 2,3 k€ ». */
+/** Compact amount for axes and labels: "850 €", "2,3 k€". */
 export function formatEurosShort(cents: number): string {
     const euros = cents / 100;
     if (Math.abs(euros) < 1000) return `${Math.round(euros)} €`;

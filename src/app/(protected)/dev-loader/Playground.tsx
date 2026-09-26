@@ -15,7 +15,7 @@ import {
     landingPose,
 } from "@/lib/flightLoader";
 
-/** Durées de chargement simulées : sous le seuil d'affichage, court, moyen, long. */
+/** Simulated load durations: under the display threshold, short, medium, long. */
 const DURATIONS = [
     { label: "0,1 s", ms: 100, hint: "l'avion vole quand même 2 s : décollage puis atterrissage" },
     { label: "1 s", ms: 1000, hint: "idem : 2 s au total" },
@@ -35,7 +35,7 @@ const PHASES = [
 
 type Status = "idle" | "loading" | "done";
 
-/** Chargement simulé : minuté, ou manuel (on choisit l'instant exact de fin). */
+/** Simulated load: timed, or manual (you pick the exact end time). */
 function useFakeLoad() {
     const [status, setStatus] = useState<Status>("idle");
     const [duration, setDuration] = useState<number | null>(null);
@@ -117,8 +117,8 @@ function Placeholder() {
     );
 }
 
-// Deux composants distincts : React démonte réellement le premier loader au
-// profit du second, comme loading.tsx → Suspense → InitialLoading.
+// Two separate components: React really unmounts the first loader in favor of
+// the second, like loading.tsx → Suspense → InitialLoading.
 function StepOne() {
     return <FlightLoader variant="page" className="min-h-0" />;
 }

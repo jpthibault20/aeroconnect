@@ -28,11 +28,11 @@ interface Props {
     plane: planes;
     planes: planes[];
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
-    // Affichage de la colonne "Propriétaire" (président/admin uniquement).
+    // Shows the "Owner" column (president/admin only).
     canViewOwner?: boolean;
     ownerNames?: Record<string, string>;
     onOwnerNameResolved?: (ownerID: string, ownerName: string) => void;
-    // Au moins un rappel de maintenance en retard sur cette machine.
+    // At least one overdue maintenance reminder on this plane.
     isOverdue?: boolean;
 }
 
@@ -44,21 +44,21 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
     const [showBapteme, setShowBapteme] = useState(false);
     const [planeState, setPlaneState] = useState<planes>(plane);
 
-    // --- Permissions Logic ---
-    // Gestion par machine : rôles de gestion sur les machines du club ;
-    // propriétaire (+ président/admin) sur une machine privée.
+    // --- Permissions ---
+    // Per-plane management: management roles on club planes; owner (+ president/admin)
+    // on a private plane.
     const canManage = currentUser
         ? canManagePlane(planeState, currentUser)
         : false;
 
-    // Accès au suivi de maintenance (plus large que la gestion : un instructeur
-    // voit la maintenance des machines club sans pouvoir gérer l'avion).
+    // Maintenance access (wider than management: an instructor sees club planes'
+    // maintenance without being able to manage the plane).
     const canMaintenance = currentUser
         ? canAccessMaintenance(planeState, currentUser)
         : false;
 
-    // Config des formules de baptême (durée + tarif) : rôles de gestion,
-    // uniquement sur une machine du club.
+    // Discovery-flight package config (duration + price): management roles, club
+    // planes only.
     const canBapteme = currentUser
         ? canManageBaptemeOptions(planeState, currentUser)
         : false;
@@ -102,7 +102,7 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
     };
 
     const onChangeOperational = async () => {
-        // Optimistic UI update (changement visuel immédiat)
+        // Optimistic UI update
         const newState = !planeState.operational;
         setPlaneState(prev => ({ ...prev, operational: newState }));
 
@@ -143,7 +143,7 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
             isOverdue ? "bg-red-50/50 hover:bg-red-50" : "hover:bg-slate-50"
         )}>
 
-            {/* 1. Icon Column — photo de la machine, ou icône en repli */}
+            {/* 1. Icon column: plane photo, or fallback icon */}
             <TableCell className="text-center py-4">
                 <PlaneThumbnail
                     imagePath={planeState.imagePath}
@@ -168,9 +168,7 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                                 Révision en retard
                             </span>
                         )}
-                        {/* Les usages (instruction / location / club) ne sont plus
-                            affichés : le champ n'est pas encore exploité par une
-                            règle métier. */}
+                        {/* Usages (instruction / rental / club) are no longer shown: the field is not used by any business rule yet. */}
                         {isPrivate && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
                                 <Lock className="w-3 h-3" />
@@ -182,7 +180,7 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                 </div>
             </TableCell>
 
-            {/* 3. Propriétaire Column (président/admin uniquement) */}
+            {/* 3. Owner column (president/admin only) */}
             {canViewOwner && (
                 <TableCell className="pl-4 text-slate-600">
                     {isPrivate ? (
@@ -195,28 +193,28 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                 </TableCell>
             )}
 
-            {/* 4. Immatriculation Column (Monospace Font) */}
+            {/* 4. Registration column (monospace) */}
             <TableCell className="text-center">
                 <span className="font-mono text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200">
                     {planeState.immatriculation}
                 </span>
             </TableCell>
 
-            {/* 4. Class Column (Hidden on mobile) */}
+            {/* 5. Class column (hidden on mobile) */}
             <TableCell className="text-center text-slate-500 hidden sm:table-cell">
                 <span className="text-xs border border-slate-200 rounded-full px-3 py-0.5">
                     {getClasseLabel()}
                 </span>
             </TableCell>
 
-            {/* 5. Heures moteur Column (Hidden on mobile) */}
+            {/* 6. Hobbs column (hidden on mobile) */}
             <TableCell className="text-center text-slate-500 hidden sm:table-cell">
                 <span className="text-xs font-mono">
                     {planeState.hobbsTotal != null ? `${planeState.hobbsTotal}h` : "—"}
                 </span>
             </TableCell>
 
-            {/* 6. Status Column */}
+            {/* 7. Status column */}
             {canViewStatus && (
                 <TableCell className="text-center">
                     {canManage ? (
@@ -248,7 +246,7 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                 </TableCell>
             )}
 
-            {/* 6. Actions Column */}
+            {/* 8. Actions column */}
             {(canManage || canMaintenance || canBapteme) && (
                 <TableCell className="text-right pr-4">
                     <div className="flex items-center justify-end gap-1 opacity-100  transition-opacity">
@@ -271,7 +269,7 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                             </Button>
                         )}
 
-                        {/* Raccourci « Tarifs » : tarif écolage + formules baptême */}
+                        {/* "Rates" shortcut: instruction rate + discovery-flight packages */}
                         {canBapteme && (
                             <Button
                                 variant="ghost"

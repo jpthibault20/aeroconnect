@@ -25,7 +25,6 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
     const handleRemoveStudent = async () => {
         const sessionID = session.id;
 
-        // Vérification date passée
         const sessionDate = new Date(session.sessionDateStart);
         const nowDate = new Date();
 
@@ -53,7 +52,6 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
                     className: "bg-green-600 text-white border-none"
                 });
 
-                // Mise à jour de la session locale
                 setSessions(prevSessions => {
                     return prevSessions.map(s =>
                         s.id === sessionID
@@ -68,7 +66,6 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
                     );
                 });
 
-                // Envoi des notifications
                 const endDate = new Date(session.sessionDateStart);
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 

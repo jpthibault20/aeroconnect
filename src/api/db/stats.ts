@@ -25,14 +25,13 @@ import {
 } from "@/lib/clubStats";
 
 /**
- * Statistiques de la page « Club » (AER-68). Lecture seule.
+ * "Club" page statistics (AER-68). Read-only.
  *
- * Cloisonnement : le club est TOUJOURS celui de l'utilisateur connecté
- * (auth.user.clubID), jamais un paramètre venu du client. Les statistiques
- * personnelles ne portent que sur les vols de l'utilisateur connecté.
+ * Isolation: the club is ALWAYS the signed-in user's (auth.user.clubID), never a
+ * client parameter. Personal statistics only cover the signed-in user's flights.
  *
- * Source des heures : le carnet de vol (flight_logs), et non plus les
- * réservations, qui comptaient aussi les créneaux annulés ou non volés.
+ * Hours come from the logbook (flight_logs), no longer from bookings, which also
+ * counted cancelled or unflown slots.
  */
 
 const LOG_SELECT = {
@@ -78,7 +77,7 @@ async function loadTransactions(clubID: string, range: DayRange): Promise<StatTr
 const memberLabel = (m: { firstName: string; lastName: string }) =>
     `${m.lastName.toUpperCase()} ${m.firstName.charAt(0).toUpperCase()}.`;
 
-/** Membres à découvert, avec la même population que la liste des portefeuilles. */
+/** Overdrawn members, same population as the wallet list. */
 async function loadOverdraft(clubID: string) {
     const [members, wallets] = await Promise.all([
         prisma.user.findMany({ where: { clubID, role: { notIn: WALLET_HIDDEN_ROLES } }, select: { id: true } }),
@@ -92,7 +91,7 @@ async function loadOverdraft(clubID: string) {
     };
 }
 
-// ─── Gestion : statistiques de vol du club ───
+// ─── Management: club flight statistics ───
 
 export const getClubFlightStats = async (period: StatsPeriod) => {
     const auth = await requireAuth(CLUB_MANAGEMENT_ROLES);
@@ -109,7 +108,7 @@ export const getClubFlightStats = async (period: StatsPeriod) => {
     }
 };
 
-// ─── Gestion : statistiques des portefeuilles ───
+// ─── Management: wallet statistics ───
 
 export const getClubWalletStats = async (period: StatsPeriod) => {
     const auth = await requireAuth(WALLET_MANAGE_ROLES);
@@ -138,7 +137,7 @@ export const getClubWalletStats = async (period: StatsPeriod) => {
     }
 };
 
-// ─── Gestion : aperçu du mois ───
+// ─── Management: month overview ───
 
 export interface ClubOverview {
     currentLabel: string;
@@ -152,7 +151,7 @@ export interface ClubOverview {
         previousStudents: number;
         topPlane: RankRow | null;
     };
-    // null si le portefeuille est désactivé.
+    // null if the wallet is disabled.
     wallet: {
         cashedCents: number;
         previousCashedCents: number;
@@ -221,11 +220,11 @@ export const getClubOverview = async () => {
     }
 };
 
-// ─── Statistiques personnelles ───
+// ─── Personal statistics ───
 
 /**
- * Vols de l'utilisateur connecté (élève, pilote) : ceux où il est le pilote
- * enregistré ou l'élève (1 ligne par vol d'instruction).
+ * Flights of the signed-in user (student, pilot): those where they are the
+ * recorded pilot or the student (1 row per instruction flight).
  */
 export const getMyFlightStats = async (period: StatsPeriod) => {
     const auth = await requireAuth();
@@ -247,8 +246,8 @@ export const getMyFlightStats = async (period: StatsPeriod) => {
 };
 
 /**
- * Vols d'instruction donnés par l'instructeur connecté : ceux où il est
- * l'instructeur renseigné, ou le pilote enregistré en fonction « I ».
+ * Instruction flights given by the signed-in instructor: those where they are
+ * the recorded instructor, or the recorded pilot with function "I".
  */
 export const getMyInstructionStats = async (period: StatsPeriod) => {
     const auth = await requireAuth([userRole.INSTRUCTOR, ...CLUB_MANAGEMENT_ROLES]);

@@ -10,11 +10,10 @@ import MemberWalletDetail from "./MemberWalletDetail";
 import WalletMembersPage from "./WalletMembersPage";
 
 /**
- * /wallet : le contenu dépend du rôle (même principe que la page Club).
- *  - élève / pilote : « Mon portefeuille » (userID ignoré) ;
- *  - instructeur / gestion : liste « Portefeuilles », ou détail d'un membre
- *    avec ?userID=.
- * Les droits réels sont vérifiés côté serveur.
+ * /wallet: content depends on the role (same principle as the Club page).
+ *  - student / pilot: "My wallet" (userID ignored);
+ *  - instructor / management: "Wallets" list, or a member's details with ?userID=.
+ * Actual rights are checked server-side.
  */
 const WalletPageComponent = ({ userID, openCredit = false }: { userID: string | null; openCredit?: boolean }) => {
     const { currentUser } = useCurrentUser();

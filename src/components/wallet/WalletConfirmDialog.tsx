@@ -16,7 +16,7 @@ interface Props {
     onCancel: () => void;
 }
 
-/** Confirmation contrôlée (activation du portefeuille, retrait sous 0 €). */
+/** Controlled confirmation (enabling the wallet, withdrawal below 0 €). */
 const WalletConfirmDialog = ({ open, title, children, confirmLabel, tone = "primary", onConfirm, onCancel }: Props) => (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
         <DialogContent className="w-[95%] sm:max-w-[440px] gap-0 p-0 overflow-hidden rounded-2xl">

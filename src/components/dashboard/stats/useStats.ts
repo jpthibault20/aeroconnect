@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 
 /**
- * Charge une statistique via une server action et recharge quand `key`
- * change (période, mode…). Ignore les réponses arrivées dans le désordre.
+ * Loads a statistic through a server action and reloads when `key` changes
+ * (period, mode…). Ignores out-of-order responses.
  */
 export function useStats<R extends object>(load: () => Promise<R>, key: string, reloadEvent?: string) {
     const [data, setData] = useState<Extract<R, { success: true }> | null>(null);
@@ -43,7 +43,7 @@ export function useStats<R extends object>(load: () => Promise<R>, key: string, 
         return () => {
             cancelled = true;
         };
-        // `load` est recréée à chaque rendu : on ne recharge que sur `key`.
+        // `load` is recreated on every render: only reload on `key`.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [key, tick]);
 

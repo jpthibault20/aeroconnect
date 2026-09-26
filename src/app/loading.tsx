@@ -1,7 +1,7 @@
 import LoadingPage from '@/components/LoadingPage';
 
-// Chargement de l'espace connecté (layout protégé : session + club), par
-// exemple juste après la connexion. Pas encore de navigation : plein écran.
+// Loading of the signed-in area (protected layout: session + club), e.g. right
+// after login. No navigation yet: full screen.
 export default function Loading() {
     return <LoadingPage className="min-h-screen" />;
 }

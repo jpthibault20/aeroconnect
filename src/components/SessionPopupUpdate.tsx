@@ -19,7 +19,7 @@ interface Prop {
 const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: Prop) => {
     const { currentUser } = useCurrentUser()
 
-    // Helper pour formater les noms (ex: D.John)
+    // Formats names (e.g. D.John)
     const formatName = (lastName: string, firstName: string) => {
         if (!lastName || !firstName) return "...";
         return `${lastName.slice(0, 1).toUpperCase()}.${firstName}`;
@@ -55,7 +55,6 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                             key={index}
                             className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col relative group"
                         >
-                            {/* Header: Pilote + Suppression */}
                             <div className="flex justify-between items-center p-3 bg-slate-50 border-b border-slate-100">
                                 <div className="flex items-center gap-2">
                                     <div className="bg-blue-100 p-1.5 rounded-md text-blue-600 shadow-sm">
@@ -72,7 +71,7 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                 {isAuthorized && (
                                     <DeleteFlightSession
                                         description={`Ce vol sera supprimé définitivement, et les participants notifiés.`}
-                                        sessions={[s]} // On passe un tableau avec la session unique
+                                        sessions={[s]}
                                         setSessions={setSessions}
                                         usersProp={usersProps}
                                     >
@@ -86,15 +85,13 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                 )}
                             </div>
 
-                            {/* Body: Étudiant & Avion */}
                             <div className="p-4 flex-1 flex flex-col gap-4">
 
-                                {/* Slot Étudiant */}
                                 <div className="flex flex-col gap-2">
                                     <p className="text-[10px] text-slate-400 uppercase font-bold">Élève inscrit</p>
 
                                     {s.studentID ? (
-                                        // Cas : Étudiant Inscrit
+                                        // Case: student booked
                                         <div className="flex items-center justify-between bg-emerald-50/50 border border-emerald-100 rounded-lg p-2 transition-colors hover:bg-emerald-50">
                                             <div className="flex items-center gap-2">
                                                 <div className="bg-emerald-100 p-1 rounded-full">
@@ -113,7 +110,7 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
                                             )}
                                         </div>
                                     ) : (
-                                        // Cas : Place Libre
+                                        // Case: free seat
                                         <div className="flex items-center justify-between border border-dashed border-slate-300 rounded-lg p-2 bg-slate-50/30">
                                             <span className="text-xs text-slate-500 italic flex items-center gap-2">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
@@ -138,7 +135,6 @@ const SessionPopupUpdate = ({ sessions, setSessions, usersProps, planesProp }: P
 
                                 <div className="h-px bg-slate-100 w-full" />
 
-                                {/* Footer: Avion & Notes */}
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-slate-600" title="Appareil utilisé">
                                         <Plane size={14} className="text-slate-400" />

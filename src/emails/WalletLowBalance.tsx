@@ -9,8 +9,8 @@ import EmailTemplate, { clubAdressType } from "./Template";
 
 interface props {
     firstName: string;
-    balance: string; // montant déjà formaté (« 12,50 € », « −12,50 € »)
-    isEmpty: boolean; // solde nul ou négatif => inscriptions bloquées
+    balance: string; // already formatted amount ("12,50 €", "−12,50 €")
+    isEmpty: boolean; // zero or negative balance => bookings blocked
     contactName: string | null;
     phoneContact: string | null;
     mailContact: string | null;
@@ -19,8 +19,8 @@ interface props {
     clubAdress: clubAdressType;
 }
 
-// E-mail envoyé une seule fois quand le solde d'un élève / pilote passe sous
-// le seuil « faible » (AER-66) : il explique la situation et comment recharger.
+// Email sent only once when a student's / pilot's balance drops below the "low"
+// threshold (AER-66): explains the situation and how to top up.
 const WalletLowBalance = ({
     firstName, balance, isEmpty, contactName, phoneContact, mailContact, walletLink, clubName, clubAdress,
 }: props) => (

@@ -1,12 +1,11 @@
 /**
- * Envoi groupé des notifications e-mail déclenchées côté client après une
- * action réussie (réservation, désinscription, suppression de session).
+ * Batch sending of email notifications triggered client-side after a successful
+ * action (booking, unsubscribe, session deletion).
  *
- * Les helpers de `src/lib/mail.ts` lèvent une exception en cas d'échec : sans
- * `await`, un `try/catch` autour d'un `Promise.all` ne les intercepte pas et
- * l'erreur finit en rejet non géré. Ici, chaque envoi est attendu
- * indépendamment et on renvoie le nombre d'échecs, pour prévenir l'utilisateur
- * sans annuler l'action déjà enregistrée.
+ * The `src/lib/mail.ts` helpers throw on failure: without `await`, a `try/catch`
+ * around a `Promise.all` does not catch them and the error ends up as an
+ * unhandled rejection. Here each send is awaited independently and the number of
+ * failures is returned, so the user is warned without undoing the saved action.
  */
 
 type NotificationTask = Promise<unknown> | null | undefined | false | "";
@@ -16,7 +15,7 @@ export async function settleNotifications(tasks: NotificationTask[]): Promise<nu
     return results.filter((r) => r.status === "rejected").length;
 }
 
-/** Message affiché quand au moins une notification n'a pas pu partir. */
+/** Message shown when at least one notification could not be sent. */
 export function notificationFailureMessage(failed: number): string | null {
     if (failed <= 0) return null;
     return failed === 1
@@ -25,9 +24,9 @@ export function notificationFailureMessage(failed: number): string | null {
 }
 
 /**
- * Attend les notifications puis appelle `warn` avec un message si au moins une
- * a échoué. `warn` est injecté (toast côté composant) pour garder ce module
- * pur et testable.
+ * Awaits the notifications then calls `warn` with a message if at least one
+ * failed. `warn` is injected (toast in the component) to keep this module pure
+ * and testable.
  */
 export async function sendNotificationsOrWarn(
     tasks: NotificationTask[],

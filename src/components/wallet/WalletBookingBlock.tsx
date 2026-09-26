@@ -10,9 +10,9 @@ import { formatCents, isBookingGatedRole } from "@/lib/wallet";
 import ClubPaymentContact from "./ClubPaymentContact";
 
 /**
- * Remplace le formulaire de réservation quand le solde de l'élève / du pilote
- * est nul ou négatif (AER-66) : explication + contact du club. Pas de bouton
- * grisé : la vraie action est de contacter le club.
+ * Replaces the booking form when the student's / pilot's balance is zero or
+ * negative (AER-66): explanation + club contact. No greyed-out button: the real
+ * action is to contact the club.
  */
 export const WalletBookingBlock = ({ balanceCents }: { balanceCents: number }) => {
     const { currentClub } = useCurrentClub();
@@ -42,8 +42,8 @@ export const WalletBookingBlock = ({ balanceCents }: { balanceCents: number }) =
 };
 
 /**
- * Bandeau du calendrier pour l'élève / le pilote connecté, affiché seulement
- * si son solde est faible ou épuisé (portefeuille activé).
+ * Calendar banner for the signed-in student / pilot, only shown when their
+ * balance is low or depleted (wallet enabled).
  */
 export const CalendarWalletNotice = ({ className }: { className?: string }) => {
     const { currentUser } = useCurrentUser();
@@ -57,7 +57,7 @@ export const CalendarWalletNotice = ({ className }: { className?: string }) => {
     );
 };
 
-/** Bandeau du calendrier : prévient avant même d'ouvrir un créneau. */
+/** Calendar banner: warns even before a slot is opened. */
 export const WalletCalendarBanner = ({ balanceCents, state }: { balanceCents: number; state: "low" | "empty" }) => {
     const { currentClub } = useCurrentClub();
     const href = `/wallet?clubID=${currentClub?.id ?? ""}`;

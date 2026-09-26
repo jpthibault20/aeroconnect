@@ -61,7 +61,7 @@ const SideBar = ({ clubsProp, counts }: props) => {
                 toast({ title: "Changement de club impossible", description: res.error, variant: "destructive" });
                 return;
             }
-            // Rechargement complet : les contextes utilisateur / club sont relus côté serveur.
+            // Full reload: user / club contexts are re-read server-side.
             window.location.assign(`/calendar?clubID=${newClubID}`);
         }
     };
@@ -80,7 +80,6 @@ const SideBar = ({ clubsProp, counts }: props) => {
 
     return (
         <aside className="hidden lg:flex w-60 h-screen bg-[#1A1B1E] text-slate-300 flex-col transition-all duration-300 z-20 border-r border-white/5">
-            {/* --- HEADER : LOGO --- */}
             <div className="h-20 flex items-center px-6 border-b border-white/5">
                 <button
                     onClick={() => handleNavigation("/")}
@@ -97,7 +96,7 @@ const SideBar = ({ clubsProp, counts }: props) => {
                 </button>
             </div>
 
-            {/* --- SECTION ADMIN : SELECTEUR CLUB --- */}
+            {/* --- ADMIN SECTION: CLUB SELECTOR --- */}
             {currentUser?.role === userRole.ADMIN && (
                 <div className="px-4 my-6">
                     <DropdownMenu>
@@ -129,7 +128,6 @@ const SideBar = ({ clubsProp, counts }: props) => {
                 </div>
             )}
 
-            {/* --- NAVIGATION --- */}
             <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
                 <div className="space-y-1">
                     <p className="px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Principal</p>
@@ -141,8 +139,8 @@ const SideBar = ({ clubsProp, counts }: props) => {
                                 const IconComponent = link.icon;
                                 const isActive = pathname === link.path;
 
-                                // Badge par onglet : demandes d'adhésion + baptêmes en
-                                // attente pour "Club", rappels de maintenance pour "Avions".
+                                // Badge per tab: membership requests + pending discovery flights for "Club",
+                                // maintenance reminders for "Planes".
                                 const badgeCount =
                                     link.name === "Club" || link.name === "Membres"
                                         ? requestCount + baptemeCount
@@ -173,7 +171,6 @@ const SideBar = ({ clubsProp, counts }: props) => {
                                         <span className="relative z-10 flex-1 flex justify-between items-center">
                                             {link.name}
 
-                                            {/* --- BULLE DE NOTIFICATION --- */}
                                             {showBadge && (
                                                 <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-sm ring-2 ring-[#1A1B1E] animate-in zoom-in-50 duration-300">
                                                     {isWalletAlert ? "!" : badgeCount}
@@ -187,7 +184,6 @@ const SideBar = ({ clubsProp, counts }: props) => {
                 </div>
             </div>
 
-            {/* --- FOOTER : PROFIL & LOGOUT --- */}
             <div className="p-4 border-t border-white/5 bg-black/20">
                 <Link
                     href={`/profile?clubID=${currentUser?.clubID}`}
@@ -232,9 +228,7 @@ const SideBar = ({ clubsProp, counts }: props) => {
                     </button>
                 </div>
 
-                {/* Version + date, comme dans le menu mobile (navBar.tsx). Sur sa
-                    propre ligne : la sidebar ne fait que 240px et le libellé
-                    déborderait à côté du bouton de déconnexion. */}
+                {/* Version + date, as in the mobile menu (navBar.tsx). On its own line: the sidebar is only 240px wide and the label would overflow next to the logout button. */}
                 <p className="text-center pt-2 text-[10px] text-slate-600 font-mono">
                     v{packageJson.version} • {packageJson.date}
                 </p>

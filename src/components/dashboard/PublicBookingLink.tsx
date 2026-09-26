@@ -24,9 +24,9 @@ import { Copy, Download, RefreshCw, Share2, LinkIcon, QrCode } from "lucide-reac
 interface Props {
     clubID: string;
     initialToken: string | null;
-    // Intégré à une section qui porte déjà le titre (Paramètres) : pas d'en-tête de carte.
+    // Embedded in a section that already has the title (Settings): no card header.
     embedded?: boolean;
-    // Prévient la page quand le lien est (re)généré (ligne compacte de l'aperçu).
+    // Notifies the page when the link is (re)generated (compact overview row).
     onTokenChange?: (token: string) => void;
 }
 
@@ -35,14 +35,14 @@ const PublicBookingLink = ({ clubID, initialToken, embedded = false, onTokenChan
     const { currentClub } = useCurrentClub();
     const clubName = currentClub?.Name ?? null;
     const [token, setToken] = useState<string | null>(initialToken);
-    // QR mémorisé avec l'URL qu'il encode : un QR périmé (lien régénéré, ou
-    // génération encore en cours) n'est jamais affiché.
+    // QR stored with the URL it encodes: a stale QR (regenerated link, or generation
+    // still in progress) is never shown.
     const [qr, setQr] = useState<{ url: string; dataUrl: string }>({ url: "", dataUrl: "" });
     const [loading, setLoading] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
 
-    // Lien construit côté client à partir de l'origine réelle (évite toute
-    // incohérence de variable d'environnement de base URL).
+    // Link built client-side from the real origin (avoids any base URL env var
+    // mismatch).
     const url = token ? `${typeof window !== "undefined" ? window.location.origin : ""}/reservation/${clubID}/${token}` : "";
 
     const qrDataUrl = url && qr.url === url ? qr.dataUrl : "";
@@ -58,8 +58,8 @@ const PublicBookingLink = ({ clubID, initialToken, embedded = false, onTokenChan
 
     if (!currentUser) return null;
 
-    // Tout membre peut consulter / partager le lien ; seuls le président et
-    // l'administrateur peuvent le (re)générer.
+    // Any member can view / share the link; only the president and the admin can
+    // (re)generate it.
     const canManage = canManagePublicLink(currentUser.role);
 
     const onRegenerate = async () => {
@@ -103,8 +103,7 @@ const PublicBookingLink = ({ clubID, initialToken, embedded = false, onTokenChan
         }
     };
 
-    // Smartphone : partage natif (enregistrement dans la pellicule) avec repli
-    // téléchargement de l'image PNG.
+    // Smartphone: native share (save to camera roll) with a PNG download fallback.
     const onShareImage = async () => {
         if (!qrDataUrl) return;
         try {
@@ -203,7 +202,7 @@ const PublicBookingLink = ({ clubID, initialToken, embedded = false, onTokenChan
                 )}
             </CardContent>
 
-            {/* Disclaimer de régénération */}
+            {/* Regeneration disclaimer */}
             <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>

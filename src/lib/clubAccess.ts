@@ -1,49 +1,49 @@
 import { userRole } from "@prisma/client";
 
 /**
- * Règles (pures, testées) d'accès à la page « Club » (/dashboard).
+ * Pure, tested access rules of the "Club" page (/dashboard).
  *
- * La page est ouverte à TOUS les membres du club, mais son contenu est filtré :
- *  - tout le monde voit les informations non confidentielles du club (contact,
- *    horaires, règles de réservation) et le lien public de réservation baptême ;
- *  - seule la gestion voit les données nominatives / sensibles (demandes
- *    d'adhésion, statistiques par instructeur / élève / machine) et peut agir ;
- *  - seuls président et admin peuvent modifier la configuration du club et
- *    régénérer le lien public (cf. PUBLIC_LINK_MANAGE_ROLES dans lib/bapteme).
+ * The page is open to ALL club members, but its content is filtered:
+ *  - everyone sees the club's non-confidential info (contact, hours, booking
+ *    rules) and the public discovery-flight booking link;
+ *  - only management sees personal / sensitive data (membership requests,
+ *    per-instructor / student / plane statistics) and can act on it;
+ *  - only the president and admin can change the club configuration and
+ *    regenerate the public link (see PUBLIC_LINK_MANAGE_ROLES in lib/bapteme).
  *
- * Ces helpers ne servent qu'à l'affichage : chaque server action garde sa
- * propre garde `requireAuth([...])` côté serveur.
+ * These helpers are for display only: every server action keeps its own
+ * `requireAuth([...])` guard server-side.
  */
 
-// Gestion du club : voit les données sensibles et peut agir dessus.
+// Club management: sees sensitive data and can act on it.
 export const CLUB_MANAGEMENT_ROLES: userRole[] = [
     userRole.OWNER,
     userRole.ADMIN,
     userRole.MANAGER,
 ];
 
-// Configuration du club (onglet « Paramètres ») : président et admin seulement.
+// Club configuration ("Settings" tab): president and admin only.
 export const CLUB_SETTINGS_ROLES: userRole[] = [
     userRole.ADMIN,
     userRole.OWNER,
 ];
 
 /**
- * Peut consulter les données sensibles du club (demandes d'adhésion,
- * statistiques nominatives) et les traiter.
+ * Can view the club's sensitive data (membership requests, personal statistics)
+ * and handle it.
  */
 export function canManageClub(role: userRole | undefined | null): boolean {
     return role != null && CLUB_MANAGEMENT_ROLES.includes(role);
 }
 
 /**
- * Peut modifier la configuration du club (onglet « Paramètres »).
+ * Can edit the club configuration ("Settings" tab).
  */
 export function canEditClubSettings(role: userRole | undefined | null): boolean {
     return role != null && CLUB_SETTINGS_ROLES.includes(role);
 }
 
-// ─── Onglets de la page « Club » (AER-68) ───
+// ─── "Club" page tabs (AER-68) ───
 
 export type ClubTab = "overview" | "todo" | "stats" | "wallet" | "settings";
 
@@ -56,9 +56,9 @@ export const CLUB_TAB_LABELS: Record<ClubTab, string> = {
 };
 
 /**
- * Onglets visibles, dans l'ordre d'affichage. « À traiter » apparaît aussi
- * pour un membre qui a des baptêmes assignés en attente (liste déjà filtrée
- * côté serveur) ; « Portefeuilles » exige le portefeuille activé.
+ * Visible tabs, in display order. "To handle" also shows for a member with
+ * pending assigned discovery flights (list already filtered server-side);
+ * "Wallets" requires the wallet to be enabled.
  */
 export function clubTabsFor(
     role: userRole | undefined | null,
@@ -73,12 +73,12 @@ export function clubTabsFor(
     return tabs;
 }
 
-/** Onglet demandé dans l'URL, ou l'aperçu s'il n'est pas accessible. */
+/** Tab requested in the URL, or the overview if it is not accessible. */
 export function resolveClubTab(requested: string | null | undefined, available: ClubTab[]): ClubTab {
     return available.find((t) => t === requested) ?? "overview";
 }
 
-/** Aperçu à afficher selon le rôle. */
+/** Overview to show depending on the role. */
 export type OverviewKind = "management" | "instructor" | "pilot" | "member";
 
 export function overviewKindFor(role: userRole | undefined | null): OverviewKind {
@@ -88,14 +88,13 @@ export function overviewKindFor(role: userRole | undefined | null): OverviewKind
     return "member";
 }
 
-// ─── Changement de club ───
+// ─── Club switching ───
 
 /**
- * Seul un administrateur (rôle transverse à tous les clubs) peut changer de
- * club, et uniquement pour lui-même (sélecteur de club de la navigation).
- * Autoriser OWNER / MANAGER ouvrirait une escalade multi-tenant : un gérant
- * pourrait se rattacher à un autre club en gardant son rôle, ou déplacer les
- * membres d'un autre club.
+ * Only an administrator (a role spanning every club) can switch clubs, and only
+ * for themselves (navigation club selector). Allowing OWNER / MANAGER would open
+ * a multi-tenant escalation: a manager could attach themselves to another club
+ * while keeping their role, or move another club's members.
  */
 export function canSwitchClub(
     caller: { id: string; role: userRole } | null | undefined,

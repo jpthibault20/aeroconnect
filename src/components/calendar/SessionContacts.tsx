@@ -12,9 +12,9 @@ interface Props {
 }
 
 /**
- * Coordonnées des participants d'une séance, affichées dans le popup du
- * calendrier. Le filtrage (qui voit quoi) est fait par resolveSessionContacts :
- * ce composant ne rend rien s'il n'y a rien à montrer.
+ * Contact details of a session's participants, shown in the calendar popup.
+ * Filtering (who sees what) is done by resolveSessionContacts: this component
+ * renders nothing when there is nothing to show.
  */
 const SessionContacts = ({ session, usersProps }: Props) => {
     const { currentUser } = useCurrentUser()

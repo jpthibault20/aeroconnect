@@ -30,17 +30,17 @@ const LOGBOOK_ROLES: userRole[] = [
     userRole.PILOT, userRole.STUDENT, userRole.INSTRUCTOR,
     userRole.OWNER, userRole.ADMIN, userRole.MANAGER,
 ];
-// Rôles pouvant écrire (modifier/signer) un vol — STUDENT exclu (l'élève vole
-// toujours avec un instructeur : c'est l'instructeur qui saisit et signe).
+// Roles allowed to write (edit/sign) a flight. STUDENT excluded: a student always
+// flies with an instructor, who enters and signs the flight.
 const LOGBOOK_WRITE_ROLES: userRole[] = [
     userRole.PILOT, userRole.INSTRUCTOR,
     userRole.OWNER, userRole.ADMIN, userRole.MANAGER,
 ];
-// Rôles pouvant voir/modifier les vols des autres pilotes
+// Roles allowed to view/edit other pilots' flights
 const MANAGEMENT_ROLES: userRole[] = [
     userRole.OWNER, userRole.ADMIN, userRole.MANAGER,
 ];
-// Rôles pouvant modifier un vol déjà signé
+// Roles allowed to edit an already signed flight
 const SIGN_OVERRIDE_ROLES: userRole[] = [
     userRole.OWNER, userRole.ADMIN,
 ];
@@ -69,9 +69,9 @@ export interface CreateFlightLogInput {
     landings: number;
     departureAirfield?: string;
     arrivalAirfield?: string;
-    // hobbsStart : le serveur lit plane.hobbsTotal courant. La valeur envoyée
-    // n'est prise en compte que par un OWNER/ADMIN (override) ou si le compteur
-    // de la machine est encore inconnu (initialisation par la première entrée).
+    // hobbsStart: the server reads the current plane.hobbsTotal. The value sent is
+    // only used for an OWNER/ADMIN (override) or when the plane's counter is still
+    // unknown (initialized by the first entry).
     hobbsStart?: number;
     hobbsEnd?: number;
     fuelAdded?: number;
@@ -93,13 +93,13 @@ export interface UpdateFlightLogInput {
     instructionSubType?: instructionSubType | null;
 }
 
-// ─── Carnet de vol pilote ───
+// ─── Pilot logbook ───
 
 export const getLogbookByPilot = async (pilotID: string, clubID: string, year?: number) => {
     const auth = await requireAuth(LOGBOOK_ROLES);
     if ("error" in auth) return { error: auth.error };
 
-    // Un pilote ne voit que son carnet, sauf si owner/admin/manager
+    // A pilot only sees their own logbook, unless owner/admin/manager
     const isManager = MANAGEMENT_ROLES.includes(auth.user.role);
     if (!isManager && auth.user.id !== pilotID) {
         return { error: "Permissions insuffisantes" };
@@ -112,8 +112,8 @@ export const getLogbookByPilot = async (pilotID: string, clubID: string, year?: 
     try {
         const logs = await prisma.flight_logs.findMany({
             where: {
-                // 1 log par vol d'instruction (pilotID=instructeur, studentID=élève).
-                // Le carnet du pilote inclut les vols où il est pilote OU élève.
+                // 1 log per instruction flight (pilotID=instructor, studentID=student).
+                // A pilot's logbook includes flights where they are the pilot OR the student.
                 OR: [{ pilotID }, { studentID: pilotID }],
                 clubID,
                 date: {
@@ -129,7 +129,7 @@ export const getLogbookByPilot = async (pilotID: string, clubID: string, year?: 
     }
 };
 
-// ─── Carnet de route machine ───
+// ─── Plane logbook ───
 
 export const getLogbookByPlane = async (planeID: string, clubID: string, year?: number) => {
     const auth = await requireAuth(LOGBOOK_ROLES);
@@ -158,11 +158,10 @@ export const getLogbookByPlane = async (planeID: string, clubID: string, year?: 
     }
 };
 
-// ─── Carnet de vol club (plage de dates, pilote + machine confondus) ───
-// Utilisée par le sélecteur de période de la page carnet de vol : le filtrage
-// par rôle (perso vs club entier) reste fait côté client comme pour le
-// chargement initial (ServerPageComp), cette action ne fait que reborner la
-// période.
+// ─── Club logbook (date range, all pilots and planes) ───
+// Used by the logbook page's period picker: role filtering (own vs whole club)
+// stays client-side as for the initial load (ServerPageComp); this action only
+// narrows the period.
 
 export const getClubFlightLogsByDateRange = async (
     clubID: string,
@@ -194,13 +193,13 @@ export const getClubFlightLogsByDateRange = async (
     }
 };
 
-// ─── Création ───
-//
-// Règle du compteur moteur (cf. advanceHobbsTotal dans logbookCalc) : une
-// entrée est une lecture du compteur physique. Son hobbsStart est figé ICI
-// (= plane.hobbsTotal courant) et sa fin avance le compteur dès la création,
-// signée ou non, pour que le pilote suivant voie un début à jour. Le compteur
-// ne recule jamais (vol antérieur saisi en retard).
+// ─── Creation ───
+// 
+// Hobbs rule (see advanceHobbsTotal in logbookCalc): an entry is a reading of
+// the physical counter. Its hobbsStart is frozen HERE (= current
+// plane.hobbsTotal) and its end advances the counter on creation, signed or not,
+// so the next pilot sees an up-to-date start. The counter never goes backwards
+// (earlier flight entered late).
 
 export const createFlightLog = async (data: CreateFlightLogInput) => {
     const auth = await requireAuth(LOGBOOK_ROLES);
@@ -221,9 +220,9 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
     const natureCheck = validateNatureSubType(data.flightNature, data.instructionSubType);
     if (!natureCheck.ok) return { error: natureCheck.error };
 
-    // Déduction de la fonction côté serveur : la nature + le rôle du pilote
-    // déterminent EP / P / I. Si la création se fait pour quelqu'un d'autre
-    // (manager), on se base sur le rôle du pilote cible, pas du créateur.
+    // The function is derived server-side: the flight type + the pilot's role
+    // determine EP / P / I. When creating for someone else (manager), the target
+    // pilot's role is used, not the creator's.
     let pilotRole: userRole = auth.user.role;
     if (data.pilotID !== auth.user.id) {
         const targetPilot = await prisma.user.findUnique({
@@ -235,8 +234,8 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
     }
     const pilotFunction = derivePilotFunction(data.flightNature, pilotRole);
 
-    // hobbsStart est lu côté serveur depuis plane.hobbsTotal pour interdire
-    // toute manipulation (règle et exceptions : cf. resolveCreateHobbsStart).
+    // hobbsStart is read server-side from plane.hobbsTotal to prevent tampering
+    // (rule and exceptions: see resolveCreateHobbsStart).
     let hobbsStart: number | null = null;
     let planeHobbsTotal: number | null = null;
     if (data.planeID) {
@@ -246,8 +245,8 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
         });
         if (!plane) return { error: "Aéronef introuvable" };
         if (plane.clubID !== data.clubID) return { error: "Permissions insuffisantes" };
-        // Machine privée : celle du pilote ou de l'élève du vol uniquement
-        // (président / admin : toute machine du club).
+        // Private plane: only the flight's pilot's or student's own plane
+        // (president / admin: any club plane).
         if (!canLogFlightOnPlane(plane, { actor: auth.user, pilotID: data.pilotID, studentID: data.studentID })) {
             return { error: "Cette machine privée n'appartient ni au pilote ni à l'élève de ce vol." };
         }
@@ -311,9 +310,9 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
             return created;
         });
 
-        // Invalide le cache RSC de la page carnet : sans ça, une navigation SPA
-        // (ou une ré-ouverture de l'app) vers /logbook resservirait la version
-        // en cache et l'entrée n'apparaîtrait qu'après un rechargement manuel.
+        // Invalidate the logbook page's RSC cache: otherwise an SPA navigation (or
+        // reopening the app) to /logbook would serve the cached version and the entry
+        // would only show after a manual reload.
         revalidatePath("/logbook");
         return { success: "Entrée de carnet créée avec succès", log };
     } catch {
@@ -321,7 +320,7 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
     }
 };
 
-// ─── Modification ───
+// ─── Update ───
 
 export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput) => {
     const auth = await requireAuth(LOGBOOK_WRITE_ROLES);
@@ -348,7 +347,7 @@ export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput)
     const natureCheck = validateNatureSubType(nextNature, nextSubType);
     if (!natureCheck.ok) return { error: natureCheck.error };
 
-    // hobbsStart : modification réservée à OWNER/ADMIN (cf. resolveUpdateHobbs).
+    // hobbsStart: only OWNER/ADMIN can change it (see resolveUpdateHobbs).
     const hobbs = resolveUpdateHobbs({
         existing,
         requestedStart: data.hobbsStart,
@@ -377,10 +376,9 @@ export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput)
                 },
             });
 
-            // La fin corrigée se répercute sur le compteur selon la règle
-            // d'avancement : si cette entrée est en tête, sa nouvelle fin
-            // remplace le compteur (correction de la dernière lecture) ; sinon
-            // le compteur ne peut qu'avancer.
+            // The corrected end is applied to the counter using the advance rule: if this
+            // entry is the head, its new end replaces the counter (correcting the last
+            // reading); otherwise the counter can only move forward.
             if (existing.planeID && data.hobbsEnd !== undefined) {
                 const plane = await tx.planes.findUnique({
                     where: { id: existing.planeID },
@@ -396,8 +394,8 @@ export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput)
                 }
             }
 
-            // Vol déjà signé (donc déjà débité) corrigé par OWNER/ADMIN :
-            // régularisation automatique du portefeuille au tarif figé (AER-66).
+            // Already signed (hence already debited) flight corrected by OWNER/ADMIN:
+            // automatic wallet adjustment at the frozen rate (AER-66).
             if (existing.pilotSigned) {
                 walletMovement = await reconcileSignedFlight(tx, log);
             }
@@ -412,10 +410,10 @@ export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput)
     }
 };
 
-// ─── Signature ───
+// ─── Signing ───
 
-// Fait remonter un refus métier hors de la transaction Prisma (qui l'annule)
-// sans le confondre avec une erreur technique.
+// Carries a business refusal out of the Prisma transaction (which rolls it back)
+// without mistaking it for a technical error.
 class HobbsStartUnresolvedError extends Error {}
 class AlreadySignedError extends Error {}
 
@@ -426,15 +424,14 @@ export const signFlightLog = async (logID: string) => {
     const log = await prisma.flight_logs.findUnique({ where: { id: logID } });
     if (!log) return { error: "Entrée introuvable" };
 
-    // Un vol d'instruction est encadré, saisi ET signé par son instructeur, qui
-    // EST le pilotID du log (studentID = élève). Le contrôle pilotID ci-dessous
-    // garantit donc qu'un instructeur ne peut signer QUE les vols qu'il a
-    // lui-même encadrés : il ne peut pas signer le vol d'un autre pilote ou d'un
-    // autre instructeur (le rôle INSTRUCTOR n'est pas dans SIGN_OVERRIDE_ROLES).
+    // An instruction flight is supervised, entered AND signed by its instructor, who
+    // IS the log's pilotID (studentID = student). The pilotID check below therefore
+    // ensures an instructor can only sign flights they supervised themselves, never
+    // another pilot's or instructor's (INSTRUCTOR is not in SIGN_OVERRIDE_ROLES).
     if (auth.user.id !== log.pilotID) {
-        // Saisie déléguée (provisoire) : seuls président/admin (SIGN_OVERRIDE_ROLES)
-        // du même club peuvent signer pour le compte du pilote — cas d'usage :
-        // l'élève a un bug sur son app et ne peut pas signer lui-même.
+        // Delegated entry (temporary): only a president/admin (SIGN_OVERRIDE_ROLES) of
+        // the same club can sign on the pilot's behalf, e.g. when the student's app is
+        // broken and they cannot sign themselves.
         if (!SIGN_OVERRIDE_ROLES.includes(auth.user.role)) {
             return { error: "Seul le pilote concerné peut signer" };
         }
@@ -455,9 +452,9 @@ export const signFlightLog = async (logID: string) => {
     try {
         const signedAt = new Date();
         await prisma.$transaction(async (tx) => {
-            // La signature ne fait que verrouiller : hobbsStart a été figé à la
-            // création et le compteur déjà avancé. Le cas des entrées
-            // historiques sans début est traité par resolveSignHobbsStart.
+            // Signing only locks: hobbsStart was frozen at creation and the counter already
+            // advanced. Historical entries without a start are handled by
+            // resolveSignHobbsStart.
             let hobbsStart: number | null = log.hobbsStart;
             let current: number | null = null;
             if (log.planeID) {
@@ -475,8 +472,8 @@ export const signFlightLog = async (logID: string) => {
                 hobbsStart = resolved.hobbsStart;
             }
 
-            // Verrou optimiste : seule la première signature concurrente passe,
-            // sinon deux clics simultanés débiteraient deux fois le portefeuille.
+            // Optimistic lock: only the first concurrent signature goes through, otherwise
+            // two simultaneous clicks would debit the wallet twice.
             const locked = await tx.flight_logs.updateMany({
                 where: { id: logID, pilotSigned: false },
                 data: {
@@ -487,12 +484,12 @@ export const signFlightLog = async (logID: string) => {
             });
             if (locked.count !== 1) throw new AlreadySignedError("Entrée déjà signée");
 
-            // Débit du portefeuille (AER-66) : tarif manquant => WalletChargeError,
-            // qui annule toute la signature.
+            // Wallet debit (AER-66): a missing rate throws WalletChargeError, which rolls
+            // back the whole signature.
             walletMovement = await chargeSignedFlight(tx, { ...log, hobbsStart });
 
-            // Filet de sécurité : le compteur ne recule jamais, même si cette
-            // entrée n'avait pas encore été prise en compte (historique).
+            // Safety net: the counter never goes backwards, even if this entry had not been
+            // applied yet (historical data).
             if (log.planeID) {
                 const next = advanceHobbsTotal(current, null, log.hobbsEnd);
                 if (next != null && next !== current) {
@@ -514,7 +511,7 @@ export const signFlightLog = async (logID: string) => {
     }
 };
 
-// ─── Suppression ───
+// ─── Deletion ───
 
 export const deleteFlightLog = async (logID: string) => {
     const auth = await requireAuth(LOGBOOK_WRITE_ROLES);
@@ -525,15 +522,15 @@ export const deleteFlightLog = async (logID: string) => {
 
     if (log.clubID !== auth.user.clubID) return { error: "Permissions insuffisantes" };
 
-    // Un vol signé est verrouillé : jamais supprimable ici (même OWNER/ADMIN
-    // doivent d'abord le dé-signer via un flux dédié).
+    // A signed flight is locked: never deletable here (even OWNER/ADMIN must unsign
+    // it first through a dedicated flow).
     if (log.pilotSigned) {
         return { error: "Impossible de supprimer une entrée signée" };
     }
 
-    // Qui peut supprimer un vol NON signé :
-    //  - OWNER/ADMIN : n'importe quel vol de leur club ;
-    //  - le pilote du vol lui-même : son propre vol.
+    // Who can delete an UNSIGNED flight:
+    //  - OWNER/ADMIN: any flight of their club;
+    //  - the flight's own pilot: their own flight.
     const canOverride = SIGN_OVERRIDE_ROLES.includes(auth.user.role);
     if (!canOverride && auth.user.id !== log.pilotID) {
         return { error: "Permissions insuffisantes" };
@@ -543,9 +540,9 @@ export const deleteFlightLog = async (logID: string) => {
         await prisma.$transaction(async (tx) => {
             await tx.flight_logs.delete({ where: { id: logID } });
 
-            // Si l'entrée supprimée était la dernière lecture du compteur, on
-            // revient à son début : sinon une fin erronée resterait gravée dans
-            // plane.hobbsTotal et polluerait tous les vols suivants.
+            // If the deleted entry was the last counter reading, roll back to its start:
+            // otherwise a wrong end would stay in plane.hobbsTotal and pollute every
+            // following flight.
             if (log.planeID) {
                 const plane = await tx.planes.findUnique({
                     where: { id: log.planeID },
@@ -567,7 +564,7 @@ export const deleteFlightLog = async (logID: string) => {
         return { error: "Erreur lors de la suppression" };
     }
 };
-// ─── Totaux cumulés ───
+// ─── Running totals ───
 
 export const getRunningTotals = async (pilotID: string, clubID: string) => {
     const auth = await requireAuth(LOGBOOK_ROLES);
@@ -575,9 +572,8 @@ export const getRunningTotals = async (pilotID: string, clubID: string) => {
 
     try {
         const logs = await prisma.flight_logs.findMany({
-            // 1 log par instruction : on cumule aussi les vols où le pilote
-            // demandé est l'élève (studentID) — sa fonction sera 'EP' dans
-            // le calcul des temps.
+            // 1 log per instruction flight: also sum the flights where the requested pilot
+            // is the student (studentID); their function is 'EP' in the time computation.
             where: {
                 OR: [{ pilotID }, { studentID: pilotID }],
                 clubID,
@@ -596,9 +592,9 @@ export const getRunningTotals = async (pilotID: string, clubID: string) => {
         let totalMinutes = 0, totalDC = 0, totalPIC = 0, totalInstructor = 0;
         let totalTakeoffs = 0, totalLandings = 0;
         for (const log of logs) {
-            // pilotFunction effectif pour ce pilote :
-            // - s'il est le pilotID du log → fonction stockée (I ou P)
-            // - sinon il est studentID → fonction 'EP'
+            // Effective pilotFunction for this pilot:
+            // - if they are the log's pilotID → stored function (I or P)
+            // - otherwise they are the studentID → 'EP'
             const effectiveFunction = log.pilotID === pilotID ? log.pilotFunction : "EP";
             const times = computeFlightTimes({
                 hobbsStart: log.hobbsStart,
@@ -629,7 +625,7 @@ export const getRunningTotals = async (pilotID: string, clubID: string) => {
     }
 };
 
-// ─── Hobbs courant d'un avion ───
+// ─── Current plane Hobbs ───
 
 export const getPlaneHobbs = async (planeID: string): Promise<number | null> => {
     try {
@@ -643,8 +639,8 @@ export const getPlaneHobbs = async (planeID: string): Promise<number | null> => 
     }
 };
 
-// Re-export du helper pour les composants client qui en ont besoin.
-// Server actions ne pouvant exporter que des fonctions async, on encapsule.
+// Re-export of the helper for client components that need it. Server actions can
+// only export async functions, hence the wrapper.
 export async function getIsInstructorRole(role: userRole): Promise<boolean> {
     return isInstructorRole(role);
 }

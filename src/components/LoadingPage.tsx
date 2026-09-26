@@ -1,7 +1,7 @@
 "use client"
 import FlightLoader from "@/components/loader/FlightLoader"
 
-/** Chargement d'une page entière (fallback Suspense, loading.tsx) — animation AER-70. */
+/** Full page loading (Suspense fallback, loading.tsx): AER-70 animation. */
 const LoadingPage = ({ className }: { className?: string }) => {
     return <FlightLoader variant="page" className={className} />
 }

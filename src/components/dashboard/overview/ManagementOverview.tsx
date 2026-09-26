@@ -18,15 +18,15 @@ interface Props {
     publicToken: string | null;
     pendingMembers: number;
     pendingBaptemes: number;
-    // Onglets accessibles : un chiffre ne renvoie que vers un onglet visible.
+    // Accessible tabs: a figure only links to a visible tab.
     tabs: ClubTab[];
     onNavigate: (tab: ClubTab) => void;
 }
 
 /**
- * Aperçu gestion (président, admin, manager) : ce qu'il y a à traiter, puis
- * les chiffres du mois en cours (vols et finances) comparés au mois précédent.
- * Pas d'informations pratiques du club : elles se gèrent dans Paramètres.
+ * Management overview (president, admin, manager): what needs handling, then the
+ * current month's figures (flights and finances) compared with the previous
+ * month. No practical club info: that is managed in Settings.
  */
 const ManagementOverview = ({ clubID, publicToken, pendingMembers, pendingBaptemes, tabs, onNavigate }: Props) => {
     const { data, error, loading } = useStats(() => getClubOverview(), "overview", WALLET_EVENT);

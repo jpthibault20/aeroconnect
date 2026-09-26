@@ -3,7 +3,7 @@ import { AlertTriangle, Ban, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BalanceState, formatCents } from "@/lib/wallet";
 
-// Styles des 3 états du solde, repris partout (menu, listes, cartes).
+// Styles of the 3 balance states, used everywhere (menu, lists, cards).
 export const BALANCE_STATE_STYLES: Record<BalanceState, { pill: string; text: string; Icon: React.ElementType }> = {
     ok: { pill: "bg-emerald-50 text-emerald-700 border-emerald-200", text: "text-emerald-600", Icon: Wallet },
     low: { pill: "bg-amber-50 text-amber-700 border-amber-200", text: "text-amber-600", Icon: AlertTriangle },
@@ -19,7 +19,7 @@ interface Props {
 }
 
 const BalancePill = ({ balanceCents, state, label, showIcon = true, className }: Props) => {
-    // À 0 € : inscriptions bloquées, mais pas de dette => ambre plutôt que rouge.
+    // At 0 €: bookings blocked but no debt => amber rather than red.
     const { pill, Icon } = state === "empty" && balanceCents === 0
         ? { ...BALANCE_STATE_STYLES.low, Icon: Ban }
         : BALANCE_STATE_STYLES[state];

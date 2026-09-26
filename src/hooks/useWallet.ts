@@ -8,9 +8,9 @@ import { BalanceState } from "@/lib/wallet";
 import { WALLET_EVENT } from "@/lib/walletEvents";
 
 export interface WalletStatus {
-    /** Portefeuille activé pour le club courant. */
+    /** Wallet enabled for the current club. */
     enabled: boolean;
-    /** Solde de l'utilisateur connecté (centimes), null tant que non chargé. */
+    /** Balance of the signed-in user (cents), null until loaded. */
     balanceCents: number | null;
     lowThresholdCents: number | null;
     state: BalanceState | null;
@@ -18,8 +18,8 @@ export interface WalletStatus {
 
 type StatusResult = Awaited<ReturnType<typeof getMyWalletStatus>>;
 
-// Un seul appel serveur partagé entre tous les composants montés (menu,
-// calendrier, fenêtre de réservation…) ; invalidé à chaque WALLET_EVENT.
+// A single server call shared by every mounted component (menu, calendar,
+// booking dialog…); invalidated on every WALLET_EVENT.
 let shared: { key: string; promise: Promise<StatusResult> } | null = null;
 
 function loadStatus(key: string): Promise<StatusResult> {
@@ -34,8 +34,8 @@ if (typeof window !== "undefined") {
 }
 
 /**
- * Solde de l'utilisateur connecté. Ne fait aucun appel si le club n'a pas
- * activé le portefeuille (toute l'UI portefeuille reste alors masquée).
+ * Balance of the signed-in user. Makes no call if the club has not enabled the
+ * wallet (the whole wallet UI then stays hidden).
  */
 export function useWallet(): WalletStatus {
     const { currentUser } = useCurrentUser();

@@ -22,8 +22,8 @@ import {
 import WalletSummaryCard from "./WalletSummaryCard";
 
 /**
- * Onglet « Portefeuilles » (gestion, portefeuille activé) : encaissé ou
- * facturé sur la période, par mois, par membre et par machine.
+ * "Wallets" tab (management, wallet enabled): cashed or billed over the period,
+ * by month, by member and by plane.
  */
 
 const CASHED_COLOR = "#0f9f7a";
@@ -107,8 +107,7 @@ const WalletTab = () => {
                                 emptyText={cashed ? "Aucun paiement sur la période." : "Aucun vol facturé sur la période."}
                             />
                         </SectionCard>
-                        {/* Toujours en facturé, quel que soit le mode : un paiement
-                            n'est rattaché à aucune machine. */}
+                        {/* Always billed, whatever the mode: a payment is not tied to any plane. */}
                         <SectionCard title="Facturé par machine">
                             <RankList rows={stats.billed.byPlane} format={formatEuros} emptyText="Aucun vol facturé sur la période." />
                         </SectionCard>

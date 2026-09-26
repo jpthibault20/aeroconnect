@@ -10,11 +10,11 @@ import { BAPTEME_REQUESTS_EVENT } from "@/lib/baptemeEvents";
 import { Mail, Phone, PlaneTakeoff, Clock, Check, X } from "lucide-react";
 import { formatSessionDate, formatSessionTime } from "@/api/global function/dateServeur";
 
-// DTO renvoyé par getPendingBaptemeRequests (dates incluses).
+// DTO returned by getPendingBaptemeRequests (dates included).
 export interface PendingBaptemeItem {
     id: string;
-    // Créneau et machine visés : servent à recaler l'état local du calendrier
-    // après validation / refus (cf. BaptemeSessionValidation).
+    // Targeted slot and plane: used to update the calendar's local state after
+    // accept / reject (see BaptemeSessionValidation).
     sessionID: string;
     planeID: string;
     firstName: string;
@@ -22,8 +22,8 @@ export interface PendingBaptemeItem {
     email: string;
     phone: string;
     comment: string | null;
-    // Formule choisie (durée + tarif), ex. "30 min – 90 €". null si la machine
-    // n'avait pas de formule configurée.
+    // Chosen package (duration + price), e.g. "30 min – 90 €". null if the plane had
+    // no package configured.
     optionLabel: string | null;
     createdAt: Date | string;
     expiresAt: Date | string;
@@ -36,12 +36,12 @@ export interface PendingBaptemeItem {
 
 interface Props {
     pendingBaptemes: PendingBaptemeItem[];
-    // Nombre de demandes restantes (badge de l'onglet « À traiter »).
+    // Number of remaining requests (badge of the "To handle" tab).
     onCountChange?: (count: number) => void;
 }
 
-// Même convention UTC que le reste des créneaux (cf. dateServeur) : le club doit
-// voir exactement l'horaire que le client a réservé sur la page publique.
+// Same UTC convention as the other slots (see dateServeur): the club must see
+// exactly the time the customer booked on the public page.
 const formatSlot = (start: Date | string, end: Date | string) => {
     const dateStr = formatSessionDate(start, { day: "2-digit", month: "short" });
     return `${dateStr} · ${formatSessionTime(start)} → ${formatSessionTime(end)}`;
@@ -84,7 +84,6 @@ const PendingBaptemeRequests = ({ pendingBaptemes, onCountChange }: Props) => {
             </CardHeader>
 
             <CardContent className="p-0 md:p-6">
-                {/* VUE MOBILE */}
                 <div className="grid grid-cols-1 gap-4 md:hidden">
                     {requests.map((req) => (
                         <div
@@ -154,7 +153,6 @@ const PendingBaptemeRequests = ({ pendingBaptemes, onCountChange }: Props) => {
                     ))}
                 </div>
 
-                {/* VUE BUREAU */}
                 <div className="hidden md:block rounded-md border border-slate-200 overflow-hidden">
                     <Table>
                         <TableHeader className="bg-slate-50">

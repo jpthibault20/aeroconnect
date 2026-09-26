@@ -11,9 +11,9 @@ interface Props {
 }
 
 /**
- * Tarif écolage d'une machine DU CLUB dans les listes (AER-66), pour la
- * gestion et seulement si le portefeuille est activé : « 120 €/h », ou
- * « Tarif manquant » sur une machine d'école (signature bloquée).
+ * Instruction rate of a CLUB plane in the lists (AER-66), for management and only
+ * when the wallet is enabled: "120 €/h", or "Missing rate" on a training plane
+ * (signing blocked).
  */
 const PlaneRateBadge = ({ plane }: Props) => {
     const { currentClub } = useCurrentClub()

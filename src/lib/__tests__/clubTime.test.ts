@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { CLUB_TIME_ZONE, toClubWallClock } from "@/lib/clubTime";
 
 /**
- * Ces tests passent quel que soit le fuseau du runner : `toClubWallClock` reçoit
- * toujours un fuseau explicite, et les attendus sont des instants UTC absolus.
+ * These tests pass whatever the runner's time zone: `toClubWallClock` always gets
+ * an explicit time zone, and the expected values are absolute UTC instants.
  */
 describe("toClubWallClock", () => {
     it("applique l'heure d'été (Paris = UTC+2 en août)", () => {
@@ -22,7 +22,7 @@ describe("toClubWallClock", () => {
     });
 
     it("passe au jour suivant sans rendre « 24:00 » (minuit à Paris)", () => {
-        // 22:00Z en août = 00:00 le 13 à Paris.
+        // 22:00Z in August = 00:00 on the 13th in Paris.
         expect(toClubWallClock(new Date("2026-08-12T22:00:00.000Z"), "Europe/Paris").toISOString())
             .toBe("2026-08-13T00:00:00.000Z");
     });
@@ -39,13 +39,13 @@ describe("toClubWallClock", () => {
     });
 
     it("rend un créneau dépassé strictement antérieur à la pendule du club", () => {
-        // Le cas du bug : à 15:30 heure de Paris (13:30Z), un créneau stocké
-        // 15:00Z (wall-clock 15:00) doit être considéré comme passé.
+        // The bug case: at 15:30 Paris time (13:30Z), a slot stored at 15:00Z
+        // (wall-clock 15:00) must be considered past.
         const slotStart = new Date("2026-08-12T15:00:00.000Z");
         const slotNow = toClubWallClock(new Date("2026-08-12T13:30:00.000Z"), "Europe/Paris");
 
         expect(slotStart.getTime()).toBeLessThan(slotNow.getTime());
-        // …alors que la comparaison naïve à l'instant réel le croyait futur.
+        // …whereas the naive comparison with the real instant thought it upcoming.
         expect(slotStart.getTime()).toBeGreaterThan(new Date("2026-08-12T13:30:00.000Z").getTime());
     });
 });

@@ -6,7 +6,6 @@ import { updatePasswordRedirect, validateNewPassword } from "@/lib/authFlow"
 
 export async function updatePassword(formData: FormData) {
 
-    // Récupérer l'email du formulaire
     const password = formData.get('password') as string
     const confirmPassword = formData.get('confirmPassword') as string
     const code = formData.get('code') as string
@@ -24,7 +23,6 @@ export async function updatePassword(formData: FormData) {
         return redirect(updatePasswordRedirect('missingEmail'))
     }
 
-    // Utiliser Supabase pour mettre à jour le mot de passe
     const { error } = await supabase.auth.updateUser({
         password,
     })
@@ -33,6 +31,5 @@ export async function updatePassword(formData: FormData) {
         return redirect(updatePasswordRedirect('updateError'))
     }
 
-    // Réponse après mise à jour réussie
     return redirect(updatePasswordRedirect('success'))
 }

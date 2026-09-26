@@ -10,21 +10,21 @@ interface Props {
 }
 
 /**
- * Lien de réservation baptême en une ligne (aperçu de la page Club). Le QR
- * code, l'export PDF et la régénération sont dans Paramètres › Lien baptême.
+ * One-line discovery-flight booking link (Club page overview). The QR code, PDF
+ * export and regeneration live in Settings › Discovery-flight link.
  */
 const PublicBookingLinkRow = ({ clubID, token }: Props) => {
     if (!token) return null;
     const url = `${typeof window !== "undefined" ? window.location.origin : ""}/reservation/${clubID}/${token}`;
 
-    // Partage natif sur téléphone, sinon copie dans le presse-papiers.
+    // Native share on phones, otherwise copy to the clipboard.
     const onShare = async () => {
         const nav = navigator as Navigator & { share?: (data: { url: string; title?: string; text?: string }) => Promise<void> };
         if (nav.share) {
             try {
                 await nav.share({ url, title: "Baptême de l'air", text: "Réservez votre vol baptême" });
             } catch {
-                // Partage annulé par l'utilisateur : rien à signaler.
+                // Share cancelled by the user: nothing to report.
             }
             return;
         }

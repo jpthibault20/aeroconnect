@@ -8,9 +8,9 @@ import { Clock, Compass, GraduationCap, Timer, PlaneLanding, PlaneTakeoff } from
 
 interface Props {
     logs: flight_logs[];
-    // Pilote dont on cumule les heures : si fourni et qu'un log a
-    // studentID === displayedPilotID, la fonction effective est 'EP'.
-    // Sinon on prend la fonction stockée (vue brute pour un manager en "ALL").
+    // Pilot whose hours are summed: if set and a log has studentID ===
+    // displayedPilotID, the effective function is 'EP'. Otherwise the stored
+    // function is used (raw view for a manager in "ALL").
     displayedPilotID?: string | null;
 }
 
@@ -19,7 +19,7 @@ const RunningTotalsCard = React.memo(({ logs, displayedPilotID }: Props) => {
         let minutes = 0, dc = 0, pic = 0, instr = 0, tk = 0, ld = 0;
         for (let i = 0; i < logs.length; i++) {
             const l = logs[i];
-            // Totaux officiels : on ne compte que les vols signés (durée figée).
+            // Official totals: only signed flights count (frozen duration).
             if (!l.pilotSigned) continue;
             const effFn = displayedPilotID && l.studentID === displayedPilotID ? "EP" : l.pilotFunction;
             const t = computeFlightTimes({

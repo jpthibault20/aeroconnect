@@ -2,13 +2,12 @@ import { describe, it, expect } from "vitest";
 import { userRole } from "@prisma/client";
 
 /**
- * Tests de gestion des rôles.
- * Logique extraite de users.ts (updateUser, blockUser, deleteUser).
+ * Role management. Logic extracted from users.ts (updateUser, blockUser, deleteUser).
  */
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
-// --- Logique updateUser : protection du changement de rôle ---
+// --- updateUser logic: guard against role changes ---
 
 function resolveRoleOnUpdate(
     requestedRole: userRole,
@@ -16,7 +15,7 @@ function resolveRoleOnUpdate(
     isSelf: boolean,
     isManager: boolean
 ): userRole {
-    // users.ts ligne 248 : role: isSelf && !isManager ? auth.user.role : user.role
+    // users.ts: role: isSelf && !isManager ? auth.user.role : user.role
     return isSelf && !isManager ? currentRole : requestedRole;
 }
 

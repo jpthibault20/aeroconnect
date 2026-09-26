@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import TableComponent from './TableComponent';
-import MobilePlaneList from './MobilePlaneList'; // <-- IMPORT DU NOUVEAU COMPOSANT
+import MobilePlaneList from './MobilePlaneList';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { planes } from '@prisma/client';
 import NewPlane from './NewPlane';
@@ -18,27 +18,27 @@ import { MAINTENANCE_ALERTS_EVENT } from '@/lib/maintenanceEvents';
 
 interface Props {
     PlanesProps: planes[];
-    // Map ownerID -> "Prénom Nom", fournie uniquement pour président/admin
-    // (les seuls à voir les machines privées des autres membres).
+    // Map ownerID -> "Firstname Lastname", only provided for president/admin (the
+    // only ones who see other members' private planes).
     ownerNames?: Record<string, string>;
 }
 
 const PlanesPage = ({ PlanesProps, ownerNames }: Props) => {
     const { currentUser } = useCurrentUser();
     const [planesList, setPlanes] = useState<planes[]>(PlanesProps);
-    // La map serveur ne connaît que les propriétaires présents au rendu : on la
-    // complète côté client quand une machine est réattribuée à un autre membre.
+    // The server map only knows the owners present at render time: it is completed
+    // client-side when a plane is reassigned to another member.
     const [ownerNamesState, setOwnerNamesState] = useState<Record<string, string>>(ownerNames ?? {});
 
     const registerOwnerName = useCallback((ownerID: string, ownerName: string) => {
         setOwnerNamesState((prev) => (prev[ownerID] === ownerName ? prev : { ...prev, [ownerID]: ownerName }));
     }, []);
-    // IDs des avions ayant au moins un rappel de maintenance en retard (parmi
-    // ceux dont l'utilisateur voit la maintenance).
+    // IDs of planes with at least one overdue maintenance reminder (among those
+    // whose maintenance the user sees).
     const [overduePlaneIDs, setOverduePlaneIDs] = useState<string[]>([]);
 
-    // Tout membre (sauf le rôle USER de base) peut ajouter au moins une machine
-    // privée ; les gestionnaires peuvent en plus créer des machines du club.
+    // Any member (except the base USER role) can add at least a private plane;
+    // management can also create club planes.
     const canCreate = !!currentUser && canCreateAnyPlane(currentUser.role);
 
     const clubID = currentUser?.clubID;
@@ -51,12 +51,12 @@ const PlanesPage = ({ PlanesProps, ownerNames }: Props) => {
                 const res = await getMaintenanceAlerts(clubID);
                 if (!cancelled) setOverduePlaneIDs(res.overduePlaneIDs);
             } catch {
-                // Non bloquant : le badge « maintenance en retard » est indicatif,
-                // la modale de maintenance affiche l'état détaillé.
+                // Non-blocking: the "overdue maintenance" badge is informational, the
+                // maintenance dialog shows the detailed state.
             }
         };
         void fetchOverdue();
-        // Recalcul après toute modification de maintenance (via la modale).
+        // Recompute after any maintenance change (from the dialog).
         window.addEventListener(MAINTENANCE_ALERTS_EVENT, fetchOverdue);
         return () => {
             cancelled = true;
@@ -67,7 +67,7 @@ const PlanesPage = ({ PlanesProps, ownerNames }: Props) => {
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
 
-            {/* --- TOP BAR: Titre & Actions --- */}
+            {/* --- TOP BAR: title & actions --- */}
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
 
                 <div className="flex-1">
@@ -81,16 +81,14 @@ const PlanesPage = ({ PlanesProps, ownerNames }: Props) => {
                 )}
             </div>
 
-            {/* --- CONTENT --- */}
-
-            {/* 1. VUE DESKTOP (Tableau) : Cachée sur mobile */}
+            {/* 1. DESKTOP VIEW (table): hidden on mobile */}
             <div className="hidden md:block flex-1 bg-white border border-slate-200 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden flex-col h-full">
                 <div className="flex-1 overflow-auto">
                     <TableComponent planes={planesList} setPlanes={setPlanes} ownerNames={ownerNamesState} onOwnerNameResolved={registerOwnerName} overduePlaneIDs={overduePlaneIDs} />
                 </div>
             </div>
 
-            {/* 2. VUE MOBILE (Cartes) : Visible uniquement sur mobile */}
+            {/* 2. MOBILE VIEW (cards): mobile only */}
             <div className="block md:hidden pb-10">
                 <MobilePlaneList planesList={planesList} setPlanes={setPlanes} ownerNames={ownerNamesState} onOwnerNameResolved={registerOwnerName} overduePlaneIDs={overduePlaneIDs} />
             </div>

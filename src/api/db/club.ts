@@ -12,7 +12,6 @@ const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.M
 
 export const getAllClubs = async () => {
     try {
-        // Récupérer tous les clubs dans la table "Club"
         const clubs = await prisma.club.findMany({
             select: {
                 id: true,
@@ -20,7 +19,6 @@ export const getAllClubs = async () => {
             },
         });
 
-        // Transformer les données en tableau au format souhaité
         const result = clubs.map((club) => ({
             id: club.id,
             name: `${club.id} (${club.Name})`,
@@ -34,7 +32,6 @@ export const getAllClubs = async () => {
 
 export const getClub = async (clubID: string) => {
     try {
-        // Récupérer tous les clubs dans la table "Club"
         const club = await prisma.club.findUnique({
             where: {
                 id: clubID,
@@ -48,18 +45,15 @@ export const getClub = async (clubID: string) => {
 };
 
 export const createClub = async (data: ClubFormValues, userID: string) => {
-    // Convertir workStartTime et workEndTime en nombres entiers
     const startHour = parseInt(data.workStartTime, 10);
     const endHour = parseInt(data.workEndTime, 10);
 
-    // Générer toutes les heures entre workStartTime et workEndTime sous forme de chaînes
     const allWorkingHour: number[] = Array.from(
         { length: endHour - startHour },
         (_, i) => startHour + i
     );
 
     try {
-        // Créer le club dans la base de données
         await prisma.club.create({
             data: {
                 id: data.id,
@@ -68,10 +62,10 @@ export const createClub = async (data: ClubFormValues, userID: string) => {
                 City: data.city,
                 ZipCode: data.zipCode,
                 OwnerId: [userID],
-                DaysOn: dayFr, // Remplacez `dayFr` par la logique réelle si nécessaire
+                DaysOn: dayFr,
                 HoursOn: allWorkingHour,
                 SessionDurationMin: data.sessionDuration,
-                AvailableMinutes: defaultMinutes, // Remplacez `minutes` par la logique réelle si nécessaire
+                AvailableMinutes: defaultMinutes,
             },
         });
         return { success: "Club créé avec succès !" };
@@ -115,8 +109,8 @@ export const requestClubID = async (clubID: string, userID: string) => {
     }
 }
 
-// Demandes d'adhésion en attente : données nominatives (email, téléphone) des
-// candidats, réservées à la gestion du club.
+// Pending membership requests: personal data (email, phone) of the applicants,
+// restricted to club management.
 export const getAllUserRequestedClubID = async (clubID: string) => {
     const auth = await requireAuth(MANAGEMENT_ROLES);
     if ('error' in auth) return { error: auth.error };
@@ -150,7 +144,6 @@ export const acceptMembershipRequest = async (userID: string, clubID: string | n
     }
 
     try {
-        // Mise à jour utilisateur et récupération club en parallèle
         const [user, club] = await Promise.all([
             prisma.user.update({
                 where: { 
@@ -176,7 +169,6 @@ export const acceptMembershipRequest = async (userID: string, clubID: string | n
             return { error: "Le club spécifié est introuvable." };
         }
 
-        // Envoi de l'email en tâche de fond
         await sendNotificationRequestClub(user.email as string, club.id)
 
         return { success: "L'utilisateur a été mis à jour avec succès !" };
@@ -228,29 +220,29 @@ export const getClubAdress = async (clubID: string) => {
 }
 
 export interface ConfigClub {
-    clubName: string; // Nom du club
-    clubId: string; // Identifiant unique du club
-    address: string; // Adresse du club
-    city: string; // Ville du club
-    zipCode: string; // Code postal
-    country: string; // Pays
-    owners: string[]; // Liste des propriétaires (par leurs identifiants ou noms)
-    classes: number[]; // Liste des classes ULM (identifiées par des IDs ou numéros)
-    hourStart: string; // Heure de début au format HH:mm
-    hourEnd: string; // Heure de fin au format HH:mm
-    timeOfSession: number; // Durée de la session en minutes
-    userCanSubscribe: boolean; // Les utilisateurs peuvent s'inscrire
-    preSubscribe: boolean; // Inscription préalable requise
-    timeDelaySubscribeminutes: number; // Délai d'inscription en minutes
-    userCanUnsubscribe: boolean; // Les utilisateurs peuvent se désinscrire
-    preUnsubscribe: boolean; // Désinscription préalable requise
-    timeDelayUnsubscribeminutes: number; // Délai de désinscription en minutes
-    firstNameContact: string; // Prénom de la personne de contact
-    lastNameContact: string; // Nom de la personne de contact
-    mailContact: string; // Adresse e-mail de la personne de contact
-    phoneContact: string; // Numéro de téléphone de la personne de contact
-    walletEnabled?: boolean; // Portefeuille élève activé (AER-66)
-    instructorHourlyRateCents?: number | null; // Tarif instructeur (machine privée), centimes/h
+    clubName: string;
+    clubId: string;
+    address: string;
+    city: string;
+    zipCode: string;
+    country: string;
+    owners: string[]; // by ID or name
+    classes: number[]; // ULM class IDs
+    hourStart: string; // HH:mm
+    hourEnd: string; // HH:mm
+    timeOfSession: number; // minutes
+    userCanSubscribe: boolean;
+    preSubscribe: boolean;
+    timeDelaySubscribeminutes: number; // minutes
+    userCanUnsubscribe: boolean;
+    preUnsubscribe: boolean;
+    timeDelayUnsubscribeminutes: number; // minutes
+    firstNameContact: string;
+    lastNameContact: string;
+    mailContact: string;
+    phoneContact: string;
+    walletEnabled?: boolean; // student wallet (AER-66)
+    instructorHourlyRateCents?: number | null; // instructor rate (private plane), cents/h
 }
 
 export const updateClub = async (clubID: string, data: ConfigClub) => {
@@ -275,7 +267,6 @@ export const updateClub = async (clubID: string, data: ConfigClub) => {
     }
 
     try {
-        // Mise à jour du club
 const updateClub = prisma.club.update({
     where: {
         id: clubID,
@@ -305,7 +296,7 @@ const updateClub = prisma.club.update({
     },
 });
 
-// Mise à jour des utilisateurs (owners)
+// Update the owners
 const updateOwners = Promise.all(
     data.owners.map((ownerId: string) =>
         prisma.user.update({
@@ -317,7 +308,6 @@ const updateOwners = Promise.all(
     )
 );
 
-// Lancer les deux requêtes en parallèle
 await Promise.all([updateClub, updateOwners]);
 
 

@@ -1,6 +1,6 @@
 import { userRole } from "@prisma/client";
 
-// Libellés des rôles affichés dans le portefeuille (mêmes termes que le menu).
+// Role labels shown in the wallet (same wording as the menu).
 export const ROLE_LABELS: Record<userRole, string> = {
     USER: "Visiteur",
     STUDENT: "Élève",

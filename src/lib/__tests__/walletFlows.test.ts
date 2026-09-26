@@ -10,13 +10,12 @@ import {
 } from "@/lib/wallet";
 
 /**
- * Enchaînements du portefeuille élève (AER-66) : ce que décident le débit à la
- * signature, le blocage à l'inscription, l'avertissement de la gestion, la
- * consultation d'un portefeuille et les opérations manuelles. Les server
- * actions ne font que relire la base puis appliquer ces décisions.
+ * Student wallet flows (AER-66): what the debit on signing, the booking block,
+ * the management warning, wallet viewing and manual operations decide. The server
+ * actions only re-read the DB then apply these decisions.
  */
 
-// Vol d'instruction de 45 min (hobbs 812,25 -> 813,00) saisi par l'instructeur.
+// 45 min instruction flight (Hobbs 812.25 -> 813.00) entered by the instructor.
 const baseLog: FlightChargeInput["log"] = {
     clubID: "club-1",
     planeID: "plane-club",
@@ -127,7 +126,7 @@ describe("planFlightCharge — débit à la signature", () => {
     });
 });
 
-// Petit garde de type pour les assertions sur le message de refus.
+// Small type guard for assertions on the refusal message.
 function isReject(plan: ReturnType<typeof planFlightCharge>): plan is Extract<typeof plan, { action: "reject" }> {
     return plan.action === "reject";
 }

@@ -10,7 +10,7 @@ import {
     MaintenanceTaskLike,
 } from "@/lib/maintenance";
 
-// ─── Permissions d'accès à la maintenance ───
+// ─── Maintenance access permissions ───
 
 describe("canAccessMaintenance", () => {
     const clubPlane = { ownerID: null };
@@ -50,7 +50,7 @@ describe("canAccessMaintenance", () => {
     });
 });
 
-// ─── Calcul d'échéance ───
+// ─── Due date computation ───
 
 describe("addMonths", () => {
     it("ajoute des mois en franchissant l'année", () => {
@@ -68,7 +68,7 @@ describe("getTaskDueStatus", () => {
             lastPerformedDate: "2026-01-01",
             lastPerformedHobbs: 200,
         };
-        // 200 + 50 = 250. À 249 -> pas en retard, à 250 -> en retard.
+        // 200 + 50 = 250. At 249 -> not overdue, at 250 -> overdue.
         expect(getTaskDueStatus(task, 249, now).overdue).toBe(false);
         expect(getTaskDueStatus(task, 250, now).overdue).toBe(true);
         expect(getTaskDueStatus(task, 249, now).nextDueHobbs).toBe(250);
@@ -82,7 +82,7 @@ describe("getTaskDueStatus", () => {
             lastPerformedDate: "2025-06-01",
             lastPerformedHobbs: 0,
         };
-        // Échéance 2026-06-01 < now (2026-07-13) -> en retard.
+        // Due 2026-06-01 < now (2026-07-13) -> overdue.
         expect(getTaskDueStatus(task, null, now).overdue).toBe(true);
     });
 
@@ -93,7 +93,7 @@ describe("getTaskDueStatus", () => {
             lastPerformedDate: "2026-06-01",
             lastPerformedHobbs: 0,
         };
-        // Échéance 2027-06-01 > now -> OK.
+        // Due 2027-06-01 > now -> OK.
         expect(getTaskDueStatus(task, null, now).overdue).toBe(false);
     });
 
@@ -101,10 +101,10 @@ describe("getTaskDueStatus", () => {
         const task: MaintenanceTaskLike = {
             intervalHours: 50,
             intervalMonths: 24,
-            lastPerformedDate: "2026-06-01", // échéance date lointaine
+            lastPerformedDate: "2026-06-01", // far-off due date
             lastPerformedHobbs: 200,
         };
-        // Date OK mais heures dépassées -> en retard.
+        // Date OK but hours exceeded -> overdue.
         expect(getTaskDueStatus(task, 300, now).overdue).toBe(true);
     });
 
@@ -127,7 +127,7 @@ describe("isPlaneOverdue", () => {
             { intervalHours: 50, intervalMonths: null, lastPerformedDate: "2026-01-01", lastPerformedHobbs: 200 },
             { intervalHours: null, intervalMonths: 12, lastPerformedDate: "2020-01-01", lastPerformedHobbs: 0 },
         ];
-        expect(isPlaneOverdue(tasks, 210, now)).toBe(true); // le 2e (date) est en retard
+        expect(isPlaneOverdue(tasks, 210, now)).toBe(true); // the 2nd one (date) is overdue
     });
 
     it("faux quand aucun rappel n'est en retard", () => {
@@ -158,7 +158,7 @@ describe("sortTasksByUrgency", () => {
         const sansMarge = { id: "sans", intervalHours: 50, intervalMonths: null, lastPerformedDate: "2026-01-01", lastPerformedHobbs: 200 };
         const avecMarge = { id: "avec", intervalHours: null, intervalMonths: 12, lastPerformedDate: "2026-01-01", lastPerformedHobbs: 0 };
 
-        // currentHobbs inconnu => pas de marge horaire calculable pour `sansMarge`.
+        // currentHobbs unknown => no hour margin computable for `sansMarge`.
         const sorted = sortTasksByUrgency([sansMarge, avecMarge], null, now);
         expect(sorted.map((t) => t.id)).toEqual(["avec", "sans"]);
     });

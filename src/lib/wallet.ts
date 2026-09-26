@@ -12,25 +12,25 @@ import { isPrivatePlane } from "@/lib/planeVisibility";
 import { computeDurationMinutes } from "@/lib/logbookCalc";
 
 /**
- * Règles (pures, testées) du portefeuille élève (AER-66).
+ * Pure, tested rules of the student wallet (AER-66).
  *
- * Partagées par l'UI (aperçu du débit avant signature) et par le serveur
- * (débit réel) : un même calcul des deux côtés, jamais d'écart d'un centime.
- * Tous les montants sont en CENTIMES entiers.
+ * Shared by the UI (debit preview before signing) and the server (actual debit):
+ * the same computation on both sides, never a one-cent difference. All amounts
+ * are integer CENTS.
  *
- * Ces helpers ne remplacent pas les gardes serveur : chaque server action
- * garde son `requireAuth` et sa vérification de clubID.
+ * These helpers do not replace the server guards: every server action keeps its
+ * `requireAuth` and its clubID check.
  */
 
-// ─── Rôles ───
+// ─── Roles ───
 
-// Créditer / ajuster un portefeuille et voir les totaux financiers du club.
+// Credit / adjust a wallet and see the club's financial totals.
 export const WALLET_MANAGE_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
-// Consulter les portefeuilles des membres du club (lecture seule pour INSTRUCTOR).
+// View club members' wallets (read-only for INSTRUCTOR).
 export const WALLET_VIEW_ROLES: userRole[] = [...WALLET_MANAGE_ROLES, userRole.INSTRUCTOR];
-// Rôles bloqués à l'inscription quand leur solde est nul ou négatif.
+// Roles blocked from booking when their balance is zero or negative.
 export const WALLET_BOOKING_GATED_ROLES: userRole[] = [userRole.STUDENT, userRole.PILOT];
-// Rôles jamais listés dans la gestion des portefeuilles (non-membre / admin plateforme).
+// Roles never listed in wallet management (non-member / platform admin).
 export const WALLET_HIDDEN_ROLES: userRole[] = [userRole.USER, userRole.ADMIN];
 
 export function canManageWallet(role: userRole | null | undefined): boolean {
@@ -52,9 +52,8 @@ interface WalletViewer {
 }
 
 /**
- * Le viewer peut-il consulter le portefeuille de `target` ? Toujours dans le
- * même club ; son propre portefeuille, ou n'importe quel membre pour les rôles
- * de consultation (instructeur + gestion).
+ * Can the viewer see `target`'s wallet? Always within the same club; their own
+ * wallet, or any member for the viewing roles (instructor + management).
  */
 export function canViewMemberWallet(
     viewer: WalletViewer,
@@ -65,7 +64,7 @@ export function canViewMemberWallet(
     return canViewClubWallets(viewer.role);
 }
 
-/** Le viewer peut-il créditer / ajuster le portefeuille de `target` ? */
+/** Can the viewer credit / adjust `target`'s wallet? */
 export function canOperateMemberWallet(
     viewer: WalletViewer,
     target: { clubID: string | null }
@@ -74,14 +73,17 @@ export function canOperateMemberWallet(
     return canManageWallet(viewer.role);
 }
 
-// ─── Facturation d'un vol ───
+// ─── Flight billing ───
 
 interface BillableLog {
     flightNature: flightNature;
     instructionSubType: instructionSubType | null;
 }
 
-/** Vol débité : toute instruction sauf baptême (LOCAL, NAVIGATION, LACHE, EXAM). */
+/**
+ * Debited flight: any instruction except discovery flights (LOCAL, NAVIGATION,
+ * LACHE, EXAM).
+ */
 export function isBillableFlight(log: BillableLog): boolean {
     return log.flightNature === flightNature.INSTRUCTION
         && log.instructionSubType !== instructionSubType.BAPTEME;
@@ -94,10 +96,10 @@ interface PayerLog {
 }
 
 /**
- * Qui paie le vol, quel que soit son rôle :
- *  - vol saisi par l'instructeur : l'élève (studentID) ;
- *  - vol saisi par un pilote avec son instructeur (instructorID) : le pilote.
- * null => personne à débiter (ex. baptême d'un passager externe).
+ * Who pays for the flight, whatever their role:
+ *  - flight entered by the instructor: the student (studentID);
+ *  - flight entered by a pilot with their instructor (instructorID): the pilot.
+ * null => nobody to debit (e.g. an external passenger's discovery flight).
  */
 export function resolvePayerID(log: PayerLog): string | null {
     if (log.studentID) return log.studentID;
@@ -112,9 +114,9 @@ export type FlightRate =
     | { ok: false; error: FlightRateError; message: string };
 
 /**
- * Tarif horaire applicable :
- *  - machine du club : son tarif écolage (instructeur compris) ;
- *  - machine privée (de l'élève ou d'un autre) : le tarif instructeur du club.
+ * Applicable hourly rate:
+ *  - club plane: its instruction rate (instructor included);
+ *  - private plane (the student's or someone else's): the club's instructor rate.
  */
 export function resolveFlightRate(
     plane: Pick<planes, "ownerID" | "instructionHourlyRateCents" | "name" | "immatriculation">,
@@ -140,22 +142,22 @@ export function resolveFlightRate(
     return { ok: true, rateCents: plane.instructionHourlyRateCents, source: WalletRateSource.PLANE };
 }
 
-/** Montant d'un vol : tarif horaire au prorata des minutes, arrondi au centime. */
+/** Flight amount: hourly rate pro rata to the minutes, rounded to the cent. */
 export function computeFlightChargeCents(minutes: number, rateCents: number): number {
     if (minutes <= 0 || rateCents <= 0) return 0;
     return Math.round((rateCents * minutes) / 60);
 }
 
 /**
- * Régularisation d'un vol déjà débité puis corrigé : ce qu'il aurait dû coûter
- * au tarif FIGÉ du débit d'origine, moins ce qui a déjà été prélevé (somme
- * signée des mouvements du vol). > 0 : remboursement ; < 0 : débit en plus.
+ * Adjustment of an already debited then corrected flight: what it should have
+ * cost at the rate FROZEN at the original debit, minus what was already charged
+ * (signed sum of the flight's movements). > 0: refund; < 0: extra debit.
  */
 export function computeFlightAdjustmentCents(args: {
     billable: boolean;
     durationMin: number;
     frozenRateCents: number;
-    movementsSumCents: number; // négatif : déjà prélevé
+    movementsSumCents: number; // negative: already charged
 }): number {
     const expected = args.billable ? computeFlightChargeCents(args.durationMin, args.frozenRateCents) : 0;
     const alreadyCharged = -args.movementsSumCents;
@@ -168,7 +170,7 @@ export type FlightChargePlan =
     | {
         action: "charge";
         payerID: string;
-        amountCents: number; // positif : montant à débiter
+        amountCents: number; // positive: amount to debit
         durationMin: number;
         rateCents: number;
         rateSource: WalletRateSource;
@@ -182,21 +184,21 @@ export interface FlightChargeInput {
         hobbsStart: number | null;
         hobbsEnd: number | null;
     };
-    /** Payeur relu en base (null : introuvable). */
+    /** Payer re-read from the DB (null: not found). */
     payer: { clubID: string | null } | null;
-    /** Machine relue en base (null : introuvable ou vol sans machine). */
+    /** Plane re-read from the DB (null: not found or flight without a plane). */
     plane: (Pick<planes, "ownerID" | "instructionHourlyRateCents" | "name" | "immatriculation"> & { clubID: string }) | null;
     club: { instructorHourlyRateCents: number | null };
 }
 
 /**
- * Décision du débit d'un vol à sa signature (AER-66), sans accès base : le
- * registre (walletLedger.chargeSignedFlight) relit payeur / machine / club
- * puis applique ce plan. Ordre des règles :
- *  1. portefeuille désactivé, vol non facturable ou sans payeur => rien ;
- *  2. payeur ou machine hors du club du vol, machine absente, tarif
- *     manquant => refus (la signature est annulée) ;
- *  3. sinon débit au prorata des heures moteur.
+ * Debit decision for a flight when signed (AER-66), without DB access: the ledger
+ * (walletLedger.chargeSignedFlight) re-reads payer / plane / club then applies
+ * this plan. Rule order:
+ *  1. wallet disabled, flight not billable or no payer => nothing;
+ *  2. payer or plane outside the flight's club, missing plane, missing rate =>
+ *     refusal (the signature is rolled back);
+ *  3. otherwise debit pro rata to the Hobbs hours.
  */
 export function planFlightCharge({ walletEnabled, log, payer, plane, club }: FlightChargeInput): FlightChargePlan {
     if (!walletEnabled) return { action: "skip", reason: "WALLET_DISABLED" };
@@ -228,7 +230,7 @@ export function planFlightCharge({ walletEnabled, log, payer, plane, club }: Fli
     };
 }
 
-// ─── Inscription / consultation / opérations ───
+// ─── Booking / viewing / operations ───
 
 export interface WalletContactInfo {
     firstNameContact: string | null;
@@ -238,8 +240,8 @@ export interface WalletContactInfo {
 }
 
 /**
- * Inscription d'un utilisateur par lui-même : message de blocage si c'est un
- * élève / pilote à solde ≤ 0 dans un club au portefeuille activé, null sinon.
+ * Self-booking: blocking message if it is a student / pilot with a balance ≤ 0
+ * in a club with the wallet enabled, null otherwise.
  */
 export function bookingWalletBlock(args: {
     walletEnabled: boolean;
@@ -252,8 +254,8 @@ export function bookingWalletBlock(args: {
 }
 
 /**
- * Inscription d'un élève par la gestion : jamais bloquée, mais avertissement
- * si l'élève / pilote (du même club) a un solde ≤ 0. null sinon.
+ * Booking of a student by management: never blocked, but a warning if the
+ * student / pilot (same club) has a balance ≤ 0. null otherwise.
  */
 export function managerBookingWarning(args: {
     walletEnabled: boolean;
@@ -268,16 +270,16 @@ export function managerBookingWarning(args: {
 }
 
 /**
- * Portefeuille réellement consulté : un rôle sans droit de consultation
- * (élève, pilote…) reçoit TOUJOURS le sien, quel que soit l'identifiant demandé.
+ * Wallet actually viewed: a role without viewing rights (student, pilot…)
+ * ALWAYS gets their own, whatever the requested ID.
  */
 export function resolveWalletTarget(viewer: { id: string; role: userRole }, requestedUserID: string | null): string {
     return requestedUserID && canViewClubWallets(viewer.role) ? requestedUserID : viewer.id;
 }
 
 /**
- * Opération manuelle -> mouvement enregistré : un crédit est un CREDIT
- * positif, un retrait un ADJUSTMENT négatif. Le montant saisi est positif.
+ * Manual operation -> recorded movement: a credit is a positive CREDIT, a
+ * withdrawal a negative ADJUSTMENT. The entered amount is positive.
  */
 export function operationToMovement(kind: "CREDIT" | "WITHDRAW", amountCents: number): { type: WalletTransactionType; amountCents: number } {
     return kind === "CREDIT"
@@ -285,14 +287,14 @@ export function operationToMovement(kind: "CREDIT" | "WITHDRAW", amountCents: nu
         : { type: WalletTransactionType.ADJUSTMENT, amountCents: -amountCents };
 }
 
-// ─── État du solde ───
+// ─── Balance state ───
 
 export type BalanceState = "ok" | "low" | "empty";
 
 /**
- * Seuil « solde faible » : coût d'une heure sur la machine d'école (machine du
- * club à usage INSTRUCTION) la moins chère ayant un tarif. null => aucun tarif
- * configuré, pas d'état « faible ».
+ * "Low balance" threshold: cost of one hour on the cheapest training plane (club
+ * plane with INSTRUCTION usage) that has a rate. null => no rate configured, no
+ * "low" state.
  */
 export function computeLowThresholdCents(
     list: Pick<planes, "ownerID" | "usageTypes" | "instructionHourlyRateCents">[]
@@ -311,8 +313,8 @@ export function balanceState(balanceCents: number, lowThresholdCents: number | n
 }
 
 /**
- * Le solde vient-il de passer sous le seuil « faible » (épuisé inclus) ? Sert à
- * n'envoyer l'e-mail qu'une fois par passage, sans état à stocker.
+ * Did the balance just drop below the "low" threshold (depleted included)? Used
+ * to send the email only once per crossing, with no state to store.
  */
 export function crossedLowThreshold(
     beforeCents: number,
@@ -325,16 +327,16 @@ export function crossedLowThreshold(
 }
 
 /**
- * À découvert = le membre DOIT de l'argent au club (solde strictement
- * négatif). À 0 € il ne peut plus s'inscrire, mais il n'est pas à découvert.
+ * Overdrawn = the member OWES the club money (strictly negative balance). At 0 €
+ * they can no longer book, but they are not overdrawn.
  */
 export function isOverdrawn(balanceCents: number): boolean {
     return balanceCents < 0;
 }
 
 /**
- * Couleur d'un montant de solde dans les listes : rouge si à découvert,
- * ambre à 0 € (inscriptions bloquées), neutre sinon.
+ * Color of a balance amount in lists: red if overdrawn, amber at 0 € (bookings
+ * blocked), neutral otherwise.
  */
 export function balanceTextClass(balanceCents: number): string {
     if (isOverdrawn(balanceCents)) return "text-red-600";
@@ -342,12 +344,12 @@ export function balanceTextClass(balanceCents: number): string {
     return "text-slate-400";
 }
 
-/** Inscription autorisée (côté solde) : strictement positif. */
+/** Booking allowed (balance-wise): strictly positive. */
 export function canBookWithBalance(balanceCents: number): boolean {
     return balanceCents > 0;
 }
 
-// ─── Formatage / saisie ───
+// ─── Formatting / input ───
 
 const euroFormatter = new Intl.NumberFormat("fr-FR", {
     style: "currency",
@@ -356,19 +358,19 @@ const euroFormatter = new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits: 2,
 });
 
-/** « 45,00 € », « −12,50 € » (vrai signe moins, espaces normales). */
+/** "45,00 €", "−12,50 €" (real minus sign, regular spaces). */
 export function formatCents(cents: number): string {
     const formatted = euroFormatter.format(Math.abs(cents) / 100).replace(/[  ]/g, " ");
     return cents < 0 ? `−${formatted}` : formatted;
 }
 
-/** « +150,00 € » / « −90,00 € » ; 0 sans signe. */
+/** "+150,00 €" / "−90,00 €"; 0 without a sign. */
 export function formatSignedCents(cents: number): string {
     if (cents > 0) return `+${formatCents(cents)}`;
     return formatCents(cents);
 }
 
-/** « 120 €/h » ou « 120,50 €/h ». */
+/** "120 €/h" or "120,50 €/h". */
 export function formatHourlyRate(cents: number): string {
     const euros = cents / 100;
     const text = new Intl.NumberFormat("fr-FR", {
@@ -379,8 +381,8 @@ export function formatHourlyRate(cents: number): string {
 }
 
 /**
- * Convertit une saisie en euros (« 150 », « 150,5 », « 1 200,00 ») en
- * centimes. null si la saisie n'est pas un montant valide à 2 décimales max.
+ * Converts a euro input ("150", "150,5", "1 200,00") to cents. null if the input
+ * is not a valid amount with at most 2 decimals.
  */
 export function parseEurosToCents(input: string): number | null {
     const normalized = input.trim().replace(/[\s  ]/g, "").replace(",", ".");
@@ -389,15 +391,15 @@ export function parseEurosToCents(input: string): number | null {
     return Number(whole) * 100 + Number(decimals.padEnd(2, "0"));
 }
 
-/** Centimes -> valeur d'un champ de saisie (« 120,00 »), vide si null. */
+/** Cents -> input field value ("120,00"), empty if null. */
 export function centsToInput(cents: number | null | undefined): string {
     if (cents == null) return "";
     return (cents / 100).toFixed(2).replace(".", ",");
 }
 
 /**
- * Tarif horaire reçu du client : entier de centimes ≥ 0, ou null (« pas de
- * tarif »). undefined => valeur invalide, à refuser.
+ * Hourly rate received from the client: integer cents ≥ 0, or null ("no rate").
+ * undefined => invalid value, to be rejected.
  */
 export function sanitizeRateCents(value: unknown): number | null | undefined {
     if (value === null || value === undefined || value === "") return null;
@@ -405,17 +407,17 @@ export function sanitizeRateCents(value: unknown): number | null | undefined {
     return value;
 }
 
-/** 45 -> « 0h45 », 100 -> « 1h40 ». */
+/** 45 -> "0h45", 100 -> "1h40". */
 export function formatDurationHM(minutes: number): string {
     const safe = Math.max(0, Math.round(minutes));
     return `${Math.floor(safe / 60)}h${String(safe % 60).padStart(2, "0")}`;
 }
 
-// Au-delà, un avertissement (non bloquant) invite à vérifier la saisie.
+// Beyond this, a (non-blocking) warning asks to double-check the input.
 export const UNUSUAL_AMOUNT_CENTS = 500_000;
 export const QUICK_AMOUNTS_CENTS = [5_000, 10_000, 15_000, 20_000];
 
-// ─── Libellés ───
+// ─── Labels ───
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
     CASH: "Espèces",
@@ -434,8 +436,8 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
 ];
 
 /**
- * Libellé d'une opération vu par l'utilisateur. Un ajustement sans auteur est
- * une correction automatique d'un vol signé modifié.
+ * Label of an operation as seen by the user. An adjustment without an author is
+ * an automatic correction of an edited signed flight.
  */
 export function transactionLabel(type: WalletTransactionType, authorID: string | null): string {
     switch (type) {
@@ -451,7 +453,7 @@ export const BALANCE_STATE_LABELS: Record<BalanceState, string> = {
     empty: "Solde épuisé : inscriptions aux créneaux bloquées",
 };
 
-/** Message de blocage d'inscription, avec le contact du club s'il existe. */
+/** Booking block message, with the club contact if any. */
 export function bookingBlockedMessage(
     balanceCents: number,
     contact: { firstNameContact: string | null; lastNameContact: string | null; mailContact: string | null; phoneContact: string | null }

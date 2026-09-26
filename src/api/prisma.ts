@@ -1,9 +1,8 @@
-// src/api/prisma.ts
 import { PrismaClient } from '@prisma/client'
 
-// Le journal des requêtes SQL est très verbeux (chaque ouverture de page en
-// déclenche plusieurs dizaines) : il n'est activé qu'à la demande, via
-// PRISMA_LOG_QUERIES=1 dans .env. En dev, on garde les erreurs et warnings.
+// SQL query logging is very verbose (each page load triggers dozens), so it is
+// only enabled on demand via PRISMA_LOG_QUERIES=1 in .env. In dev, errors and
+// warnings are kept.
 const prismaClientSingleton = () => {
   const isDev = process.env.NODE_ENV === 'development'
   const logQueries = isDev && process.env.PRISMA_LOG_QUERIES === '1'

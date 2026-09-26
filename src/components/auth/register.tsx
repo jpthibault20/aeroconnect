@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { RegisterSchema, registerSchema } from "../../schemas/registerSchema"; // Assure-toi que le chemin est correct  
+import { RegisterSchema, registerSchema } from "../../schemas/registerSchema";
 import { signup } from '@/app/auth/register/action';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -18,8 +18,8 @@ import { isRedirectError } from 'next/dist/client/components/redirect-error';
 const Register = () => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
-    const [showPassword, setShowPassword] = React.useState(false); // État pour la visibilité du mot de passe
-    const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
+    const [showPassword, setShowPassword] = React.useState(false);
+    const searchParams = useSearchParams();
 
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
@@ -45,13 +45,12 @@ const Register = () => {
             formData.append('password', data.password);
             formData.append('phone', data.phone);
 
-            // Logique de soumission du formulaire, comme un appel API
             await signup(formData);
 
         } catch (error) {
-            // Le redirect() de l'action (succès comme erreur métier) doit suivre son cours.
+            // The action's redirect() (success or business error) must propagate.
             if (isRedirectError(error)) throw error;
-            // Erreur réseau / serveur inattendue (les cas métier passent par redirect).
+            // Unexpected network / server error (business cases go through redirect).
             setMessage("Une erreur technique est survenue. Veuillez réessayer.");
         } finally {
             reset();

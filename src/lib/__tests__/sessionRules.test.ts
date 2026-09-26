@@ -11,12 +11,12 @@ import {
 import { ALL_CLUB_PLANES_SENTINEL } from "@/lib/planeVisibility";
 
 /**
- * Règles des actions sur les créneaux (AER-67). Les server actions relisent
- * session, club, utilisateur et machine en base puis appliquent ces règles :
- * rien ne dépend plus d'un objet envoyé par le navigateur.
+ * Slot action rules (AER-67). The server actions re-read session, club, user and
+ * plane from the DB then apply these rules: nothing depends on an object sent by
+ * the browser anymore.
  */
 
-// Heure de pendule du club : 15/06/2026 10:00. Créneau le lendemain 10:00.
+// Club clock time: 15/06/2026 10:00. Slot the next day at 10:00.
 const now = new Date("2026-06-15T10:00:00Z");
 const tomorrow = new Date("2026-06-16T10:00:00Z");
 

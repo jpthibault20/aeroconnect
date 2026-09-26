@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { filterPilotePlane, getFreePlanesUsers } from "../popupCalendar";
 import { flight_sessions, planes, User, userRole } from "@prisma/client";
 
-// --- Helpers pour créer des données de test ---
+// --- Test data helpers ---
 
 const makeUser = (overrides: Partial<User> = {}): User => ({
     id: "user-1",

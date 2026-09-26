@@ -8,20 +8,20 @@ interface NavLink {
     path: string;
     icon: React.ElementType;
     roles: Role[];
-    // Affiché seulement si le portefeuille élève est activé pour le club (AER-66).
+    // Only shown when the student wallet is enabled for the club (AER-66).
     requiresWallet?: boolean;
 }
 export const navigationLinks: NavLink[] = [
     {
         name: "Calendrier",
         path: "/calendar",
-        icon: CalendarDays, // Icône JSX
-        roles: ["USER", "STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"], // Rôles autorisés
+        icon: CalendarDays,
+        roles: ["USER", "STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"],
     },
     {
         name: "Vols",
         path: "/flights",
-        icon: BetweenHorizontalStart, // Icône JSX
+        icon: BetweenHorizontalStart,
         roles: ["USER", "STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"],
     },
     {
@@ -34,42 +34,42 @@ export const navigationLinks: NavLink[] = [
         name: "Portefeuille",
         path: "/wallet",
         icon: Wallet,
-        // Élève / pilote : son portefeuille ; instructeur (lecture) et gestion :
-        // les portefeuilles du club (cf. WalletPageComponent).
+        // Student / pilot: their wallet; instructor (read-only) and management: the
+        // club's wallets (see WalletPageComponent).
         roles: ["STUDENT", "PILOT", "INSTRUCTOR", "MANAGER", "OWNER", "ADMIN"],
         requiresWallet: true,
     },
     {
         name: "Avions",
         path: "/planes",
-        icon: Plane, // Icône JSX
+        icon: Plane,
         roles: ["PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR", "STUDENT"],
     },
     {
         name: "Utilisateurs",
         path: "/students",
-        icon: GraduationCap, // Icône JSX
+        icon: GraduationCap,
         roles: ["MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"],
     },
     {
         name: "Club",
         path: "/dashboard",
-        icon: ChartLine, // Icône JSX
-        // Ouvert à tous les membres : le contenu affiché est filtré par rôle
-        // (cf. src/lib/clubAccess.ts). Les non-gestionnaires n'y voient que les
-        // informations publiques du club et le lien de réservation baptême.
+        icon: ChartLine,
+        // Open to every member: the displayed content is filtered by role (see
+        // src/lib/clubAccess.ts). Non-management members only see the club's public
+        // info and the discovery-flight booking link.
         roles: ["USER", "STUDENT", "PILOT", "INSTRUCTOR", "MANAGER", "OWNER", "ADMIN"],
     },
     {
         name: "Profil",
         path: "/profile",
-        icon: User, // Icône JSX
+        icon: User,
         roles: ["USER", "STUDENT", "PILOT", "MANAGER", "OWNER", "ADMIN", "INSTRUCTOR"],
     }
 ]
 
-// Index dérivés du chemin : l'ordre du menu peut changer sans casser les
-// composants qui ciblent un lien précis.
+// Indexes derived from the path: the menu order can change without breaking
+// components that target a specific link.
 const indexOfPath = (path: string) => navigationLinks.findIndex((link) => link.path === path);
 
 export const indexLinkPlane = indexOfPath("/planes");

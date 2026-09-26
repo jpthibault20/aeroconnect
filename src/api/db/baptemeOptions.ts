@@ -5,9 +5,9 @@ import { requireAuth } from "./users";
 import { canManageBaptemeOptions } from "@/lib/bapteme";
 import { baptemeOptionInputSchema, BaptemeOptionInput } from "@/schemas/baptemeOptions";
 
-// Charge une machine et vérifie que l'utilisateur courant peut en gérer les
-// formules de baptême (même club, machine du club, rôle de gestion). Renvoie
-// soit { plane }, soit { error }.
+// Loads a plane and checks the current user can manage its discovery-flight
+// packages (same club, club plane, management role). Returns either { plane } or
+// { error }.
 const loadPlaneForBaptemeOptions = async (planeID: string) => {
     const auth = await requireAuth();
     if ("error" in auth) return { error: auth.error };

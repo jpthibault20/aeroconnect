@@ -24,10 +24,10 @@ import {
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
-// ─── Périodes ───
+// ─── Periods ───
 
 describe("resolvePeriodWindow", () => {
-    const today = utcDay(2026, 8, 10); // 10 septembre 2026
+    const today = utcDay(2026, 8, 10);
 
     it("mois : en cours à date, précédent à la même date, semaines", () => {
         const w = resolvePeriodWindow("month", today);
@@ -44,7 +44,7 @@ describe("resolvePeriodWindow", () => {
     });
 
     it("mois : borne le jour au dernier jour du mois précédent", () => {
-        const w = resolvePeriodWindow("month", utcDay(2026, 2, 31)); // 31 mars
+        const w = resolvePeriodWindow("month", utcDay(2026, 2, 31));
         expect(iso(w.previous.to)).toBe("2026-02-28");
         expect(w.previousBuckets.map((b) => b.label)).toEqual(["S1", "S2", "S3", "S4"]);
     });
@@ -86,7 +86,7 @@ describe("resolvePeriodWindow", () => {
 
 describe("clubDay / instantBounds", () => {
     it("ramène un instant au jour du club (Europe/Paris)", () => {
-        // 31 août 23:30 UTC = 1er septembre 01:30 à Paris
+        // August 31 23:30 UTC = September 1 01:30 in Paris
         expect(iso(clubDay(new Date("2026-08-31T23:30:00Z")))).toBe("2026-09-01");
         expect(iso(clubDay(new Date("2026-09-01T10:00:00Z")))).toBe("2026-09-01");
     });
@@ -102,7 +102,7 @@ describe("clubDay / instantBounds", () => {
     });
 });
 
-// ─── Carnet de vol ───
+// ─── Logbook ───
 
 const baseLog: FlightLogStatInput = {
     date: utcDay(2026, 8, 5),
@@ -166,10 +166,10 @@ describe("toStatLog", () => {
 describe("computeFlightStats", () => {
     const w = resolvePeriodWindow("month", utcDay(2026, 8, 10));
     const logs = [
-        toStatLog(baseLog), // 5 sept, 90 min, Ikarus, élève
-        toStatLog({ ...baseLog, date: utcDay(2026, 8, 9), hobbsEnd: 100.5, planeName: "Savannah", planeRegistration: "F-JABC" }), // 30 min
-        toStatLog({ ...baseLog, date: utcDay(2026, 7, 3), hobbsEnd: 101 }), // 3 août, 60 min (période précédente)
-        toStatLog({ ...baseLog, date: utcDay(2026, 7, 20), hobbsEnd: 102 }), // 20 août : hors comparaison à date, mais dans le graphique
+        toStatLog(baseLog), // Sept 5, 90 min, Ikarus, student
+        toStatLog({ ...baseLog, date: utcDay(2026, 8, 9), hobbsEnd: 100.5, planeName: "Savannah", planeRegistration: "F-JABC" }),
+        toStatLog({ ...baseLog, date: utcDay(2026, 7, 3), hobbsEnd: 101 }), // Aug 3, 60 min (previous period)
+        toStatLog({ ...baseLog, date: utcDay(2026, 7, 20), hobbsEnd: 102 }), // Aug 20: outside the to-date comparison, but in the chart
     ];
     const stats = computeFlightStats(logs, w);
 
@@ -213,7 +213,7 @@ describe("rankBy / percentChange", () => {
     });
 });
 
-// ─── Portefeuilles ───
+// ─── Wallets ───
 
 const tx = (over: Partial<StatTransaction>): StatTransaction => ({
     day: utcDay(2026, 8, 5),
@@ -235,7 +235,7 @@ describe("transactionAmount", () => {
     it("facturé : débits et corrections rattachés à un vol, en positif", () => {
         expect(transactionAmount(tx({ type: WalletTransactionType.DEBIT, amountCents: -5_000, flightLogID: "l" }), "billed")).toBe(5_000);
         expect(transactionAmount(tx({ type: WalletTransactionType.ADJUSTMENT, amountCents: 1_000, flightLogID: "l" }), "billed")).toBe(-1_000);
-        // Retrait manuel : ni encaissé ni facturé
+        // Manual withdrawal: neither cashed nor billed
         expect(transactionAmount(tx({ type: WalletTransactionType.ADJUSTMENT, amountCents: -2_000 }), "billed")).toBe(0);
         expect(transactionAmount(tx({}), "billed")).toBe(0);
     });

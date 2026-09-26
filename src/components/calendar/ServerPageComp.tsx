@@ -12,7 +12,6 @@ interface PageProps {
 const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
     if (ClubIDprop) {
         const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
-        // Exécution parallèle des requêtes Prisma
         const [sessions, allPlanes, users, auth] = await Promise.all([
             prisma.flight_sessions.findMany({ where: { clubID: clubID } }),
             prisma.planes.findMany({ where: { clubID: clubID } }),
@@ -20,13 +19,11 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             getUser()
         ]);
 
-        // Masque les machines privées des autres membres : chaque membre voit les
-        // machines du club + uniquement sa propre machine privée (président/admin
-        // voient toutes les privées).
+        // Hide other members' private planes: each member sees the club planes + only
+        // their own private plane (president/admin see every private plane).
         const currentUser = 'user' in auth ? auth.user : null;
         const planes = currentUser ? filterVisiblePlanes(allPlanes, currentUser) : [];
 
-        // Vérification si les données du club sont valides
         if (sessions) {
             return (
                 <div className='h-full'>

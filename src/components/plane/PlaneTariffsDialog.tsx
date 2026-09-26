@@ -21,14 +21,14 @@ interface Props {
     plane: planes;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    /** Remonte le nouveau tarif écolage pour mettre à jour la ligne et la liste. */
+    /** Reports the new instruction rate to update the row and the list. */
     onRateSaved: (rateCents: number | null) => void;
 }
 
 /**
- * Raccourci « Tarifs » d'une machine du club : tarif écolage (portefeuille
- * élève, si activé pour le club) et formules de baptême, sélectionnés par un
- * interrupteur à deux positions. Les mêmes réglages existent dans la fiche.
+ * "Rates" shortcut of a club plane: instruction rate (student wallet, if enabled
+ * for the club) and discovery-flight packages, picked with a two-position switch.
+ * The same settings exist in the plane form.
  */
 const PlaneTariffsDialog = ({ plane, open, onOpenChange, onRateSaved }: Props) => {
     const { currentClub } = useCurrentClub();

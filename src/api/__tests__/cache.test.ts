@@ -3,7 +3,7 @@ import { getFromCache, clearCache } from "@/lib/cache";
 
 describe("Cache", () => {
     beforeEach(async () => {
-        // Nettoyer le cache entre chaque test
+        // Clear the cache between tests
         await clearCache("test-key");
     });
 
@@ -31,7 +31,7 @@ describe("Cache", () => {
             const fetchData = vi.fn().mockResolvedValue("old");
             await getFromCache("test-key", fetchData);
 
-            // Avancer le temps de 60 minutes (au-delà des 59 min du cache)
+            // Advance time by 60 minutes (past the 59 min cache TTL)
             vi.advanceTimersByTime(60 * 60 * 1000);
 
             const fetchData2 = vi.fn().mockResolvedValue("new");

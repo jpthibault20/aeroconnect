@@ -37,10 +37,9 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
     const [logs, setLogs] = useState<flight_logs[]>(logsProp);
     const [activeTab, setActiveTab] = useState<Tab>("pilot");
 
-    // Plage par défaut = année civile en cours, celle que ServerPageComp a
-    // déjà chargée côté serveur (logsProp). Tant que l'utilisateur reste sur
-    // cette plage, on se contente de refléter logsProp (pas de round-trip
-    // réseau superflu).
+    // Default range = current calendar year, the one ServerPageComp already loaded
+    // server-side (logsProp). While the user stays on that range, logsProp is just
+    // mirrored (no extra network round trip).
     const defaultRange = useMemo<DateRange>(() => {
         const year = new Date().getFullYear();
         return { from: new Date(year, 0, 1), to: new Date(year, 11, 31) };
@@ -62,18 +61,16 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
     }, [currentUser?.clubID]);
 
     const didMountRef = useRef(false);
-    // Resynchronise l'état local avec les données serveur à chaque nouveau
-    // rendu RSC (revalidatePath après une mutation). Sans ça,
-    // useState reste figé sur le premier rendu et les changements n'appa-
-    // raissent qu'après un rechargement manuel de la page. logsProp ne change
-    // de référence que lorsque le serveur renvoie de nouvelles données, donc
-    // cet effet ne se déclenche pas sur les simples re-rendus client (filtres,
-    // pagination…). Les mises à jour optimistes (onCreated/onDeleted/…) restent
-    // valides : le rafraîchissement serveur qui suit porte la même donnée.
-    // ServerPageComp ne charge toujours que l'année en cours : si une plage
-    // personnalisée est active, on rejoue la requête pour CETTE plage au lieu
-    // d'adopter logsProp, sinon la vue reviendrait silencieusement à l'année
-    // en cours après la moindre mutation ailleurs dans l'appli.
+    // Resync local state with server data on every new RSC render (revalidatePath
+    // after a mutation). Otherwise useState stays frozen on the first render and
+    // changes only show after a manual reload. logsProp only changes reference when
+    // the server sends new data, so this effect does not fire on plain client
+    // re-renders (filters, pagination…). Optimistic updates (onCreated/onDeleted/…)
+    // stay valid: the following server refresh carries the same data.
+    // ServerPageComp always loads the current year only: if a custom range is active,
+    // the query is replayed for THAT range instead of adopting logsProp, otherwise
+    // the view would silently revert to the current year after any mutation elsewhere
+    // in the app.
     useEffect(() => {
         if (!didMountRef.current) {
             didMountRef.current = true;
@@ -99,25 +96,25 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
         return `${fmtDate(dateRange.from)} – ${fmtDate(dateRange.to)}`;
     }, [dateRange, isDefaultRange]);
 
-    // Saisie manuelle : rôles de gestion + PILOT (pour son propre carnet). Pas
-    // le STUDENT (il vole avec instructeur, ses vols sont auto-logués).
+    // Manual entry: management roles + PILOT (for their own logbook). Not STUDENT
+    // (they fly with an instructor, their flights are auto-logged).
     const canAddManualEntry = canAddManualLogEntry(currentUser?.role);
 
-    // Un membre propriétaire d'une machine privée peut consulter le carnet de
-    // route de SA machine (en lecture seule s'il n'est pas gestionnaire).
+    // A member owning a private plane can view THEIR plane's logbook (read-only if
+    // they are not management).
     const ownsPrivatePlane =
         !!currentUser && planesProp.some((p) => p.ownerID === currentUser.id);
     const canSeeAircraftTab = canSeeAircraftLogbook(currentUser?.role, { ownsPrivatePlane });
     const aircraftReadOnly = isLogbookReadOnly(currentUser?.role);
-    // Avions proposés dans le carnet de route : le gestionnaire voit toute la
-    // flotte visible ; un membre non gestionnaire ne voit QUE ses machines.
+    // Planes offered in the plane logbook: management sees the whole visible fleet; a
+    // non-management member ONLY sees their planes.
     const aircraftPlanes = aircraftReadOnly && currentUser
         ? planesProp.filter((p) => p.ownerID === currentUser.id)
         : planesProp;
 
-    // Filter logs based on role. Avec la nouvelle logique (1 log par session
-    // d'instruction, pilotID=instructeur + studentID=élève), un user simple
-    // doit voir les logs où il est pilote OU élève.
+    // Filter logs based on role. With 1 log per instruction session
+    // (pilotID=instructor + studentID=student), a regular user must see the logs
+    // where they are the pilot OR the student.
     const visibleLogs = useMemo(() => {
         if (!currentUser) return [];
         let filtered: flight_logs[];
@@ -126,26 +123,25 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
             currentUser.role === userRole.PILOT ||
             currentUser.role === userRole.INSTRUCTOR
         ) {
-            // Carnet personnel : vols où il est pilote (instructeur ou CDB)
-            // ou élève (studentID).
+            // Personal logbook: flights where they are the pilot (instructor or CDB) or the
+            // student (studentID).
             filtered = logs.filter(
                 (l) => l.pilotID === currentUser.id || l.studentID === currentUser.id
             );
         } else {
-            // ADMIN / OWNER / MANAGER : tout le club
+            // ADMIN / OWNER / MANAGER: the whole club
             filtered = logs;
         }
-        // mergeSessionLogs est devenu quasi no-op avec la nouvelle logique
-        // (1 log par session) mais reste utile si la DB contient encore des
-        // anciens logs paires en cohabitation.
+        // mergeSessionLogs is nearly a no-op with 1 log per session, but stays useful if
+        // the DB still holds old paired logs.
         return mergeSessionLogs(filtered);
     }, [logs, currentUser]);
 
     const [selectedPlaneForExport, setSelectedPlaneForExport] = useState<string>("");
     const [exporting, setExporting] = useState(false);
 
-    // Données d'export remontées par chaque tab (= ce que voit l'utilisateur,
-    // filtres appliqués). Permet d'exporter exactement la vue courante.
+    // Export data reported by each tab (= what the user sees, filters applied), so
+    // the current view is exported exactly.
     const [pilotExportInfo, setPilotExportInfo] = useState<PilotExportInfo>({
         logs: [],
         pilotName: "",
@@ -178,7 +174,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
             let blob: Blob;
             const now = new Date();
             const datestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-            // Sanitize : retire accents et remplace tout caractère non alphanum par "_".
+            // Sanitize: strip accents and replace any non-alphanumeric character with "_".
             const safe = (s: string) =>
                 s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]/g, "_");
             let filename: string;
@@ -197,9 +193,8 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                     ? `carnet_de_vol_pilote_${safe(pilotLastName)}_${datestamp}.pdf`
                     : `carnet_de_vol_pilote_${datestamp}.pdf`;
             } else {
-                // Carnet de route machine. Un aéronef précis => une section ;
-                // « Tous les aéronefs » => une section par machine (regroupées
-                // depuis les champs dénormalisés du log, robustes aux suppressions).
+                // Plane logbook. A specific plane => one section; "All planes" => one section per
+                // plane (grouped from the log's denormalized fields, robust to deletions).
                 if (selectedPlaneForExport && selectedPlaneForExport !== "ALL") {
                     const plane = planesProp.find((p) => p.id === selectedPlaneForExport);
                     const registration = plane?.immatriculation ?? aircraftExportLogs[0]?.planeRegistration ?? "";
@@ -217,7 +212,7 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                         ? `carnet_de_vol_machine_${safe(registration)}_${datestamp}.pdf`
                         : `carnet_de_vol_machine_${datestamp}.pdf`;
                 } else {
-                    // « Tous les aéronefs » : une section PDF par machine.
+                    // "All planes": one PDF section per plane.
                     const sections = groupLogsByMachine(aircraftExportLogs);
                     blob = await pdf(
                         <AircraftLogbookDocument sections={sections} periodLabel={periodLabel} />
@@ -254,12 +249,9 @@ const LogbookPageComponent = ({ logsProp, planesProp, usersProp }: Props) => {
                     </span>
                 </div>
 
-                {/* Action bar — sur mobile elle occupe toute la largeur.
-                    Le sélecteur de période garde la largeur de son contenu (mr-auto
-                    pousse les boutons à droite) et ne se comprime qu'au besoin ; les
-                    boutons gardent leur taille pour ne jamais être rognés. */}
+                {/* Action bar: full width on mobile. The period selector keeps its content width (mr-auto pushes the buttons right) and only shrinks when needed; the buttons keep their size so they are never clipped. */}
                 <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto min-w-0">
-                    {/* Date range selector — pilote aussi la période exportée en PDF */}
+                    {/* Date range selector: also drives the period exported to PDF */}
                     <LogbookDateRangePicker
                         value={dateRange}
                         onChange={handleDateRangeChange}

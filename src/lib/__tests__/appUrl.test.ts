@@ -2,9 +2,9 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { appUrl, normalizeBaseUrl } from "@/lib/appUrl";
 
 /**
- * Régression : un lien d'email sans domaine (« /dashboard?clubID=LF666 ») est
- * réécrit par les clients mail en « http://dashboard/?clubID=LF666 ». La base
- * doit donc toujours ressortir absolue, ou vide (cas signalé dans les logs).
+ * Regression: an email link without a domain ("/dashboard?clubID=LF666") is
+ * rewritten by mail clients as "http://dashboard/?clubID=LF666". The base must
+ * therefore always come out absolute, or empty (case reported in the logs).
  */
 describe("normalizeBaseUrl", () => {
     it("garde une URL déjà absolue", () => {
@@ -38,9 +38,9 @@ describe("normalizeBaseUrl", () => {
 });
 
 /**
- * Le bug initial : NEXT_PUBLIC_APP_URL n'est définie nulle part dans le projet
- * (seule WEBSITE_LINK l'est, pour la redirection Supabase). appUrl doit donc
- * accepter les deux, sinon le lien de validation baptême repart relatif.
+ * The original bug: NEXT_PUBLIC_APP_URL is not defined anywhere in the project
+ * (only WEBSITE_LINK is, for the Supabase redirect). appUrl must therefore accept
+ * both, otherwise the discovery-flight validation link goes out relative.
  */
 describe("appUrl — résolution de la variable d'environnement", () => {
     const initial = {
@@ -79,14 +79,14 @@ describe("appUrl — résolution de la variable d'environnement", () => {
     });
 
     it("sans aucune variable : renvoie \"\" — le lien serait relatif, donc cassé", () => {
-        // Le helper alerte dans les logs serveur : on l'intercepte pour ne pas
-        // polluer la sortie des tests.
+        // The helper warns in the server logs: intercept it so the test output stays
+        // clean.
         const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
         setEnv(undefined, undefined);
         expect(appUrl()).toBe("");
         expect(warn).toHaveBeenCalled();
-        // C'est exactement ce qui produisait « http://dashboard/?clubID=… » :
-        // on documente le symptôme pour qu'il ne repasse pas inaperçu.
+        // Exactly what produced "http://dashboard/?clubID=…": the symptom is documented
+        // so it does not go unnoticed again.
         expect(`${appUrl()}/dashboard?clubID=LF666`).toBe("/dashboard?clubID=LF666");
     });
 });

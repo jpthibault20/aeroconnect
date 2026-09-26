@@ -4,24 +4,24 @@ import { navigationLinks } from "@/config/links";
 import { LOGBOOK_PAGE_ROLES, canSeeAircraftLogbook } from "@/lib/logbookPermissions";
 
 /**
- * Tests pour le carnet de vol côté élève (STUDENT).
+ * Student (STUDENT) side of the logbook.
  *
- * Règles produit :
- *   - L'élève peut accéder à la page /logbook (lecture seule).
- *   - Il voit uniquement ses propres entrées (logs où pilotID === currentUser.id),
- *     donc seules ses entrées de fonction "EP" auto-créées remontent.
- *   - Il ne voit pas le carnet de route (avion).
- *   - Il ne peut rien gérer (pas de bouton "Nouveau vol", pas d'édition).
- *   - Le terme "signé" et le bouton de signature sont masqués pour lui.
+ * Product rules:
+ *   - The student can open /logbook (read-only).
+ *   - They only see their own entries (logs where pilotID === currentUser.id),
+ *     so only their auto-created "EP" entries show up.
+ *   - They do not see the plane logbook.
+ *   - They cannot manage anything (no "New flight" button, no editing).
+ *   - The "signed" wording and the sign button are hidden for them.
  *
- * Les constantes ci-dessous reproduisent celles du code source pour vérifier
- * le contrat sans dépendre de fichiers Next.js (page.tsx, composants client).
+ * The constants below mirror the source code to check the contract without
+ * depending on Next.js files (page.tsx, client components).
  */
 
-// Rôles autorisés sur la page /logbook — importés du vrai code (source unique).
+// Roles allowed on /logbook, imported from the real code (single source).
 const LOGBOOK_PAGE_ALLOWED_ROLES: userRole[] = LOGBOOK_PAGE_ROLES;
 
-// --- Predicates reproduits depuis LogbookPageComponent.tsx & PilotLogbookTab.tsx ---
+// --- Predicates mirrored from LogbookPageComponent.tsx & PilotLogbookTab.tsx ---
 
 function canManage(role: userRole | undefined): boolean {
     return (
@@ -32,9 +32,9 @@ function canManage(role: userRole | undefined): boolean {
     );
 }
 
-// Onglet carnet de route : on s'appuie sur le vrai code. Sans machine privée
-// (cas par défaut ici), seul un rôle de gestion y a accès. Le cas « élève
-// propriétaire d'une machine privée » est couvert dans roleCapabilities.test.ts.
+// Plane logbook tab: relies on the real code. Without a private plane (the
+// default here) only a management role has access. The "student owning a
+// private plane" case is covered in roleCapabilities.test.ts.
 function canSeeAircraftTab(role: userRole | undefined): boolean {
     return canSeeAircraftLogbook(role);
 }
@@ -121,13 +121,13 @@ describe("Carnet de vol — accès et visibilité élève (STUDENT)", () => {
         const instructorID = "inst-1";
 
         const logs: MinimalLog[] = [
-            // Vol pédagogique de l'élève : son entrée EP
+            // Student's training flight: their EP entry
             { id: "epi-1", pilotID: studentID, instructorID, pilotFunction: "EP" },
-            // Le même vol côté instructeur (à NE PAS voir pour l'élève)
+            // Same flight on the instructor side (must NOT be visible to the student)
             { id: "i-1", pilotID: instructorID, instructorID: null, pilotFunction: "I" },
-            // Vol d'un autre élève (à NE PAS voir)
+            // Another student's flight (must NOT be visible)
             { id: "epi-2", pilotID: otherStudentID, instructorID, pilotFunction: "EP" },
-            // Vol pilote solo de l'élève (cas rare mais possible si manuel)
+            // Student's solo pilot flight (rare, but possible if entered manually)
             { id: "p-1", pilotID: studentID, instructorID: null, pilotFunction: "P" },
         ];
 
@@ -185,9 +185,8 @@ describe("Carnet de vol — accès et visibilité élève (STUDENT)", () => {
     });
 
     describe("Page lecture seule pour STUDENT", () => {
-        // Le clic sur une ligne du tableau n'ouvre pas le dialog d'édition
-        // pour un élève. On modélise la garde présente dans
-        // PilotLogbookTab.handleRowClick : `if (isStudent) return;`.
+        // Clicking a table row does not open the edit dialog for a student. Models the
+        // guard in PilotLogbookTab.handleRowClick: `if (isStudent) return;`.
         function shouldOpenEditDialog(role: userRole | undefined): boolean {
             return !isStudent(role);
         }
@@ -206,8 +205,8 @@ describe("Carnet de vol — accès et visibilité élève (STUDENT)", () => {
     });
 
     describe("Masquage du terme 'signé' pour STUDENT", () => {
-        // Reproduit la garde `{!isStudent && <SignFlightLogButton ... />}` et
-        // le masquage de la colonne "Signe" dans PilotLogbookTab.
+        // Mirrors the `{!isStudent && <SignFlightLogButton ... />}` guard and the hidden
+        // "Signed" column in PilotLogbookTab.
         function showSignColumn(role: userRole | undefined): boolean {
             return !isStudent(role);
         }

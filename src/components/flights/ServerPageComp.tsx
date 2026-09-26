@@ -13,7 +13,6 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
     if (ClubIDprop) {
         const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
 
-        // Regrouper les appels à la base de données pour optimiser les performances
         const [sessions, planes, users] = await Promise.all([
             prisma.flight_sessions.findMany({
                 where: {

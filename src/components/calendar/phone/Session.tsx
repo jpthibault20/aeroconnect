@@ -17,7 +17,7 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
     const { currentUser } = useCurrentUser()
     const filterdPlanes = PlaneProps.filter((p) => currentUser?.classes.includes(p.classes))
 
-    // Libellé machine : celle réservée, l'unique proposée, ou le nombre proposé.
+    // Plane label: the booked one, the single offered one, or the number offered.
     const getPlanesString = () => {
         if (session.studentPlaneID) {
             return getPlaneName(session.studentPlaneID, PlaneProps).name as string;
@@ -57,11 +57,9 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
         >
             <div className={cn(
                 "relative flex items-center justify-between w-full px-3 py-2.5 rounded-lg border shadow-sm transition-all active:scale-[0.99]",
-                // BARRE GAUCHE EPAISSE
                 "border-l-[6px]",
-                // LOGIQUE COULEUR :
-                // Disponible : Bordure Violette partout + Barre gauche Violette + fond blanc
-                // Réservé : Bordure fine grise + Barre gauche grise plus foncée + fond grisé
+                // Available: purple border all around + purple left bar + white background.
+                // Booked: thin grey border + darker grey left bar + greyed background.
                 !isBooked
                     ? "bg-white border-[#774BBE] border-l-[#774BBE] shadow-purple-50"
                     : isHold
@@ -69,9 +67,7 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
                         : "bg-slate-50 border-slate-200 border-l-slate-300 text-slate-500"
             )}>
 
-                {/* GAUCHE : Heure & Avion */}
                 <div className="flex flex-col gap-1 items-start">
-                    {/* Heure */}
                     <div className="flex items-center gap-1.5">
                         <Clock className={cn("w-3.5 h-3.5", !isBooked ? "text-[#774BBE]" : "text-slate-400")} />
                         <span className={cn(
@@ -82,7 +78,6 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
                         </span>
                     </div>
 
-                    {/* Avion */}
                     <div className="flex items-center gap-1.5 pl-0.5">
                         <Plane className="w-3 h-3 text-slate-400 shrink-0" />
                         <span className="text-[11px] font-medium text-slate-500 truncate max-w-[120px]">
@@ -91,10 +86,8 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
                     </div>
                 </div>
 
-                {/* DROITE : Personnes / Statut */}
                 <div className="flex flex-col items-end gap-1.5">
 
-                    {/* Instructeur */}
                     <div className="flex items-center gap-1.5">
                         <span className="text-[11px] font-semibold text-slate-600">
                             {session.pilotLastName.toUpperCase().slice(0, 1)}.{session.pilotFirstName}
@@ -102,7 +95,7 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
                         <User size={12} className="text-slate-400" />
                     </div>
 
-                    {/* Élève, hold baptême, ou Badge Dispo */}
+                    {/* Student, discovery-flight hold, or "available" badge */}
                     {isHold ? (
                         <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-amber-100">
                             <span className="text-[10px] font-bold text-amber-700 truncate max-w-[110px]">
@@ -124,7 +117,6 @@ export function Session({ session, setSessions, PlaneProps, userProps }: Session
                     )}
                 </div>
 
-                {/* Indicateur de note discret (Point violet) */}
                 {noteCount > 0 && (
                     <div className="absolute top-1 right-1">
                         <div className="flex items-center justify-center w-3 h-3 rounded-full bg-[#774BBE] ring-2 ring-white">

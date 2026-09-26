@@ -2,16 +2,14 @@ import { describe, it, expect } from "vitest";
 import { userRole } from "@prisma/client";
 
 /**
- * Tests de la matrice de permissions.
- * On teste la logique pure des vérifications de rôle
- * telle qu'implémentée dans les différents fichiers de l'app.
+ * Permission matrix: pure role-check logic as implemented across the app.
  */
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
 const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 const LOGBOOK_ROLES: userRole[] = [userRole.PILOT, userRole.STUDENT, userRole.INSTRUCTOR, userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
-// Roles qui peuvent gérer les avions (planes.ts ADMIN_ROLES inclut MANAGER)
+// Roles allowed to manage planes (planes.ts ADMIN_ROLES includes MANAGER)
 const PLANE_MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 describe("Matrice de permissions", () => {

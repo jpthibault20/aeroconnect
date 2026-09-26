@@ -3,7 +3,7 @@ import { formatPilotName } from "../formatPilotName";
 
 describe("formatPilotName", () => {
     it("formate 'Jean' 'Dupont' en 'D. jean'", () => {
-        // Note : la fonction prend (firstName, lastName) mais utilise
+        // Note: the function takes (firstName, lastName) but uses
         // lastName.charAt(0) + firstName.toLowerCase()
         const result = formatPilotName("Jean", "Dupont");
         expect(result).toBe("D. jean");
@@ -20,7 +20,7 @@ describe("formatPilotName", () => {
     });
 
     it("gère les chaînes vides sans crash", () => {
-        // charAt(0) sur "" retourne "" et toUpperCase() retourne ""
+        // charAt(0) on "" returns "" and toUpperCase() returns ""
         const result = formatPilotName("", "");
         expect(result).toBe(". ");
     });

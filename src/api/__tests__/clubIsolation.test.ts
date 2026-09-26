@@ -3,12 +3,11 @@ import { userRole } from "@prisma/client";
 import { canOperateMemberWallet, canViewMemberWallet } from "@/lib/wallet";
 
 /**
- * Tests d'isolation inter-clubs.
- * Vérifie que les vérifications de clubID empêchent l'accès croisé.
- * Logique extraite des server actions.
+ * Cross-club isolation: the clubID checks must prevent cross-tenant access.
+ * Logic extracted from the server actions.
  */
 
-// --- Helpers simulant les guards de clubID ---
+// --- Helpers mirroring the clubID guards ---
 
 function checkClubAccess(authUserClubID: string, targetClubID: string): boolean {
     return authUserClubID === targetClubID;
@@ -151,9 +150,9 @@ describe("Isolation inter-clubs", () => {
     });
 
     describe("Suppression de vols (deleteFlightLog)", () => {
-        // Règle serveur : OWNER/ADMIN peuvent supprimer n'importe quel vol non
-        // signé du club ; sinon un pilote peut supprimer SON propre vol non signé
-        // (cas d'usage : instructeur dont l'élève ne s'est pas présenté).
+        // Server rule: OWNER/ADMIN can delete any unsigned flight of the club; otherwise
+        // a pilot can only delete THEIR OWN unsigned flight (use case: instructor whose
+        // student did not show up).
         const canDelete = (role: userRole, userID: string, logPilotID: string) =>
             ([userRole.OWNER, userRole.ADMIN] as userRole[]).includes(role) || userID === logPilotID;
 
@@ -174,7 +173,7 @@ describe("Isolation inter-clubs", () => {
 
         it("un vol signé ne peut PAS être supprimé", () => {
             const pilotSigned = true;
-            expect(pilotSigned).toBe(true); // la suppression sera bloquée en amont
+            expect(pilotSigned).toBe(true); // deletion is blocked upstream
         });
     });
 

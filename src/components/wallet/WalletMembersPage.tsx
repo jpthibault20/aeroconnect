@@ -50,9 +50,9 @@ const lastOpLabel = (r: WalletMemberRow) => r.lastOperation
     : "—";
 
 /**
- * « Portefeuilles » : soldes de tous les membres du club, triés du plus
- * endetté au plus créditeur. Gestion : crédit / retrait et totaux financiers.
- * Instructeur : lecture seule, sans les totaux.
+ * "Wallets": balances of every club member, sorted from most indebted to most in
+ * credit. Management: credit / withdrawal and financial totals. Instructor:
+ * read-only, without totals.
  */
 const WalletMembersPage = () => {
     const { currentClub } = useCurrentClub();
@@ -97,7 +97,7 @@ const WalletMembersPage = () => {
 
     return (
         <div className="space-y-5">
-            {/* Barre du haut */}
+            {/* Top bar */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-purple-100 text-[#774BBE] rounded-lg hidden sm:block"><Wallet className="w-6 h-6" /></div>
@@ -148,7 +148,7 @@ const WalletMembersPage = () => {
                 </div>
             )}
 
-            {/* Indicateurs (gestion uniquement) */}
+            {/* Indicators (management only) */}
             {totals && (
                 <>
                     <div className="hidden md:grid grid-cols-3 gap-4">
@@ -170,7 +170,7 @@ const WalletMembersPage = () => {
                 </div>
             ) : (
                 <>
-                    {/* Ordinateur */}
+                    {/* Desktop */}
                     <div className="hidden md:block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                         <table className="w-full text-sm">
                             <thead className="bg-slate-100 border-b-2 border-slate-200">

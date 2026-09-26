@@ -18,11 +18,11 @@ import FlightLoaderView from "./FlightLoaderView";
 import { flightCoordinator, useFlightMessage } from "./flightStore";
 
 /**
- * Prend le relais du dernier loader démonté (AER-70), à son emplacement exact :
- * le contenu est déjà rendu dessous, masqué jusqu'à la fin de l'affichage
- * minimal puis de l'atterrissage accéléré.
+ * Takes over from the last unmounted loader (AER-70), at its exact position: the
+ * content is already rendered underneath, hidden until the minimum display time
+ * and the accelerated landing are over.
  *
- * Monté une seule fois, dans le layout racine.
+ * Mounted once, in the root layout.
  */
 export default function FlightLandingHost() {
     const handoff = useSyncExternalStore(
@@ -45,7 +45,7 @@ function LandingOverlay({ handoff }: { handoff: Handoff }) {
     const frame = useCallback(
         (now: number): SceneFrame => {
             const elapsed = now - handoff.startedAt;
-            // Avant l'atterrissage (affichage minimal, délai de relais) : le vol continue normalement.
+            // Before landing (minimum display, handoff delay): the flight goes on normally.
             if (now < handoff.landingAt) {
                 return { pose: flightPose(elapsed), distance: flightDistance(elapsed) };
             }
@@ -59,8 +59,8 @@ function LandingOverlay({ handoff }: { handoff: Handoff }) {
         [handoff.startedAt, handoff.landingAt, touchdownStart],
     );
 
-    // Horloge du relais : bascule de phase au bon moment, et abandon immédiat
-    // si la zone du loader a quitté l'écran (dialogue fermé, navigation ailleurs).
+    // Handoff clock: switches phase at the right time, and bails out immediately if
+    // the loader area left the screen (dialog closed, navigated elsewhere).
     useAnimationFrame(
         useCallback(() => {
             if (handoff.anchor && !handoff.anchor.isConnected) {
@@ -83,8 +83,8 @@ function LandingOverlay({ handoff }: { handoff: Handoff }) {
     return (
         <motion.div
             aria-hidden="true"
-            // Bloque les clics : le contenu dessous est masqué, on ne doit pas
-            // pouvoir interagir avec à l'aveugle.
+            // Block clicks: the content underneath is hidden, it must not be interacted with
+            // blindly.
             className="fixed z-[60] flex cursor-progress items-center justify-center"
             style={{
                 top: rect.top,

@@ -2,37 +2,35 @@ import { userRole } from "@prisma/client";
 import { BAPTEME_HOLD_STUDENT_ID } from "./bapteme";
 
 /**
- * Coordonnées (téléphone / email) affichées dans le popup d'une séance du
- * calendrier.
+ * Contact details (phone / email) shown in a calendar session popup.
  *
- * Règle de visibilité — réciprocité limitée à la séance :
- *  - l'instructeur de la séance voit les coordonnées de SON élève ;
- *  - l'élève inscrit voit celles de SON instructeur ;
- *  - la gestion (ADMIN / OWNER / MANAGER) voit les deux ;
- *  - un membre non concerné par la séance ne voit rien.
+ * Visibility rule, reciprocity limited to the session:
+ *  - the session's instructor sees THEIR student's details;
+ *  - the booked student sees THEIR instructor's;
+ *  - management (ADMIN / OWNER / MANAGER) sees both;
+ *  - a member unrelated to the session sees nothing.
  *
- * On ne renvoie jamais ses propres coordonnées (aucun intérêt à s'appeler
- * soi-même).
+ * One's own details are never returned (no point calling oneself).
  */
 
-// Sentinelle posée sur studentID quand un client extérieur (baptême validé) est
-// inscrit : ce n'est pas un membre du club, ses coordonnées sont portées par la
-// séance (studentEmail / studentPhone) et non par la table User.
+// Sentinel set on studentID when an external customer (accepted discovery
+// flight) is booked: not a club member, their details are carried by the session
+// (studentEmail / studentPhone), not by the User table.
 export const GUEST_STUDENT_ID = "invited";
 
-// Rôles qui voient les coordonnées de toutes les séances du club.
+// Roles that see the contact details of every club session.
 const CONTACT_OVERSIGHT_ROLES: userRole[] = [
     userRole.ADMIN,
     userRole.OWNER,
     userRole.MANAGER,
 ];
 
-// Un studentID qui n'est pas un vrai membre (client extérieur ou hold baptême).
+// A studentID that is not a real member (external customer or discovery-flight hold).
 export function isGuestStudent(studentID: string | null): boolean {
     return studentID === GUEST_STUDENT_ID || studentID === BAPTEME_HOLD_STUDENT_ID;
 }
 
-// Forme minimale d'une séance nécessaire au calcul (sous-ensemble de flight_sessions).
+// Minimal session shape needed for the computation (subset of flight_sessions).
 export interface SessionContactLike {
     pilotID: string;
     pilotFirstName: string;
@@ -44,7 +42,7 @@ export interface SessionContactLike {
     studentPhone: string | null;
 }
 
-// Forme minimale d'un membre du club (sous-ensemble de User).
+// Minimal club member shape (subset of User).
 export interface MemberLike {
     id: string;
     firstName: string;
@@ -60,8 +58,8 @@ export interface Viewer {
 
 export interface SessionContact {
     role: "pilot" | "student";
-    // Libellé affiché : « Instructeur » / « Élève » (ou « Client » pour un
-    // baptême, qui n'est pas un élève du club).
+    // Displayed label: "Instructeur" / "Élève" (or "Client" for a discovery flight,
+    // who is not a club student).
     label: string;
     name: string;
     email: string | null;
@@ -72,13 +70,13 @@ function isOversight(viewer: Viewer): boolean {
     return CONTACT_OVERSIGHT_ROLES.includes(viewer.role);
 }
 
-/** L'élève inscrit (et la gestion) peuvent joindre l'instructeur de la séance. */
+/** The booked student (and management) can reach the session's instructor. */
 export function canSeePilotContact(session: SessionContactLike, viewer: Viewer): boolean {
     if (isOversight(viewer)) return true;
     return session.studentID != null && session.studentID === viewer.id;
 }
 
-/** L'instructeur de la séance (et la gestion) peuvent joindre l'élève inscrit. */
+/** The session's instructor (and management) can reach the booked student. */
 export function canSeeStudentContact(session: SessionContactLike, viewer: Viewer): boolean {
     if (isOversight(viewer)) return true;
     return session.pilotID === viewer.id;
@@ -89,9 +87,9 @@ function fullName(lastName: string | null, firstName: string | null): string {
 }
 
 /**
- * Coordonnées visibles par `viewer` pour cette séance. `members` sert à
- * retrouver email/téléphone d'un membre ; pour un client extérieur, les
- * coordonnées sont lues sur la séance elle-même.
+ * Contact details visible to `viewer` for this session. `members` is used to
+ * find a member's email/phone; for an external customer, the details are read
+ * from the session itself.
  */
 export function resolveSessionContacts(
     session: SessionContactLike,
@@ -114,8 +112,8 @@ export function resolveSessionContacts(
     const studentID = session.studentID;
     if (studentID != null && studentID !== viewer.id && canSeeStudentContact(session, viewer)) {
         const guest = isGuestStudent(studentID);
-        // Membre : coordonnées à jour depuis son profil. Client extérieur :
-        // celles saisies à la réservation, figées sur la séance.
+        // Member: up-to-date details from their profile. External customer: those
+        // entered at booking, frozen on the session.
         const member = guest ? undefined : members.find((m) => m.id === studentID);
         contacts.push({
             role: "student",

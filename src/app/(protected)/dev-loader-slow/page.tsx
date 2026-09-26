@@ -5,8 +5,8 @@ interface PageProps {
     searchParams: Promise<{ ms?: string }>
 }
 
-// Page volontairement lente : déclenche le vrai (protected)/loading.tsx, puis
-// l'atterrissage quand le rendu serveur arrive. Réservée au développement.
+// Deliberately slow page: triggers the real (protected)/loading.tsx, then the
+// landing when the server render arrives. Development only.
 export default async function Page({ searchParams }: PageProps) {
     if (process.env.NODE_ENV === 'production') notFound();
     const { ms } = await searchParams;

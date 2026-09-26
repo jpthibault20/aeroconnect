@@ -2,13 +2,13 @@ import { z } from "zod";
 import { PaymentMethod } from "@prisma/client";
 
 /**
- * Opération manuelle sur un portefeuille (AER-66), saisie par la gestion.
- * Validée côté client (WalletOperationDialog) ET côté serveur
- * (recordWalletOperation), même convention que src/schemas/baptemeOptions.ts.
+ * Manual wallet operation (AER-66), entered by management. Validated client-side
+ * (WalletOperationDialog) AND server-side (recordWalletOperation), same
+ * convention as src/schemas/baptemeOptions.ts.
  *
- * Le montant est TOUJOURS positif : c'est `kind` qui donne le sens
- * (CREDIT => paiement reçu, WITHDRAW => retrait / correction, enregistré en
- * ADJUSTMENT négatif).
+ * The amount is ALWAYS positive: `kind` gives the direction (CREDIT => payment
+ * received, WITHDRAW => withdrawal / correction, recorded as a negative
+ * ADJUSTMENT).
  */
 export const walletOperationSchema = z
     .object({

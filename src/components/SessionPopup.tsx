@@ -58,24 +58,23 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     const [session, setSession] = useState<flight_sessions>();
     const [studentComment, setStudentComment] = useState("");
 
-    // Portefeuille (AER-66) : élève / pilote à solde ≤ 0 => réservation bloquée
-    // (le serveur refuse de toute façon, cf. studentRegistration).
+    // Wallet (AER-66): student / pilot with a balance ≤ 0 => booking blocked (the
+    // server refuses anyway, see studentRegistration).
     const wallet = useWallet();
     const walletGated = wallet.enabled && isBookingGatedRole(currentUser?.role) && wallet.balanceCents != null;
     const walletBlocked = walletGated && !canBookWithBalance(wallet.balanceCents as number);
     const walletLow = walletGated && !walletBlocked && wallet.state === "low";
 
-    // Machines réservables : visibilité (club + sa propre privée) ∩ classe autorisée.
+    // Bookable planes: visibility (club + own private plane) ∩ allowed class.
     const filterdPlanes = currentUser ? filterBookablePlanes(planesProp, currentUser) : [];
 
-    // Une machine privée appartenant à l'utilisateur courant n'a pas à être
-    // « proposée » par le créneau : elle est à lui. Sans ça, elle n'apparaît que
-    // si le créateur de la séance la voyait (président/admin), et un créneau
-    // ouvert par un instructeur la rendrait inaccessible à son propriétaire.
+    // A private plane owned by the current user does not need to be "offered" by the
+    // slot: it is theirs. Otherwise it would only appear if the session creator could
+    // see it (president/admin), and a slot opened by an instructor would hide it from
+    // its owner.
     const isOwnPlane = (planeID: string) =>
         !!currentUser && planesProp.some(p => p.id === planeID && p.ownerID === currentUser.id);
 
-    // --- 1. LOGIC & EFFECTS (Inchangés pour garantir le fonctionnement) ---
     useEffect(() => {
         if (sessions.length === 1) {
             setSession(sessions[0]);
@@ -96,9 +95,9 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
             try {
                 const { pilotes } = await filterPilotePlane(sessions, usersProps, filterdPlanes);
 
-                // Machines proposées : celles offertes sur les créneaux encore
-                // libres, PLUS la machine privée de l'utilisateur (cf. isOwnPlane).
-                // Même règle que côté gestionnaire (filterPlanesForBeneficiary).
+                // Offered planes: those offered on still-free slots, PLUS the user's private
+                // plane (see isOwnPlane). Same rule as on the manager side
+                // (filterPlanesForBeneficiary).
                 const availableSessions = sessions.filter(s => s.studentID === null);
                 const offeredPlaneIDs = Array.from(
                     new Set(availableSessions.flatMap(s => resolveOfferedPlaneIDs(s.planeID, planesProp)))
@@ -148,8 +147,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
             updatedPlanes = allPlanes;
         } else {
             updatedPlanes = allPlanes.filter(plane =>
-                // Sa propre machine reste proposable quel que soit l'instructeur :
-                // elle n'appartient pas à l'offre du créneau.
+                // Their own plane stays available whatever the instructor: it is not part of the
+                // slot's offer.
                 isOwnPlane(plane.id) ||
                 sessions.some(session => session.pilotID === instructor && sessionOffersPlane(session.planeID, plane.id, planesProp))
             );
@@ -166,8 +165,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
     useEffect(() => {
         setAvailableInstructors(
-            // Avec sa propre machine, tous les instructeurs du créneau restent
-            // possibles : le choix de la machine ne dépend plus de leur offre.
+            // With their own plane, every instructor of the slot stays possible: the plane
+            // choice no longer depends on their offer.
             plane === "nothing" || isOwnPlane(plane)
                 ? allInstructors
                 : allInstructors.filter(instructor =>
@@ -193,7 +192,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                     variant: "destructive",
                 });
                 setError(res.error);
-                // Solde changé entre-temps : on rafraîchit pour afficher le blocage.
+                // Balance changed in the meantime: refresh to show the block.
                 if ('code' in res && res.code === "WALLET_EMPTY") emitWalletChanged();
             } else if (res.success) {
                 toast({
@@ -210,7 +209,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                     )
                 );
 
-                // Notifications : l'utilisateur est prévenu si l'une d'elles échoue.
+                // Notifications: the user is warned if one fails.
                 const endDate = new Date(session!.sessionDateStart);
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
                 const instructorFull = usersProps.find(user => user.id === session.pilotID);
@@ -254,12 +253,10 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     const endDate = new Date(startDate);
     endDate.setMinutes(startDate.getMinutes() + sessions[0].sessionDateDuration_min);
 
-    // --- 2. UI REFONTE ---
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] bg-white rounded-xl shadow-2xl p-0 gap-0 overflow-hidden !flex !flex-col">
-                {/* Header Unifié */}
                 <div className="bg-slate-50 p-6 border-b border-slate-100 flex-shrink-0">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-slate-800">Détails du créneau</DialogTitle>
@@ -272,17 +269,13 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 </div>
 
                 <div className="p-6 overflow-y-auto max-h-[70vh]">
-                    {/* Baptême en attente : validable ici comme en page
-                        Club, avec les mêmes droits (pilote assigné ou
-                        gestion). Placé hors du branchement par rôle pour
-                        rester visible du pilote non gestionnaire. */}
+                    {/* Pending discovery flight: can be accepted here as on the Club page, with the same rights (assigned pilot or management). Placed outside the role branch so a non-management pilot still sees it. */}
                     <BaptemeSessionValidation
                         sessions={sessions}
                         setSessions={setSessions}
                         open={isOpen}
                     />
 
-                    {/* MODE ADMIN / OWNER / INSTRUCTOR / MANAGER : UPDATE */}
                     {["ADMIN", "OWNER", "INSTRUCTOR", "MANAGER"].includes(currentUser?.role as string) ? (
                         <SessionPopupUpdate
                             sessions={sessions}
@@ -292,7 +285,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                         />
                     ) : noSessions ? (
 
-                        // --- MODE LECTURE (SESSIONS DÉJÀ RÉSERVÉES) ---
+                        // --- READ MODE (ALREADY BOOKED SESSIONS) ---
                         <div className="space-y-4">
                             <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Vols confirmés</h3>
                             <div className={cn(
@@ -306,7 +299,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                     >
                                         <div className="absolute top-0 left-0 w-1 h-full bg-[#774BBE]" />
 
-                                        {/* Ligne 1: Pilote & Élève */}
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-2 text-slate-700 font-medium text-sm">
@@ -324,7 +316,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
                                         <div className="w-full h-px bg-slate-100 my-2" />
 
-                                        {/* Ligne 2: Avion & Notes */}
                                         <div className="flex justify-between items-center text-xs">
                                             <div className="flex items-center gap-2 text-slate-600 bg-slate-50 px-2 py-1 rounded">
                                                 <Plane size={14} />
@@ -358,14 +349,13 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
                     ) : walletBlocked ? (
 
-                        // --- RÉSERVATION BLOQUÉE : SOLDE ÉPUISÉ ---
+                        // --- BOOKING BLOCKED: BALANCE DEPLETED ---
                         <WalletBookingBlock balanceCents={wallet.balanceCents as number} />
 
                     ) : (
 
-                        // --- MODE RÉSERVATION (STUDENT) ---
+                        // --- BOOKING MODE (STUDENT) ---
                         <div className="space-y-6">
-                            {/* Section Configuration */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                                     <span className="w-6 h-px bg-slate-300"></span>
@@ -393,7 +383,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 </div>
                             </div>
 
-                            {/* Section Notes */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                                     <span className="w-6 h-px bg-slate-300"></span>
@@ -402,7 +391,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 </h3>
 
                                 <div className="grid gap-4">
-                                    {/* Note Instructeur (Lecture seule) */}
                                     {(session && session.pilotComment) && (
                                         <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 space-y-1">
                                             <Label className="text-xs font-semibold text-amber-700 flex items-center gap-1">
@@ -414,7 +402,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                         </div>
                                     )}
 
-                                    {/* Note Étudiant (Saisie) */}
                                     {session && (
                                         <div className="space-y-1.5">
                                             <Label className="text-xs text-slate-600">Votre message pour l&apos;instructeur (optionnel)</Label>
@@ -429,7 +416,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 </div>
                             </div>
 
-                            {/* Actions */}
                             <div className="pt-4 border-t border-slate-100 space-y-3">
                                 {walletLow && (
                                     <div className="flex items-start gap-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs text-amber-800">

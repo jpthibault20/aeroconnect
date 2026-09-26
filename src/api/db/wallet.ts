@@ -22,17 +22,17 @@ import { walletOperationSchema, WalletOperationInput } from "@/schemas/wallet";
 import { clubPeriodStart } from "@/lib/clubTime";
 
 /**
- * Server actions du portefeuille élève (AER-66).
+ * Student wallet server actions (AER-66).
  *
- * Cloisonnement : le club est TOUJOURS celui de l'utilisateur connecté
- * (auth.user.clubID), jamais un paramètre venu du client. Tout membre ciblé
- * est relu en base et doit appartenir à ce club.
+ * Isolation: the club is ALWAYS the signed-in user's (auth.user.clubID), never a
+ * client parameter. Every targeted member is re-read from the DB and must belong
+ * to that club.
  */
 
 const PAGE_SIZE = 20;
 
-// Échec uniforme : discriminable côté client par `res.success`, et toujours
-// compatible avec la convention `'error' in res`.
+// Uniform failure: the client can tell it apart via `res.success`, and it stays
+// compatible with the `'error' in res` convention.
 const fail = (error: string | undefined) => ({ success: false as const, error: error ?? "Erreur inconnue" });
 
 export interface WalletContact {
@@ -53,15 +53,15 @@ export interface WalletMemberRow {
 }
 
 export interface WalletTotals {
-    overdraftCount: number; // membres à découvert (solde < 0)
-    totalDueCents: number; // somme des soldes négatifs
+    overdraftCount: number; // overdrawn members (balance < 0)
+    totalDueCents: number; // sum of negative balances
     cashedThisMonthCents: number;
 }
 
 export interface WalletPeriodSummary {
     paidCents: number;
     paymentCount: number;
-    flightsCents: number; // montant net des vols (débits + corrections), négatif
+    flightsCents: number; // net amount of flights (debits + corrections), negative
     flightCount: number;
     flightMinutes: number;
 }
@@ -70,7 +70,7 @@ export interface WalletTransactionView extends WalletTransaction {
     authorName: string | null;
 }
 
-// Charge l'utilisateur connecté et son club ; refuse si le portefeuille est désactivé.
+// Loads the signed-in user and their club; refuses if the wallet is disabled.
 async function loadContext(allowedRoles?: userRole[]) {
     const auth = await requireAuth(allowedRoles);
     if ("error" in auth) return { error: auth.error as string };
@@ -90,7 +90,7 @@ async function getBalance(clubID: string, userID: string): Promise<number> {
     return wallet?.balanceCents ?? 0;
 }
 
-// Début du mois en heure du club (et non du serveur, en UTC sur Vercel).
+// Start of the month in club time (not server time, which is UTC on Vercel).
 function startOfMonth(now = new Date()): Date {
     return clubPeriodStart(now, "month");
 }
@@ -136,11 +136,11 @@ async function transactionsPage(clubID: string, userID: string, page: number) {
     return { transactions: await withAuthorNames(rows.slice(0, PAGE_SIZE)), hasMore: rows.length > PAGE_SIZE };
 }
 
-// ─── Statut léger (navigation, calendrier, profil) ───
+// ─── Lightweight status (navigation, calendar, profile) ───
 
 /**
- * Solde de l'utilisateur connecté. `enabled: false` si le club n'a pas activé
- * le portefeuille (l'UI n'affiche alors rien).
+ * Balance of the signed-in user. `enabled: false` if the club has not enabled
+ * the wallet (the UI then shows nothing).
  */
 export const getMyWalletStatus = async () => {
     const auth = await requireAuth();
@@ -166,12 +166,11 @@ export const getMyWalletStatus = async () => {
     };
 };
 
-// ─── Portefeuille d'un membre (le sien, ou un membre du club pour la gestion) ───
+// ─── Member wallet (own, or a club member's for management) ───
 
 /**
- * Détail d'un portefeuille. STUDENT / PILOT (et tout rôle sans droit de
- * consultation) reçoivent TOUJOURS leur propre portefeuille, quel que soit
- * `userID`.
+ * Wallet details. STUDENT / PILOT (and any role without viewing rights) ALWAYS
+ * get their own wallet, whatever `userID` is.
  */
 export const getMemberWallet = async (userID: string | null, page = 0) => {
     const ctx = await loadContext();
@@ -205,7 +204,7 @@ export const getMemberWallet = async (userID: string | null, page = 0) => {
             firstName: target.firstName,
             lastName: target.lastName,
             role: target.role,
-            // coordonnées : utiles à la gestion pour relancer, inutiles à soi-même
+            // contact details: useful for management to follow up, useless for oneself
             email: isSelf ? null : target.email,
             phone: isSelf ? null : target.phone,
         },
@@ -224,7 +223,7 @@ export const getMemberWallet = async (userID: string | null, page = 0) => {
     };
 };
 
-// ─── Liste des portefeuilles du club (instructeur : lecture seule, gestion) ───
+// ─── Club wallet list (instructor: read-only, management) ───
 
 export const getClubWallets = async () => {
     const ctx = await loadContext();
@@ -286,7 +285,7 @@ export const getClubWallets = async () => {
     };
 };
 
-// ─── Opération manuelle (gestion) ───
+// ─── Manual operation (management) ───
 
 export const recordWalletOperation = async (input: WalletOperationInput) => {
     const ctx = await loadContext();
@@ -329,13 +328,13 @@ export const recordWalletOperation = async (input: WalletOperationInput) => {
     }
 };
 
-// ─── Carnet de vol : solde du payeur (aperçu) et débits d'un vol signé ───
+// ─── Logbook: payer balance (preview) and debits of a signed flight ───
 
 /**
- * Aperçu avant signature : tarif applicable à la machine (même règle que le
- * débit réel, cf. resolveFlightRate) et solde du payeur s'il est consultable
- * (soi-même, ou instructeur / gestion). Le montant est calculé côté client à
- * partir des heures moteur saisies, avec computeFlightChargeCents.
+ * Pre-signature preview: rate applicable to the plane (same rule as the actual
+ * debit, see resolveFlightRate) and the payer's balance if viewable (self, or
+ * instructor / management). The amount is computed client-side from the entered
+ * Hobbs with computeFlightChargeCents.
  */
 export const getFlightChargeQuote = async (planeID: string, payerID: string) => {
     const ctx = await loadContext();
@@ -361,7 +360,7 @@ export const getFlightChargeQuote = async (planeID: string, payerID: string) => 
     };
 };
 
-/** Mouvements liés à un vol (débit + corrections), pour l'afficher sur un vol signé. */
+/** Movements linked to a flight (debit + corrections), shown on a signed flight. */
 export const getFlightLogCharges = async (logID: string) => {
     const ctx = await loadContext();
     if ("error" in ctx) return fail(ctx.error);
@@ -391,7 +390,7 @@ export const getFlightLogCharges = async (logID: string) => {
     };
 };
 
-// ─── Page Vols : soldes des membres pour l'inscription par la gestion ───
+// ─── Flights page: member balances for management bookings ───
 
 export const getMemberBalances = async () => {
     const ctx = await loadContext();

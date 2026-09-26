@@ -27,7 +27,7 @@ const minutesDelta = (current: number, previous: number, comparisonLabel: string
     };
 };
 
-/** Solde du portefeuille de l'utilisateur connecté, null si désactivé. */
+/** Wallet balance of the signed-in user, null if disabled. */
 function useMyBalance(enabled: boolean) {
     const [balance, setBalance] = useState<number | null>(null);
     useEffect(() => {
@@ -44,8 +44,8 @@ function useMyBalance(enabled: boolean) {
 }
 
 /**
- * Aperçu personnel : élève et pilote voient leurs vols, l'instructeur ses vols
- * d'instruction. Les informations pratiques du club sont en bas de page.
+ * Personal overview: students and pilots see their flights, instructors their
+ * instruction flights. The club's practical info is at the bottom of the page.
  */
 const PersonalOverview = ({ kind, clubID, publicToken }: Props) => {
     const [period, setPeriod] = useState<StatsPeriod>("month");

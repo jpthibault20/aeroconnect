@@ -23,27 +23,26 @@ import {
 } from "@/lib/wallet";
 
 /**
- * Écritures du portefeuille (AER-66) — SERVEUR UNIQUEMENT.
+ * Wallet writes (AER-66): SERVER ONLY.
  *
- * Volontairement SANS "use server" : ces fonctions ne font aucun contrôle
- * d'accès (c'est le rôle des server actions appelantes) et ne doivent donc
- * jamais être exposées au navigateur comme server actions (ne les importer
- * que depuis des modules serveur : src/api/db/*).
+ * Deliberately WITHOUT "use server": these functions do no access control (the
+ * calling server actions do) and must never be exposed to the browser as server
+ * actions (only import them from server modules: src/api/db/*).
  *
- * Invariant : le solde (`Wallet.balanceCents`) et l'historique
- * (`WalletTransaction`) évoluent TOUJOURS ensemble, dans la même transaction
- * Prisma. L'historique n'est jamais modifié ni supprimé.
+ * Invariant: the balance (`Wallet.balanceCents`) and the ledger
+ * (`WalletTransaction`) ALWAYS change together, in the same Prisma transaction.
+ * The ledger is never updated or deleted.
  */
 
 type Tx = Prisma.TransactionClient;
 
-/** Refus métier levé dans une transaction pour l'annuler (tarif manquant…). */
+/** Business refusal thrown inside a transaction to roll it back (missing rate…). */
 export class WalletChargeError extends Error {}
 
 export interface WalletMovementInput {
     clubID: string;
     userID: string;
-    amountCents: number; // signé
+    amountCents: number; // signed
     type: WalletTransactionType;
     paymentMethod?: PaymentMethod | null;
     comment?: string | null;
@@ -68,8 +67,8 @@ export interface WalletMovementResult {
 }
 
 /**
- * Applique un mouvement : incrément atomique du solde (portefeuille créé à la
- * volée), puis écriture de la ligne d'historique avec le solde après opération.
+ * Applies a movement: atomic balance increment (wallet created on the fly), then
+ * writes the ledger row with the balance after the operation.
  */
 export async function applyWalletMovement(tx: Tx, input: WalletMovementInput): Promise<WalletMovementResult> {
     const wallet = await tx.wallet.upsert({
@@ -118,10 +117,10 @@ type ChargeableLog = Pick<
 >;
 
 /**
- * Débit d'un vol à sa signature. Ne fait rien si le portefeuille du club est
- * désactivé, si le vol n'est pas facturable (baptême, CDB) ou sans payeur
- * identifiable. Lève WalletChargeError (qui annule la signature) si le tarif
- * manque ou si payeur / machine n'appartiennent pas au club du vol.
+ * Debits a flight when it is signed. No-op if the club wallet is disabled, if the
+ * flight is not billable (discovery flight, CDB) or has no identifiable payer.
+ * Throws WalletChargeError (which rolls back the signature) if the rate is
+ * missing or if the payer / plane do not belong to the flight's club.
  */
 export async function chargeSignedFlight(tx: Tx, log: ChargeableLog): Promise<WalletMovementResult | null> {
     const club = await tx.club.findUnique({
@@ -129,7 +128,7 @@ export async function chargeSignedFlight(tx: Tx, log: ChargeableLog): Promise<Wa
         select: { walletEnabled: true, instructorHourlyRateCents: true },
     });
 
-    // Payeur et machine ne sont relus que si un débit est possible.
+    // Payer and plane are only re-read when a debit is possible.
     const payerID = club?.walletEnabled && isBillableFlight(log) ? resolvePayerID(log) : null;
     const [payer, plane] = payerID
         ? await Promise.all([
@@ -138,7 +137,7 @@ export async function chargeSignedFlight(tx: Tx, log: ChargeableLog): Promise<Wa
         ])
         : [null, null];
 
-    // Décision pure et testée (cf. planFlightCharge dans src/lib/wallet.ts).
+    // Pure, tested decision (see planFlightCharge in src/lib/wallet.ts).
     const plan = planFlightCharge({
         walletEnabled: !!club?.walletEnabled,
         log,
@@ -167,10 +166,10 @@ export async function chargeSignedFlight(tx: Tx, log: ChargeableLog): Promise<Wa
 }
 
 /**
- * Après correction d'un vol DÉJÀ signé (OWNER/ADMIN) : recalcule ce qu'il
- * aurait dû coûter au TARIF FIGÉ lors du débit d'origine, et passe un
- * ajustement automatique de la différence. Un vol signé avant l'activation du
- * portefeuille (aucun débit) n'est jamais régularisé.
+ * After correcting an ALREADY signed flight (OWNER/ADMIN): recomputes what it
+ * should have cost at the rate FROZEN at the original debit, and records an
+ * automatic adjustment for the difference. A flight signed before the wallet was
+ * enabled (no debit) is never adjusted.
  */
 export async function reconcileSignedFlight(tx: Tx, log: ChargeableLog): Promise<WalletMovementResult | null> {
     const movements = await tx.walletTransaction.findMany({
@@ -213,7 +212,7 @@ export async function reconcileSignedFlight(tx: Tx, log: ChargeableLog): Promise
     });
 }
 
-/** Seuil « solde faible » du club (heure de vol sur la machine d'école la moins chère). */
+/** Club "low balance" threshold (one flight hour on the cheapest training plane). */
 export async function getClubLowThresholdCents(clubID: string): Promise<number | null> {
     const list = await prisma.planes.findMany({
         where: { clubID },
@@ -230,9 +229,9 @@ function getResend(): Resend | null {
 }
 
 /**
- * E-mail « solde faible », envoyé uniquement au passage sous le seuil (épuisé
- * inclus). À appeler APRÈS la transaction : un échec d'envoi ne doit jamais
- * annuler une opération sur le portefeuille.
+ * "Low balance" email, only sent when crossing the threshold (depleted
+ * included). Call AFTER the transaction: a sending failure must never roll back
+ * a wallet operation.
  */
 export async function notifyLowBalanceIfCrossed(movement: WalletMovementResult | null): Promise<void> {
     if (!movement) return;
@@ -267,7 +266,7 @@ export async function notifyLowBalanceIfCrossed(movement: WalletMovementResult |
             }),
         });
     } catch {
-        // silencieux : l'e-mail est non critique
+        // silent: the email is non-critical
     }
 }
 

@@ -2,17 +2,17 @@ import { describe, it, expect } from "vitest";
 import { userRole } from "@prisma/client";
 
 /**
- * Tests de protection des séances passées.
- * Logique extraite de sessions.ts, DeleteFlightSession.tsx, RemoveStudent.tsx.
+ * Past-session protection. Logic extracted from sessions.ts,
+ * DeleteFlightSession.tsx, RemoveStudent.tsx.
  */
 
-// --- Logique : une session est-elle passée ? ---
+// --- Logic: is a session in the past? ---
 
 function isSessionPast(sessionDateStart: Date, now: Date = new Date()): boolean {
     return sessionDateStart < now;
 }
 
-// --- Logique : peut-on se désinscrire ? ---
+// --- Logic: can the student unsubscribe? ---
 
 interface UnsubscribeContext {
     sessionDate: Date;
@@ -46,7 +46,7 @@ function canUnsubscribe(ctx: UnsubscribeContext): { allowed: boolean; reason?: s
     return { allowed: true };
 }
 
-// --- Logique : peut-on s'inscrire ? ---
+// --- Logic: can the student subscribe? ---
 
 interface SubscribeContext {
     sessionDate: Date;
@@ -55,9 +55,9 @@ interface SubscribeContext {
     clubCanSubscribe: boolean;
     timeDelaySubscribeMinutes: number;
     planeOperational: boolean;
-    // Séance en salle (classroomSession) : aucune machine, donc pas de contrôle
-    // « appareil opérationnel ». L'ancienne sentinelle « sans appareil »
-    // (noPlane) bénéficiait de la même exemption, elle a été retirée.
+    // Classroom session (classroomSession): no plane, so no "plane operational"
+    // check. The former "no plane" sentinel (noPlane) had the same exemption; it has
+    // been removed.
     isSpecialPlane: boolean;
 }
 

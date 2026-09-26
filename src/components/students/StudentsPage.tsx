@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { User, userRole } from '@prisma/client';
 import TableComponent from './TableComponent';
-import MobileStudentList from './MobileStudentList'; // <-- IMPORT DU NOUVEAU COMPOSANT
+import MobileStudentList from './MobileStudentList';
 import Filter from './Filter';
 import Search from './Search';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
@@ -14,7 +14,7 @@ interface props {
     userProps: User[]
 }
 
-// --- Logique de tri et filtre ---
+// --- Sorting and filtering ---
 const sortUser = (
     users: User[],
     roleFilter: 'all' | userRole,
@@ -45,7 +45,7 @@ const StudentsPage = ({ userProps }: props) => {
     const [roleFilter, setRoleFilter] = useState<userRole | 'all'>('all');
     const router = useRouter();
 
-    // Liste affichée : dérivée des membres, du filtre de rôle et de la recherche.
+    // Displayed list: derived from members, the role filter and the search.
     const sortedUsers = useMemo(
         () => sortUser(users, roleFilter, searchQuery),
         [users, roleFilter, searchQuery]
@@ -57,7 +57,7 @@ const StudentsPage = ({ userProps }: props) => {
 
     const membersCount = sortedUsers.filter(u => u.id !== currentUser?.id).length;
 
-    // --- Sécurité ---
+    // --- Access check ---
     if (currentUser?.role === userRole.USER || currentUser?.role === userRole.STUDENT || currentUser?.role === userRole.PILOT) {
         router.push('/calendar?clubID=' + currentUser?.clubID);
         return (
@@ -70,7 +70,6 @@ const StudentsPage = ({ userProps }: props) => {
     return (
         <div className='flex flex-col h-full min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-800'>
 
-            {/* Top Bar */}
             <div className='flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4'>
                 <div className='flex items-center space-x-3'>
                     <div className="p-2 bg-purple-100 text-[#774BBE] rounded-lg hidden sm:block">
@@ -92,16 +91,14 @@ const StudentsPage = ({ userProps }: props) => {
                 </div>
             </div>
 
-            {/* --- CONTENU --- */}
-
-            {/* 1. VUE DESKTOP (Tableau) : Cachée sur mobile (hidden), visible sur md+ (md:block) */}
+            {/* 1. DESKTOP VIEW (table): hidden on mobile */}
             <div className='hidden md:block flex-1 bg-white border border-slate-200 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden'>
                 <div className="h-full overflow-auto">
                     <TableComponent users={sortedUsers} setUsers={setUsers} />
                 </div>
             </div>
 
-            {/* 2. VUE MOBILE (Cartes) : Visible sur mobile (block), cachée sur md+ (md:hidden) */}
+            {/* 2. MOBILE VIEW (cards): mobile only */}
             <div className='block md:hidden pb-10'>
                 <MobileStudentList users={sortedUsers} setUsers={setUsers} />
             </div>

@@ -74,9 +74,7 @@ const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequ
                         <SelectValue placeholder="Sélectionnez un club dans la liste..." />
                     </SelectTrigger>
 
-                    {/* CORRECTION ICI : 
-                        Ajout de z-[10000] pour passer au-dessus du modal parent qui est en z-[9999] 
-                    */}
+                    {/* z-[10000] to stay above the parent modal (z-[9999]) */}
                     <SelectContent className="max-h-[250px] z-[10000]">
                         {clubs.length > 0 ? (
                             clubs.map((club) => (

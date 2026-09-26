@@ -13,9 +13,9 @@ interface Props {
 }
 
 /**
- * Tarif écolage d'une machine (AER-66), affiché seulement si le portefeuille
- * du club est activé. Distinct des formules baptême, réglées ailleurs. Pour
- * une machine privée, l'élève paie le tarif instructeur du club : pas de champ.
+ * Plane instruction rate (AER-66), only shown when the club wallet is enabled.
+ * Separate from the discovery-flight packages, set elsewhere. For a private plane
+ * the student pays the club's instructor rate: no field.
  */
 const PlaneRateField = ({ value, onChange, isPrivate, instructorRateCents, disabled }: Props) => {
     if (isPrivate) {

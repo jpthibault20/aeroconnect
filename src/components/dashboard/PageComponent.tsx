@@ -28,10 +28,9 @@ interface PageProps {
 }
 
 /**
- * Page « Club » (AER-68) : onglets synchronisés avec l'URL (?tab=), pour que
- * le bouton retour du téléphone ramène à l'onglet précédent. Un onglet visité
- * reste monté (masqué) : formulaire en cours, période choisie et listes
- * traitées sont conservés quand on navigue entre onglets.
+ * "Club" page (AER-68): tabs synced with the URL (?tab=) so the phone's back
+ * button returns to the previous tab. A visited tab stays mounted (hidden):
+ * in-progress forms, chosen period and handled lists are kept when switching tabs.
  */
 const PageComponent = ({ clubID, UsersRequestedClubID, users, pendingBaptemes, publicBookingToken }: PageProps) => {
     const { currentUser } = useCurrentUser();
@@ -59,7 +58,7 @@ const PageComponent = ({ clubID, UsersRequestedClubID, users, pendingBaptemes, p
     });
     const active = resolveClubTab(searchParams.get('tab'), tabs);
 
-    // Onglets déjà ouverts (mis à jour pendant le rendu, sans effet).
+    // Tabs already opened (updated during render, no effect).
     const [visited, setVisited] = useState<ClubTab[]>([active]);
     if (!visited.includes(active)) setVisited([...visited, active]);
 

@@ -12,9 +12,8 @@ import WalletOperationDialog from "@/components/wallet/WalletOperationDialog";
 import { ROLE_LABELS } from "@/components/wallet/roleLabels";
 
 /**
- * Carte « À découvert » de l'onglet Portefeuilles (gestion uniquement,
- * portefeuille activé) : les 5 soldes les plus négatifs, à relancer. Les
- * totaux sont affichés par les chiffres clés de l'onglet.
+ * "Overdrawn" card of the Wallets tab (management only, wallet enabled): the 5
+ * most negative balances, to follow up. Totals are shown by the tab's key figures.
  */
 const WalletSummaryCard = () => {
     const { currentClub } = useCurrentClub();

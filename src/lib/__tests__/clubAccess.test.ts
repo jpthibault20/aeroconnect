@@ -46,7 +46,7 @@ describe("canEditClubSettings", () => {
     });
 });
 
-// ─── Onglets de la page Club (AER-68) ───
+// ─── Club page tabs (AER-68) ───
 
 describe("clubTabsFor", () => {
     const opts = { walletEnabled: true, hasPendingBaptemes: false };

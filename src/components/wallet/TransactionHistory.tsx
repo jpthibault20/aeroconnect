@@ -28,11 +28,12 @@ function matches(t: WalletTransactionView, filter: Filter): boolean {
 
 const shortDate = (d: Date) => new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 const dayMonth = (d: Date) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-// Date du vol : colonne sans heure (minuit UTC), lue en UTC comme partout dans
-// l'app (cf. dateServeur.ts), sinon elle recule d'un jour dans un fuseau négatif.
+// Flight date: date-only column (UTC midnight), read in UTC like everywhere in
+// the app (see dateServeur.ts), otherwise it goes back one day in a negative
+// time zone.
 const flightDay = (d: Date) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" });
 
-/** Détail lisible d'une opération (vol figé, moyen de paiement, commentaire). */
+/** Readable details of an operation (frozen flight, payment method, comment). */
 function detail(t: WalletTransactionView): { main: string; sub: string | null } {
     if (t.flightLogID && t.planeName) {
         const flight = [
@@ -63,7 +64,7 @@ const TransactionHistory = ({ transactions, showAuthor, hasMore, loadingMore, on
     const [filter, setFilter] = useState<Filter>("all");
     const list = useMemo(() => transactions.filter((t) => matches(t, filter)), [transactions, filter]);
 
-    // Cartes mobiles groupées par mois (« Septembre 2026 »).
+    // Mobile cards grouped by month ("Septembre 2026").
     const byMonth = useMemo(() => {
         const groups: { label: string; items: WalletTransactionView[] }[] = [];
         for (const t of list) {
@@ -102,7 +103,7 @@ const TransactionHistory = ({ transactions, showAuthor, hasMore, loadingMore, on
                 </div>
             ) : (
                 <>
-                    {/* Ordinateur : tableau */}
+                    {/* Desktop: table */}
                     <div className="hidden lg:block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                         <table className="w-full text-sm">
                             <thead className="bg-slate-100 border-b-2 border-slate-200">
@@ -144,7 +145,7 @@ const TransactionHistory = ({ transactions, showAuthor, hasMore, loadingMore, on
                         </table>
                     </div>
 
-                    {/* Mobile : cartes groupées par mois */}
+                    {/* Mobile: cards grouped by month */}
                     <div className="lg:hidden space-y-3">
                         {byMonth.map((g) => (
                             <div key={g.label} className="space-y-2">

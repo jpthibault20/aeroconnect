@@ -3,56 +3,54 @@ import { formatSessionDate, formatSessionTime } from "@/api/global function/date
 import { CLUB_PLANE_MANAGE_ROLES, resolveOfferedPlaneIDs } from "@/lib/planeVisibility";
 
 /**
- * Règles (pures, testées) de la réservation publique de vols baptême.
+ * Pure, tested rules of the public discovery-flight booking.
  *
- * Factorisé hors des server actions / composants pour être partagé entre le
- * code et les tests (cf. convention CLAUDE.md). Aucune de ces fonctions ne
- * touche Prisma : elles opèrent sur des objets « *Like » minimalistes, ce qui
- * les rend testables avec des objets construits à la main.
+ * Factored out of the server actions / components to be shared by code and tests
+ * (see CLAUDE.md). None of these functions touch Prisma: they work on minimal
+ * "*Like" objects, testable with hand-built objects.
  *
- * Le marqueur « ce créneau est un baptême » est la présence de DISCOVERY dans
- * `flight_sessions.natureOfTheft` (tableau). `flightType` n'est pas utilisé.
+ * The "this slot is a discovery flight" marker is DISCOVERY being present in
+ * `flight_sessions.natureOfTheft` (array). `flightType` is not used.
  */
 
-// Rôles de gestion habilités à valider/refuser une demande de baptême, en plus
-// du pilote assigné au créneau.
+// Management roles allowed to accept/reject a discovery-flight request, in
+// addition to the pilot assigned to the slot.
 export const BAPTEME_MANAGEMENT_ROLES: userRole[] = [
     userRole.OWNER,
     userRole.ADMIN,
     userRole.MANAGER,
 ];
 
-// Rôles habilités à gérer (régénérer) le lien public de réservation.
+// Roles allowed to manage (regenerate) the public booking link.
 export const PUBLIC_LINK_MANAGE_ROLES: userRole[] = [
     userRole.ADMIN,
     userRole.OWNER,
 ];
 
-// Sentinelle posée sur flight_sessions.studentID pour « tenir » un créneau
-// pendant qu'une demande de baptême est PENDING (hold). Elle bloque toute
-// inscription concurrente (élève ou invité) et déclenche l'affichage du libellé
-// « baptême en attente » dans le calendrier. Distincte de "invited" (client
-// confirmé après validation).
+// Sentinel set on flight_sessions.studentID to "hold" a slot while a
+// discovery-flight request is PENDING. It blocks any concurrent booking (student
+// or guest) and makes the calendar show "pending discovery flight". Distinct from
+// "invited" (customer confirmed after validation).
 export const BAPTEME_HOLD_STUDENT_ID = "bapteme-hold";
 
-// Durée de vie du « hold » posé par une demande PENDING : le pilote (ou la
-// gestion) dispose de 24 h pour valider avant que la demande n'expire et que le
-// créneau ne soit rouvert. Vit ici (module pur) et non dans le server action
-// bapteme.ts, qui est "use server" et ne peut exporter que des fonctions async.
+// Lifetime of the hold placed by a PENDING request: the pilot (or management) has
+// 24 h to accept before the request expires and the slot reopens. Lives here
+// (pure module) and not in the bapteme.ts server action, which is "use server"
+// and can only export async functions.
 export const HOLD_TTL_MINUTES = 24 * 60;
 
-// Échéance d'un hold créé à l'instant `now`.
+// Expiry of a hold created at `now`.
 export function computeHoldExpiry(now: Date): Date {
     return new Date(now.getTime() + HOLD_TTL_MINUTES * 60 * 1000);
 }
 
-// Valeurs possibles du statut d'une demande (miroir de l'enum Prisma
-// BaptemeStatus, redéclaré ici pour garder ce module découplé du client généré).
+// Possible request statuses (mirrors the Prisma BaptemeStatus enum, redeclared
+// here to keep this module decoupled from the generated client).
 export type BaptemeStatusValue = "PENDING" | "CONFIRMED" | "REJECTED" | "EXPIRED";
 
 export type BaptemeAction = "validate" | "reject" | "expire";
 
-// Forme minimale d'un créneau nécessaire aux règles de disponibilité.
+// Minimal slot shape needed by the availability rules.
 export interface BaptemeSlotLike {
     studentID: string | null;
     natureOfTheft: NatureOfTheft[];
@@ -61,7 +59,7 @@ export interface BaptemeSlotLike {
     classes: number[];
 }
 
-// Forme minimale d'une machine.
+// Minimal plane shape.
 export interface BaptemePlaneLike {
     id: string;
     ownerID: string | null;
@@ -69,7 +67,7 @@ export interface BaptemePlaneLike {
     classes: number;
 }
 
-// Forme minimale d'une demande de baptême.
+// Minimal discovery-flight request shape.
 export interface BaptemeRequestLike {
     status: BaptemeStatusValue;
     expiresAt: Date | string;
@@ -80,9 +78,9 @@ function toDate(value: Date | string): Date {
 }
 
 /**
- * Une demande PENDING dont l'échéance est passée est expirée (expiration
- * paresseuse). Les statuts CONFIRMED / REJECTED / EXPIRED sont ignorés (jamais
- * « expirés » au sens du hold — ils ne bloquent plus le créneau).
+ * A PENDING request past its expiry is expired (lazy expiry). CONFIRMED /
+ * REJECTED / EXPIRED statuses are ignored (never "expired" in the hold sense:
+ * they no longer block the slot).
  */
 export function isHoldExpired(req: BaptemeRequestLike, now: Date): boolean {
     if (req.status !== "PENDING") return false;
@@ -90,25 +88,24 @@ export function isHoldExpired(req: BaptemeRequestLike, now: Date): boolean {
 }
 
 /**
- * Y a-t-il un hold actif (une demande PENDING non expirée) parmi ces demandes ?
- * Sert à masquer un créneau déjà « tenu » par un premier client.
+ * Is there an active hold (a non-expired PENDING request) among these requests?
+ * Used to hide a slot already "held" by a first customer.
  */
 export function hasActiveHold(requests: BaptemeRequestLike[], now: Date): boolean {
     return requests.some((r) => r.status === "PENDING" && !isHoldExpired(r, now));
 }
 
 /**
- * Machines proposables au public pour un créneau baptême : uniquement les
- * machines DU CLUB (ownerID == null, jamais une machine privée), opérationnelles,
- * effectivement offertes sur le créneau (présentes dans slot.planeID) et
- * compatibles avec les classes autorisées du créneau (si le créneau restreint
- * les classes).
+ * Planes that can be offered to the public for a discovery slot: only CLUB planes
+ * (ownerID == null, never a private plane), operational, actually offered on the
+ * slot (present in slot.planeID) and compatible with the slot's allowed classes
+ * (if the slot restricts classes).
  *
- * `unavailablePlaneIDs` liste les machines déjà prises à ce même horaire par une
- * AUTRE session — baptême concurrent ou réservation d'un membre. Sans ce filtre,
- * deux créneaux simultanés portés par des pilotes différents peuvent vendre le
- * même appareil (et le public ignorerait les réservations internes). Même règle
- * que `filterPlanesForBeneficiary` côté membres.
+ * `unavailablePlaneIDs` lists the planes already taken at the same time by
+ * ANOTHER session (competing discovery flight or a member's booking). Without
+ * this filter, two simultaneous slots run by different pilots could sell the same
+ * plane (and the public would ignore internal bookings). Same rule as
+ * `filterPlanesForBeneficiary` on the member side.
  */
 export function filterBaptemePlanes<T extends BaptemePlaneLike>(
     planes: T[],
@@ -128,20 +125,20 @@ export function filterBaptemePlanes<T extends BaptemePlaneLike>(
 }
 
 /**
- * Un créneau est-il proposable au public ? Il faut :
- *  - qu'il soit marqué baptême (natureOfTheft contient DISCOVERY) ;
- *  - qu'il soit libre (studentID == null) ;
- *  - qu'il n'ait aucun hold PENDING actif ;
- *  - qu'il soit dans le futur ;
- *  - qu'au moins une machine club opérationnelle et compatible soit disponible.
+ * Can a slot be offered to the public? It must:
+ *  - be marked as a discovery flight (natureOfTheft contains DISCOVERY);
+ *  - be free (studentID == null);
+ *  - have no active PENDING hold;
+ *  - be in the future;
+ *  - have at least one operational, compatible club plane available.
  *
- * Deux référentiels de temps cohabitent, et les confondre laisse un créneau
- * dépassé réservable pendant la durée de l'offset (2 h en France l'été) :
- *  - `now` : instant réel, pour l'expiration des holds (une durée de 24 h) ;
- *  - `slotNow` : heure de pendule du club, pour comparer à `sessionDateStart`
- *    qui est stockée en wall-clock UTC (cf. src/lib/clubTime.ts).
- * `slotNow` vaut `now` par défaut : les deux ne diffèrent que côté serveur, là
- * où l'appelant sait convertir.
+ * Two time references coexist, and mixing them up leaves a past slot bookable
+ * for the duration of the offset (2 h in France in summer):
+ *  - `now`: real instant, for hold expiry (a 24 h duration);
+ *  - `slotNow`: club clock time, to compare with `sessionDateStart`, which is
+ *    stored as UTC wall-clock (see src/lib/clubTime.ts).
+ * `slotNow` defaults to `now`: they only differ server-side, where the caller
+ * knows how to convert.
  */
 export function isBaptemeSlotAvailable(
     slot: BaptemeSlotLike,
@@ -155,14 +152,14 @@ export function isBaptemeSlotAvailable(
     if (slot.studentID != null) return false;
     if (toDate(slot.sessionDateStart).getTime() <= slotNow.getTime()) return false;
     if (hasActiveHold(requests, now)) return false;
-    // Un créneau dont toutes les machines sont déjà prises à cet horaire n'est
-    // plus proposable : il disparaît de lui-même de la page publique.
+    // A slot whose planes are all taken at that time can no longer be offered: it
+    // disappears from the public page by itself.
     return filterBaptemePlanes(planes, slot, unavailablePlaneIDs).length > 0;
 }
 
 /**
- * Qui peut valider/refuser une demande de baptême : le pilote assigné au créneau
- * OU un rôle de gestion (président / admin / manager).
+ * Who can accept/reject a discovery-flight request: the pilot assigned to the
+ * slot OR a management role (president / admin / manager).
  */
 export function canValidateBapteme(
     user: { id: string; role: userRole },
@@ -173,25 +170,25 @@ export function canValidateBapteme(
 }
 
 /**
- * Qui peut gérer (régénérer) le lien public : admin et président uniquement.
+ * Who can manage (regenerate) the public link: admin and president only.
  */
 export function canManagePublicLink(role: userRole): boolean {
     return PUBLIC_LINK_MANAGE_ROLES.includes(role);
 }
 
-// ─── Formules (durée + tarif) ───
+// ─── Packages (duration + price) ───
 
-// Forme minimale d'une formule de vol baptême (BaptemeOption).
+// Minimal shape of a discovery-flight package (BaptemeOption).
 export interface BaptemeOptionLike {
     durationMin: number;
     price: number;
 }
 
 /**
- * Qui peut créer/modifier/supprimer les formules d'une machine : les mêmes
- * rôles de gestion que la machine elle-même (cf. CLUB_PLANE_MANAGE_ROLES),
- * et seulement sur une machine DU CLUB — une machine privée n'est jamais
- * proposée au public (cf. filterBaptemePlanes) donc n'a pas de formule.
+ * Who can create/edit/delete a plane's packages: the same management roles as
+ * for the plane itself (see CLUB_PLANE_MANAGE_ROLES), and only on a CLUB plane: a
+ * private plane is never offered to the public (see filterBaptemePlanes), so it
+ * has no package.
  */
 export function canManageBaptemeOptions(
     plane: { ownerID: string | null },
@@ -200,7 +197,7 @@ export function canManageBaptemeOptions(
     return plane.ownerID == null && CLUB_PLANE_MANAGE_ROLES.includes(user.role);
 }
 
-/** Tarif formaté en euros, à la française : « 90 € », « 89,90 € ». */
+/** Price formatted in euros, French style: "90 €", "89,90 €". */
 export function formatBaptemeOptionPrice(price: number): string {
     const formatted = new Intl.NumberFormat("fr-FR", {
         style: "currency",
@@ -208,23 +205,22 @@ export function formatBaptemeOptionPrice(price: number): string {
         minimumFractionDigits: price % 1 === 0 ? 0 : 2,
         maximumFractionDigits: 2,
     }).format(price);
-    // Intl insère une espace fine insécable (U+202F) avant « € » : remplacée par
-    // une espace normale pour rester prévisible partout où ce texte atterrit
-    // (commentaire du vol, email en texte brut, comparaisons de chaînes).
+    // Intl inserts a narrow no-break space (U+202F) before "€": replaced with a
+    // regular space to stay predictable wherever this text ends up (flight comment,
+    // plain-text email, string comparisons).
     return formatted.replace(/[  ]/g, " ");
 }
 
-/** Libellé d'une formule dans le sélecteur public et les rappels internes. */
+/** Package label in the public selector and internal reminders. */
 export function formatBaptemeOptionLabel(option: BaptemeOptionLike): string {
     return `${option.durationMin} min – ${formatBaptemeOptionPrice(option.price)}`;
 }
 
 /**
- * Commentaire à écrire sur le créneau (flight_sessions.studentComment) : la
- * formule choisie en tête (si la machine en avait une configurée), puis le
- * commentaire libre du client. Fonction pure pour rester testable et partagée
- * entre la création du hold et la validation de la demande, qui doivent
- * produire exactement le même texte.
+ * Comment written on the slot (flight_sessions.studentComment): the chosen
+ * package first (if the plane had one configured), then the customer's free
+ * comment. Pure so it stays testable and shared between hold creation and request
+ * validation, which must produce exactly the same text.
  */
 export function buildBaptemeSessionComment(
     option: BaptemeOptionLike | null,
@@ -237,34 +233,33 @@ export function buildBaptemeSessionComment(
 }
 
 /**
- * Types de vol à écrire sur un créneau selon l'interrupteur « baptême » de la
- * création de séance. DISCOVERY est le SEUL marqueur exploité (c'est lui que
- * getPublicBaptemeSlots interroge) : décoché, on ne laisse rien traîner.
+ * Flight types written on a slot depending on the "discovery flight" switch of
+ * session creation. DISCOVERY is the ONLY marker used (it is what
+ * getPublicBaptemeSlots queries): unchecked, nothing is left behind.
  */
 export function natureOfTheftForBapteme(isBapteme: boolean): NatureOfTheft[] {
     return isBapteme ? [NatureOfTheft.DISCOVERY] : [];
 }
 
-/** Un créneau porte-t-il le marqueur baptême ? */
+/** Does a slot carry the discovery-flight marker? */
 export function isBaptemeSlot(natureOfTheft: NatureOfTheft[]): boolean {
     return natureOfTheft.includes(NatureOfTheft.DISCOVERY);
 }
 
 /**
- * Nom du pilote tel qu'affiché au client (page publique ET email de
- * confirmation) : prénom puis nom en capitales.
+ * Pilot name as shown to the customer (public page AND confirmation email):
+ * first name then last name in capitals.
  */
 export function formatPilotName(firstName: string, lastName: string): string {
     return `${firstName} ${lastName.toUpperCase()}`.trim();
 }
 
-// Horizon de la réservation publique : au-delà, les créneaux ne sont pas
-// proposés. Borne la charge utile envoyée au navigateur (un gros club peut avoir
-// plusieurs centaines de créneaux baptême ouverts) et évite d'engager le club
-// sur une date lointaine.
+// Public booking horizon: slots beyond it are not offered. Bounds the payload
+// sent to the browser (a big club may have hundreds of open discovery slots) and
+// avoids committing the club to a far-off date.
 export const PUBLIC_BOOKING_HORIZON_DAYS = 60;
 
-// Forme minimale d'un créneau pour le regroupement de la page publique.
+// Minimal slot shape for grouping on the public page.
 export interface GroupableSlotLike {
     sessionID: string;
     sessionDateStart: Date | string;
@@ -273,8 +268,8 @@ export interface GroupableSlotLike {
     pilotLastName: string;
 }
 
-// Un horaire de la journée. Plusieurs sessions peuvent le partager : autant de
-// pilotes proposant un baptême à la même heure.
+// A time of day. Several sessions can share it: as many pilots offering a
+// discovery flight at the same hour.
 export interface BaptemeTimeGroup<T extends GroupableSlotLike> {
     timeKey: string;
     sessionDateStart: Date;
@@ -290,9 +285,8 @@ export interface BaptemeDayGroup<T extends GroupableSlotLike> {
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
-// Clés construites sur les composantes UTC : les créneaux sont stockés en
-// wall-clock UTC, une lecture locale regrouperait mal (et changerait de jour
-// pour les créneaux de fin de soirée).
+// Keys built on UTC parts: slots are stored as UTC wall-clock, a local read would
+// group them wrongly (and change day for late evening slots).
 export function baptemeDayKey(date: Date | string): string {
     const d = toDate(date);
     return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
@@ -304,15 +298,15 @@ export function baptemeTimeKey(date: Date | string): string {
 }
 
 /**
- * Regroupe les créneaux publics par jour, puis par horaire.
+ * Groups the public slots by day, then by time.
  *
- * Une liste à plat ne tient pas à l'échelle : un club à 3 pilotes proposant
- * 8 créneaux par jour sur deux mois produit des centaines d'entrées, dont
- * beaucoup portent le même horaire. Le client choisit donc un jour, puis une
- * heure ; les pilotes proposant cette heure sont regroupés dessous.
+ * A flat list does not scale: a club with 3 pilots offering 8 slots a day over
+ * two months produces hundreds of entries, many sharing the same time. The
+ * customer therefore picks a day, then a time; the pilots offering that time are
+ * grouped under it.
  *
- * Fonction pure, triée de façon déterministe (jour croissant, puis heure
- * croissante) : l'ordre ne dépend pas de celui reçu du serveur.
+ * Pure, deterministically sorted (ascending day, then ascending time): the order
+ * does not depend on the one received from the server.
  */
 export function groupBaptemeSlots<T extends GroupableSlotLike>(slots: T[]): BaptemeDayGroup<T>[] {
     const days = new Map<string, Map<string, BaptemeTimeGroup<T>>>();
@@ -345,14 +339,13 @@ export function groupBaptemeSlots<T extends GroupableSlotLike>(slots: T[]): Bapt
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([dayKey, times]) => ({
             dayKey,
-            // Toutes les sessions du jour partagent la même date : on prend
-            // celle du premier horaire pour l'affichage du libellé.
+            // All the day's sessions share the same date: take the first time's for the label.
             date: Array.from(times.values())[0].sessionDateStart,
             times: Array.from(times.values()).sort((a, b) => a.timeKey.localeCompare(b.timeKey)),
         }));
 }
 
-/** Libellé d'un mois dans le sélecteur public : « Septembre 2026 ». */
+/** Month label in the public selector: "Septembre 2026". */
 export function formatBaptemeMonthLabel(date: Date | string): string {
     const label = toDate(date).toLocaleDateString("fr-FR", {
         month: "long",
@@ -369,13 +362,12 @@ export interface BaptemeMonthGroup<T extends GroupableSlotLike> {
 }
 
 /**
- * Regroupe des jours déjà groupés (cf. groupBaptemeSlots) par mois. Sert à
- * n'imposer un écran « choix du mois » que lorsque l'horizon de réservation
- * déborde effectivement sur plusieurs mois : avec un seul mois, ce sélecteur
- * intermédiaire n'apporterait rien.
+ * Groups already grouped days (see groupBaptemeSlots) by month. Used to only
+ * require a "choose the month" screen when the booking horizon actually spans
+ * several months: with a single month this intermediate selector adds nothing.
  *
- * `days` étant déjà triés par jour croissant, l'ordre d'insertion dans la Map
- * suffit à conserver des mois triés — pas besoin de re-trier ici.
+ * `days` being sorted by ascending day, the Map insertion order is enough to keep
+ * months sorted: no need to re-sort here.
  */
 export function groupBaptemeDaysByMonth<T extends GroupableSlotLike>(
     days: BaptemeDayGroup<T>[]
@@ -396,17 +388,16 @@ export function groupBaptemeDaysByMonth<T extends GroupableSlotLike>(
 }
 
 /**
- * Points d'entrée de la réservation publique. Un client vient rarement avec le
- * même critère en tête : certains ont une date impérative, d'autres veulent
- * « le petit rouge » vu sur la photo, d'autres encore un pilote qu'on leur a
- * recommandé. L'ordre des étapes suit le critère choisi, ce qui évite de leur
- * faire parcourir des listes hors sujet.
+ * Public booking entry points. Customers rarely come with the same criterion in
+ * mind: some have a fixed date, others want "the little red one" seen on the
+ * photo, others a pilot they were recommended. The step order follows the chosen
+ * criterion, which avoids walking them through irrelevant lists.
  */
 export type BaptemeEntryPoint = "date" | "plane" | "pilot";
 
 /**
- * Machines distinctes proposées, toutes dates confondues. Sert de première
- * étape à l'entrée « par appareil ». Triées par nom pour un ordre stable.
+ * Distinct planes offered, all dates included. First step of the "by plane"
+ * entry. Sorted by name for a stable order.
  */
 export function listBaptemePlanes<P extends { id: string; name: string }>(
     slots: { planes: P[] }[]
@@ -427,16 +418,16 @@ export interface BaptemePilotOption {
 }
 
 /**
- * Identifiant public d'un pilote. On s'appuie sur son nom affiché plutôt que
- * sur son id interne, qui n'a pas à sortir sur une page anonyme. Deux pilotes
- * strictement homonymes seraient donc fusionnés — de toute façon indiscernables
- * pour le client.
+ * Public identifier of a pilot. Based on their displayed name rather than their
+ * internal id, which has no business on an anonymous page. Two pilots with
+ * exactly the same name would be merged, but they are indistinguishable to the
+ * customer anyway.
  */
 export function baptemePilotKey(firstName: string, lastName: string): string {
     return formatPilotName(firstName, lastName);
 }
 
-/** Pilotes distincts proposant au moins un créneau. */
+/** Distinct pilots offering at least one slot. */
 export function listBaptemePilots(
     slots: Pick<GroupableSlotLike, "pilotFirstName" | "pilotLastName">[]
 ): BaptemePilotOption[] {
@@ -450,7 +441,7 @@ export function listBaptemePilots(
     return Array.from(byKey.values()).sort((a, b) => a.key.localeCompare(b.key, "fr"));
 }
 
-// Forme minimale d'un créneau pour construire son libellé public.
+// Minimal slot shape to build its public label.
 export interface BaptemeSlotLabelLike {
     sessionDateStart: Date | string;
     durationMin: number;
@@ -459,12 +450,12 @@ export interface BaptemeSlotLabelLike {
 }
 
 /**
- * Libellé d'un créneau dans le sélecteur public :
- * « mercredi 12 août · 14:00 → 15:00 · Luc DUPONT ».
+ * Slot label in the public selector:
+ * "mercredi 12 août · 14:00 → 15:00 · Luc DUPONT".
  *
- * Les horaires passent par formatSessionDate/Time (lecture UTC) : les créneaux
- * sont stockés en « wall-clock UTC », un formatage local décalerait l'affichage
- * selon le fuseau du visiteur.
+ * Times go through formatSessionDate/Time (UTC read): slots are stored as "UTC
+ * wall-clock", local formatting would shift the display by the visitor's time
+ * zone.
  */
 export function formatBaptemeSlotLabel(slot: BaptemeSlotLabelLike): string {
     const start = toDate(slot.sessionDateStart);
@@ -474,9 +465,9 @@ export function formatBaptemeSlotLabel(slot: BaptemeSlotLabelLike): string {
 }
 
 /**
- * Transition de statut d'une demande. Seule une demande PENDING peut évoluer ;
- * toute action sur une demande déjà traitée renvoie une erreur (garde
- * d'idempotence : empêche une double-validation concurrente).
+ * Status transition of a request. Only a PENDING request can change; any action
+ * on an already handled request returns an error (idempotency guard: prevents a
+ * concurrent double validation).
  */
 export function nextBaptemeStatus(
     current: BaptemeStatusValue,

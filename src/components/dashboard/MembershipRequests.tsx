@@ -10,7 +10,7 @@ import { Mail, Phone, User as UserIcon, X, Check } from 'lucide-react'
 
 interface MembershipRequestsProps {
   UsersRequestedClubID: User[];
-  // Nombre de demandes restantes (badge de l'onglet « À traiter »).
+  // Number of remaining requests (badge of the "To handle" tab).
   onCountChange?: (count: number) => void;
 }
 
@@ -42,11 +42,10 @@ const MembershipRequests = ({ UsersRequestedClubID, onCountChange }: MembershipR
 
       <CardContent className="p-0 md:p-6">
 
-        {/* --- VUE MOBILE : CARTES (Affiché uniquement sur petit écran) --- */}
+        {/* --- MOBILE VIEW: CARDS --- */}
         <div className="grid grid-cols-1 gap-4 md:hidden">
           {membershipRequests.map((request) => (
             <div key={request.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
-              {/* En-tête Carte */}
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-purple-50 flex items-center justify-center text-[#774BBE] font-bold border border-purple-100">
@@ -59,7 +58,6 @@ const MembershipRequests = ({ UsersRequestedClubID, onCountChange }: MembershipR
                 </div>
               </div>
 
-              {/* Infos Contact */}
               <div className="space-y-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-slate-400" />
@@ -71,7 +69,6 @@ const MembershipRequests = ({ UsersRequestedClubID, onCountChange }: MembershipR
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <Button
                   variant="outline"
@@ -81,7 +78,6 @@ const MembershipRequests = ({ UsersRequestedClubID, onCountChange }: MembershipR
                   <X className="w-4 h-4 mr-2" /> Rejeter
                 </Button>
 
-                {/* Composant d'acceptation (Doit être adapté pour prendre la largeur si besoin) */}
                 <div className="w-full">
                   <AcceptMemberInClub
                     membershipRequests={membershipRequests}
@@ -94,7 +90,7 @@ const MembershipRequests = ({ UsersRequestedClubID, onCountChange }: MembershipR
           ))}
         </div>
 
-        {/* --- VUE BUREAU : TABLEAU (Caché sur mobile) --- */}
+        {/* --- DESKTOP VIEW: TABLE --- */}
         <div className="hidden md:block rounded-md border border-slate-200 overflow-hidden">
           <Table>
             <TableHeader className="bg-slate-50">
@@ -141,7 +137,6 @@ const MembershipRequests = ({ UsersRequestedClubID, onCountChange }: MembershipR
           </Table>
         </div>
 
-        {/* Empty State */}
         {membershipRequests.length === 0 && (
           <div className="text-center py-12 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 mt-4 md:mt-0">
             <div className="mx-auto h-12 w-12 text-slate-300 mb-3">

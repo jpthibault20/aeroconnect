@@ -18,8 +18,8 @@ import {
 } from "./stats/StatsUI";
 
 /**
- * Onglet « Statistiques » (gestion) : activité du club sur la période choisie,
- * calculée sur le carnet de vol.
+ * "Statistics" tab (management): club activity over the chosen period, computed
+ * from the logbook.
  */
 
 const StatsTab = () => {

@@ -3,21 +3,20 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Seed « mois en cours » — séances d'INSTRUCTION passées + à venir.
-//
-// Objectif : peupler le calendrier du mois courant avec des séances
-// d'instruction (instructeur + élève + avion), ~10 par semaine max, réparties
-// entre le passé et le futur du mois.
-//
-// Pré-requis : les utilisateurs (instructeurs / élèves) et les avions existent
-// déjà. Le script ne crée QUE des flight_sessions et les réutilise.
-//
-// Idempotent : chaque séance créée est marquée via `flightComment` = SEED_TAG.
-// Au lancement, toutes les séances portant ce tag pour le mois courant sont
-// supprimées avant d'être recréées → relançable à la demande sans doublon.
-//
-// Lancement :  npx tsx prisma/seed-current-month.ts
-//         ou :  npm run seed:month
+// "Current month" seed: past + upcoming INSTRUCTION sessions.
+// 
+// Fills the current month's calendar with instruction sessions (instructor +
+// student + plane), at most ~10 per week, spread over the past and future.
+// 
+// Prerequisite: users (instructors / students) and planes already exist. The
+// script only creates flight_sessions.
+// 
+// Idempotent: every created session is tagged with `flightComment` = SEED_TAG.
+// On start, all sessions with that tag in the current month are deleted before
+// being recreated, so it can be rerun without duplicates.
+// 
+// Run with:  npx tsx prisma/seed-current-month.ts
+//       or:  npm run seed:month
 // ─────────────────────────────────────────────────────────────────────────────
 
 const OWNER_EMAIL = "tjeanpierre757@gmail.com";
@@ -50,7 +49,7 @@ const COMMENTS_STUDENT = [
 ];
 
 async function main() {
-    // ─── Club de l'utilisateur ───
+    // ─── User's club ───
     const me = await prisma.user.findFirst({ where: { email: OWNER_EMAIL } });
     if (!me || !me.clubID) {
         console.log("❌ Profil ou club introuvable pour", OWNER_EMAIL);
@@ -62,14 +61,14 @@ async function main() {
     const airfield = club?.defaultAirfield ?? "LFXX";
     console.log(`🏢 Club : ${clubID} (${club?.Name ?? "?"})`);
 
-    // ─── Réutilisation des données existantes ───
+    // ─── Reuse existing data ───
     const instructors = await prisma.user.findMany({
         where: { clubID, role: "INSTRUCTOR" },
     });
     const students = await prisma.user.findMany({
         where: { clubID, role: "STUDENT" },
     });
-    // Avions du club (machines club = ownerID null) et opérationnels
+    // Club planes (ownerID null) that are operational
     const planes = await prisma.planes.findMany({
         where: { clubID, operational: true, ownerID: null },
     });
@@ -89,16 +88,16 @@ async function main() {
 
     console.log(`   👨‍🏫 ${instructors.length} instructeur(s), 🎓 ${students.length} élève(s), ✈️  ${planes.length} avion(s)`);
 
-    // ─── Bornes du mois en cours ───
+    // ─── Current month bounds ───
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth(); // 0-based
     const firstOfMonth = new Date(year, month, 1);
-    const lastOfMonth = new Date(year, month + 1, 0); // dernier jour du mois
+    const lastOfMonth = new Date(year, month + 1, 0); // last day of the month
     const daysInMonth = lastOfMonth.getDate();
     const monthLabel = firstOfMonth.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 
-    // ─── Purge des séances précédemment générées ce mois (idempotence) ───
+    // ─── Purge sessions generated earlier this month (idempotency) ───
     const purged = await prisma.flight_sessions.deleteMany({
         where: {
             clubID,
@@ -115,24 +114,23 @@ async function main() {
 
     console.log(`\n📅 Génération des séances d'instruction — ${monthLabel}`);
 
-    // ─── Génération semaine par semaine ───
+    // ─── Generate week by week ───
     let created = 0;
     let past = 0;
     let upcoming = 0;
 
-    // Regrouper les jours du mois par numéro de semaine (semaine ISO : lundi)
-    // On parcourt jour par jour, en tenant un compteur par semaine.
+    // Walk the month day by day, keeping a per-week counter.
     let weekSessions = 0;
     let currentWeekKey = -1;
 
-    // Jours de vol privilégiés (0=dim … 6=sam) : mar, mer, jeu, sam
+    // Preferred flying days (0=Sun … 6=Sat): Tue, Wed, Thu, Sat
     const FLYING_WEEKDAYS = new Set([2, 3, 4, 6]);
 
     for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(year, month, day);
         const weekday = date.getDay();
 
-        // Clé de semaine : lundi de la semaine (pour réinitialiser le quota)
+        // Week key: Monday of the week (resets the quota)
         const monday = new Date(date);
         const diffToMonday = (weekday + 6) % 7;
         monday.setDate(date.getDate() - diffToMonday);
@@ -142,11 +140,10 @@ async function main() {
             weekSessions = 0;
         }
 
-        // On ne vole pas tous les jours
         if (!FLYING_WEEKDAYS.has(weekday)) continue;
         if (weekSessions >= MAX_SESSIONS_PER_WEEK) continue;
 
-        // 2 à 4 créneaux ce jour-là, sans dépasser le quota hebdo
+        // 2 to 4 slots that day, without exceeding the weekly quota
         const remainingThisWeek = MAX_SESSIONS_PER_WEEK - weekSessions;
         const slots = Math.min(randomInt(2, 4), remainingThisWeek);
         const startHour = randomInt(8, 10);
@@ -172,7 +169,6 @@ async function main() {
                     pilotID: instructor.id,
                     pilotFirstName: instructor.firstName,
                     pilotLastName: instructor.lastName,
-                    // Séance d'instruction → élève inscrit
                     studentID: student.id,
                     studentFirstName: student.firstName,
                     studentLastName: student.lastName,
@@ -188,11 +184,11 @@ async function main() {
                     natureOfTheft: ["TRAINING"],
                     startLocation: airfield,
                     endLocation: airfield,
-                    // hobbs renseignés uniquement pour les séances passées (vol effectué)
+                    // Hobbs only set for past sessions (flight done)
                     hobbsStart: isPast ? (plane.hobbsTotal ?? 0) + created * 0.8 : null,
                     hobbsEnd: isPast ? (plane.hobbsTotal ?? 0) + created * 0.8 + duration / 60 : null,
                     landings: 1,
-                    // Tag d'idempotence
+                    // Idempotency tag
                     flightComment: SEED_TAG,
                 },
             });

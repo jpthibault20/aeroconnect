@@ -24,7 +24,7 @@ const startOfDay = (d: Date) => {
 };
 const startOfWeek = (d: Date) => {
     const r = startOfDay(d);
-    const mondayOffset = (r.getDay() + 6) % 7; // lundi = 0
+    const mondayOffset = (r.getDay() + 6) % 7; // Monday = 0
     r.setDate(r.getDate() - mondayOffset);
     return r;
 };
@@ -46,8 +46,8 @@ const PRESETS: { label: string; getRange: () => DateRange }[] = [
 ];
 
 const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
-// Format compact pour les petits écrans : "01/01/26" au lieu de "01 janv. 2026",
-// pour que la boîte du filtre tienne à côté des autres actions.
+// Compact format for small screens: "01/01/26" instead of "01 janv. 2026", so
+// the filter box fits next to the other actions.
 const fmtShort = (d: Date) => d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 
 const formatLabel = (range: DateRange, short = false): string => {
@@ -57,9 +57,9 @@ const formatLabel = (range: DateRange, short = false): string => {
     return `${f(range.from)} → ${f(range.to)}`;
 };
 
-// Un calendrier à 2 mois dans un popover déborde sur un écran étroit : sous
-// le seuil "lg" (même seuil que le reste du carnet de vol pour son bascule-
-// ment tableau/cartes), on ouvre plutôt une feuille plein écran depuis le bas.
+// A 2-month calendar in a popover overflows on a narrow screen: below the "lg"
+// breakpoint (same as the rest of the logbook's table/cards switch), open a
+// full-screen bottom sheet instead.
 const useIsMobile = () => {
     const [isMobile, setIsMobile] = useState(false);
     useEffect(() => {
@@ -78,26 +78,25 @@ const calendarClassNames = {
     day_range_middle: "aria-selected:bg-purple-100 aria-selected:text-[#774BBE]",
 };
 
-// Sélecteur de plage de dates façon Airbnb : présets rapides (jour, semaine,
-// mois, année) + calendrier pour une plage personnalisée. La sélection dans
-// le calendrier reste "brouillon" (draft) tant que l'utilisateur n'a pas
-// cliqué sur "Appliquer" — un preset, lui, s'applique et referme aussitôt.
-// Desktop : popover à 2 mois. Mobile : feuille plein écran à 1 mois, plus
-// lisible et fiable au toucher qu'un calendrier compressé dans un popover.
+// Airbnb-style date range picker: quick presets (day, week, month, year) +
+// calendar for a custom range. The calendar selection stays a draft until the
+// user clicks "Apply"; a preset applies and closes immediately.
+// Desktop: 2-month popover. Mobile: full-screen 1-month sheet, more readable and
+// reliable to touch than a squeezed calendar in a popover.
 const LogbookDateRangePicker = ({ value, onChange, disabled, className }: Props) => {
     const isMobile = useIsMobile();
     const [open, setOpen] = useState(false);
-    // Sélection en cours, distincte de la valeur validée (value) tant que
-    // l'utilisateur n'a pas cliqué sur "Appliquer".
+    // Selection in progress, separate from the committed value until the user clicks
+    // "Apply".
     const [draft, setDraft] = useState<DateRange | undefined>(value);
-    // Mois affiché — contrôlé pour permettre au lien "Aujourd'hui" d'y ramener la vue.
+    // Displayed month, controlled so the "Today" link can bring the view back.
     const [month, setMonth] = useState<Date>(value.from ?? new Date());
 
     const handleOpenChange = (next: boolean) => {
         setOpen(next);
         if (next) {
-            // Ouverture : repart de la valeur validée (abandonne un éventuel
-            // brouillon laissé par une fermeture précédente sans "Appliquer").
+            // On open: restart from the committed value (drops any draft left by a previous
+            // close without "Apply").
             setDraft(value);
             setMonth(value.from ?? new Date());
         }
@@ -114,11 +113,10 @@ const LogbookDateRangePicker = ({ value, onChange, disabled, className }: Props)
         setOpen(false);
     };
 
-    // react-day-picker, en mode "range", étend/rétrécit par défaut une plage
-    // déjà complète vers le jour cliqué (from conservé, to = jour cliqué) : un
-    // seul clic suffirait alors à reformer une plage complète. On veut plutôt
-    // qu'un clic sur une plage déjà complète reparte de zéro (from = jour
-    // cliqué, to = undefined) et attende un second clic.
+    // In "range" mode, react-day-picker extends/shrinks an already complete range to
+    // the clicked day by default (from kept, to = clicked day), so a single click
+    // would form a complete range again. Instead, a click on a complete range should
+    // start over (from = clicked day, to = undefined) and wait for a second click.
     const handleSelect = (range: DateRange | undefined, selectedDay: Date) => {
         const wasComplete = !!draft?.from && !!draft?.to;
         if (wasComplete) {
@@ -141,7 +139,7 @@ const LogbookDateRangePicker = ({ value, onChange, disabled, className }: Props)
             )}
         >
             <CalendarIcon className="w-4 h-4 text-[#774BBE] flex-shrink-0" />
-            {/* Deux libellés (et non un calcul JS) pour éviter tout écart d'hydratation. */}
+            {/* Two labels (rather than a JS computation) to avoid any hydration mismatch. */}
             <span className="truncate font-medium sm:hidden">{formatLabel(value, true)}</span>
             <span className="hidden sm:inline truncate whitespace-nowrap font-medium">{formatLabel(value)}</span>
         </button>

@@ -19,9 +19,9 @@ const NewPassword = () => {
     const [message, setMessage] = React.useState('');
     const [messageG, setMessageG] = React.useState('');
     const [code, setCode] = React.useState('');
-    const [showPassword, setShowPassword] = React.useState(false); // État pour la visibilité du mot de passe
-    const [showConfirmPassword, setShowConfirmPassword] = React.useState(false); // État pour la visibilité du mot de passe
-    const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
+    const [showPassword, setShowPassword] = React.useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+    const searchParams = useSearchParams();
 
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
@@ -39,26 +39,25 @@ const NewPassword = () => {
     });
 
     const onSubmit = async (data: UpdatePasswordSchema) => {
-        setLoading(true); // Activer le chargement au début
+        setLoading(true);
         try {
             const formData = new FormData();
             formData.append('password', data.password);
             formData.append('confirmPassword', data.confirmPassword);
             formData.append('code', code);
 
-            // Appeler la fonction asynchrone et attendre sa résolution
             await updatePassword(formData);
 
-            // Réinitialiser le formulaire après une soumission réussie
+            // Reset the form after a successful submit
             reset();
         } catch (error) {
-            // Le redirect() de l'action (succès comme erreur métier) doit suivre son cours.
+            // The action's redirect() (success or business error) must propagate.
             if (isRedirectError(error)) throw error;
-            // Erreur réseau / serveur inattendue (les cas métier passent par redirect).
+            // Unexpected network / server error (business cases go through redirect).
             setMessageG('');
             setMessage("Une erreur technique est survenue. Veuillez réessayer.");
         } finally {
-            setLoading(false); // Désactiver le chargement après la soumission
+            setLoading(false);
         }
     };
 

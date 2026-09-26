@@ -3,8 +3,8 @@ import { render } from "@react-email/render";
 import WalletLowBalance from "@/emails/WalletLowBalance";
 
 /**
- * E-mail « solde faible / épuisé » (AER-66) : doit expliquer la situation et
- * donner le moyen de recharger (contact du club + lien absolu).
+ * "Low / depleted balance" email (AER-66): must explain the situation and give a
+ * way to top up (club contact + absolute link).
  */
 const baseProps = {
     firstName: "Léa",

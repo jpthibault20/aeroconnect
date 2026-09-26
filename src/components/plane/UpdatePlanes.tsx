@@ -8,7 +8,7 @@ import { Spinner } from '../ui/SpinnerVariants'
 import { Switch } from '../ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { IoIosWarning } from 'react-icons/io'
-import { Pencil, Users } from 'lucide-react' // Icônes pour le header et la propriété
+import { Pencil, Users } from 'lucide-react'
 import { updatePlane, updatePlaneOwner } from '@/api/db/planes'
 import { getAllUser } from '@/api/db/users'
 import { toast } from '@/hooks/use-toast';
@@ -25,8 +25,8 @@ import { useCurrentClub } from '@/app/context/useCurrentClub'
 import { canManagePlane, isPrivatePlane } from '@/lib/planeVisibility'
 import { centsToInput, parseEurosToCents } from '@/lib/wallet'
 
-// Sentinelle pour « propriétaire = le club » dans le Select (Radix n'accepte
-// pas de valeur vide).
+// Sentinel for "owner = the club" in the Select (Radix does not accept an empty
+// value).
 const CLUB_OWNER_VALUE = "__club__";
 
 interface props {
@@ -37,33 +37,32 @@ interface props {
     setPlane: React.Dispatch<React.SetStateAction<planes>>
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>
     planes: planes[]
-    // Remonte le nom du propriétaire fraîchement choisi : la map ownerNames de
-    // la liste est calculée côté serveur au rendu, elle ne connaît pas encore
-    // ce membre et afficherait « — ».
+    // Reports the newly chosen owner's name: the list's ownerNames map is computed
+    // server-side at render time, it does not know this member yet and would show "—".
     onOwnerNameResolved?: (ownerID: string, ownerName: string) => void
 }
 
 const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setPlanes, planes, onOwnerNameResolved }: props) => {
     const { currentUser } = useCurrentUser();
-    // Compteur horaire : gestion (OWNER/ADMIN) sur toute machine, et le
-    // propriétaire sur sa propre machine privée.
+    // Hobbs counter: management (OWNER/ADMIN) on any plane, and the owner on their
+    // own private plane.
     const canEditHobbs = currentUser ? canEditPlaneHobbs(plane, currentUser) : false;
-    // Réattribution du propriétaire : réservée au président (OWNER) et à l'admin.
+    // Owner reassignment: president (OWNER) and admin only.
     const canReassignOwner = currentUser ? canReassignPlaneOwner(currentUser) : false;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
-    // Propriétaire choisi dans le Select : conservé en local et enregistré
-    // seulement au clic sur « Enregistrer », comme les autres champs.
+    // Owner picked in the Select: kept locally and only saved on "Save", like the
+    // other fields.
     const [pendingOwnerID, setPendingOwnerID] = useState<string | null>(plane.ownerID);
-    // Tarif écolage (AER-66) : visible si le portefeuille du club est activé.
+    // Instruction rate (AER-66): visible when the club wallet is enabled.
     const { currentClub } = useCurrentClub();
     const showRate = !!currentClub?.walletEnabled && !!currentUser && canManagePlane(plane, currentUser);
     const canBapteme = !!currentUser && canManageBaptemeOptions(plane, currentUser);
     const [rateInput, setRateInput] = useState<string>(centsToInput(plane.instructionHourlyRateCents));
 
-    // Réinitialise le choix en cours à chaque ouverture de la fiche (sinon un
-    // choix abandonné via « Annuler » resterait affiché à la réouverture).
+    // Reset the pending choice every time the form opens (otherwise a choice
+    // abandoned with "Cancel" would still show when reopening).
     useEffect(() => {
         if (showPopup) {
             setPendingOwnerID(plane.ownerID);
@@ -72,8 +71,8 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showPopup, plane.ownerID]);
 
-    // Liste des membres du club, chargée à l'ouverture de la fiche (uniquement
-    // pour président/admin, seuls à voir le sélecteur de propriétaire).
+    // Club member list, loaded when the form opens (president/admin only, the only
+    // ones who see the owner selector).
     useEffect(() => {
         if (!showPopup || !canReassignOwner || !plane.clubID) return;
         let cancelled = false;
@@ -90,16 +89,15 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
         return () => { cancelled = true; };
     }, [showPopup, canReassignOwner, plane.clubID]);
 
-    // Le Select ne fait que mémoriser le choix ; l'appel serveur a lieu dans
+    // The Select only remembers the choice; the server call happens in
     // onClickUpdatePlane.
     const onOwnerChange = (value: string) => {
         setPendingOwnerID(value === CLUB_OWNER_VALUE ? null : value);
     };
 
-    // La photo est enregistrée par son propre server action, indépendamment du
-    // bouton « Enregistrer » : on répercute donc tout de suite le changement
-    // dans la fiche ET dans la liste, sinon la vignette resterait périmée
-    // jusqu'au prochain chargement de la page.
+    // The photo is saved by its own server action, independently of the "Save"
+    // button: the change is therefore applied right away to the form AND the list,
+    // otherwise the thumbnail would stay stale until the next page load.
     const onImageChange = (imagePath: string | null) => {
         setPlane((prev) => ({ ...prev, imagePath }));
         setPlanes(planes.map((p) => (p.id === plane.id ? { ...p, imagePath } : p)));
@@ -107,7 +105,7 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
     };
 
     const onClickUpdatePlane = async () => {
-        // Tarif écolage : vide => pas de tarif ; sinon montant valide en centimes.
+        // Instruction rate: empty => no rate; otherwise a valid amount in cents.
         let instructionHourlyRateCents = plane.instructionHourlyRateCents;
         if (showRate && !isPrivatePlane(plane)) {
             const parsed = rateInput.trim() === '' ? null : parseEurosToCents(rateInput);
@@ -126,9 +124,8 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                 return;
             }
 
-            // Réattribution du propriétaire : action serveur distincte (droits
-            // président/admin), jouée après la mise à jour de la fiche pour que
-            // les usages soient recalculés à partir des valeurs enregistrées.
+            // Owner reassignment: separate server action (president/admin rights), run after
+            // the form update so usages are recomputed from the saved values.
             let updatedPlane = { ...plane, instructionHourlyRateCents };
             if (canReassignOwner && pendingOwnerID !== plane.ownerID) {
                 const ownerRes = await updatePlaneOwner(plane.id, pendingOwnerID);
@@ -143,16 +140,15 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                 };
                 setPlane(updatedPlane);
 
-                // Le nom vient de la liste des membres déjà chargée ici.
+                // The name comes from the member list already loaded here.
                 const newOwnerName = members.find((m) => m.id === updatedPlane.ownerID)?.name;
                 if (updatedPlane.ownerID && newOwnerName) {
                     onOwnerNameResolved?.(updatedPlane.ownerID, newOwnerName);
                 }
             }
 
-            // La ligne garde sa propre copie de la machine : sans ça, le nouveau
-            // tarif (ou tout autre champ saisi hors setPlane) n'apparaissait
-            // qu'après un rechargement de la page.
+            // The row keeps its own copy of the plane: otherwise the new rate (or any other
+            // field set outside setPlane) only showed after a page reload.
             setPlane(updatedPlane);
             setError("");
             toast({
@@ -181,10 +177,9 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                 {children}
             </DialogTrigger>
 
-            {/* Structure identique à NewPlane : p-0 gap-0 pour le layout personnalisé */}
+            {/* Same structure as NewPlane: p-0 gap-0 for the custom layout */}
             <DialogContent className='w-[95%] sm:max-w-[500px] p-0 gap-0 bg-white rounded-xl sm:rounded-2xl border-none shadow-2xl flex flex-col overflow-hidden max-h-[90vh]'>
 
-                {/* --- Header Fixe --- */}
                 <div className="bg-slate-50 p-6 border-b border-slate-100 flex-shrink-0">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
@@ -199,10 +194,8 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                     </DialogHeader>
                 </div>
 
-                {/* --- Corps Scrollable --- */}
                 <div className='p-6 space-y-6 overflow-y-auto'>
 
-                    {/* Bloc Identité */}
                     <div className="space-y-4">
                         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Identification</h3>
 
@@ -232,7 +225,6 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
 
                     <div className="h-px bg-slate-100 w-full" />
 
-                    {/* Bloc Photo */}
                     <div className="space-y-4">
                         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Photo</h3>
                         <PlaneImageInput
@@ -246,12 +238,11 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
 
                     <div className="h-px bg-slate-100 w-full" />
 
-                    {/* Bloc Statut & Classe */}
                     <div className="space-y-4">
                         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Paramètres</h3>
 
                         <div className='space-y-4'>
-                            {/* Propriétaire — président/admin uniquement */}
+                            {/* Owner: president/admin only */}
                             {canReassignOwner && (
                                 <div className="space-y-2">
                                     <Label className="text-slate-700 font-medium flex items-center gap-1.5">
@@ -278,7 +269,6 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                 </div>
                             )}
 
-                            {/* Dropdown Classe */}
                             <div className="space-y-2">
                                 <Label className="text-slate-700 font-medium">Classe</Label>
                                 <DropDownClasse
@@ -287,7 +277,7 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                 />
                             </div>
 
-                            {/* Heures moteur — gestion sur toute machine, propriétaire sur la sienne */}
+                            {/* Hobbs: management on any plane, owner on their own */}
                             {canEditHobbs && (
                                 <div className="space-y-2">
                                     <Label htmlFor="hobbsTotal" className="text-slate-700 font-medium">Heures moteur</Label>
@@ -323,8 +313,7 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                 />
                             )}
 
-                            {/* Formules baptême (machine du club) : enregistrées
-                                immédiatement, indépendamment du bouton Enregistrer. */}
+                            {/* Discovery-flight packages (club plane): saved immediately, independently of the Save button. */}
                             {canBapteme && (
                                 <div className="space-y-2">
                                     <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Tarifs baptême</span>
@@ -332,7 +321,6 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                 </div>
                             )}
 
-                            {/* Switch Opérationnel - Design Carte */}
                             <div className={cn(
                                 "flex items-center justify-between p-4 rounded-xl border transition-all",
                                 plane.operational
@@ -359,7 +347,6 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                     </div>
                 </div>
 
-                {/* --- Footer Fixe --- */}
                 <div className="bg-slate-50 p-6 border-t border-slate-100 flex flex-col gap-4 flex-shrink-0">
                     {error && (
                         <div className="text-red-600 bg-red-50 border border-red-100 p-3 rounded-lg flex items-center gap-2 text-sm">

@@ -39,8 +39,8 @@ const NewPlane = ({ setPlanes }: Props) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // Seuls les rôles de gestion peuvent créer une machine DU CLUB. Les autres
-    // membres (STUDENT/PILOT/INSTRUCTOR) ne créent que des machines privées.
+    // Only management roles can create a CLUB plane. Other members
+    // (STUDENT/PILOT/INSTRUCTOR) only create private planes.
     const isManagement = !!currentUser && CLUB_PLANE_MANAGE_ROLES.includes(currentUser.role);
 
     const initialPlaneState: planes = {
@@ -54,18 +54,17 @@ const NewPlane = ({ setPlanes }: Props) => {
         ownerID: null,
         usageTypes: [],
         maintenanceHistory: null,
-        // La photo s'ajoute depuis la fiche de modification, une fois la
-        // machine créée (avant, elle n'a pas d'id, donc pas de chemin de
-        // stockage possible).
+        // The photo is added from the edit form once the plane exists (before that it
+        // has no id, hence no storage path).
         imagePath: null,
         instructionHourlyRateCents: null,
     };
-    // Tarif écolage (AER-66) : saisi à la création si le portefeuille est activé.
+    // Instruction rate (AER-66): entered at creation when the wallet is enabled.
     const { currentClub } = useCurrentClub();
     const [rateInput, setRateInput] = useState("");
 
     const [plane, setPlane] = useState<planes>(initialPlaneState);
-    // 'club' = machine du club (gestionnaires) ; 'private' = machine perso.
+    // 'club' = club plane (management); 'private' = personal plane.
     const [kind, setKind] = useState<"club" | "private">(isManagement ? "club" : "private");
 
     const resetForm = () => {
@@ -100,10 +99,9 @@ const NewPlane = ({ setPlanes }: Props) => {
                 immatriculation: plane.immatriculation,
                 classes: plane.classes,
                 kind,
-                // Le choix des usages n'est pas exposé pour l'instant : une
-                // machine du club est créée avec tous les usages (le serveur en
-                // exige au moins un). Le jour où le champ revient dans le
-                // formulaire, il suffit de repasser la sélection de l'utilisateur.
+                // The usage choice is not exposed for now: a club plane is created with all
+                // usages (the server requires at least one). When the field comes back in the
+                // form, just pass the user's selection again.
                 usageTypes: kind === "club" ? CLUB_USAGE_VALUES : [],
                 instructionHourlyRateCents: kind === "club" ? rateCents : null,
             });
@@ -141,7 +139,6 @@ const NewPlane = ({ setPlanes }: Props) => {
 
             <DialogContent className="w-[95%] sm:max-w-[500px] max-h-[85vh] p-0 gap-0 bg-white rounded-xl sm:rounded-2xl border-none shadow-2xl flex flex-col">
 
-                {/* --- Header Fixe (Gris) --- */}
                 <div className="bg-slate-50 p-4 sm:p-6 border-b border-slate-100 flex-shrink-0 rounded-t-xl sm:rounded-t-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -158,10 +155,9 @@ const NewPlane = ({ setPlanes }: Props) => {
                     </DialogHeader>
                 </div>
 
-                {/* --- Corps Scrollable --- */}
                 <div className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-grow">
 
-                    {/* Section 0: Type de machine (seulement pour les gestionnaires) */}
+                    {/* Section 0: plane type (management only) */}
                     {isManagement && (
                         <div className="space-y-4">
                             <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">
@@ -205,7 +201,6 @@ const NewPlane = ({ setPlanes }: Props) => {
                         </div>
                     )}
 
-                    {/* Section 1: Identification */}
                     <div className="space-y-4">
                         <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">
                             Identification
@@ -240,7 +235,6 @@ const NewPlane = ({ setPlanes }: Props) => {
 
                     <div className="h-px bg-slate-100 w-full" />
 
-                    {/* Section 2: Technique */}
                     <div className="space-y-4">
                         <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">
                             Technique
@@ -268,7 +262,6 @@ const NewPlane = ({ setPlanes }: Props) => {
                     )}
                 </div>
 
-                {/* --- Footer Fixe (Gris) --- */}
                 <div className="bg-slate-50 p-4 sm:p-6 border-t border-slate-100 flex flex-col gap-4 flex-shrink-0 rounded-b-xl sm:rounded-b-2xl">
                     {error && (
                         <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-md text-sm border border-red-100">

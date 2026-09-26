@@ -5,42 +5,42 @@ import { useAnimationFrame } from "framer-motion";
 import { cyclePose, type FlightPose } from "@/lib/flightLoader";
 
 /**
- * Scène SVG de l'animation de chargement (AER-70) : un ULM de profil sur une
- * piste, caméra qui le suit. La trajectoire vient de src/lib/flightLoader.ts ;
- * ce composant ne fait que projeter une pose à chaque image.
+ * SVG scene of the loading animation (AER-70): an ultralight in profile on a
+ * runway, camera following it. The trajectory comes from src/lib/flightLoader.ts;
+ * this component only projects a pose on each frame.
  *
- * Les attributs sont écrits directement sur les nœuds SVG à chaque image de la
- * boucle Motion (useAnimationFrame) : aucun re-render React pendant le vol.
+ * Attributes are written directly on the SVG nodes on each frame of the Motion
+ * loop (useAnimationFrame): no React re-render during the flight.
  */
 
 export interface SceneFrame {
     pose: FlightPose;
-    /** Distance parcourue (unités SVG), fait défiler la piste et les nuages. */
+    /** Distance traveled (SVG units), scrolls the runway and the clouds. */
     distance: number;
 }
 
 export type FrameSource = (now: number) => SceneFrame;
 
-/** Image fixe (avion en croisière) quand l'utilisateur a demandé moins d'animations. */
+/** Still frame (plane cruising) when the user asked for reduced motion. */
 const REDUCED_MOTION_FRAME: SceneFrame = { pose: cyclePose(0.53), distance: 0 };
 export const reducedMotionFrame: FrameSource = () => REDUCED_MOTION_FRAME;
 
 const WIDTH = 320;
 const HEIGHT = 140;
 const GROUND_Y = 112;
-/** Hauteur de vol en croisière, en unités SVG. */
+/** Cruise altitude, in SVG units. */
 const ALT_PX = 56;
-/** Position de l'avion dans le cadre : PLANE_X0 au roulage, + PLANE_DX par unité d'`advance`. */
+/** Plane position in the frame: PLANE_X0 while taxiing, + PLANE_DX per `advance` unit. */
 const PLANE_X0 = 118;
 const PLANE_DX = 30;
-/** Pivot de rotation : le train principal, comme un vrai décollage. */
+/** Rotation pivot: the main gear, like a real takeoff. */
 const PIVOT_X = 8;
 
 const BRAND = "#774BBE";
 const BRAND_DARK = "#5B3596";
 const BRAND_SOFT = "#A68AD8";
 
-/** Nuages : `factor` règle la parallaxe (les lointains défilent moins vite). */
+/** Clouds: `factor` sets the parallax (distant ones scroll slower). */
 const CLOUDS = [
     { x: 30, y: 24, scale: 0.7, factor: 0.16, opacity: 0.55 },
     { x: 170, y: 12, scale: 0.55, factor: 0.16, opacity: 0.5 },
@@ -85,14 +85,14 @@ function applyFrame(nodes: Nodes, { pose, distance }: SceneFrame, now: number, s
             `translate(${wrapX(cloud.x - distance * cloud.factor).toFixed(2)} ${cloud.y}) scale(${cloud.scale})`,
         );
     });
-    // Hélice : disque flou qui « bat » pour suggérer la rotation.
+    // Propeller: blurred disc that "beats" to suggest rotation.
     const blade = spin ? 0.3 + 0.7 * Math.abs(Math.sin(now / 26)) : 1;
     nodes.propeller?.setAttribute("transform", `translate(29.6 -10.5) scale(1 ${blade.toFixed(3)})`);
 }
 
 interface Props {
     frame: FrameSource;
-    /** false : image fixe (mouvement réduit, ou inspection image par image). */
+    /** false: still frame (reduced motion, or frame-by-frame inspection). */
     animate: boolean;
     className?: string;
 }
@@ -108,14 +108,14 @@ export default function FlightScene({ frame, animate, className }: Props) {
         clouds: [],
     });
 
-    // Première pose posée avant l'affichage : jamais d'image avec l'avion à l'origine.
+    // First pose set before display: never a frame with the plane at the origin.
     useLayoutEffect(() => {
         const now = performance.now();
         applyFrame(nodes.current, frame(now), now, animate);
     }, [frame, animate]);
 
-    // Horloge absolue (performance.now) plutôt que le temps relatif fourni par
-    // Motion : c'est elle que partagent tous les loaders et l'atterrissage.
+    // Absolute clock (performance.now) rather than Motion's relative time: it is the
+    // one shared by every loader and the landing.
     useAnimationFrame(
         useCallback(() => {
             if (!animate) return;
@@ -143,7 +143,7 @@ export default function FlightScene({ frame, animate, className }: Props) {
                 </mask>
             </defs>
 
-            {/* Décor (fondu sur les bords) */}
+            {/* Scenery (faded at the edges) */}
             <g mask={`url(#${maskId})`}>
                 {CLOUDS.map((cloud, i) => (
                     <g
@@ -190,7 +190,7 @@ export default function FlightScene({ frame, animate, className }: Props) {
                 />
             </g>
 
-            {/* Ombre portée : se resserre et s'estompe quand l'avion prend de la hauteur */}
+            {/* Drop shadow: shrinks and fades as the plane climbs */}
             <ellipse
                 ref={(el) => {
                     nodes.current.shadow = el;
@@ -203,20 +203,20 @@ export default function FlightScene({ frame, animate, className }: Props) {
                 opacity="0.2"
             />
 
-            {/* ULM de profil, repère local : roues à y = 0, nez vers la droite */}
+            {/* Ultralight in profile, local frame: wheels at y = 0, nose to the right */}
             <g
                 ref={(el) => {
                     nodes.current.plane = el;
                 }}
             >
-                {/* Train */}
+                {/* Landing gear */}
                 <path d="M4 -6.8 L8 -2.6 M21 -6.8 L21.5 -2.2" stroke="#3F3A4A" strokeWidth="1.4" strokeLinecap="round" />
                 <circle cx="8" cy="-2.3" r="2.3" fill="#27232E" />
                 <circle cx="8" cy="-2.3" r="0.8" fill="#A9A3B5" />
                 <circle cx="21.5" cy="-1.9" r="1.9" fill="#27232E" />
                 <circle cx="21.5" cy="-1.9" r="0.65" fill="#A9A3B5" />
 
-                {/* Empennage */}
+                {/* Tail */}
                 <path d="M-31 -13 L-34 -25.5 Q-34 -26.5 -33 -26.5 L-29 -26.5 L-19 -14.2 Z" fill={BRAND_DARK} />
                 <rect x="-35" y="-14.4" width="13" height="2.2" rx="1.1" fill={BRAND_DARK} />
 
@@ -227,14 +227,14 @@ export default function FlightScene({ frame, animate, className }: Props) {
                 />
                 <path d="M-28 -11.9 L24 -10.4" stroke={BRAND_SOFT} strokeWidth="0.9" strokeLinecap="round" />
 
-                {/* Verrière */}
+                {/* Canopy */}
                 <path d="M-1.5 -19.4 L12.5 -19.4 Q17 -19.2 20.4 -15 L-3.2 -15 Q-3 -18 -1.5 -19.4 Z" fill="#EFE9FB" />
                 <path d="M8.5 -19.4 L8.5 -15" stroke={BRAND} strokeWidth="1" />
 
-                {/* Aile haute, posée sur le toit de la cabine */}
+                {/* High wing, on top of the cabin */}
                 <path d="M-4 -20.6 L13 -20.6 Q16.2 -20.7 16.2 -22.2 Q15.8 -23.8 12 -23.8 L-3 -23 Q-5.2 -22.4 -4 -20.6 Z" fill={BRAND_DARK} />
 
-                {/* Capot + hélice */}
+                {/* Cowling + propeller */}
                 <ellipse cx="28.2" cy="-10.5" rx="1.6" ry="1.9" fill="#3F3A4A" />
                 <ellipse
                     ref={(el) => {

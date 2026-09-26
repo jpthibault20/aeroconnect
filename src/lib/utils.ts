@@ -24,16 +24,15 @@ export const formatClubAdressString = (club: Club) => {
 }
 
 /**
- * Sentinelle historique « sans appareil / avion personnel », posée dans
- * flight_sessions.studentPlaneID avant l'arrivée des machines privées
- * (planes.ownerID), qui la remplacent avantageusement : une machine privée est
- * identifiée, suivie en heures et en maintenance.
+ * Historical "no plane / personal plane" sentinel, set in
+ * flight_sessions.studentPlaneID before private planes (planes.ownerID) existed,
+ * which advantageously replace it: a private plane is identified and tracked for
+ * hours and maintenance.
  *
- * L'option a été RETIRÉE des formulaires : plus aucune séance ne peut naître
- * avec cette valeur. Les occurrences restantes sont uniquement des lectures,
- * conservées pour que les séances et vols DÉJÀ enregistrés continuent de
- * s'afficher correctement. À supprimer définitivement une fois les données
- * historiques migrées (cf. LEGACY_NO_PLANE_ID pour toutes les retrouver).
+ * The option was REMOVED from the forms: no session can be created with this
+ * value anymore. Remaining occurrences are reads only, kept so ALREADY recorded
+ * sessions and flights still render correctly. To be removed for good once the
+ * historical data is migrated (search LEGACY_NO_PLANE_ID to find them all).
  */
 export const LEGACY_NO_PLANE_ID = "noPlane";
 

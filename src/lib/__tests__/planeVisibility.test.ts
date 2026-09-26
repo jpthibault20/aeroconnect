@@ -13,9 +13,9 @@ import {
     sanitizeClubUsages,
 } from "@/lib/planeVisibility";
 
-// Machine du club (propriétaire = le club).
+// Club plane (owner = the club).
 const clubPlane = { ownerID: null };
-// Machine privée appartenant à "u-owner".
+// Private plane owned by "u-owner".
 const privatePlane = { ownerID: "u-owner" };
 
 const owner = { id: "u-owner", role: userRole.STUDENT };
@@ -111,7 +111,7 @@ describe("sanitizeClubUsages", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// resolvePlaneCreation — propriétaire + usages selon rôle & type
+// resolvePlaneCreation: owner + usages by role & type
 // ─────────────────────────────────────────────────────────────
 
 describe("resolvePlaneCreation", () => {
@@ -200,19 +200,19 @@ describe("resolveOwnerReassignment", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// filterBookablePlanes — visibilité ∩ classe
+// filterBookablePlanes: visibility ∩ class
 // ─────────────────────────────────────────────────────────────
 
 describe("filterBookablePlanes", () => {
-    // Élève noté sur les classes [3], possédant la machine privée "mine".
+    // Student rated on classes [3], owning the private plane "mine".
     const student = { id: "me", role: userRole.STUDENT, classes: [3] };
 
     const fleet = [
-        { id: "club-c3", ownerID: null, classes: 3 },        // club, bonne classe → OUI
-        { id: "club-c1", ownerID: null, classes: 1 },        // club, mauvaise classe → non
-        { id: "mine-c3", ownerID: "me", classes: 3 },        // ma privée, bonne classe → OUI
-        { id: "mine-c1", ownerID: "me", classes: 1 },        // ma privée, mauvaise classe → non
-        { id: "theirs-c3", ownerID: "autre", classes: 3 },   // privée d'un autre → non (invisible)
+        { id: "club-c3", ownerID: null, classes: 3 },        // club, right class → YES
+        { id: "club-c1", ownerID: null, classes: 1 },        // club, wrong class → no
+        { id: "mine-c3", ownerID: "me", classes: 3 },        // mine, right class → YES
+        { id: "mine-c1", ownerID: "me", classes: 1 },        // mine, wrong class → no
+        { id: "theirs-c3", ownerID: "autre", classes: 3 },   // someone else's → no (invisible)
     ];
 
     it("un élève ne peut réserver que ses classes ET les machines qu'il voit", () => {
@@ -228,7 +228,7 @@ describe("filterBookablePlanes", () => {
     it("le président voit sa flotte de la bonne classe + les privées des autres", () => {
         const president = { id: "pres", role: userRole.OWNER, classes: [3] };
         const ids = filterBookablePlanes(fleet, president).map((p) => p.id);
-        // Toutes les classes 3, y compris la privée d'un autre (supervision).
+        // Every class 3 plane, including someone else's private one (supervision).
         expect(ids).toEqual(["club-c3", "mine-c3", "theirs-c3"]);
     });
 });

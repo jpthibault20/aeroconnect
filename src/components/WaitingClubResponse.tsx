@@ -20,7 +20,7 @@ const WaitingClubResponse = ({ clubIDprops }: props) => {
         setError(null);
 
         try {
-            // On récupère l'ID du club demandé (soit dans le profil user, soit dans les props)
+            // Requested club ID (from the user profile or the props)
             const targetClubID = currentUser?.clubIDRequest || clubIDprops;
 
             if (!targetClubID) {
@@ -68,7 +68,6 @@ const WaitingClubResponse = ({ clubIDprops }: props) => {
     return (
         <div className="flex flex-col items-center text-center space-y-6 py-4 animate-in fade-in zoom-in-95 duration-300">
 
-            {/* --- Icône Visuelle (Status Pending) --- */}
             <div className="relative">
                 <div className="absolute inset-0 bg-amber-100 rounded-full blur-md opacity-50 animate-pulse"></div>
                 <div className="relative h-20 w-20 bg-amber-50 rounded-full flex items-center justify-center border border-amber-100 shadow-sm">
@@ -76,7 +75,6 @@ const WaitingClubResponse = ({ clubIDprops }: props) => {
                 </div>
             </div>
 
-            {/* --- Message Principal --- */}
             <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-slate-900">
                     Demande envoyée avec succès !
@@ -85,7 +83,6 @@ const WaitingClubResponse = ({ clubIDprops }: props) => {
                     Vous avez demandé à rejoindre le club :
                 </p>
 
-                {/* Badge Nom du Club */}
                 {club && (
                     <div className="mt-2 inline-flex items-center px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg shadow-sm">
                         <span className="font-bold text-slate-800">{club.Name}</span>
@@ -93,7 +90,6 @@ const WaitingClubResponse = ({ clubIDprops }: props) => {
                 )}
             </div>
 
-            {/* --- Information Complémentaire --- */}
             <div className="flex items-start gap-3 bg-blue-50 p-4 rounded-lg text-left w-full">
                 <Mail className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="space-y-1">

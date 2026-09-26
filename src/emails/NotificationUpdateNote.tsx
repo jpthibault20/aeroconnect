@@ -9,9 +9,6 @@ import { Club, flight_sessions, User } from "@prisma/client";
 import { formattedDate, receiveType } from "@/lib/utils";
 
 
-/***
- * 
- */
 interface NotificationUpdateNoteProps {
     receiver: receiveType;
     club: Club;

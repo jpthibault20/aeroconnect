@@ -4,15 +4,15 @@ import { convertMinutesToHours } from "@/api/global function/dateServeur";
 import { canViewPlane, isPrivatePlane, sessionOffersPlane } from "@/lib/planeVisibility";
 
 /**
- * Règles (pures, testées) des actions sur les créneaux (AER-67).
+ * Pure, tested rules of slot actions (AER-67).
  *
- * Les server actions de src/api/db/sessions.ts ne reçoivent plus du client que
- * des identifiants : session, club, utilisateur et machine sont RELUS EN BASE,
- * puis passés à ces fonctions. Aucune règle ne repose donc sur un objet
- * envoyé par le navigateur, qu'un client modifié pourrait falsifier.
+ * The server actions in src/api/db/sessions.ts only receive IDs from the client:
+ * session, club, user and plane are RE-READ FROM THE DB, then passed to these
+ * functions. No rule therefore relies on an object sent by the browser, which a
+ * modified client could forge.
  *
- * Les dates comparées sont en « heure de pendule du club » (cf. clubTime.ts) :
- * `now` doit venir de toClubWallClock(new Date()), calculé côté serveur.
+ * Compared dates are in "club clock time" (see clubTime.ts): `now` must come from
+ * toClubWallClock(new Date()), computed server-side.
  */
 
 export type RuleResult = { ok: true } | { ok: false; error: string };
@@ -22,17 +22,17 @@ const refuse = (error: string): RuleResult => ({ ok: false, error });
 
 export const CLASSROOM_SESSION_ID = "classroomSession";
 
-// Rôles pouvant s'inscrire eux-mêmes à un créneau.
+// Roles that can book themselves on a slot.
 export const SELF_REGISTRATION_ROLES: userRole[] = [
     userRole.STUDENT, userRole.PILOT, userRole.OWNER, userRole.ADMIN, userRole.INSTRUCTOR,
 ];
 
-// Rôles pouvant désinscrire n'importe quel élève de leur club, sans délai.
+// Roles that can unsubscribe any student of their club, with no deadline.
 export const UNSUBSCRIBE_STAFF_ROLES: userRole[] = [
     userRole.ADMIN, userRole.INSTRUCTOR, userRole.OWNER, userRole.MANAGER,
 ];
 
-// Rôles pouvant modifier les deux notes d'un créneau.
+// Roles that can edit both notes of a slot.
 export const COMMENT_STAFF_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 type PlaneForRules = Pick<planes, "id" | "clubID" | "ownerID" | "operational" | "classes">;
@@ -42,21 +42,21 @@ export interface RegistrationContext {
     club: { userCanSubscribe: boolean; timeDelaySubscribeminutes: number };
     session: { clubID: string; sessionDateStart: Date; studentID: string | null; planeID: string[] };
     planeID: string;
-    /** Machine relue en base ; null pour la séance en salle ou une machine introuvable. */
+    /** Plane re-read from the DB; null for a classroom session or a missing plane. */
     plane: PlaneForRules | null;
-    /** Machines du club (résolution du marqueur « toutes les machines du club »). */
+    /** Club planes (to resolve the "all club planes" marker). */
     clubPlanes: Pick<planes, "id" | "ownerID">[];
     now: Date;
-    /** L'élève ou la machine est déjà pris au même horaire. */
+    /** The student or the plane is already taken at the same time. */
     hasConflict: boolean;
-    /** Créneau tenu par une demande de baptême en attente. */
+    /** Slot held by a pending discovery-flight request. */
     heldByBapteme: boolean;
 }
 
 /**
- * Inscription d'un utilisateur PAR LUI-MÊME à un créneau. L'élève inscrit est
- * toujours l'utilisateur connecté : inscrire un tiers passe par
- * addStudentToSession (gestion uniquement).
+ * Booking of a user BY THEMSELVES on a slot. The booked student is always the
+ * signed-in user: booking someone else goes through addStudentToSession
+ * (management only).
  */
 export function checkStudentRegistration(ctx: RegistrationContext): RuleResult {
     const { user, club, session, planeID, plane, now } = ctx;
@@ -74,8 +74,8 @@ export function checkStudentRegistration(ctx: RegistrationContext): RuleResult {
         return refuse("Vous n'avez pas les droits pour vous inscrire à une session. (E_003: User)");
     }
 
-    // Machine : séance en salle proposée sur le créneau, ou machine du club
-    // offerte par le créneau, ou machine privée de l'élève.
+    // Plane: classroom session offered on the slot, a club plane offered by the
+    // slot, or the student's private plane.
     if (planeID === CLASSROOM_SESSION_ID) {
         if (!session.planeID.includes(CLASSROOM_SESSION_ID)) {
             return refuse("La séance théorique n'est pas proposée sur ce créneau.");
@@ -123,9 +123,9 @@ export interface RemovalContext {
 }
 
 /**
- * Désinscription d'un élève. Le personnel (instructeur, gestion) désinscrit
- * n'importe quel élève de son club, sans délai ; les autres ne peuvent retirer
- * QUE leur propre inscription, dans les règles du club.
+ * Unsubscribing a student. Staff (instructor, management) unsubscribe any
+ * student of their club with no deadline; others can ONLY remove their own
+ * booking, within the club's rules.
  */
 export function checkStudentRemoval({ user, club, session, now }: RemovalContext): RuleResult {
     if (!user.clubID || session.clubID !== user.clubID) {
@@ -161,9 +161,9 @@ export type CommentUpdate =
     | { ok: false; error: string };
 
 /**
- * Notes d'un créneau : la gestion modifie les deux ; le pilote (instructeur)
- * sa note, l'élève la sienne. La note de l'autre est conservée telle qu'en
- * base, même si le client en envoie une autre valeur.
+ * Slot notes: management edits both; the pilot (instructor) their note, the
+ * student theirs. The other party's note is kept as in the DB, even if the client
+ * sends another value.
  */
 export function resolveCommentUpdate({ user, session, pilotComment, studentComment }: CommentUpdateContext): CommentUpdate {
     if (!user.clubID || session.clubID !== user.clubID) {
@@ -185,8 +185,8 @@ export function resolveCommentUpdate({ user, session, pilotComment, studentComme
 }
 
 /**
- * Création de créneaux pour un instructeur (relu en base) : gestion pour
- * n'importe quel instructeur du club, sinon uniquement pour soi-même.
+ * Creating slots for an instructor (re-read from the DB): management for any
+ * instructor of the club, otherwise only for oneself.
  */
 export function canCreateSessionsFor(
     actor: { id: string; role: userRole; clubID: string | null },

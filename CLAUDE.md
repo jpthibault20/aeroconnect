@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-AeroConnect — Next.js app for managing flying club / ULM-club operations: bookings, fleet, members, flight logbook. UI strings, error messages, and comments are written in French; preserve that convention when editing user-facing text.
+AeroConnect — Next.js app for managing flying club / ULM-club operations: bookings, fleet, members, flight logbook. UI strings and error messages are written in French; preserve that convention when editing user-facing text. Code comments are written in English: keep only comments that explain something non-obvious (a business rule, a pitfall, a "why").
 
 ## Rules for Claude
 

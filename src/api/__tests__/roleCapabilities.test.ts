@@ -19,22 +19,21 @@ import {
 } from "@/lib/logbookPermissions";
 
 /**
- * MATRICE DES CAPACITÉS PAR RÔLE — Machines & Carnet de vol.
+ * ROLE CAPABILITY MATRIX: Planes & Logbook.
  *
- * Ce fichier est organisé par rôle (ce que chaque rôle PEUT / NE PEUT PAS faire)
- * et importe les VRAIES fonctions de permission (pas de constantes « miroir »),
- * afin qu'un changement de règle casse le test.
+ * Organized by role (what each role CAN / CANNOT do) and imports the REAL
+ * permission functions (no "mirror" constants), so a rule change breaks the test.
  *
- * Périmètre : capacités introduites/impactées par le ticket « machines membres »
- *  - création de machine (privée vs club) ;
- *  - visibilité & gestion des machines (privé = propriétaire + OWNER/ADMIN) ;
- *  - accès carnet de vol + saisie manuelle (STUDENT non, PILOT oui).
+ * Scope: capabilities introduced/affected by the "member planes" ticket:
+ *  - plane creation (private vs club);
+ *  - plane visibility & management (private = owner + OWNER/ADMIN);
+ *  - logbook access + manual entry (STUDENT no, PILOT yes).
  *
- * NON dupliqué ici (déjà couvert ailleurs) :
- *  - gestion/création de sessions, éligibilité à l'inscription → roleAccessMatrix / permissions
- *  - filtrage des avions par classe de l'élève → businessRules
- *  - vue du carnet d'un autre pilote, signature=identité, modif d'un vol signé → permissions
- *  - isolation inter-clubs générique → clubIsolation
+ * NOT duplicated here (covered elsewhere):
+ *  - session management/creation, booking eligibility → roleAccessMatrix / permissions
+ *  - plane filtering by student class → businessRules
+ *  - viewing another pilot's logbook, signature=identity, editing a signed flight → permissions
+ *  - generic cross-club isolation → clubIsolation
  */
 
 const CLUB = "club-1";
@@ -42,13 +41,13 @@ const OTHER_CLUB = "club-2";
 
 const user = (role: userRole, id = "me", clubID = CLUB) => ({ id, role, clubID });
 
-// Machines de référence (même club sauf mention contraire).
+// Reference planes (same club unless stated otherwise).
 const clubPlane = { ownerID: null, clubID: CLUB };
 const myPrivatePlane = { ownerID: "me", clubID: CLUB };
 const othersPrivatePlane = { ownerID: "someone-else", clubID: CLUB };
 
-// Reproduit la composition réelle des server actions : filtrage clubID PUIS
-// filtrage de visibilité (cf. getPlanes / getAllPlanesOperational).
+// Mirrors how the server actions compose: clubID filter THEN visibility filter
+// (see getPlanes / getAllPlanesOperational).
 function visiblePlanesInClub<T extends { ownerID: string | null; clubID: string }>(
     all: T[],
     u: { id: string; role: userRole; clubID: string }
@@ -62,7 +61,7 @@ const ALL_ROLES = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// USER (compte de base, sans réel accès club)
+// USER (base account, no real club access)
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle USER", () => {
@@ -75,8 +74,8 @@ describe("Rôle USER", () => {
     });
 
     it("ne peut gérer aucune machine (il n'en possède aucune : USER ne crée rien)", () => {
-        // Un USER n'est jamais propriétaire d'une machine (il ne peut pas en
-        // créer) : on le teste donc comme non-propriétaire.
+        // A USER never owns a plane (they cannot create one), so it is tested as a
+        // non-owner.
         const nonOwner = user(role, "user-x");
         expect(canManagePlane(clubPlane, nonOwner)).toBe(false);
         expect(canManagePlane(othersPrivatePlane, nonOwner)).toBe(false);
@@ -119,8 +118,8 @@ describe("Rôle STUDENT", () => {
     });
 
     it("accède au carnet en LECTURE SEULE et ne fait PAS de saisie manuelle", () => {
-        // L'élève vole toujours avec un instructeur : vol auto-logué, il ne saisit
-        // ni ne signe. Seul l'instructeur signe.
+        // A student always flies with an instructor: the flight is auto-logged, they
+        // neither enter nor sign it. Only the instructor signs.
         expect(canAccessLogbookPage(role)).toBe(true);
         expect(isLogbookReadOnly(role)).toBe(true);
         expect(canAddManualLogEntry(role)).toBe(false);
@@ -143,7 +142,7 @@ describe("Rôle PILOT", () => {
     it("gère sa propre machine privée (et peut voler sur les machines du club)", () => {
         expect(canManagePlane(myPrivatePlane, user(role))).toBe(true);
         expect(canManagePlane(othersPrivatePlane, user(role))).toBe(false);
-        // Une machine du club est visible/réservable par le pilote.
+        // A club plane is visible/bookable by the pilot.
         expect(canViewPlane(clubPlane, user(role))).toBe(true);
     });
 
@@ -172,8 +171,8 @@ describe("Rôle INSTRUCTOR", () => {
     });
 
     it("gère sa propre machine privée, mais PAS la privée d'un autre", () => {
-        // Comme le pilote : il gère les machines sur lesquelles il vole seul (les
-        // siennes). Il ne supervise pas les machines privées d'autrui.
+        // Like a pilot: they manage the planes they fly solo (their own). They do not
+        // supervise other people's private planes.
         expect(canManagePlane(myPrivatePlane, user(role))).toBe(true);
         expect(canManagePlane(othersPrivatePlane, user(role))).toBe(false);
         expect(canViewPlane(othersPrivatePlane, user(role))).toBe(false);
@@ -203,7 +202,7 @@ describe("Rôle MANAGER", () => {
         expect(canManagePlane(clubPlane, user(role))).toBe(true);
         expect(canManagePlane(myPrivatePlane, user(role))).toBe(true);
         expect(canManagePlane(othersPrivatePlane, user(role))).toBe(false);
-        // Le manager ne fait pas partie des rôles de supervision des privées.
+        // The manager is not one of the private-plane supervision roles.
         expect(canViewPlane(othersPrivatePlane, user(role))).toBe(false);
     });
 
@@ -215,7 +214,7 @@ describe("Rôle MANAGER", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// OWNER (président)
+// OWNER (president)
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle OWNER (président)", () => {
@@ -261,18 +260,18 @@ describe("Rôle ADMIN", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// TESTS GÉNÉRAUX (transversaux)
+// GENERAL (cross-cutting) TESTS
 // ─────────────────────────────────────────────────────────────
 
 describe("Général — visibilité des machines privées", () => {
     it("une machine privée n'est visible QUE par son propriétaire, le président et l'admin", () => {
         const owner = user(userRole.STUDENT, "me");
-        // Propriétaire : oui.
+        // Owner: yes.
         expect(canViewPlane(myPrivatePlane, owner)).toBe(true);
-        // Président / admin : oui (supervision).
+        // President / admin: yes (supervision).
         expect(canViewPlane(myPrivatePlane, user(userRole.OWNER, "pres"))).toBe(true);
         expect(canViewPlane(myPrivatePlane, user(userRole.ADMIN, "adm"))).toBe(true);
-        // Tous les autres rôles (non propriétaires) : non.
+        // Every other role (non-owner): no.
         for (const role of [userRole.USER, userRole.STUDENT, userRole.PILOT, userRole.INSTRUCTOR, userRole.MANAGER]) {
             expect(canViewPlane(myPrivatePlane, user(role, "autre"))).toBe(false);
         }
@@ -292,7 +291,7 @@ describe("Général — visibilité des machines privées", () => {
 
 describe("Général — correction du compteur horaire (hobbsTotal)", () => {
     it("le propriétaire d'une machine privée peut corriger le compteur de SA machine", () => {
-        // Y compris un élève : c'est sa machine, il en relève le compteur.
+        // Including a student: it is their plane, they read its counter.
         expect(canEditPlaneHobbs(myPrivatePlane, user(userRole.STUDENT, "me"))).toBe(true);
         expect(canEditPlaneHobbs(myPrivatePlane, user(userRole.PILOT, "me"))).toBe(true);
     });
@@ -324,7 +323,7 @@ describe("Général — isolation inter-clubs", () => {
         const foreignClubPlane = { ownerID: null, clubID: OTHER_CLUB };
         const foreignPrivatePlane = { ownerID: "me", clubID: OTHER_CLUB };
         for (const role of ALL_ROLES) {
-            // Même le président/admin de club-1 ne voit rien de club-2 via cette liste.
+            // Even club-1's president/admin sees nothing from club-2 through this list.
             const visible = visiblePlanesInClub(
                 [clubPlane, foreignClubPlane, foreignPrivatePlane],
                 user(role, "me", CLUB)
@@ -343,7 +342,7 @@ describe("Général — isolation inter-clubs", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// Carnet de route machine — accès élève propriétaire
+// Plane logbook: student owner access
 // ─────────────────────────────────────────────────────────────
 
 describe("Carnet de route machine (onglet 'Carnet de Vol Machine')", () => {
@@ -354,7 +353,7 @@ describe("Carnet de route machine (onglet 'Carnet de Vol Machine')", () => {
 
     it("un élève propriétaire d'une machine privée y a accès (en lecture seule)", () => {
         expect(canSeeAircraftLogbook(userRole.STUDENT, { ownsPrivatePlane: true })).toBe(true);
-        // ... mais reste en lecture seule (pas d'édition/signature).
+        // ... but stays read-only (no editing/signing).
         expect(isLogbookReadOnly(userRole.STUDENT)).toBe(true);
     });
 

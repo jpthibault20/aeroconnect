@@ -12,33 +12,33 @@ import { BAPTEME_REQUESTS_EVENT } from "@/lib/baptemeEvents";
 import { useWallet, WalletStatus } from "@/hooks/useWallet";
 import { isBookingGatedRole } from "@/lib/wallet";
 
-/** Événement global (window) émis quand une demande d'adhésion est traitée. */
+/** Global (window) event fired when a membership request is handled. */
 export const CLUB_REQUESTS_EVENT = "refresh-club-requests";
 
-/** Rôles autorisés à voir les demandes d'adhésion en attente. */
+/** Roles allowed to see pending membership requests. */
 const REQUEST_ROLES: userRole[] = [userRole.ADMIN, userRole.OWNER, userRole.MANAGER];
 
 export interface NavigationCounts {
-    /** Demandes d'adhésion en attente (gestion uniquement). */
+    /** Pending membership requests (management only). */
     requestCount: number;
-    /** Machines ayant au moins un rappel de maintenance en retard. */
+    /** Planes with at least one overdue maintenance reminder. */
     maintenanceCount: number;
-    /** Demandes de baptême en attente que l'utilisateur peut traiter. */
+    /** Pending discovery-flight requests the user can handle. */
     baptemeCount: number;
-    /** Élève / pilote à solde nul ou négatif : il ne peut plus réserver. */
+    /** Student / pilot with a zero or negative balance: they can no longer book. */
     walletAlert: boolean;
-    /** Solde de l'utilisateur connecté (portefeuille élève, AER-66). */
+    /** Balance of the signed-in user (student wallet, AER-66). */
     wallet: WalletStatus;
 }
 
 /**
- * Compteurs des bulles de notification du menu (sidebar + navbar mobile).
+ * Counters of the menu notification badges (sidebar + mobile navbar).
  *
- * Centralisé ici pour n'interroger le serveur qu'une seule fois par page :
- * auparavant chaque barre de navigation lançait ses propres appels, et les
- * effets dépendaient de l'objet `currentUser` entier, ce qui relançait tout à
- * chaque mise à jour du contexte. Les server actions font elles-mêmes le
- * contrôle d'accès ; côté client seul le rôle sert à éviter un appel inutile.
+ * Centralized here so the server is queried only once per page: previously each
+ * navigation bar made its own calls, and the effects depended on the whole
+ * `currentUser` object, which refetched everything on every context update. The
+ * server actions do their own access control; client-side only the role is used
+ * to skip useless calls.
  */
 export function useNavigationCounts(): NavigationCounts {
     const { currentUser } = useCurrentUser();
@@ -50,10 +50,10 @@ export function useNavigationCounts(): NavigationCounts {
     const [maintenanceCount, setMaintenanceCount] = useState(0);
     const [baptemeCount, setBaptemeCount] = useState(0);
 
-    // Chaque effet crée sa propre fonction de chargement : elle sert à la fois
-    // à l'appel initial et de handler pour l'événement de rafraîchissement.
+    // Each effect creates its own loader function: used both for the initial call
+    // and as the refresh event handler.
 
-    // Demandes d'adhésion : dépend du rôle (chargé un peu après le montage).
+    // Membership requests: role dependent (loaded shortly after mount).
     useEffect(() => {
         const canManage = !!role && REQUEST_ROLES.includes(role);
         if (!clubID || !canManage) return;
@@ -71,7 +71,7 @@ export function useNavigationCounts(): NavigationCounts {
         return () => window.removeEventListener(CLUB_REQUESTS_EVENT, fetchRequests);
     }, [clubID, role]);
 
-    // Maintenance : recalcul quand un rappel/une intervention change.
+    // Maintenance: recomputed when a reminder/intervention changes.
     useEffect(() => {
         if (!clubID) return;
 
@@ -88,7 +88,7 @@ export function useNavigationCounts(): NavigationCounts {
         return () => window.removeEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
     }, [clubID]);
 
-    // Baptêmes : recalcul quand une demande est validée/refusée.
+    // Discovery flights: recomputed when a request is accepted/rejected.
     useEffect(() => {
         if (!clubID) return;
 
@@ -105,8 +105,8 @@ export function useNavigationCounts(): NavigationCounts {
         return () => window.removeEventListener(BAPTEME_REQUESTS_EVENT, fetchBaptemes);
     }, [clubID]);
 
-    // Portefeuille : la pastille ne concerne que les rôles bloqués à
-    // l'inscription (pour la gestion, un solde négatif n'est pas une tâche).
+    // Wallet: the badge only concerns roles blocked from booking (for management, a
+    // negative balance is not a task).
     const wallet = useWallet();
     const walletAlert = wallet.enabled && isBookingGatedRole(role) && wallet.state === "empty";
 

@@ -23,8 +23,7 @@ import { balanceTextClass, canBookWithBalance, formatCents, isBookingGatedRole }
 import { emitWalletChanged } from '@/lib/walletEvents';
 import { cn } from '@/lib/utils';
 
-// Machine proposée dans la liste. `isPrivate` absent = ce n'est pas une machine
-// (séance en salle).
+// Plane offered in the list. `isPrivate` missing = not a plane (classroom session).
 interface PlaneOption {
     id: string;
     name: string;
@@ -59,8 +58,8 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
     const PRIMARY_COLOR = "#774BBE";
 
-    // Portefeuille (AER-66) : soldes des membres, affichés dans la liste pour
-    // que la gestion sache avant de choisir. Chargés à l'ouverture.
+    // Wallet (AER-66): member balances, shown in the list so management knows before
+    // choosing. Loaded on open.
     const { currentClub } = useCurrentClub();
     const walletEnabled = !!currentClub?.walletEnabled;
     const [balances, setBalances] = useState<Record<string, number> | null>(null);
@@ -80,8 +79,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         && isBookingGatedRole(selectedMember.role) && !canBookWithBalance(selectedBalance)
         ? `Le solde de ${selectedMember.firstName} ${selectedMember.lastName.toUpperCase()} est de ${formatCents(selectedBalance)}. L'inscription reste possible, et le vol sera débité à la signature. Pensez à régulariser avec l'élève.`
         : "";
-
-    // --- LOGIQUE METIER (Inchangée) ---
 
     const filterStudentsByPlane = (planeId: string) => {
         const { students } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
@@ -104,8 +101,8 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         }));
     };
 
-    // La séance en salle n'est pas une machine : isPrivate reste indéfini, la
-    // pastille club/privé n'est alors pas affichée.
+    // A classroom session is not a plane: isPrivate stays undefined, so the
+    // club/private badge is not shown.
     const withClassroom = (list: PlaneOption[]): PlaneOption[] =>
         session.planeID.includes("classroomSession")
             ? [...list, { id: "classroomSession", name: "Session théorique" }]
@@ -115,18 +112,17 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         list.map(plane => ({ id: plane.id, name: plane.name, isPrivate: isPrivatePlane(plane) }));
 
     /**
-     * Machines proposables à l'élève sélectionné.
+     * Planes that can be offered to the selected student.
      *
-     * Résolu CÔTÉ SERVEUR : la page calendrier ne transmet au navigateur que les
-     * machines visibles par l'utilisateur courant, donc jamais la machine privée
-     * de l'élève qu'un gestionnaire veut inscrire. Le filtrage local ne pouvait
-     * pas la faire réapparaître.
+     * Resolved SERVER-SIDE: the calendar page only sends the browser the planes
+     * visible to the current user, so never the private plane of the student a
+     * manager wants to book. Local filtering could not bring it back.
      */
     const loadPlanesForStudent = async (studentId: string) => {
         if (!studentId) return [];
 
-        // Invité externe : pas de compte, donc aucune machine personnelle. Le
-        // filtrage local sur les machines du club suffit.
+        // External guest: no account, hence no personal plane. Local filtering on the
+        // club planes is enough.
         if (studentId === "invited") {
             const { planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
             return withClassroom(toOptions(planes));
@@ -134,8 +130,8 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
         const res = await getPlanesForStudentOnSession(session.id, studentId);
         if ("error" in res || !res.planes) {
-            // Repli sur les machines déjà connues du navigateur : on n'empêche
-            // pas l'inscription si l'appel échoue.
+            // Fall back to the planes the browser already knows: do not block the booking if
+            // the call fails.
             const { planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
             return withClassroom(toOptions(planes));
         }
@@ -144,10 +140,10 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
     useEffect(() => {
         let cancelled = false;
-        // Filtrer les élèves par machine n'a de sens QUE si aucun élève n'est
-        // encore choisi : sinon la machine sélectionnée peut être la machine
-        // privée de l'élève, absente de planesProp (elle vient du serveur), et
-        // le calcul viderait à tort la liste des élèves.
+        // Filtering students by plane only makes sense if no student is chosen yet:
+        // otherwise the selected plane may be the student's private plane, missing from
+        // planesProp (it comes from the server), and the computation would wrongly empty
+        // the student list.
         if (planeId && planeId !== " " && !studentId) {
             setFreeStudents(filterStudentsByPlane(planeId));
         } else if (studentId && studentId !== " ") {
@@ -301,7 +297,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         }
     };
 
-    // --- 2. UI REFONTE ---
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
@@ -315,7 +310,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden border-slate-200">
-                {/* Header Style Pro */}
                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-start gap-4">
                     <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 hidden sm:block">
                         <UserPlus className="w-6 h-6 text-[#774BBE]" />
@@ -331,7 +325,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* Choix Élève */}
                     <div className="space-y-3">
                         <Label className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                             <UserIcon className="w-3 h-3" /> Qui participe ?
@@ -382,7 +375,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         )}
                     </div>
 
-                    {/* Formulaire Invité (Conditionnel) */}
+                    {/* Guest form (conditional) */}
                     {studentId === "invited" && (
                         <div className="border-l-2 border-[#774BBE] pl-4 py-1 bg-purple-50/30 rounded-r-lg animate-in slide-in-from-top-2 fade-in duration-300">
                             <InvitedForm
@@ -392,7 +385,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         </div>
                     )}
 
-                    {/* Choix Avion */}
                     <div className="space-y-3">
                         <Label className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                             <Plane className="w-3 h-3" /> Sur quel appareil ?

@@ -7,10 +7,10 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-} from './ui/dialog'; // Changement ici : On utilise Dialog pour permettre le clic extérieur
+} from './ui/dialog';
 import { Button } from './ui/button';
 import { Spinner } from './ui/SpinnerVariants';
-import { AlertTriangle, X } from 'lucide-react'; // Ajout de l'icône X
+import { AlertTriangle, X } from 'lucide-react';
 
 interface Props {
     children: React.ReactNode;
@@ -26,8 +26,8 @@ interface Props {
 const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, confirmAction, loading, style }: Props) => {
     const [isOpen, setIsOpen] = useState(false);
 
-    // Ferme la modale automatiquement quand le chargement se termine (ajusté
-    // pendant le rendu plutôt que dans un effet).
+    // Closes the dialog automatically when loading ends (adjusted during render
+    // rather than in an effect).
     const [prevLoading, setPrevLoading] = useState(loading);
     if (prevLoading !== loading) {
         setPrevLoading(loading);
@@ -41,7 +41,7 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => {
-            // Empêche la fermeture si c'est en cours de chargement
+            // Prevent closing while loading
             if (loading) return;
             setIsOpen(open);
         }}>
@@ -51,7 +51,7 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
 
             <DialogContent
                 className="max-w-[450px] gap-0 p-0 overflow-hidden bg-white rounded-2xl shadow-xl border-none"
-                // Empêche la fermeture au clic extérieur SI c'est en chargement
+                // Prevent closing on outside click WHILE loading
                 onInteractOutside={(e: Event) => {
                     if (loading) {
                         e.preventDefault();
@@ -59,8 +59,6 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
                 }}
             >
 
-                {/* --- Bouton X (Fermer) --- */}
-                {/* Position absolue en haut à droite */}
                 <button
                     onClick={() => !loading && setIsOpen(false)}
                     disabled={loading}
@@ -70,13 +68,12 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
                     <span className="sr-only">Fermer</span>
                 </button>
 
-                {/* --- Corps de l'alerte --- */}
                 <div className="p-6 flex flex-col sm:flex-row sm:items-start gap-4">
                     <div className="mx-auto sm:mx-0 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:h-10 sm:w-10">
                         <AlertTriangle className="h-6 w-6 text-red-600" aria-hidden="true" />
                     </div>
 
-                    <div className="text-center sm:text-left space-y-2 pr-4"> {/* pr-4 pour éviter que le texte touche la croix */}
+                    <div className="text-center sm:text-left space-y-2 pr-4">
                         <DialogHeader className="p-0 space-y-2 text-left">
                             <DialogTitle className="text-lg font-bold text-slate-900">
                                 {title}
@@ -88,7 +85,6 @@ const AlertConfirmDeleted = ({ children, title, description, cancel, confirm, co
                     </div>
                 </div>
 
-                {/* --- Footer (Actions) --- */}
                 <DialogFooter className="bg-slate-50 p-4 sm:px-6 sm:flex-row-reverse gap-3">
                     <Button
                         variant="destructive"

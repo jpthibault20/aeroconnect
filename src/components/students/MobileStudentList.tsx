@@ -17,7 +17,7 @@ interface Props {
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
 }
 
-// Configuration des couleurs des rôles (Identique au tableau pour la cohérence)
+// Role colors (same as the table for consistency)
 const roleConfig: Record<string, { label: string; color: string; border: string }> = {
     OWNER: { label: 'Président', color: 'bg-purple-100 text-[#774BBE]', border: 'border-purple-200' },
     ADMIN: { label: 'Admin', color: 'bg-slate-100 text-slate-700', border: 'border-slate-200' },
@@ -32,10 +32,9 @@ const MobileStudentList = ({ users, setUsers }: Props) => {
     const { currentUser } = useCurrentUser();
     const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
 
-    // Filtrage visuel (comme dans le tableau desktop)
+    // Visual filtering (as in the desktop table)
     const displayableUsers = users.filter(u => u.id !== currentUser?.id && u.role !== "ADMIN");
 
-    // Gestion de la suppression
     const handleDelete = async (user: User) => {
         setLoadingMap(prev => ({ ...prev, [user.id]: true }));
         try {
@@ -71,15 +70,10 @@ const MobileStudentList = ({ users, setUsers }: Props) => {
                 const roleInfo = roleConfig[user.role] || roleConfig.USER;
                 const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase();
 
-                // État local pour le popup d'édition de CHAQUE carte
-                // Note : Dans une map, il vaut mieux gérer l'état du popup dans un sous-composant, 
-                // mais ici on va utiliser le UpdateUserComponent qui gère son trigger.
-
                 return (
                     <Card key={user.id} className="border-slate-200 shadow-sm overflow-hidden">
                         <CardContent className="p-4 space-y-4">
 
-                            {/* Header: Avatar + Nom + Role */}
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-center gap-3">
                                     <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#774BBE] to-[#6035a0] flex items-center justify-center text-white text-sm font-bold shadow-sm border-2 border-white ring-1 ring-slate-100 shrink-0">
@@ -94,13 +88,11 @@ const MobileStudentList = ({ users, setUsers }: Props) => {
                                         </div>
                                     </div>
                                 </div>
-                                {/* Switch Restreint */}
                                 <div className="shrink-0">
                                     <Restricted user={user} />
                                 </div>
                             </div>
 
-                            {/* Infos Contact */}
                             <div className="bg-slate-50 rounded-lg p-3 space-y-2 text-sm">
                                 <div className="flex items-center gap-2 text-slate-600">
                                     <Mail className="w-4 h-4 text-slate-400" />
@@ -112,10 +104,9 @@ const MobileStudentList = ({ users, setUsers }: Props) => {
                                 </div>
                             </div>
 
-                            {/* Actions Footer */}
                             {canManage && (
                                 <div className="grid grid-cols-2 gap-3 pt-1">
-                                    {/* Edit - On utilise un composant wrapper pour gérer l'état du popup individuellement */}
+                                    {/* Wrapper component so each popup's state is handled individually */}
                                     <EditActionWrapper user={user} setUsers={setUsers} />
 
                                     <AlertConfirmDeleted
@@ -144,7 +135,7 @@ const MobileStudentList = ({ users, setUsers }: Props) => {
     );
 };
 
-// Petit composant wrapper pour gérer l'état 'showPopup' de chaque ligne indépendamment
+// Small wrapper handling each row's 'showPopup' state independently
 const EditActionWrapper = ({ user, setUsers }: { user: User, setUsers: React.Dispatch<React.SetStateAction<User[]>> }) => {
     const [showPopup, setShowPopup] = useState(false);
     return (

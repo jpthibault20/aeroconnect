@@ -8,8 +8,8 @@ interface PageProps {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-// Portefeuille élève (AER-66). Aucune donnée chargée ici : tout passe par les
-// server actions de src/api/db/wallet.ts, qui appliquent rôle + clubID.
+// Student wallet (AER-66). No data loaded here: everything goes through the
+// server actions in src/api/db/wallet.ts, which enforce role + clubID.
 const Page = async ({ searchParams }: PageProps) => {
     const { clubID, userID, action } = await searchParams;
     const club = Array.isArray(clubID) ? clubID[0] : clubID;

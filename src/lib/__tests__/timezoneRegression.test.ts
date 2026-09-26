@@ -4,30 +4,29 @@ import { clubPeriodStart, toClubWallClock } from "@/lib/clubTime";
 import { checkStudentRegistration, checkStudentRemoval, RegistrationContext } from "@/lib/sessionRules";
 
 /**
- * Non-régression heure locale / UTC (AER-66, AER-67).
+ * Local time / UTC non-regression (AER-66, AER-67).
  *
- * Rappel : les créneaux sont stockés en « wall-clock UTC » (15:00 à Paris est
- * écrit T15:00Z). Avant AER-67, l'heure courante était ramenée dans ce
- * référentiel avec le décalage envoyé par le navigateur
- * (`now - getTimezoneOffset()`) ; elle l'est désormais côté serveur avec
- * toClubWallClock. Ces tests garantissent que les deux donnent le même
- * résultat, été comme hiver, et que rien ne se décale d'une ou deux heures.
- * Ils passent quel que soit le fuseau de la machine qui les exécute.
+ * Reminder: slots are stored as "UTC wall-clock" (15:00 in Paris is written
+ * T15:00Z). Before AER-67 the current time was brought into that reference with
+ * the offset sent by the browser (`now - getTimezoneOffset()`); it is now done
+ * server-side with toClubWallClock. These tests ensure both give the same result,
+ * summer and winter, and that nothing shifts by one or two hours. They pass
+ * whatever the time zone of the machine running them.
  */
 
-// Ancien calcul, fait avec l'offset du navigateur (-120 l'été, -60 l'hiver à Paris).
+// Old computation, done with the browser offset (-120 in summer, -60 in winter in Paris).
 const legacyWallClock = (instant: Date, browserOffsetMinutes: number) =>
     new Date(instant.getTime() - browserOffsetMinutes * 60_000);
 
 describe("heure courante du club : équivalence avec l'ancien calcul navigateur", () => {
     it("été (UTC+2)", () => {
-        const instant = new Date("2026-08-12T12:00:00Z"); // 14:00 à Paris
+        const instant = new Date("2026-08-12T12:00:00Z"); // 14:00 in Paris
         expect(toClubWallClock(instant).toISOString()).toBe(legacyWallClock(instant, -120).toISOString());
         expect(toClubWallClock(instant).toISOString()).toBe("2026-08-12T14:00:00.000Z");
     });
 
     it("hiver (UTC+1)", () => {
-        const instant = new Date("2026-01-15T12:00:00Z"); // 13:00 à Paris
+        const instant = new Date("2026-01-15T12:00:00Z"); // 13:00 in Paris
         expect(toClubWallClock(instant).toISOString()).toBe(legacyWallClock(instant, -60).toISOString());
     });
 
@@ -38,7 +37,7 @@ describe("heure courante du club : équivalence avec l'ancien calcul navigateur"
 });
 
 describe("inscription : délai calculé en heure du club", () => {
-    // Il est 14:00 à Paris (12:00 UTC réel).
+    // It is 14:00 in Paris (12:00 real UTC).
     const now = toClubWallClock(new Date("2026-08-12T12:00:00Z"));
     const ctx = (sessionWallClock: string, delayMinutes: number): RegistrationContext => ({
         user: { id: "s1", role: userRole.STUDENT, restricted: false, clubID: "club-1", classes: [3] },
@@ -61,13 +60,13 @@ describe("inscription : délai calculé en heure du club", () => {
     });
 
     it("créneau de 13:30 (déjà commencé à Paris) : refusé, pas de fenêtre de 2 h", () => {
-        // Comparé naïvement à new Date() (12:00Z), il passerait pour futur.
+        // Naively compared to new Date() (12:00Z), it would look upcoming.
         expect(checkStudentRegistration(ctx("2026-08-12T13:30:00Z", 0)).ok).toBe(false);
     });
 });
 
 describe("désinscription : délai calculé en heure du club", () => {
-    const now = toClubWallClock(new Date("2026-01-15T12:00:00Z")); // 13:00 à Paris
+    const now = toClubWallClock(new Date("2026-01-15T12:00:00Z")); // 13:00 in Paris
     const removal = (sessionWallClock: string, delay: number) => checkStudentRemoval({
         user: { id: "s1", role: userRole.STUDENT, clubID: "club-1" },
         club: { userCanUnsubscribe: true, timeDelayUnsubscribeminutes: delay },
@@ -94,7 +93,7 @@ describe("clubPeriodStart : début de mois / d'année en heure de Paris", () => 
     });
 
     it("1er septembre à 00:30 heure de Paris : on est bien en septembre", () => {
-        // 22:30 UTC le 31/08 : un calcul en UTC (serveur Vercel) le mettrait en août.
+        // 22:30 UTC on 31/08: a UTC computation (Vercel server) would put it in August.
         expect(clubPeriodStart(new Date("2026-08-31T22:30:00Z"), "month").toISOString()).toBe("2026-08-31T22:00:00.000Z");
     });
 
