@@ -4,8 +4,8 @@ import { randomUUID } from "crypto";
 import { MaintenanceTask } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
-import { canAccessMaintenance } from "@/lib/planeVisibility";
-import { isPlaneOverdue } from "@/lib/maintenance";
+import { canAccessMaintenance, canViewPlane } from "@/lib/planeVisibility";
+import { getOverdueTasks, isPlaneOverdue } from "@/lib/maintenance";
 import {
     InterventionInput,
     interventionInputSchema,
@@ -306,5 +306,55 @@ export const getMaintenanceAlerts = async (clubID: string) => {
         return { count: overduePlaneIDs.length, overduePlaneIDs };
     } catch {
         return { count: 0, overduePlaneIDs: [] as string[] };
+    }
+};
+
+// ─── Avertissement à la création d'une disponibilité (AER-43) ───
+
+export interface OverduePlaneWarning {
+    planeID: string;
+    // Intitulés des rappels en retard (ex. « Visite 100 h »).
+    overdueTasks: string[];
+}
+
+/**
+ * Machines du club ayant au moins un rappel de maintenance en retard, parmi
+ * celles que l'utilisateur peut VOIR (et donc proposer sur un créneau) — pas
+ * seulement celles dont il gère la maintenance : un pilote qui ouvre un créneau
+ * doit aussi être averti. On ne renvoie que l'intitulé des rappels, pas le
+ * détail de la maintenance. Avertissement non bloquant.
+ */
+export const getOverduePlanesForBooking = async (clubID: string) => {
+    const auth = await requireAuth();
+    if ("error" in auth) return { overduePlanes: [] as OverduePlaneWarning[] };
+    if (auth.user.clubID !== clubID) return { overduePlanes: [] as OverduePlaneWarning[] };
+
+    try {
+        const planes = await prisma.planes.findMany({ where: { clubID } });
+        const visible = planes.filter((p) => canViewPlane(p, auth.user));
+        if (visible.length === 0) return { overduePlanes: [] as OverduePlaneWarning[] };
+
+        const tasks = await prisma.maintenanceTask.findMany({
+            where: { planeId: { in: visible.map((p) => p.id) } },
+            orderBy: { createdAt: "asc" },
+        });
+        const tasksByPlane = new Map<string, MaintenanceTask[]>();
+        for (const t of tasks) {
+            const arr = tasksByPlane.get(t.planeId);
+            if (arr) arr.push(t);
+            else tasksByPlane.set(t.planeId, [t]);
+        }
+
+        const now = new Date();
+        const overduePlanes: OverduePlaneWarning[] = [];
+        for (const p of visible) {
+            const overdue = getOverdueTasks(tasksByPlane.get(p.id) ?? [], p.hobbsTotal ?? null, now);
+            if (overdue.length > 0) {
+                overduePlanes.push({ planeID: p.id, overdueTasks: overdue.map((t) => t.title) });
+            }
+        }
+        return { overduePlanes };
+    } catch {
+        return { overduePlanes: [] as OverduePlaneWarning[] };
     }
 };

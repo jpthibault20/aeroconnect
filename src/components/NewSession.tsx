@@ -31,6 +31,7 @@ import {
 import { Textarea } from './ui/textarea'
 import { cn } from '@/lib/utils'
 import { ALL_CLUB_PLANES_SENTINEL } from '@/lib/planeVisibility'
+import { getOverduePlanesForBooking, OverduePlaneWarning } from '@/api/db/maintenance'
 
 interface Props {
     display: "desktop" | "phone"
@@ -69,6 +70,7 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
     const [stateLoading, setStateLoading] = useState(0)
     const [totalSessions, setTotalSessions] = useState(0)
     const [instructors, setInstructors] = useState<User[]>([])
+    const [overduePlanes, setOverduePlanes] = useState<OverduePlaneWarning[]>([])
 
     const [sessionData, setSessionData] = useState<interfaceSessions>({
         instructorId: currentUser?.id as string,
@@ -133,6 +135,17 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
         setSessionData(prev => ({ ...prev, endHour: String(endTime.getHours()), endMinute: endTime.getMinutes() === 0 ? "00" : String(endTime.getMinutes()) }))
     }, [sessionData.duration, sessionData.startHour, sessionData.startMinute])
 
+    // Machines avec une maintenance en retard (AER-43) : rechargées à chaque
+    // ouverture pour refléter une intervention saisie entre-temps.
+    useEffect(() => {
+        if (!isOpenPopover || !currentUser?.clubID) return
+        let cancelled = false
+        getOverduePlanesForBooking(currentUser.clubID).then(res => {
+            if (!cancelled) setOverduePlanes(res.overduePlanes)
+        })
+        return () => { cancelled = true }
+    }, [isOpenPopover, currentUser?.clubID])
+
 
     // --- Helpers ---
     if (!(currentUser?.role.includes(userRole.ADMIN) || currentUser?.role.includes(userRole.OWNER) || currentUser?.role.includes(userRole.PILOT) || currentUser?.role.includes(userRole.INSTRUCTOR) || currentUser?.role.includes(userRole.MANAGER))) {
@@ -140,6 +153,11 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
     }
 
     const allPlanesSelected = planesProp?.length === sessionData.planeId.length
+
+    const overdueByPlane = new Map(overduePlanes.map(o => [o.planeID, o.overdueTasks]))
+    const selectedOverduePlanes = classroomSession
+        ? []
+        : planesProp.filter(p => sessionData.planeId.includes(p.id) && overdueByPlane.has(p.id))
 
     const toggleSelectAllPlanes = () => {
         setSessionData(prev => ({
@@ -525,10 +543,44 @@ const NewSession: React.FC<Props> = ({ display, setSessions, planesProp, usersPr
                                                         <CheckCircle2 className="w-4 h-4" />
                                                     </div>
                                                 )}
+
+                                                {overdueByPlane.has(plane.id) && (
+                                                    <div
+                                                        className="absolute top-2 left-2 text-amber-500"
+                                                        title="Maintenance en retard"
+                                                    >
+                                                        <IoIosWarning className="w-4 h-4" />
+                                                    </div>
+                                                )}
                                             </button>
                                         )
                                     })}
                                 </div>
+
+                                {selectedOverduePlanes.length > 0 && (
+                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-3 text-amber-800">
+                                        <IoIosWarning className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                        <div className="text-sm space-y-1">
+                                            <p className="font-medium">
+                                                {selectedOverduePlanes.length > 1
+                                                    ? "Ces machines ont une maintenance en retard :"
+                                                    : "Cette machine a une maintenance en retard :"}
+                                            </p>
+                                            <ul className="list-disc pl-4 text-xs">
+                                                {selectedOverduePlanes.map(p => (
+                                                    <li key={p.id}>
+                                                        <span className="font-semibold">{p.name}</span>
+                                                        {" — "}
+                                                        {overdueByPlane.get(p.id)?.join(", ")}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            <p className="text-xs text-amber-700">
+                                                La session peut être créée, mais vérifiez l&apos;état de la machine avant le vol.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 

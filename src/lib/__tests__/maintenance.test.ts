@@ -4,6 +4,7 @@ import { canAccessMaintenance } from "@/lib/planeVisibility";
 import {
     addMonths,
     getTaskDueStatus,
+    getOverdueTasks,
     isPlaneOverdue,
     sortTasksByUrgency,
     MaintenanceTaskLike,
@@ -160,5 +161,23 @@ describe("sortTasksByUrgency", () => {
         // currentHobbs inconnu => pas de marge horaire calculable pour `sansMarge`.
         const sorted = sortTasksByUrgency([sansMarge, avecMarge], null, now);
         expect(sorted.map((t) => t.id)).toEqual(["avec", "sans"]);
+    });
+});
+
+describe("getOverdueTasks", () => {
+    const now = new Date("2026-07-13T12:00:00Z");
+
+    it("ne garde que les rappels en retard, dans l'ordre d'origine", () => {
+        const heures = { id: "heures", intervalHours: 50, intervalMonths: null, lastPerformedDate: "2026-01-01", lastPerformedHobbs: 200 };
+        const ok = { id: "ok", intervalHours: null, intervalMonths: 12, lastPerformedDate: "2026-07-01", lastPerformedHobbs: 0 };
+        const date = { id: "date", intervalHours: null, intervalMonths: 6, lastPerformedDate: "2025-12-01", lastPerformedHobbs: 0 };
+
+        const overdue = getOverdueTasks([heures, ok, date], 255, now);
+        expect(overdue.map((t) => t.id)).toEqual(["heures", "date"]);
+    });
+
+    it("vide si aucune échéance n'est atteinte", () => {
+        const ok = { id: "ok", intervalHours: 100, intervalMonths: null, lastPerformedDate: "2026-01-01", lastPerformedHobbs: 200 };
+        expect(getOverdueTasks([ok], 250, now)).toEqual([]);
     });
 });

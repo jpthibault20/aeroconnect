@@ -100,6 +100,18 @@ export function isPlaneOverdue(
 }
 
 /**
+ * Rappels en retard d'une machine (sous-ensemble de `tasks`, ordre conservé).
+ * Sert à l'avertissement affiché à la création d'une disponibilité (AER-43).
+ */
+export function getOverdueTasks<T extends MaintenanceTaskLike>(
+    tasks: T[],
+    currentHobbs: number | null,
+    now: Date
+): T[] {
+    return tasks.filter((t) => getTaskDueStatus(t, currentHobbs, now).overdue);
+}
+
+/**
  * Tri d'affichage des rappels : les plus urgents d'abord. On classe sur la
  * « marge » restante, exprimée en jours pour la borne calendaire et en heures
  * pour la borne moteur ; un rappel borné par les deux prend la plus petite des
