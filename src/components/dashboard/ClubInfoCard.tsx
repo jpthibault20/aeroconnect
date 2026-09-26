@@ -13,7 +13,7 @@ import { Building2, Mail, MapPin, Phone, Clock, CalendarDays, Plane, Timer } fro
  * d'ouverture, règles d'inscription). Aucune donnée nominative de membre n'y
  * figure. La modification reste dans l'onglet « Paramètres » (président/admin).
  */
-const ClubInfoCard = () => {
+const ClubInfoCard = ({ title }: { title?: string }) => {
     const { currentClub } = useCurrentClub();
 
     if (!currentClub) return null;
@@ -69,7 +69,7 @@ const ClubInfoCard = () => {
             <CardHeader className="px-0 md:px-6">
                 <CardTitle className="text-xl font-bold flex items-center gap-2">
                     <Building2 className="w-5 h-5 text-[#774BBE]" />
-                    {currentClub.Name}
+                    {title ?? currentClub.Name}
                 </CardTitle>
                 <CardDescription>
                     Informations pratiques du club. Seuls le président et l&apos;administrateur

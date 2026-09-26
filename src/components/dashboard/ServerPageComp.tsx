@@ -1,20 +1,13 @@
 import { getAllUserRequestedClubID } from '@/api/db/club';
 import { getPendingBaptemeRequests, getPublicBookingToken } from '@/api/db/bapteme';
-import { getHoursByInstructor, getHoursByMonth, getHoursByPlane, getHoursByStudent } from '@/api/db/sessions';
 import { getUser } from '@/api/db/users';
 import prisma from '@/api/prisma';
 import PageComponent from '@/components/dashboard/PageComponent';
 import InitialLoading from '@/components/InitialLoading';
 import NoClubID from '@/components/NoClubID';
-import { getFromCache } from '@/lib/cache'; // Import du cache
 import { canEditClubSettings, canManageClub } from '@/lib/clubAccess';
 import { User } from '@prisma/client';
 import React from 'react';
-
-export interface dashboardProps {
-    name: string;
-    hours: number;
-}
 
 interface PageProps {
     ClubIDprop: string | string[] | undefined;
@@ -28,30 +21,22 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
         // La page « Club » est ouverte à tous les membres, mais les données
         // sensibles ne sont même pas chargées pour les autres rôles : on résout
         // d'abord l'utilisateur pour ne demander que ce qu'il a le droit de voir.
-        // (Important aussi pour le cache, mutualisé par clubID : charger les
-        // statistiques sous un rôle non autorisé y stockerait des tableaux vides.)
+        // Les statistiques (AER-68) sont chargées par les onglets eux-mêmes, selon
+        // la période choisie (cf. src/api/db/stats.ts).
         const userRes = await getUser();
         const currentUser = 'user' in userRes ? userRes.user : null;
         const isMember = currentUser?.clubID === clubID;
         const isManagement = isMember && canManageClub(currentUser?.role);
         const canEditSettings = isMember && canEditClubSettings(currentUser?.role);
 
-        // Récupérer les données via le cache ou la base de données
+        // Données de la page, filtrées selon le rôle
         const [
-            hoursByPlanes,
-            HoursByInstructor,
             UsersRequestedClubID,
-            HoursByMonth,
-            HoursByStudent,
             uers,
             pendingBaptemesRes,
             publicTokenRes,
         ] = await Promise.all([
-            isManagement ? getFromCache(`hoursByPlanes:${clubID}`, () => getHoursByPlane(clubID)) : [],
-            isManagement ? getFromCache(`HoursByInstructor:${clubID}`, () => getHoursByInstructor(clubID)) : [],
             isManagement ? getAllUserRequestedClubID(clubID) : ([] as User[]),
-            isManagement ? getFromCache(`HoursByMonth:${clubID}`, () => getHoursByMonth(clubID)) : [],
-            isManagement ? getFromCache(`HoursByStudent:${clubID}`, () => getHoursByStudent(clubID)) : [],
             canEditSettings ? prisma.user.findMany({ where: { clubID: clubID } }) : ([] as User[]),
             getPendingBaptemeRequests(clubID),
             getPublicBookingToken(clubID),
@@ -77,11 +62,7 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             <InitialLoading clubIDURL={clubID} className="h-full w-full">
                 <PageComponent
                     clubID={clubID}
-                    HoursByInstructor={HoursByInstructor}
                     UsersRequestedClubID={UsersRequestedClubID}
-                    HoursByMonth={HoursByMonth}
-                    HoursByStudent={HoursByStudent}
-                    hoursByPlanes={hoursByPlanes}
                     users={uers}
                     pendingBaptemes={pendingBaptemes}
                     publicBookingToken={publicBookingToken}
@@ -95,11 +76,7 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
                 <NoClubID />
                 <PageComponent
                     clubID={""}
-                    HoursByInstructor={[]}
                     UsersRequestedClubID={[]}
-                    HoursByMonth={[]}
-                    HoursByStudent={[]}
-                    hoursByPlanes={[]}
                     users={[]}
                     pendingBaptemes={[]}
                     publicBookingToken={null}

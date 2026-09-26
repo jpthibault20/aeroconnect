@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -36,6 +36,8 @@ export interface PendingBaptemeItem {
 
 interface Props {
     pendingBaptemes: PendingBaptemeItem[];
+    // Nombre de demandes restantes (badge de l'onglet « À traiter »).
+    onCountChange?: (count: number) => void;
 }
 
 // Même convention UTC que le reste des créneaux (cf. dateServeur) : le club doit
@@ -45,8 +47,12 @@ const formatSlot = (start: Date | string, end: Date | string) => {
     return `${dateStr} · ${formatSessionTime(start)} → ${formatSessionTime(end)}`;
 };
 
-const PendingBaptemeRequests = ({ pendingBaptemes }: Props) => {
+const PendingBaptemeRequests = ({ pendingBaptemes, onCountChange }: Props) => {
     const [requests, setRequests] = useState<PendingBaptemeItem[]>(pendingBaptemes);
+
+    useEffect(() => {
+        onCountChange?.(requests.length);
+    }, [requests.length, onCountChange]);
     const [loadingId, setLoadingId] = useState<string | null>(null);
 
     const handle = async (

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { userRole } from "@prisma/client";
-import { canEditClubSettings, canManageClub } from "../clubAccess";
+import { canEditClubSettings, canManageClub, clubTabsFor, overviewKindFor, resolveClubTab } from "../clubAccess";
 
 // ─── canManageClub ───
 
@@ -43,5 +43,52 @@ describe("canEditClubSettings", () => {
     it("refuse un rôle absent", () => {
         expect(canEditClubSettings(undefined)).toBe(false);
         expect(canEditClubSettings(null)).toBe(false);
+    });
+});
+
+// ─── Onglets de la page Club (AER-68) ───
+
+describe("clubTabsFor", () => {
+    const opts = { walletEnabled: true, hasPendingBaptemes: false };
+
+    it("président / admin : tous les onglets", () => {
+        expect(clubTabsFor(userRole.OWNER, opts)).toEqual(["overview", "todo", "stats", "wallet", "settings"]);
+        expect(clubTabsFor(userRole.ADMIN, opts)).toEqual(["overview", "todo", "stats", "wallet", "settings"]);
+    });
+
+    it("manager : pas de paramètres", () => {
+        expect(clubTabsFor(userRole.MANAGER, opts)).toEqual(["overview", "todo", "stats", "wallet"]);
+    });
+
+    it("portefeuille désactivé : pas d'onglet Portefeuilles", () => {
+        expect(clubTabsFor(userRole.OWNER, { ...opts, walletEnabled: false })).not.toContain("wallet");
+    });
+
+    it("membres : aperçu seul, sauf baptêmes assignés à traiter", () => {
+        for (const role of [userRole.STUDENT, userRole.PILOT, userRole.INSTRUCTOR, userRole.USER]) {
+            expect(clubTabsFor(role, opts)).toEqual(["overview"]);
+        }
+        expect(clubTabsFor(userRole.PILOT, { ...opts, hasPendingBaptemes: true })).toEqual(["overview", "todo"]);
+    });
+});
+
+describe("resolveClubTab", () => {
+    it("garde un onglet accessible, sinon retombe sur l'aperçu", () => {
+        expect(resolveClubTab("stats", ["overview", "stats"])).toBe("stats");
+        expect(resolveClubTab("settings", ["overview", "stats"])).toBe("overview");
+        expect(resolveClubTab(null, ["overview"])).toBe("overview");
+        expect(resolveClubTab("n'importe quoi", ["overview"])).toBe("overview");
+    });
+});
+
+describe("overviewKindFor", () => {
+    it("choisit l'aperçu selon le rôle", () => {
+        expect(overviewKindFor(userRole.OWNER)).toBe("management");
+        expect(overviewKindFor(userRole.MANAGER)).toBe("management");
+        expect(overviewKindFor(userRole.INSTRUCTOR)).toBe("instructor");
+        expect(overviewKindFor(userRole.STUDENT)).toBe("pilot");
+        expect(overviewKindFor(userRole.PILOT)).toBe("pilot");
+        expect(overviewKindFor(userRole.USER)).toBe("member");
+        expect(overviewKindFor(undefined)).toBe("member");
     });
 });

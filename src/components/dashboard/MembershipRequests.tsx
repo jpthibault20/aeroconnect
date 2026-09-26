@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -10,10 +10,16 @@ import { Mail, Phone, User as UserIcon, X, Check } from 'lucide-react'
 
 interface MembershipRequestsProps {
   UsersRequestedClubID: User[];
+  // Nombre de demandes restantes (badge de l'onglet « À traiter »).
+  onCountChange?: (count: number) => void;
 }
 
-const MembershipRequests = ({ UsersRequestedClubID }: MembershipRequestsProps) => {
+const MembershipRequests = ({ UsersRequestedClubID, onCountChange }: MembershipRequestsProps) => {
   const [membershipRequests, setMembershipRequests] = useState<User[]>(UsersRequestedClubID);
+
+  useEffect(() => {
+    onCountChange?.(membershipRequests.length);
+  }, [membershipRequests.length, onCountChange]);
 
   const onClickReject = (user: User) => {
     rejectMembershipRequest(user.id);

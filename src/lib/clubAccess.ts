@@ -42,3 +42,48 @@ export function canManageClub(role: userRole | undefined | null): boolean {
 export function canEditClubSettings(role: userRole | undefined | null): boolean {
     return role != null && CLUB_SETTINGS_ROLES.includes(role);
 }
+
+// ─── Onglets de la page « Club » (AER-68) ───
+
+export type ClubTab = "overview" | "todo" | "stats" | "wallet" | "settings";
+
+export const CLUB_TAB_LABELS: Record<ClubTab, string> = {
+    overview: "Aperçu",
+    todo: "À traiter",
+    stats: "Statistiques",
+    wallet: "Portefeuilles",
+    settings: "Paramètres",
+};
+
+/**
+ * Onglets visibles, dans l'ordre d'affichage. « À traiter » apparaît aussi
+ * pour un membre qui a des baptêmes assignés en attente (liste déjà filtrée
+ * côté serveur) ; « Portefeuilles » exige le portefeuille activé.
+ */
+export function clubTabsFor(
+    role: userRole | undefined | null,
+    opts: { walletEnabled: boolean; hasPendingBaptemes: boolean }
+): ClubTab[] {
+    const management = canManageClub(role);
+    const tabs: ClubTab[] = ["overview"];
+    if (management || opts.hasPendingBaptemes) tabs.push("todo");
+    if (management) tabs.push("stats");
+    if (management && opts.walletEnabled) tabs.push("wallet");
+    if (canEditClubSettings(role)) tabs.push("settings");
+    return tabs;
+}
+
+/** Onglet demandé dans l'URL, ou l'aperçu s'il n'est pas accessible. */
+export function resolveClubTab(requested: string | null | undefined, available: ClubTab[]): ClubTab {
+    return available.find((t) => t === requested) ?? "overview";
+}
+
+/** Aperçu à afficher selon le rôle. */
+export type OverviewKind = "management" | "instructor" | "pilot" | "member";
+
+export function overviewKindFor(role: userRole | undefined | null): OverviewKind {
+    if (canManageClub(role)) return "management";
+    if (role === userRole.INSTRUCTOR) return "instructor";
+    if (role === userRole.STUDENT || role === userRole.PILOT) return "pilot";
+    return "member";
+}

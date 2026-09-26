@@ -24,9 +24,13 @@ import { Copy, Download, RefreshCw, Share2, LinkIcon, QrCode } from "lucide-reac
 interface Props {
     clubID: string;
     initialToken: string | null;
+    // Intégré à une section qui porte déjà le titre (Paramètres) : pas d'en-tête de carte.
+    embedded?: boolean;
+    // Prévient la page quand le lien est (re)généré (ligne compacte de l'aperçu).
+    onTokenChange?: (token: string) => void;
 }
 
-const PublicBookingLink = ({ clubID, initialToken }: Props) => {
+const PublicBookingLink = ({ clubID, initialToken, embedded = false, onTokenChange }: Props) => {
     const { currentUser } = useCurrentUser();
     const { currentClub } = useCurrentClub();
     const clubName = currentClub?.Name ?? null;
@@ -65,6 +69,7 @@ const PublicBookingLink = ({ clubID, initialToken }: Props) => {
             return;
         }
         setToken(res.token);
+        onTokenChange?.(res.token);
         toast({ title: "Lien régénéré", description: res.success, className: "bg-green-600 text-white border-none" });
     };
 
@@ -122,9 +127,9 @@ const PublicBookingLink = ({ clubID, initialToken }: Props) => {
     };
 
     return (
-        <Card className="border-none shadow-none md:border md:shadow-sm bg-transparent md:bg-white">
-            <CardHeader className="px-0 md:px-6">
-                <CardTitle className="text-xl font-bold flex items-center gap-2">
+        <Card className={embedded ? "border-none shadow-none bg-transparent" : "border-none shadow-none md:border md:shadow-sm bg-transparent md:bg-white"}>
+            <CardHeader className={embedded ? "p-0 pb-4" : "px-0 md:px-6"}>
+                <CardTitle className={embedded ? "sr-only" : "text-xl font-bold flex items-center gap-2"}>
                     <LinkIcon className="w-5 h-5 text-[#774BBE]" />
                     Lien public de réservation
                 </CardTitle>
@@ -134,7 +139,7 @@ const PublicBookingLink = ({ clubID, initialToken }: Props) => {
                 </CardDescription>
             </CardHeader>
 
-            <CardContent className="p-0 md:p-6 space-y-5">
+            <CardContent className={embedded ? "p-0 space-y-5" : "p-0 md:p-6 space-y-5"}>
                 {!token ? (
                     <div className="text-center py-8 space-y-4">
                         <p className="text-sm text-slate-500">
