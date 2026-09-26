@@ -26,8 +26,9 @@ export const PLANE_IMAGE_BUCKET = "planes";
 // allow it.
 export const PLANE_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 
-// Accepted types. WebP is the resize target; JPEG and PNG are kept as fallbacks
-// for browsers that cannot encode WebP (old Safari silently falls back to PNG).
+// Accepted types. WebP is the resize target; JPEG is the fallback for browsers
+// that cannot encode WebP (iOS Safari). PNG stays accepted for when the resize
+// fails and the original file is sent as is.
 export const PLANE_IMAGE_MIME_TYPES = ["image/webp", "image/jpeg", "image/png"] as const;
 
 export type PlaneImageMimeType = (typeof PLANE_IMAGE_MIME_TYPES)[number];

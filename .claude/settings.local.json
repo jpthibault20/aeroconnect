@@ -54,6 +54,7 @@
       "PowerShell(npx next lint --file src/components/calendar/phone/GlobalCalendarPhone.tsx)",
       "PowerShell(npx eslint src/components/calendar/phone/GlobalCalendarPhone.tsx)",
       "PowerShell($out = npx tsc --noEmit -p tsconfig.json; $hits = $out | Select-String -Pattern \"maintenance\" -SimpleMatch; if \\($hits\\) { $hits } else { \"Aucune erreur dans les fichiers maintenance\" }; \"Total erreurs: \" + \\($out | Measure-Object -Line\\).Lines)"
-    ]
+    ],
+     "additionalDirectories": ["C:\\Users\\tjean\\PROJET\\aeroconnect_lp"]
   }
 }
