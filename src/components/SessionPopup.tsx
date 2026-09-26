@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
-import { Club, flight_sessions, planes, User } from "@prisma/client";
+import { flight_sessions, planes, User } from "@prisma/client";
 import { Dialog } from "./ui/dialog";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import SessionHeader from "./SessionHeader";
@@ -13,7 +13,6 @@ import { filterPilotePlane } from "@/api/popupCalendar";
 import { filterBookablePlanes, filterPlanesForBeneficiary, resolveOfferedPlaneIDs, sessionOffersPlane } from "@/lib/planeVisibility";
 import { studentRegistration } from "@/api/db/sessions";
 import { sendNotificationBooking, sendStudentNotificationBooking } from "@/lib/mail";
-import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { AlertTriangle, MessageSquareMore, Plane, User as AlertCircle } from "lucide-react";
 import { PiStudent } from "react-icons/pi";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
@@ -40,7 +39,6 @@ interface Prop {
 
 const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp, noSessions }: Prop) => {
     const { currentUser } = useCurrentUser();
-    const { currentClub } = useCurrentClub();
 
     const [isOpen, setIsOpen] = useState(false);
     const [error, setError] = useState("");
@@ -184,7 +182,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
         try {
             setLoading(true);
-            const res = await studentRegistration(session, currentUser as User, plane, currentClub as Club, new Date().getTimezoneOffset() as number, studentComment as string);
+            const res = await studentRegistration(session.id, plane, studentComment as string);
             if (res.error) {
                 toast({
                     title: "Erreur",

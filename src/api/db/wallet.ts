@@ -19,6 +19,7 @@ import {
     WALLET_HIDDEN_ROLES,
 } from "@/lib/wallet";
 import { walletOperationSchema, WalletOperationInput } from "@/schemas/wallet";
+import { clubPeriodStart } from "@/lib/clubTime";
 
 /**
  * Server actions du portefeuille élève (AER-66).
@@ -89,8 +90,9 @@ async function getBalance(clubID: string, userID: string): Promise<number> {
     return wallet?.balanceCents ?? 0;
 }
 
+// Début du mois en heure du club (et non du serveur, en UTC sur Vercel).
 function startOfMonth(now = new Date()): Date {
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+    return clubPeriodStart(now, "month");
 }
 
 async function withAuthorNames(list: WalletTransaction[]): Promise<WalletTransactionView[]> {
@@ -190,7 +192,7 @@ export const getMemberWallet = async (userID: string | null, page = 0) => {
         getClubLowThresholdCents(club.id),
         transactionsPage(club.id, target.id, page),
         periodSummary(club.id, target.id, startOfMonth(now)),
-        periodSummary(club.id, target.id, new Date(now.getFullYear(), 0, 1)),
+        periodSummary(club.id, target.id, clubPeriodStart(now, "year")),
     ]);
 
     const isSelf = target.id === user.id;

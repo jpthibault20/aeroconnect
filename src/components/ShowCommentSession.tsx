@@ -52,7 +52,7 @@ const ShowCommentSession = ({ children, session, setSessions, usersProp, descrip
         setError("");
 
         try {
-            const res = await updateCommentSession(session, pilotComment as string, studentComment as string);
+            const res = await updateCommentSession(session.id, pilotComment as string, studentComment as string);
 
             if (res.error) {
                 setError(res.error);

@@ -28,12 +28,15 @@ function matches(t: WalletTransactionView, filter: Filter): boolean {
 
 const shortDate = (d: Date) => new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 const dayMonth = (d: Date) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+// Date du vol : colonne sans heure (minuit UTC), lue en UTC comme partout dans
+// l'app (cf. dateServeur.ts), sinon elle recule d'un jour dans un fuseau négatif.
+const flightDay = (d: Date) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" });
 
 /** Détail lisible d'une opération (vol figé, moyen de paiement, commentaire). */
 function detail(t: WalletTransactionView): { main: string; sub: string | null } {
     if (t.flightLogID && t.planeName) {
         const flight = [
-            t.flightDate && t.type !== WalletTransactionType.DEBIT ? `Vol du ${dayMonth(t.flightDate)}` : null,
+            t.flightDate && t.type !== WalletTransactionType.DEBIT ? `Vol du ${flightDay(t.flightDate)}` : null,
             `${t.planeName}${t.planeRegistration ? ` ${t.planeRegistration}` : ""}`,
             t.durationMin != null ? formatDurationHM(t.durationMin) : null,
             t.rateCents != null ? `${formatHourlyRate(t.rateCents)}${t.rateSource === "INSTRUCTOR" ? " (tarif instructeur)" : ""}` : null,

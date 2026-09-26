@@ -53,3 +53,26 @@ export function toClubWallClock(instant: Date, timeZone: string = CLUB_TIME_ZONE
         )
     );
 }
+
+/**
+ * Instant RÉEL (à comparer à un `createdAt` timestamptz) où commence le mois ou
+ * l'année en cours, en heure du club.
+ *
+ * `new Date(année, mois, 1)` utiliserait le fuseau du SERVEUR (UTC sur
+ * Vercel) : le mois commencerait à 01:00 ou 02:00 heure de Paris, et une
+ * opération passée le 1er entre minuit et 2 h tomberait dans le mois précédent.
+ * Le décalage est recalculé à la date visée : le 1er mars et la fin mars n'ont
+ * pas le même (heure d'été), idem pour octobre.
+ */
+export function clubPeriodStart(
+    instant: Date,
+    period: "month" | "year",
+    timeZone: string = CLUB_TIME_ZONE
+): Date {
+    const wall = toClubWallClock(instant, timeZone);
+    const startWall = Date.UTC(wall.getUTCFullYear(), period === "month" ? wall.getUTCMonth() : 0, 1);
+    // Offset (ms) du fuseau à un instant donné : heure de pendule - instant réel.
+    const offsetAt = (t: number) => toClubWallClock(new Date(t), timeZone).getTime() - t;
+    const guess = startWall - offsetAt(instant.getTime());
+    return new Date(startWall - offsetAt(guess));
+}

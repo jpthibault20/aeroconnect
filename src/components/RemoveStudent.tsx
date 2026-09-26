@@ -4,7 +4,6 @@ import { toast } from '@/hooks/use-toast';
 import { Club, flight_sessions, User } from '@prisma/client';
 import { UserMinus, AlertTriangle, Trash2 } from 'lucide-react';
 import { removeStudentFromSessionID } from '@/api/db/sessions';
-import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { useCurrentClub } from '@/app/context/useCurrentClub';
 import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
@@ -17,7 +16,6 @@ interface Props {
 }
 
 const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
-    const { currentUser } = useCurrentUser()
     const { currentClub } = useCurrentClub()
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -44,7 +42,7 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
             const student = usersProp.find(item => item.id === session.studentID)
             const pilote = usersProp.find(item => item.id === session.pilotID)
 
-            const res = await removeStudentFromSessionID(session, new Date().getTimezoneOffset() as number, currentClub as Club, currentUser as User);
+            const res = await removeStudentFromSessionID(session.id);
 
             if (res.success) {
                 toast({
