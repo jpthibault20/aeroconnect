@@ -18,6 +18,12 @@ import { cn } from '@/lib/utils'
 import { useCurrentUser } from '@/app/context/useCurrentUser'
 import { canEditPlaneHobbs, canReassignPlaneOwner } from '@/lib/planeVisibility'
 import PlaneImageInput from './PlaneImageInput'
+import PlaneRateField from './PlaneRateField'
+import BaptemeOptionsManager from './bapteme/BaptemeOptionsManager'
+import { canManageBaptemeOptions } from '@/lib/bapteme'
+import { useCurrentClub } from '@/app/context/useCurrentClub'
+import { canManagePlane, isPrivatePlane } from '@/lib/planeVisibility'
+import { centsToInput, parseEurosToCents } from '@/lib/wallet'
 
 // Sentinelle pour « propriétaire = le club » dans le Select (Radix n'accepte
 // pas de valeur vide).
@@ -50,11 +56,20 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
     // Propriétaire choisi dans le Select : conservé en local et enregistré
     // seulement au clic sur « Enregistrer », comme les autres champs.
     const [pendingOwnerID, setPendingOwnerID] = useState<string | null>(plane.ownerID);
+    // Tarif écolage (AER-66) : visible si le portefeuille du club est activé.
+    const { currentClub } = useCurrentClub();
+    const showRate = !!currentClub?.walletEnabled && !!currentUser && canManagePlane(plane, currentUser);
+    const canBapteme = !!currentUser && canManageBaptemeOptions(plane, currentUser);
+    const [rateInput, setRateInput] = useState<string>(centsToInput(plane.instructionHourlyRateCents));
 
     // Réinitialise le choix en cours à chaque ouverture de la fiche (sinon un
     // choix abandonné via « Annuler » resterait affiché à la réouverture).
     useEffect(() => {
-        if (showPopup) setPendingOwnerID(plane.ownerID);
+        if (showPopup) {
+            setPendingOwnerID(plane.ownerID);
+            setRateInput(centsToInput(plane.instructionHourlyRateCents));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showPopup, plane.ownerID]);
 
     // Liste des membres du club, chargée à l'ouverture de la fiche (uniquement
@@ -92,9 +107,20 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
     };
 
     const onClickUpdatePlane = async () => {
+        // Tarif écolage : vide => pas de tarif ; sinon montant valide en centimes.
+        let instructionHourlyRateCents = plane.instructionHourlyRateCents;
+        if (showRate && !isPrivatePlane(plane)) {
+            const parsed = rateInput.trim() === '' ? null : parseEurosToCents(rateInput);
+            if (rateInput.trim() !== '' && parsed == null) {
+                setError("Tarif écolage invalide (ex. : 120 ou 120,50).");
+                return;
+            }
+            instructionHourlyRateCents = parsed;
+        }
+
         setLoading(true);
         try {
-            const res = await updatePlane(plane);
+            const res = await updatePlane({ ...plane, instructionHourlyRateCents });
             if (res.error) {
                 setError(res.error);
                 return;
@@ -103,7 +129,7 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
             // Réattribution du propriétaire : action serveur distincte (droits
             // président/admin), jouée après la mise à jour de la fiche pour que
             // les usages soient recalculés à partir des valeurs enregistrées.
-            let updatedPlane = { ...plane };
+            let updatedPlane = { ...plane, instructionHourlyRateCents };
             if (canReassignOwner && pendingOwnerID !== plane.ownerID) {
                 const ownerRes = await updatePlaneOwner(plane.id, pendingOwnerID);
                 if (ownerRes.error) {
@@ -124,6 +150,10 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                 }
             }
 
+            // La ligne garde sa propre copie de la machine : sans ça, le nouveau
+            // tarif (ou tout autre champ saisi hors setPlane) n'apparaissait
+            // qu'après un rechargement de la page.
+            setPlane(updatedPlane);
             setError("");
             toast({
                 title: "Succès",
@@ -279,6 +309,26 @@ const UpdatePlanes = ({ children, showPopup, setShowPopup, plane, setPlane, setP
                                             d&apos;erreur de saisie avérée.
                                         </p>
                                     </div>
+                                </div>
+                            )}
+
+                            {showRate && !isPrivatePlane(plane) && <div className="h-px bg-slate-100" />}
+                            {showRate && (
+                                <PlaneRateField
+                                    value={rateInput}
+                                    onChange={setRateInput}
+                                    isPrivate={isPrivatePlane(plane)}
+                                    instructorRateCents={currentClub?.instructorHourlyRateCents}
+                                    disabled={loading}
+                                />
+                            )}
+
+                            {/* Formules baptême (machine du club) : enregistrées
+                                immédiatement, indépendamment du bouton Enregistrer. */}
+                            {canBapteme && (
+                                <div className="space-y-2">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Tarifs baptême</span>
+                                    <BaptemeOptionsManager plane={plane} active={showPopup} />
                                 </div>
                             )}
 

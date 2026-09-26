@@ -21,6 +21,9 @@ import {
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import type { NavigationCounts } from "@/hooks/useNavigationCounts";
+import { useCurrentClub } from "@/app/context/useCurrentClub";
+import { isBookingGatedRole } from "@/lib/wallet";
+import BalancePill from "./wallet/BalancePill";
 import { usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Club } from '@prisma/client'
@@ -33,7 +36,9 @@ interface NavBarProps {
 const NavBar = ({ clubsProp, counts }: NavBarProps) => {
     const { currentUser } = useCurrentUser()
     const [isOpen, setIsOpen] = useState(false)
-    const { requestCount, maintenanceCount, baptemeCount } = counts;
+    const { requestCount, maintenanceCount, baptemeCount, walletAlert, wallet } = counts;
+    const { currentClub } = useCurrentClub();
+    const showBalance = wallet.enabled && isBookingGatedRole(currentUser?.role) && wallet.balanceCents != null;
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const clubID = searchParams.get("clubID");
@@ -50,6 +55,7 @@ const NavBar = ({ clubsProp, counts }: NavBarProps) => {
 
     const filteredLinks = navigationLinks.filter(link =>
         link.roles.includes(currentUser?.role as userRole)
+        && (!link.requiresWallet || !!currentClub?.walletEnabled)
     )
 
     // --- Indicateur de défilement du menu ---
@@ -98,7 +104,7 @@ const NavBar = ({ clubsProp, counts }: NavBarProps) => {
                     >
                         {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
 
-                        {!isOpen && (requestCount > 0 || maintenanceCount > 0 || baptemeCount > 0) && (
+                        {!isOpen && (requestCount > 0 || maintenanceCount > 0 || baptemeCount > 0 || walletAlert) && (
                             <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
                         )}
 
@@ -138,9 +144,16 @@ const NavBar = ({ clubsProp, counts }: NavBarProps) => {
                                 <span className="font-bold text-lg text-slate-800 leading-tight truncate">
                                     {currentUser?.firstName} {currentUser?.lastName}
                                 </span>
-                                <span className="text-xs font-semibold text-[#774BBE] uppercase tracking-wider bg-purple-50 px-2 py-0.5 rounded-full w-fit mt-1">
-                                    {getRoleLabel(currentUser?.role)}
-                                </span>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                    <span className="text-xs font-semibold text-[#774BBE] uppercase tracking-wider bg-purple-50 px-2 py-0.5 rounded-full w-fit">
+                                        {getRoleLabel(currentUser?.role)}
+                                    </span>
+                                    {showBalance && wallet.state && (
+                                        <Link href={`/wallet?clubID=${currentUser?.clubID}`} onClick={() => setIsOpen(false)}>
+                                            <BalancePill balanceCents={wallet.balanceCents as number} state={wallet.state} />
+                                        </Link>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </SheetHeader>
@@ -192,7 +205,8 @@ const NavBar = ({ clubsProp, counts }: NavBarProps) => {
                                             : item.name === "Avions"
                                                 ? maintenanceCount
                                                 : 0;
-                                    const showBadge = badgeCount > 0;
+                                    const isWalletAlert = item.path === "/wallet" && walletAlert;
+                                    const showBadge = badgeCount > 0 || isWalletAlert;
 
                                     // 4. Déterminer si le lien est actif
                                     const isActive = pathname === item.path;
@@ -226,7 +240,7 @@ const NavBar = ({ clubsProp, counts }: NavBarProps) => {
 
                                             {showBadge && (
                                                 <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-500 px-2 text-xs font-bold text-white shadow-sm">
-                                                    {badgeCount}
+                                                    {isWalletAlert ? "!" : badgeCount}
                                                 </span>
                                             )}
                                         </Link>

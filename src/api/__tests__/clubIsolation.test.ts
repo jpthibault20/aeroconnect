@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { userRole } from "@prisma/client";
+import { canOperateMemberWallet, canViewMemberWallet } from "@/lib/wallet";
 
 /**
  * Tests d'isolation inter-clubs.
@@ -187,5 +188,40 @@ describe("Isolation inter-clubs", () => {
             expect(checkClubAccess("club-1", "club-1")).toBe(true);
             expect(checkClubAccess("club-1", "club-2")).toBe(false);
         });
+    });
+});
+
+describe("Isolation inter-clubs — portefeuille élève (AER-66)", () => {
+    const studentA = { id: "s-a", role: userRole.STUDENT, clubID: "club-1" };
+    const otherStudentA = { id: "s-a2", clubID: "club-1" };
+    const instructorA = { id: "i-a", role: userRole.INSTRUCTOR, clubID: "club-1" };
+    const managerA = { id: "m-a", role: userRole.MANAGER, clubID: "club-1" };
+    const ownerB = { id: "o-b", role: userRole.OWNER, clubID: "club-2" };
+    const adminB = { id: "a-b", role: userRole.ADMIN, clubID: "club-2" };
+
+    it("aucun rôle d'un autre club ne voit un portefeuille du club-1", () => {
+        for (const viewer of [ownerB, adminB]) {
+            expect(canViewMemberWallet(viewer, { id: "s-a", clubID: "club-1" })).toBe(false);
+        }
+    });
+
+    it("aucun rôle d'un autre club ne peut créditer / ajuster", () => {
+        expect(canOperateMemberWallet(ownerB, { clubID: "club-1" })).toBe(false);
+        expect(canOperateMemberWallet(adminB, { clubID: "club-1" })).toBe(false);
+    });
+
+    it("un élève ne lit jamais le portefeuille d'un autre élève, même du même club", () => {
+        expect(canViewMemberWallet(studentA, otherStudentA)).toBe(false);
+        expect(canViewMemberWallet(studentA, { id: "s-a", clubID: "club-1" })).toBe(true);
+    });
+
+    it("l'instructeur lit les portefeuilles de son club sans pouvoir opérer", () => {
+        expect(canViewMemberWallet(instructorA, otherStudentA)).toBe(true);
+        expect(canOperateMemberWallet(instructorA, { clubID: "club-1" })).toBe(false);
+    });
+
+    it("la gestion opère uniquement dans son club", () => {
+        expect(canOperateMemberWallet(managerA, { clubID: "club-1" })).toBe(true);
+        expect(canOperateMemberWallet(managerA, { clubID: "club-2" })).toBe(false);
     });
 });

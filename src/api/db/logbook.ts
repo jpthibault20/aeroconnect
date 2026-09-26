@@ -17,6 +17,14 @@ import {
     validateHobbsRange,
     validateNatureSubType,
 } from "@/lib/logbookCalc";
+import { canLogFlightOnPlane } from "@/lib/planeVisibility";
+import {
+    chargeSignedFlight,
+    notifyLowBalanceIfCrossed,
+    reconcileSignedFlight,
+    WalletChargeError,
+    WalletMovementResult,
+} from "../walletLedger";
 
 const LOGBOOK_ROLES: userRole[] = [
     userRole.PILOT, userRole.STUDENT, userRole.INSTRUCTOR,
@@ -234,10 +242,15 @@ export const createFlightLog = async (data: CreateFlightLogInput) => {
     if (data.planeID) {
         const plane = await prisma.planes.findUnique({
             where: { id: data.planeID },
-            select: { hobbsTotal: true, clubID: true },
+            select: { hobbsTotal: true, clubID: true, ownerID: true },
         });
         if (!plane) return { error: "Aéronef introuvable" };
         if (plane.clubID !== data.clubID) return { error: "Permissions insuffisantes" };
+        // Machine privée : celle du pilote ou de l'élève du vol uniquement
+        // (président / admin : toute machine du club).
+        if (!canLogFlightOnPlane(plane, { actor: auth.user, pilotID: data.pilotID, studentID: data.studentID })) {
+            return { error: "Cette machine privée n'appartient ni au pilote ni à l'élève de ce vol." };
+        }
         planeHobbsTotal = plane.hobbsTotal ?? null;
         hobbsStart = resolveCreateHobbsStart({
             planeHobbsTotal,
@@ -344,6 +357,7 @@ export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput)
     });
     if (!hobbs.ok) return { error: hobbs.error };
 
+    let walletMovement: WalletMovementResult | null = null;
     try {
         const updated = await prisma.$transaction(async (tx) => {
             const log = await tx.flight_logs.update({
@@ -381,10 +395,17 @@ export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput)
                     });
                 }
             }
+
+            // Vol déjà signé (donc déjà débité) corrigé par OWNER/ADMIN :
+            // régularisation automatique du portefeuille au tarif figé (AER-66).
+            if (existing.pilotSigned) {
+                walletMovement = await reconcileSignedFlight(tx, log);
+            }
             return log;
         });
 
         revalidatePath("/logbook");
+        await notifyLowBalanceIfCrossed(walletMovement);
         return { success: "Entrée mise à jour", log: updated };
     } catch {
         return { error: "Erreur lors de la mise à jour" };
@@ -396,6 +417,7 @@ export const updateFlightLog = async (logID: string, data: UpdateFlightLogInput)
 // Fait remonter un refus métier hors de la transaction Prisma (qui l'annule)
 // sans le confondre avec une erreur technique.
 class HobbsStartUnresolvedError extends Error {}
+class AlreadySignedError extends Error {}
 
 export const signFlightLog = async (logID: string) => {
     const auth = await requireAuth(LOGBOOK_WRITE_ROLES);
@@ -429,6 +451,7 @@ export const signFlightLog = async (logID: string) => {
         return { error: "Les heures moteur de fin sont obligatoires pour signer" };
     }
 
+    let walletMovement: WalletMovementResult | null = null;
     try {
         const signedAt = new Date();
         await prisma.$transaction(async (tx) => {
@@ -452,14 +475,21 @@ export const signFlightLog = async (logID: string) => {
                 hobbsStart = resolved.hobbsStart;
             }
 
-            await tx.flight_logs.update({
-                where: { id: logID },
+            // Verrou optimiste : seule la première signature concurrente passe,
+            // sinon deux clics simultanés débiteraient deux fois le portefeuille.
+            const locked = await tx.flight_logs.updateMany({
+                where: { id: logID, pilotSigned: false },
                 data: {
                     pilotSigned: true,
                     pilotSignedAt: signedAt,
                     ...(hobbsStart != null && { hobbsStart }),
                 },
             });
+            if (locked.count !== 1) throw new AlreadySignedError("Entrée déjà signée");
+
+            // Débit du portefeuille (AER-66) : tarif manquant => WalletChargeError,
+            // qui annule toute la signature.
+            walletMovement = await chargeSignedFlight(tx, { ...log, hobbsStart });
 
             // Filet de sécurité : le compteur ne recule jamais, même si cette
             // entrée n'avait pas encore été prise en compte (historique).
@@ -474,9 +504,12 @@ export const signFlightLog = async (logID: string) => {
             }
         });
         revalidatePath("/logbook");
+        await notifyLowBalanceIfCrossed(walletMovement);
         return { success: "Entrée signée" };
     } catch (e) {
         if (e instanceof HobbsStartUnresolvedError) return { error: e.message };
+        if (e instanceof AlreadySignedError) return { error: e.message };
+        if (e instanceof WalletChargeError) return { error: e.message };
         return { error: "Erreur lors de la signature" };
     }
 };

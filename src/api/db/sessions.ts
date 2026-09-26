@@ -7,9 +7,24 @@ import { convertMinutesToHours } from '../global function/dateServeur';
 import { requireAuth } from './users';
 import { resolveBaptemeHold } from './baptemeHold';
 import { canViewPlane } from '@/lib/planeVisibility';
+import { bookingWalletBlock, isBookingGatedRole } from '@/lib/wallet';
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
 const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+
+// Message de blocage si l'utilisateur (STUDENT / PILOT) a un solde ≤ 0 dans un
+// club dont le portefeuille est activé ; null sinon.
+async function checkWalletBooking(user: User): Promise<string | null> {
+    if (!user.clubID || !isBookingGatedRole(user.role)) return null;
+    const club = await prisma.club.findUnique({ where: { id: user.clubID } });
+    if (!club?.walletEnabled) return null;
+    const wallet = await prisma.wallet.findUnique({
+        where: { clubID_userID: { clubID: club.id, userID: user.id } },
+        select: { balanceCents: true },
+    });
+    // Décision pure et testée (cf. bookingWalletBlock dans src/lib/wallet.ts).
+    return bookingWalletBlock({ walletEnabled: club.walletEnabled, role: user.role, balanceCents: wallet?.balanceCents ?? 0, contact: club });
+}
 
 export interface interfaceSessions {
     instructorId: string;
@@ -474,6 +489,12 @@ export const studentRegistration = async (session: flight_sessions, student: Use
         if (freshSession?.studentID != null) {
             return { error: "Ce créneau est déjà réservé." };
         }
+
+        // Portefeuille (AER-66) : un élève / pilote à solde nul ou négatif ne
+        // peut plus s'inscrire. Club et solde relus en base pour l'utilisateur
+        // CONNECTÉ (jamais les objets envoyés par le client).
+        const walletBlock = await checkWalletBooking(auth.user);
+        if (walletBlock) return { error: walletBlock, code: "WALLET_EMPTY" as const };
 
         // Étape 2 : Mise à jour rapide de la session
         if (student) {

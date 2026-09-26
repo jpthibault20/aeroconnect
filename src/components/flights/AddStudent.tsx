@@ -15,6 +15,11 @@ import { AlertCircle, UserPlus, Plane, User as UserIcon, Check } from 'lucide-re
 import InvitedForm from './InvitedForm';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Label } from '../ui/label';
+import { useCurrentClub } from '@/app/context/useCurrentClub';
+import { getMemberBalances } from '@/api/db/wallet';
+import { balanceTextClass, canBookWithBalance, formatCents, isBookingGatedRole } from '@/lib/wallet';
+import { emitWalletChanged } from '@/lib/walletEvents';
+import { cn } from '@/lib/utils';
 
 // Machine proposée dans la liste. `isPrivate` absent = ce n'est pas une machine
 // (séance en salle).
@@ -51,6 +56,28 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     });
 
     const PRIMARY_COLOR = "#774BBE";
+
+    // Portefeuille (AER-66) : soldes des membres, affichés dans la liste pour
+    // que la gestion sache avant de choisir. Chargés à l'ouverture.
+    const { currentClub } = useCurrentClub();
+    const walletEnabled = !!currentClub?.walletEnabled;
+    const [balances, setBalances] = useState<Record<string, number> | null>(null);
+
+    useEffect(() => {
+        if (!isOpen || !walletEnabled) return;
+        let cancelled = false;
+        getMemberBalances().then((res) => {
+            if (!cancelled && 'balances' in res && res.balances) setBalances(res.balances);
+        }).catch(() => { });
+        return () => { cancelled = true; };
+    }, [isOpen, walletEnabled]);
+
+    const selectedMember = usersProp.find((u) => u.id === studentId);
+    const selectedBalance = selectedMember && balances ? balances[selectedMember.id] ?? 0 : null;
+    const walletWarning = walletEnabled && selectedMember && selectedBalance != null
+        && isBookingGatedRole(selectedMember.role) && !canBookWithBalance(selectedBalance)
+        ? `Le solde de ${selectedMember.firstName} ${selectedMember.lastName.toUpperCase()} est de ${formatCents(selectedBalance)}. L'inscription reste possible, et le vol sera débité à la signature. Pensez à régulariser avec l'élève.`
+        : "";
 
     // --- LOGIQUE METIER (Inchangée) ---
 
@@ -204,12 +231,13 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         });
                     }
 
-                    if (res.success) {
+                    if ('success' in res && res.success) {
                         toast({
                             title: "Succès",
-                            description: res.success,
+                            description: res.warning ? `${res.success} (solde négatif)` : res.success,
                             style: { background: '#0bab15', color: '#fff' }
                         });
+                        if (res.warning) emitWalletChanged();
 
                         const endDate = new Date(session.sessionDateStart);
                         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
@@ -313,11 +341,21 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                             </SelectTrigger>
                             <SelectContent className="max-h-60">
                                 <SelectItem value=" ">-- Choisir --</SelectItem>
-                                {freeStudents.map((item, index) => (
-                                    <SelectItem key={index} value={item.id}>
-                                        {item.name}
-                                    </SelectItem>
-                                ))}
+                                {freeStudents.map((item, index) => {
+                                    const balance = walletEnabled && balances ? balances[item.id] ?? 0 : null;
+                                    return (
+                                        <SelectItem key={index} value={item.id}>
+                                            <span className="flex items-center gap-3">
+                                                <span className="truncate">{item.name}</span>
+                                                {balance != null && (
+                                                    <span className={cn("text-xs font-mono tabular-nums", balanceTextClass(balance))}>
+                                                        {formatCents(balance)}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </SelectItem>
+                                    );
+                                })}
                                 {(currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER) && (
                                     <>
                                         <div className="mx-2 my-1 h-px bg-slate-100" />
@@ -332,6 +370,12 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         {warningStudent && (
                             <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2.5 rounded-md text-xs border border-amber-100">
                                 <AlertCircle size={14} className="shrink-0" /> {warningStudent}
+                            </div>
+                        )}
+
+                        {walletWarning && (
+                            <div className="flex items-start gap-2 text-amber-700 bg-amber-50 p-2.5 rounded-md text-xs border border-amber-200">
+                                <AlertCircle size={14} className="shrink-0 mt-0.5" /> {walletWarning}
                             </div>
                         )}
                     </div>

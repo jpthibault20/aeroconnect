@@ -15,6 +15,7 @@ import UpdateUserComponent from './UpdateUserComponent';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Pencil, Trash2, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import MemberWalletLink from '../wallet/MemberWalletLink';
 
 interface Props {
     user: User;
@@ -137,6 +138,9 @@ const TableRowComponent = ({ user, setUsers }: Props) => {
             {canManage && (
                 <TableCell className="text-right pr-4">
                     <div className="flex items-center justify-end gap-1 opacity-100  transition-opacity">
+
+                        {/* Portefeuille : raccourci vers le crédit du membre */}
+                        <MemberWalletLink member={user} />
 
                         {/* Edit Button */}
                         <UpdateUserComponent

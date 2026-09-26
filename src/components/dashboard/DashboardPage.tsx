@@ -5,6 +5,7 @@ import InstructorHoursChart from './InstructorHoursChart'
 import AircraftHoursChart from './AircraftHoursChart'
 import StudentHoursChart from './StudentHoursChart'
 import PendingBaptemeRequests, { PendingBaptemeItem } from './PendingBaptemeRequests'
+import WalletSummaryCard from './WalletSummaryCard'
 import PublicBookingLink from './PublicBookingLink'
 import ClubInfoCard from './ClubInfoCard'
 import { User } from '@prisma/client'
@@ -52,6 +53,14 @@ const DashboardPage = ({ clubID, HoursByInstructor, hoursByPlanes, HoursByStuden
             {(isManagement || pendingBaptemes.length > 0) && (
                 <div className="col-span-1 md:col-span-2 lg:col-span-3">
                     <PendingBaptemeRequests pendingBaptemes={pendingBaptemes} />
+                </div>
+            )}
+
+            {/* Portefeuilles (AER-66) : données financières, gestion uniquement ;
+                la carte se masque d'elle-même si le portefeuille est désactivé. */}
+            {isManagement && (
+                <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                    <WalletSummaryCard />
                 </div>
             )}
 

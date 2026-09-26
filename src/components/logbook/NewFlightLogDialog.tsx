@@ -5,7 +5,13 @@ import { flight_logs, planes, User, flightNature, instructionSubType, userRole }
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { createFlightLog, CreateFlightLogInput, getPlaneHobbs, signFlightLog } from "@/api/db/logbook";
-import { isInstructorRole, INSTRUCTION_SUBTYPE_LABELS, HobbsFormat } from "@/lib/logbookCalc";
+import { computeDurationMinutes, isInstructorRole, INSTRUCTION_SUBTYPE_LABELS, HobbsFormat } from "@/lib/logbookCalc";
+import { FlightChargePreview } from "@/components/logbook/FlightChargePreview";
+import { getMemberPrivatePlanes } from "@/api/db/planes";
+import { getMemberBalances } from "@/api/db/wallet";
+import { canLogFlightOnPlane, isPrivatePlane } from "@/lib/planeVisibility";
+import { balanceTextClass, canViewClubWallets, formatCents } from "@/lib/wallet";
+import { emitWalletChanged } from "@/lib/walletEvents";
 import { HobbsInput, HobbsFormatToggle } from "@/components/logbook/HobbsInput";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -183,6 +189,62 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
 
     const showInstructionCompanion = form.nature === "INSTRUCTION";
 
+    // Aperçu du débit portefeuille (AER-66) : mêmes champs que ceux envoyés à
+    // createFlightLog, pour que le payeur affiché soit celui qui sera débité.
+    const [chargeBlocked, setChargeBlocked] = useState(false);
+    const isExternalPassenger = userIsInstructor && form.subType === "BAPTEME" && form.studentMode === "external";
+    const chargeFlight = {
+        flightNature: form.nature,
+        instructionSubType: form.nature === "INSTRUCTION" && form.subType ? form.subType : null,
+        pilotID: actingUser?.id ?? "",
+        instructorID: form.nature === "INSTRUCTION" && !userIsInstructor && form.instructorID ? form.instructorID : null,
+        studentID: form.nature === "INSTRUCTION" && userIsInstructor && !isExternalPassenger && form.studentID ? form.studentID : null,
+        planeID: form.planeID || null,
+    };
+    const chargeMinutes = form.hobbsStart && form.hobbsEnd
+        ? computeDurationMinutes(parseFloat(form.hobbsStart), parseFloat(form.hobbsEnd))
+        : null;
+
+    // Machines proposées : celles du club + la machine privée du pilote ou de
+    // l'élève (président / admin : toutes), même règle que le serveur
+    // (canLogFlightOnPlane). La machine privée de l'élève n'est pas dans la
+    // liste de la page pour un instructeur : on la charge à la sélection.
+    const [memberPlanes, setMemberPlanes] = useState<{ studentID: string; planes: planes[] }>({ studentID: "", planes: [] });
+    const flightStudentID = chargeFlight.studentID;
+    useEffect(() => {
+        if (!flightStudentID || !currentUser || currentUser.role === userRole.PILOT) return;
+        let cancelled = false;
+        getMemberPrivatePlanes(flightStudentID).then((res) => {
+            if (!cancelled && "planes" in res && res.planes) setMemberPlanes({ studentID: flightStudentID, planes: res.planes });
+        }).catch(() => { });
+        return () => { cancelled = true; };
+    }, [flightStudentID, currentUser]);
+
+    const planeOptions = useMemo(() => {
+        if (!currentUser || !actingUser) return planesList;
+        const extra = memberPlanes.studentID === flightStudentID ? memberPlanes.planes : [];
+        const all = [...planesList, ...extra.filter((p) => !planesList.some((q) => q.id === p.id))];
+        return all.filter((p) => canLogFlightOnPlane(p, { actor: currentUser, pilotID: actingUser.id, studentID: flightStudentID }));
+    }, [planesList, memberPlanes, flightStudentID, currentUser, actingUser]);
+
+    // Machine devenue interdite (changement d'élève / de pilote) : on la retire.
+    const planeStillAllowed = !form.planeID || planeOptions.some((p) => p.id === form.planeID);
+    useEffect(() => {
+        if (!planeStillAllowed) setForm((prev) => ({ ...prev, planeID: "" }));
+    }, [planeStillAllowed]);
+
+    // Soldes des élèves (portefeuille activé, rôles autorisés à les voir).
+    const showBalances = !!currentClub?.walletEnabled && canViewClubWallets(currentUser?.role);
+    const [balances, setBalances] = useState<Record<string, number> | null>(null);
+    useEffect(() => {
+        if (!open || !showBalances) return;
+        let cancelled = false;
+        getMemberBalances().then((res) => {
+            if (!cancelled && "balances" in res && res.balances) setBalances(res.balances);
+        }).catch(() => { });
+        return () => { cancelled = true; };
+    }, [open, showBalances]);
+
     // Gating : USER et STUDENT ne peuvent pas créer d'entrée manuelle. L'élève
     // vole toujours avec un instructeur (session auto-loguée), il ne saisit ni ne
     // signe. Le PILOT et les rôles de gestion peuvent saisir. Côté serveur, la
@@ -247,7 +309,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
             if (!userIsInstructor && !form.instructorID) return fail("Veuillez sélectionner l'instructeur.");
         }
 
-        const selectedPlane = planesList.find((p) => p.id === form.planeID);
+        const selectedPlane = planeOptions.find((p) => p.id === form.planeID);
         if (!selectedPlane) return fail("Aéronef introuvable.");
 
         // pilotID = pilote ciblé (soi-même par défaut, ou un autre en saisie
@@ -341,6 +403,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                     });
                 } else {
                     finalLog = { ...finalLog, pilotSigned: true, pilotSignedAt: new Date() };
+                    emitWalletChanged();
                 }
             }
 
@@ -472,9 +535,9 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                                         <SelectValue placeholder="Sélectionner" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {planesList.map((p) => (
+                                        {planeOptions.map((p) => (
                                             <SelectItem key={p.id} value={p.id}>
-                                                {p.name} ({p.immatriculation})
+                                                {p.name} ({p.immatriculation}){isPrivatePlane(p) ? " · privée" : ""}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -633,11 +696,21 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                                                         <SelectValue placeholder="Sélectionner un élève" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {students.map((u) => (
-                                                            <SelectItem key={u.id} value={u.id}>
-                                                                {u.firstName} {u.lastName}
-                                                            </SelectItem>
-                                                        ))}
+                                                        {students.map((u) => {
+                                                            const balance = showBalances && balances ? balances[u.id] ?? 0 : null;
+                                                            return (
+                                                                <SelectItem key={u.id} value={u.id}>
+                                                                    <span className="flex items-center gap-3">
+                                                                        <span>{u.firstName} {u.lastName}</span>
+                                                                        {balance != null && (
+                                                                            <span className={cn("text-xs font-mono tabular-nums", balanceTextClass(balance))}>
+                                                                                {formatCents(balance)}
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                </SelectItem>
+                                                            );
+                                                        })}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -813,6 +886,14 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                         </div>
                     )}
 
+                    {actingUser && (
+                        <FlightChargePreview
+                            flight={chargeFlight}
+                            minutes={chargeMinutes}
+                            onBlockedChange={setChargeBlocked}
+                        />
+                    )}
+
                     <DialogFooter className="flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                         <Button
                             variant="ghost"
@@ -845,7 +926,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                             c'est la seule option : le vol est signé au nom du pilote. */}
                         <Button
                             onClick={() => onConfirm(true)}
-                            disabled={loading || signing}
+                            disabled={loading || signing || chargeBlocked}
                             className="bg-[#774BBE] hover:bg-[#6538a5] text-white w-full sm:min-w-[140px] sm:w-auto"
                         >
                             {signing ? (

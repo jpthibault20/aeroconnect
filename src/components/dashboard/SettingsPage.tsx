@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card'
-import { Clock, OctagonMinus, Plane, Plus, Settings, Users, Save, MapPin, Trash2 } from 'lucide-react'
+import { AlertTriangle, Clock, OctagonMinus, Plane, Plus, Settings, Users, Save, MapPin, Trash2, Wallet } from 'lucide-react'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
 import { Separator } from '../ui/separator'
@@ -19,6 +20,11 @@ import { updateClub } from '@/api/db/club'
 import { Spinner } from '../ui/SpinnerVariants'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { getPlanes } from '@/api/db/planes'
+import { centsToInput, parseEurosToCents } from '@/lib/wallet'
+import { isPrivatePlane } from '@/lib/planeVisibility'
+import { emitWalletChanged } from '@/lib/walletEvents'
+import WalletConfirmDialog from '../wallet/WalletConfirmDialog'
 
 // --- Schéma Zod (Inchangé pour la logique) ---
 const configSchema = z.object({
@@ -63,7 +69,7 @@ interface Props {
 
 const SettingsPage = ({ users }: Props) => {
     const { currentUser } = useCurrentUser();
-    const { currentClub } = useCurrentClub();
+    const { currentClub, setCurrentClub } = useCurrentClub();
 
     // --- State Initialization ---
     const [config, setConfig] = useState({
@@ -93,6 +99,23 @@ const SettingsPage = ({ users }: Props) => {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
 
+    // --- Portefeuille élève (AER-66) ---
+    const [walletEnabled, setWalletEnabled] = useState<boolean>(currentClub?.walletEnabled ?? false);
+    const [instructorRate, setInstructorRate] = useState<string>(centsToInput(currentClub?.instructorHourlyRateCents));
+    const [walletConfirm, setWalletConfirm] = useState<"enable" | "disable" | null>(null);
+    const [planesWithoutRate, setPlanesWithoutRate] = useState<{ id: string; name: string; immatriculation: string }[]>([]);
+
+    // Machines d'école du club sans tarif : la signature de leurs vols serait bloquée.
+    useEffect(() => {
+        if (!walletEnabled || !currentClub?.id) return;
+        getPlanes(currentClub.id).then((res) => {
+            if (!Array.isArray(res)) return;
+            setPlanesWithoutRate(res
+                .filter((p) => !isPrivatePlane(p) && p.usageTypes.includes('INSTRUCTION') && p.instructionHourlyRateCents == null)
+                .map((p) => ({ id: p.id, name: p.name, immatriculation: p.immatriculation })));
+        }).catch(() => { });
+    }, [walletEnabled, currentClub?.id]);
+
     // --- Handlers ---
 
     const validateConfig = () => {
@@ -115,13 +138,26 @@ const SettingsPage = ({ users }: Props) => {
     };
 
     const handleSubmit = async () => {
+        const rateCents = instructorRate.trim() === '' ? null : parseEurosToCents(instructorRate);
+        if (instructorRate.trim() !== '' && rateCents == null) {
+            setErrors(prev => ({ ...prev, instructorRate: "Saisissez un tarif valide (ex. : 35 ou 35,50)." }));
+            toast({ title: "Erreur de validation", description: "Veuillez vérifier les champs en rouge.", variant: "destructive" });
+            return;
+        }
         if (validateConfig()) {
             try {
                 setLoading(true);
-                const result = await updateClub(currentClub?.id as string, config)
+                const result = await updateClub(currentClub?.id as string, {
+                    ...config,
+                    walletEnabled,
+                    instructorHourlyRateCents: rateCents,
+                })
                 if (result.error) {
                     toast({ title: "Erreur", description: result.error, variant: "destructive" });
                 } else {
+                    // Le menu, le calendrier… lisent walletEnabled dans le contexte club.
+                    setCurrentClub(prev => prev ? { ...prev, walletEnabled, instructorHourlyRateCents: rateCents } : prev);
+                    emitWalletChanged();
                     toast({
                         title: "Succès",
                         description: "Paramètres du club mis à jour.",
@@ -403,7 +439,101 @@ const SettingsPage = ({ users }: Props) => {
                     </CardContent>
                 </Card>
 
-                {/* 4. PRÉSIDENTS */}
+                {/* 4. PAIEMENT DES VOLS (portefeuille élève, AER-66) */}
+                <Card className={cardStyle}>
+                    <CardHeader className="bg-white border-b border-slate-100">
+                        <CardTitle className={sectionTitleStyle}>
+                            <div className={iconBoxStyle}><Wallet className="w-5 h-5" /></div>
+                            Paiement des vols
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 gap-4">
+                            <div>
+                                <Label className="text-base">Activer le portefeuille élève</Label>
+                                <p className="text-xs text-slate-500">
+                                    Débite automatiquement les vols d&apos;instruction signés et bloque l&apos;inscription des élèves et pilotes dont le solde est nul ou négatif.
+                                </p>
+                            </div>
+                            <Switch
+                                checked={walletEnabled}
+                                onCheckedChange={(c) => setWalletConfirm(c ? "enable" : "disable")}
+                            />
+                        </div>
+
+                        {walletEnabled && (
+                            <div className="ml-4 pl-4 border-l-2 border-purple-100 space-y-4 animate-in slide-in-from-left-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="instructorRate">Tarif horaire instructeur (€/h)</Label>
+                                    <Input
+                                        id="instructorRate"
+                                        inputMode="decimal"
+                                        placeholder="Ex. : 35,00"
+                                        value={instructorRate}
+                                        onChange={(e) => {
+                                            setInstructorRate(e.target.value);
+                                            setErrors(prev => ({ ...prev, instructorRate: "" }));
+                                        }}
+                                        className={cn(inputStyle, "max-w-[200px] font-mono")}
+                                    />
+                                    {errors.instructorRate && <p className="text-xs text-red-500">{errors.instructorRate}</p>}
+                                    <p className="text-xs text-slate-500">
+                                        Appliqué aux vols d&apos;instruction sur une machine privée : l&apos;élève ne paie que l&apos;instructeur.
+                                        Sur une machine du club, le tarif écolage de la machine inclut déjà l&apos;instructeur.
+                                    </p>
+                                </div>
+
+                                {planesWithoutRate.length > 0 && (
+                                    <div className="flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                                        <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                                        <div className="space-y-1">
+                                            <p className="font-semibold">
+                                                {planesWithoutRate.length} machine{planesWithoutRate.length > 1 ? "s" : ""} d&apos;école sans tarif :{" "}
+                                                {planesWithoutRate.map((p) => `${p.name} (${p.immatriculation})`).join(", ")}.
+                                            </p>
+                                            <p>La signature des vols sur ces machines sera bloquée.</p>
+                                            <Link href={`/planes?clubID=${currentClub?.id}`} className="font-semibold underline underline-offset-2">
+                                                Renseigner les tarifs →
+                                            </Link>
+                                        </div>
+                                    </div>
+                                )}
+                                <p className="text-xs text-slate-400">Pensez à enregistrer la configuration pour appliquer ces changements.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <WalletConfirmDialog
+                    open={walletConfirm === "enable"}
+                    title="Activer le portefeuille élève ?"
+                    confirmLabel="Activer"
+                    onCancel={() => setWalletConfirm(null)}
+                    onConfirm={() => { setWalletEnabled(true); setWalletConfirm(null); }}
+                >
+                    <p>Dès l&apos;enregistrement de la configuration :</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>chaque vol d&apos;instruction signé (hors baptême) débitera automatiquement le compte de l&apos;élève ;</li>
+                        <li>les élèves et pilotes dont le solde est nul ou négatif ne pourront plus s&apos;inscrire aux créneaux ;</li>
+                        <li><strong>tous les soldes démarrent à 0 €.</strong> Pensez à enregistrer les paiements déjà reçus.</li>
+                    </ul>
+                </WalletConfirmDialog>
+
+                <WalletConfirmDialog
+                    open={walletConfirm === "disable"}
+                    title="Désactiver le portefeuille ?"
+                    confirmLabel="Désactiver"
+                    tone="warning"
+                    onCancel={() => setWalletConfirm(null)}
+                    onConfirm={() => { setWalletEnabled(false); setWalletConfirm(null); }}
+                >
+                    <p>
+                        Les débits automatiques et le blocage des inscriptions seront suspendus. Les soldes et l&apos;historique
+                        sont conservés et réapparaîtront si vous réactivez le portefeuille.
+                    </p>
+                </WalletConfirmDialog>
+
+                {/* 5. PRÉSIDENTS */}
                 <Card className={cardStyle}>
                     <CardHeader className="bg-white border-b border-slate-100">
                         <CardTitle className={sectionTitleStyle}>

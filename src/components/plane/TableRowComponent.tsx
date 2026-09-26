@@ -15,13 +15,14 @@ import UpdatePlanes from './UpdatePlanes';
 import { Button } from '../ui/button';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Pencil, Trash2, CheckCircle2, Ban, Lock, Wrench, AlertTriangle, Ticket } from 'lucide-react';
+import { Pencil, Trash2, CheckCircle2, Ban, Lock, Wrench, AlertTriangle, Euro } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { canManagePlane, canAccessMaintenance, isPrivatePlane } from '@/lib/planeVisibility';
 import { canManageBaptemeOptions } from '@/lib/bapteme';
 import MaintenanceDialog from './maintenance/MaintenanceDialog';
-import BaptemeOptionsDialog from './bapteme/BaptemeOptionsDialog';
+import PlaneTariffsDialog from './PlaneTariffsDialog';
 import PlaneThumbnail from './PlaneThumbnail';
+import PlaneRateBadge from './PlaneRateBadge';
 
 interface Props {
     plane: planes;
@@ -175,6 +176,7 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                                 Privé
                             </span>
                         )}
+                        <PlaneRateBadge plane={planeState} />
                     </div>
                 </div>
             </TableCell>
@@ -268,16 +270,16 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
                             </Button>
                         )}
 
-                        {/* Config baptême (durées + tarifs) Button */}
+                        {/* Raccourci « Tarifs » : tarif écolage + formules baptême */}
                         {canBapteme && (
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setShowBapteme(true)}
                                 className="h-8 w-8 text-slate-500 hover:text-[#774BBE] hover:bg-purple-50"
-                                title="Formules de baptême"
+                                title="Tarifs"
                             >
-                                <Ticket className="w-4 h-4" />
+                                <Euro className="w-4 h-4" />
                             </Button>
                         )}
 
@@ -326,10 +328,14 @@ const TableRowComponent = ({ plane, planes, setPlanes, canViewOwner, ownerNames,
             )}
 
             {canBapteme && (
-                <BaptemeOptionsDialog
+                <PlaneTariffsDialog
                     plane={planeState}
                     open={showBapteme}
                     onOpenChange={setShowBapteme}
+                    onRateSaved={(rate) => {
+                        setPlaneState((prev) => ({ ...prev, instructionHourlyRateCents: rate }));
+                        setPlanes((prev) => prev.map((p) => (p.id === planeState.id ? { ...p, instructionHourlyRateCents: rate } : p)));
+                    }}
                 />
             )}
         </TableRow>

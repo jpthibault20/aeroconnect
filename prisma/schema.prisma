@@ -80,6 +80,11 @@ model planes {
   // complète, pour ne pas figer le projet/bucket en base). Forme :
   // `{planeID}/{uuid}.{ext}` — cf. src/lib/planeImage.ts. null => aucune photo.
   imagePath          String?
+  // Tarif écolage (centimes / heure, instructeur compris) d'une machine DU
+  // CLUB, débité au prorata des minutes à la signature d'un vol d'instruction.
+  // null => pas de tarif (≠ 0 €) : la signature est alors bloquée si le
+  // portefeuille du club est activé. Ignoré pour une machine privée.
+  instructionHourlyRateCents Int?
   MaintenanceTask    MaintenanceTask[]
   BaptemeOption      BaptemeOption[]
 }
@@ -118,6 +123,12 @@ model Club {
   // (/reservation/[clubID]/[token]). null => aucun lien actif. Régénérer ce
   // jeton invalide immédiatement l'ancienne URL (cf. ADMIN/OWNER only).
   publicBookingToken          String?
+  // Portefeuille élève (AER-66). Désactivé par défaut : aucun débit, aucun
+  // blocage d'inscription, aucune UI portefeuille tant que le club ne l'active pas.
+  walletEnabled               Boolean  @default(false)
+  // Tarif horaire (centimes) appliqué aux vols d'instruction sur une machine
+  // PRIVÉE : l'élève ne paie que l'instructeur. null => non renseigné.
+  instructorHourlyRateCents   Int?
 }
 
 model MaintenanceTask {
@@ -277,4 +288,65 @@ model BaptemeRequest {
 
   @@index([clubID, status])
   @@index([sessionID, status])
+}
+
+enum WalletTransactionType {
+  CREDIT // paiement reçu (crédit manuel)
+  DEBIT // débit automatique d'un vol d'instruction signé
+  ADJUSTMENT // retrait / correction manuelle, ou correction auto d'un vol signé modifié
+}
+
+enum PaymentMethod {
+  CASH
+  CHECK
+  TRANSFER
+  CARD
+  OTHER
+}
+
+enum WalletRateSource {
+  PLANE // tarif écolage de la machine du club
+  INSTRUCTOR // tarif instructeur du club (machine privée)
+}
+
+// Solde courant d'un membre DANS un club (AER-66). Volontairement hors de
+// `User` : de nombreuses actions renvoient des lignes User complètes au client,
+// le solde y fuiterait. Une ligne par (club, membre), créée à la première
+// opération ; absence de ligne => solde 0.
+model Wallet {
+  id           String   @id @default(uuid())
+  clubID       String
+  userID       String
+  balanceCents Int      @default(0)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([clubID, userID])
+}
+
+// Historique immuable des mouvements d'un portefeuille : jamais modifié ni
+// supprimé, une erreur se corrige par une opération inverse. Les champs du vol
+// sont dénormalisés (même logique que flight_logs) pour rester lisibles si la
+// machine ou le tarif change ensuite.
+model WalletTransaction {
+  id                String                @id @default(uuid())
+  clubID            String
+  userID            String
+  createdAt         DateTime              @default(now()) @db.Timestamptz(6)
+  type              WalletTransactionType
+  amountCents       Int // signé : > 0 crédite, < 0 débite
+  balanceAfterCents Int
+  paymentMethod     PaymentMethod?
+  comment           String?
+  authorID          String? // null => opération automatique (signature / correction de vol)
+  flightLogID       String?
+  flightDate        DateTime?             @db.Date
+  planeName         String?
+  planeRegistration String?
+  durationMin       Int?
+  rateCents         Int?
+  rateSource        WalletRateSource?
+
+  @@index([clubID, userID, createdAt])
+  @@index([flightLogID])
 }

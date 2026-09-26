@@ -319,3 +319,30 @@ export function filterPlanesForBeneficiary<T extends Pick<planes, "id" | "ownerI
         return canViewPlane(plane, beneficiary) && scope.offeredPlaneIDs.includes(plane.id);
     });
 }
+
+export interface FlightLogParticipants {
+    // Utilisateur qui saisit le vol.
+    actor: Viewer;
+    // Pilote du vol (celui qui saisit, ou le pilote ciblé en saisie déléguée).
+    pilotID: string;
+    // Élève du vol (vol d'instruction saisi par l'instructeur), s'il y en a un.
+    studentID?: string | null;
+}
+
+/**
+ * Une machine peut-elle être portée sur une entrée de carnet de vol ?
+ *  - machine du club : oui ;
+ *  - machine privée : seulement si elle appartient au pilote ou à l'élève du
+ *    vol. Président (OWNER) et admin (ADMIN), qui supervisent toutes les
+ *    machines privées, peuvent choisir n'importe laquelle.
+ *
+ * Même règle côté UI (liste proposée) et côté serveur (createFlightLog).
+ */
+export function canLogFlightOnPlane(
+    plane: Pick<planes, "ownerID">,
+    { actor, pilotID, studentID }: FlightLogParticipants
+): boolean {
+    if (!isPrivatePlane(plane)) return true;
+    if (PRIVATE_PLANE_OVERSIGHT_ROLES.includes(actor.role)) return true;
+    return plane.ownerID === pilotID || (!!studentID && plane.ownerID === studentID);
+}

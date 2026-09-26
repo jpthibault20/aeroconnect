@@ -14,7 +14,7 @@ import { filterBookablePlanes, filterPlanesForBeneficiary, resolveOfferedPlaneID
 import { studentRegistration } from "@/api/db/sessions";
 import { sendNotificationBooking, sendStudentNotificationBooking } from "@/lib/mail";
 import { useCurrentClub } from "@/app/context/useCurrentClub";
-import { MessageSquareMore, Plane, User as AlertCircle } from "lucide-react";
+import { AlertTriangle, MessageSquareMore, Plane, User as AlertCircle } from "lucide-react";
 import { PiStudent } from "react-icons/pi";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import SessionPopupUpdate from "./SessionPopupUpdate";
@@ -24,6 +24,10 @@ import ShowCommentSession from "./ShowCommentSession";
 import SessionContacts from "./calendar/SessionContacts";
 import BaptemeSessionValidation from "./calendar/BaptemeSessionValidation";
 import { cn, LEGACY_NO_PLANE_ID } from "@/lib/utils";
+import { useWallet } from "@/hooks/useWallet";
+import { canBookWithBalance, formatCents, isBookingGatedRole } from "@/lib/wallet";
+import { emitWalletChanged } from "@/lib/walletEvents";
+import { WalletBookingBlock } from "./wallet/WalletBookingBlock";
 
 interface Prop {
     children: React.ReactNode;
@@ -53,6 +57,13 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     const [availablePlanes, setAvailablePlanes] = useState<planes[]>([]);
     const [session, setSession] = useState<flight_sessions>();
     const [studentComment, setStudentComment] = useState("");
+
+    // Portefeuille (AER-66) : élève / pilote à solde ≤ 0 => réservation bloquée
+    // (le serveur refuse de toute façon, cf. studentRegistration).
+    const wallet = useWallet();
+    const walletGated = wallet.enabled && isBookingGatedRole(currentUser?.role) && wallet.balanceCents != null;
+    const walletBlocked = walletGated && !canBookWithBalance(wallet.balanceCents as number);
+    const walletLow = walletGated && !walletBlocked && wallet.state === "low";
 
     // Machines réservables : visibilité (club + sa propre privée) ∩ classe autorisée.
     const filterdPlanes = currentUser ? filterBookablePlanes(planesProp, currentUser) : [];
@@ -130,7 +141,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
     useEffect(() => {
         let updatedPlanes;
-        const classroomPlane = { id: "classroomSession", name: "Théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3, hobbsTotal: null, ownerID: null, usageTypes: [], maintenanceHistory: null, imagePath: null };
+        const classroomPlane = { id: "classroomSession", name: "Théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3, hobbsTotal: null, ownerID: null, usageTypes: [], maintenanceHistory: null, imagePath: null, instructionHourlyRateCents: null };
 
         if (instructor === "nothing") {
             updatedPlanes = allPlanes;
@@ -181,6 +192,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                     variant: "destructive",
                 });
                 setError(res.error);
+                // Solde changé entre-temps : on rafraîchit pour afficher le blocage.
+                if ('code' in res && res.code === "WALLET_EMPTY") emitWalletChanged();
             } else if (res.success) {
                 toast({
                     title: "Succès",
@@ -342,6 +355,11 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                             </div>
                         </div>
 
+                    ) : walletBlocked ? (
+
+                        // --- RÉSERVATION BLOQUÉE : SOLDE ÉPUISÉ ---
+                        <WalletBookingBlock balanceCents={wallet.balanceCents as number} />
+
                     ) : (
 
                         // --- MODE RÉSERVATION (STUDENT) ---
@@ -411,7 +429,16 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                             </div>
 
                             {/* Actions */}
-                            <div className="pt-4 border-t border-slate-100">
+                            <div className="pt-4 border-t border-slate-100 space-y-3">
+                                {walletLow && (
+                                    <div className="flex items-start gap-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs text-amber-800">
+                                        <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                                        <span>
+                                            Votre solde est faible (<span className="font-mono tabular-nums">{formatCents(wallet.balanceCents as number)}</span>).
+                                            Pensez à recharger votre compte auprès du club.
+                                        </span>
+                                    </div>
+                                )}
                                 <SubmitButton
                                     submitDisabled={submitDisabled}
                                     onSubmit={onSubmit}

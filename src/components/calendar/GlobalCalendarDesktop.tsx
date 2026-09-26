@@ -16,6 +16,7 @@ import { useCurrentClub } from '@/app/context/useCurrentClub';
 import DeleteManySessions from '../DeleteManySessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import Export from './Export';
+import { CalendarWalletNotice } from '@/components/wallet/WalletBookingBlock';
 
 interface Props {
     sessions: flight_sessions[];
@@ -133,6 +134,8 @@ const GlobalCalendarDesktop = ({ sessions, setSessions, planesProp, usersProps }
                     </div>
                 </div>
             </header>
+
+            <CalendarWalletNotice className="flex-none px-6 pt-3" />
 
             {/* --- CALENDAR CONTENT --- */}
             <main className='flex-1 overflow-hidden'>

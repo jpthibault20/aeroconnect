@@ -10,6 +10,7 @@ import AlertConfirmDeleted from '../AlertConfirmDeleted';
 import Restricted from './Restricted';
 import { Phone, Mail, Pencil, Trash2, Shield, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import MemberWalletLink from '../wallet/MemberWalletLink';
 
 interface Props {
     users: User[];
@@ -131,6 +132,8 @@ const MobileStudentList = ({ users, setUsers }: Props) => {
                                             Supprimer
                                         </Button>
                                     </AlertConfirmDeleted>
+
+                                    <MemberWalletLink member={user} variant="button" className="col-span-2" />
                                 </div>
                             )}
                         </CardContent>

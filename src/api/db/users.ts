@@ -5,8 +5,27 @@ import { User } from '@prisma/client'
 import prisma from '../prisma';
 import { resolveBaptemeHold } from './baptemeHold';
 import { canViewPlane, isPrivatePlane } from '@/lib/planeVisibility';
+import { managerBookingWarning } from '@/lib/wallet';
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+
+// Avertissement (non bloquant) quand la gestion inscrit un élève / pilote dont
+// le solde est nul ou négatif, portefeuille activé (AER-66).
+async function walletBookingWarning(memberID: string, clubID: string | null): Promise<string | null> {
+    if (!clubID) return null;
+    const [club, member, wallet] = await Promise.all([
+        prisma.club.findUnique({ where: { id: clubID }, select: { walletEnabled: true } }),
+        prisma.user.findUnique({ where: { id: memberID }, select: { clubID: true, role: true, firstName: true, lastName: true } }),
+        prisma.wallet.findUnique({ where: { clubID_userID: { clubID, userID: memberID } }, select: { balanceCents: true } }),
+    ]);
+    // Décision pure et testée (cf. managerBookingWarning dans src/lib/wallet.ts).
+    return managerBookingWarning({
+        walletEnabled: !!club?.walletEnabled,
+        clubID,
+        member,
+        balanceCents: wallet?.balanceCents ?? 0,
+    });
+}
 
 export async function requireAuth(allowedRoles?: userRole[]) {
     const supabase = await createClient();
@@ -204,7 +223,10 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             },
         });
 
-        return { success: "L'élève a été ajouté au vol !" };
+        // Portefeuille : inscription autorisée même à solde ≤ 0, mais on prévient.
+        const warning = await walletBookingWarning(student.id, auth.user.clubID);
+
+        return { success: "L'élève a été ajouté au vol !", ...(warning && { warning }) };
 
     } catch {
         return { error: "Erreur lors de l'ajout de l'élève au vol." };

@@ -10,13 +10,14 @@ import UpdatePlanes from './UpdatePlanes'; // Ton composant d'édition
 import { Switch } from '@/components/ui/switch';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, User, Wrench, AlertTriangle, Ticket } from 'lucide-react';
+import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, User, Wrench, AlertTriangle, Euro } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { canManagePlane, canAccessMaintenance, isPrivatePlane } from '@/lib/planeVisibility';
 import { canManageBaptemeOptions } from '@/lib/bapteme';
 import MaintenanceDialog from './maintenance/MaintenanceDialog';
-import BaptemeOptionsDialog from './bapteme/BaptemeOptionsDialog';
+import PlaneTariffsDialog from './PlaneTariffsDialog';
 import PlaneThumbnail from './PlaneThumbnail';
+import PlaneRateBadge from './PlaneRateBadge';
 
 interface Props {
     planesList: planes[];
@@ -195,6 +196,7 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                                         Privé
                                     </span>
                                 )}
+                                <PlaneRateBadge plane={planeState} />
                             </div>
                         </div>
                     </div>
@@ -284,7 +286,7 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                     </div>
                 )}
 
-                {/* Bouton Formules de baptême (durée + tarif) */}
+                {/* Raccourci « Tarifs » : tarif écolage + formules baptême */}
                 {canBapteme && (
                     <div className={cn("pt-2", !canMaintenance && "border-t border-slate-100")}>
                         <Button
@@ -292,8 +294,8 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                             onClick={() => setShowBapteme(true)}
                             className="w-full border-slate-200 text-slate-700 hover:bg-purple-50 hover:text-[#774BBE] hover:border-purple-200"
                         >
-                            <Ticket className="w-4 h-4 mr-2" />
-                            Formules de baptême
+                            <Euro className="w-4 h-4 mr-2" />
+                            Tarifs
                         </Button>
                     </div>
                 )}
@@ -347,10 +349,14 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                 )}
 
                 {canBapteme && (
-                    <BaptemeOptionsDialog
+                    <PlaneTariffsDialog
                         plane={planeState}
                         open={showBapteme}
                         onOpenChange={setShowBapteme}
+                        onRateSaved={(rate) => {
+                            setPlaneState((prev) => ({ ...prev, instructionHourlyRateCents: rate }));
+                            setPlanes((prev) => prev.map((p) => (p.id === planeState.id ? { ...p, instructionHourlyRateCents: rate } : p)));
+                        }}
                     />
                 )}
             </CardContent>

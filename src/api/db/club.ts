@@ -3,6 +3,7 @@ import { ClubFormValues } from "@/components/NewClub";
 import { defaultMinutes } from "@/config/config";
 import { dayFr } from "@/config/config";
 import { sendNotificationRequestClub } from "@/lib/mail";
+import { sanitizeRateCents } from "@/lib/wallet";
 import { userRole } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
@@ -248,6 +249,8 @@ export interface ConfigClub {
     lastNameContact: string; // Nom de la personne de contact
     mailContact: string; // Adresse e-mail de la personne de contact
     phoneContact: string; // Numéro de téléphone de la personne de contact
+    walletEnabled?: boolean; // Portefeuille élève activé (AER-66)
+    instructorHourlyRateCents?: number | null; // Tarif instructeur (machine privée), centimes/h
 }
 
 export const updateClub = async (clubID: string, data: ConfigClub) => {
@@ -256,6 +259,11 @@ export const updateClub = async (clubID: string, data: ConfigClub) => {
 
     if (auth.user.clubID !== clubID) {
         return { error: "Permissions insuffisantes" };
+    }
+
+    const instructorRate = sanitizeRateCents(data.instructorHourlyRateCents);
+    if (instructorRate === undefined) {
+        return { error: "Tarif horaire instructeur invalide" };
     }
 
     // layout of working hours
@@ -292,6 +300,8 @@ const updateClub = prisma.club.update({
         lastNameContact: data.lastNameContact,
         mailContact: data.mailContact,
         phoneContact: data.phoneContact,
+        ...(data.walletEnabled !== undefined && { walletEnabled: data.walletEnabled }),
+        ...(data.instructorHourlyRateCents !== undefined && { instructorHourlyRateCents: instructorRate }),
     },
 });
 

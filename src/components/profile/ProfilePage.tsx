@@ -11,6 +11,10 @@ import { Input } from '../ui/input';
 import { signOut } from '@/app/auth/login/action';
 import { Spinner } from '../ui/SpinnerVariants';
 import InputClasses from '../InputClasses';
+import Link from 'next/link';
+import { useWallet } from '@/hooks/useWallet';
+import { isBookingGatedRole } from '@/lib/wallet';
+import BalancePill from '../wallet/BalancePill';
 import {
     User as UserIcon,
     MapPin,
@@ -24,6 +28,9 @@ import {
 const ProfilePage = () => {
     const [loading, setLoading] = useState(false);
     const { currentUser } = useCurrentUser();
+    // Solde (AER-66) : pastille pour l'élève / le pilote, portefeuille activé.
+    const wallet = useWallet();
+    const showBalance = wallet.enabled && isBookingGatedRole(currentUser?.role) && wallet.balanceCents != null;
     const [classes, setClasses] = useState<number[]>(currentUser?.classes || []);
 
     const [profile, setProfile] = useState<User>(() => ({
@@ -144,6 +151,11 @@ const ProfilePage = () => {
                                     <Mail className="w-3.5 h-3.5 text-[#774BBE]" />
                                     {profile.email}
                                 </span>
+                                {showBalance && wallet.state && (
+                                    <Link href={`/wallet?clubID=${currentUser?.clubID ?? ""}`}>
+                                        <BalancePill balanceCents={wallet.balanceCents as number} state={wallet.state} label="Solde :" />
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     </div>

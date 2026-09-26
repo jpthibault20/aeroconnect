@@ -23,6 +23,7 @@ import {
     validatePlaneImage,
 } from "@/lib/planeImage";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { sanitizeRateCents } from "@/lib/wallet";
 
 // Rôles habilités à inscrire un élève à une séance (miroir de MANAGEMENT_ROLES
 // dans users.ts, qui garde addStudentToSession).
@@ -38,6 +39,8 @@ export interface CreatePlaneInput {
     kind: "club" | "private";
     // Usages, uniquement pour une machine du club.
     usageTypes?: MachineUsage[];
+    // Tarif écolage (centimes/h), uniquement pour une machine du club.
+    instructionHourlyRateCents?: number | null;
 }
 
 export const createPlane = async (dataPlane: CreatePlaneInput) => {
@@ -59,6 +62,11 @@ export const createPlane = async (dataPlane: CreatePlaneInput) => {
         return { error: resolution.error };
     }
     const { ownerID, usageTypes } = resolution;
+
+    // Tarif écolage : sans objet pour une machine privée (tarif instructeur du club).
+    const rate = sanitizeRateCents(dataPlane.instructionHourlyRateCents);
+    if (rate === undefined) return { error: "Tarif écolage invalide" };
+    const instructionHourlyRateCents = ownerID == null ? rate : null;
 
     try {
         // Vérification de l'existence d'un avion avec le même nom ou la même immatriculation
@@ -86,6 +94,7 @@ export const createPlane = async (dataPlane: CreatePlaneInput) => {
                 classes: dataPlane.classes,
                 ownerID,
                 usageTypes,
+                instructionHourlyRateCents,
             },
         });
 
@@ -269,6 +278,14 @@ export const updatePlane = async (plane: planes) => {
             ? sanitizeClubUsages(plane.usageTypes)
             : existing.usageTypes;
 
+        // Tarif écolage : machine du club uniquement (canManagePlane garantit
+        // déjà un rôle de gestion pour une machine du club).
+        const rate = sanitizeRateCents(plane.instructionHourlyRateCents);
+        if (rate === undefined) return { error: "Tarif écolage invalide" };
+        const nextRate = existing.ownerID == null && plane.instructionHourlyRateCents !== undefined
+            ? rate
+            : existing.instructionHourlyRateCents;
+
         await prisma.planes.update({
             where: { id: plane.id },
             data: {
@@ -278,6 +295,7 @@ export const updatePlane = async (plane: planes) => {
                 classes: plane.classes,
                 hobbsTotal: canEditHobbs ? plane.hobbsTotal : existing.hobbsTotal,
                 usageTypes: nextUsageTypes,
+                instructionHourlyRateCents: nextRate,
             }
         });
 
@@ -499,5 +517,57 @@ export const getPlanesForStudentOnSession = async (sessionID: string, studentID:
         };
     } catch {
         return { error: "Erreur lors de la récupération des machines." };
+    }
+};
+
+/**
+ * Tarif écolage d'une machine DU CLUB (AER-66), depuis la fenêtre « Tarifs »
+ * de la liste. Réservé aux rôles de gestion (canManagePlane sur une machine du
+ * club), même club. null => pas de tarif.
+ */
+export const updatePlaneInstructionRate = async (planeID: string, rateCents: number | null) => {
+    const auth = await requireAuth();
+    if ('error' in auth) return { error: auth.error };
+
+    const rate = sanitizeRateCents(rateCents);
+    if (rate === undefined) return { error: "Tarif écolage invalide" };
+
+    try {
+        const existing = await prisma.planes.findUnique({ where: { id: planeID } });
+        if (!existing || existing.clubID !== auth.user.clubID || !canManagePlane(existing, auth.user)) {
+            return { error: 'Permissions insuffisantes' };
+        }
+        if (existing.ownerID != null) {
+            return { error: "Une machine privée n'a pas de tarif écolage : c'est le tarif instructeur du club qui s'applique." };
+        }
+        await prisma.planes.update({ where: { id: planeID }, data: { instructionHourlyRateCents: rate } });
+        return { success: 'Tarif écolage enregistré', instructionHourlyRateCents: rate };
+    } catch {
+        return { error: "Erreur lors de l'enregistrement du tarif" };
+    }
+};
+
+// Rôles qui saisissent un vol pour un élève (instructeur) ou pour le compte
+// d'un membre (président / admin / manager).
+const FLIGHT_LOG_FOR_OTHERS_ROLES: userRole[] = [userRole.INSTRUCTOR, userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+
+/**
+ * Machines privées d'un membre du club, pour la saisie d'un vol au carnet :
+ * un instructeur peut porter le vol sur la machine privée de SON élève, qu'il
+ * ne voit pas dans la liste des avions (cf. canLogFlightOnPlane).
+ */
+export const getMemberPrivatePlanes = async (memberID: string) => {
+    const auth = await requireAuth(FLIGHT_LOG_FOR_OTHERS_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
+    try {
+        const member = await prisma.user.findUnique({ where: { id: memberID }, select: { clubID: true } });
+        if (!member || !auth.user.clubID || member.clubID !== auth.user.clubID) {
+            return { error: 'Permissions insuffisantes' };
+        }
+        const list = await prisma.planes.findMany({ where: { clubID: auth.user.clubID, ownerID: memberID } });
+        return { success: true as const, planes: list };
+    } catch {
+        return { error: 'Erreur lors de la récupération des machines' };
     }
 };

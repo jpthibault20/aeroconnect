@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { MachineUsage, userRole } from "@prisma/client";
 import {
+    canLogFlightOnPlane,
     canManagePlane,
     canReassignPlaneOwner,
     canViewPlane,
@@ -229,5 +230,38 @@ describe("filterBookablePlanes", () => {
         const ids = filterBookablePlanes(fleet, president).map((p) => p.id);
         // Toutes les classes 3, y compris la privée d'un autre (supervision).
         expect(ids).toEqual(["club-c3", "mine-c3", "theirs-c3"]);
+    });
+});
+
+describe("canLogFlightOnPlane (carnet de vol)", () => {
+    const instructor = { id: "u-instr", role: userRole.INSTRUCTOR };
+    const clubMachine = { ownerID: null };
+    const studentMachine = { ownerID: "u-student" };
+    const otherMachine = { ownerID: "u-other" };
+
+    it("machine du club : toujours autorisée", () => {
+        expect(canLogFlightOnPlane(clubMachine, { actor: instructor, pilotID: "u-instr", studentID: "u-student" })).toBe(true);
+    });
+
+    it("instructeur : machine privée de l'élève ou du pilote uniquement", () => {
+        expect(canLogFlightOnPlane(studentMachine, { actor: instructor, pilotID: "u-instr", studentID: "u-student" })).toBe(true);
+        expect(canLogFlightOnPlane({ ownerID: "u-instr" }, { actor: instructor, pilotID: "u-instr", studentID: "u-student" })).toBe(true);
+        expect(canLogFlightOnPlane(otherMachine, { actor: instructor, pilotID: "u-instr", studentID: "u-student" })).toBe(false);
+    });
+
+    it("pilote avec instructeur : uniquement sa propre machine privée", () => {
+        const pilot = { id: "u-pilot", role: userRole.PILOT };
+        expect(canLogFlightOnPlane({ ownerID: "u-pilot" }, { actor: pilot, pilotID: "u-pilot" })).toBe(true);
+        expect(canLogFlightOnPlane(otherMachine, { actor: pilot, pilotID: "u-pilot" })).toBe(false);
+    });
+
+    it("sans élève, la machine d'un tiers est refusée", () => {
+        expect(canLogFlightOnPlane(studentMachine, { actor: instructor, pilotID: "u-instr", studentID: null })).toBe(false);
+    });
+
+    it("président et admin : toute machine privée du club", () => {
+        expect(canLogFlightOnPlane(otherMachine, { actor: president, pilotID: "u-pres", studentID: "u-student" })).toBe(true);
+        expect(canLogFlightOnPlane(otherMachine, { actor: admin, pilotID: "u-admin", studentID: "u-student" })).toBe(true);
+        expect(canLogFlightOnPlane(otherMachine, { actor: manager, pilotID: "u-manager", studentID: "u-student" })).toBe(false);
     });
 });

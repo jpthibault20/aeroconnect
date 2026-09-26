@@ -1,5 +1,5 @@
 import { userRole } from "@prisma/client";
-import { BetweenHorizontalStart, BookOpen, CalendarDays, Plane, GraduationCap, User, ChartLine } from 'lucide-react'
+import { BetweenHorizontalStart, BookOpen, CalendarDays, Plane, GraduationCap, User, ChartLine, Wallet } from 'lucide-react'
 
 type Role = userRole
 
@@ -8,6 +8,8 @@ interface NavLink {
     path: string;
     icon: React.ElementType;
     roles: Role[];
+    // Affiché seulement si le portefeuille élève est activé pour le club (AER-66).
+    requiresWallet?: boolean;
 }
 export const navigationLinks: NavLink[] = [
     {
@@ -27,6 +29,15 @@ export const navigationLinks: NavLink[] = [
         path: "/logbook",
         icon: BookOpen,
         roles: ["MANAGER", "OWNER", "ADMIN", "INSTRUCTOR", "STUDENT", "PILOT"],
+    },
+    {
+        name: "Portefeuille",
+        path: "/wallet",
+        icon: Wallet,
+        // Élève / pilote : son portefeuille ; instructeur (lecture) et gestion :
+        // les portefeuilles du club (cf. WalletPageComponent).
+        roles: ["STUDENT", "PILOT", "INSTRUCTOR", "MANAGER", "OWNER", "ADMIN"],
+        requiresWallet: true,
     },
     {
         name: "Avions",

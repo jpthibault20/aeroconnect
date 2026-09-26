@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { Spinner } from "@/components/ui/SpinnerVariants";
 import { Check, Clock, PenLine } from "lucide-react";
 import { signButtonState } from "@/lib/logbookDisplay";
+import { emitWalletChanged } from "@/lib/walletEvents";
 
 interface Props {
     log: flight_logs;
@@ -71,10 +72,11 @@ const SignFlightLogButton = React.memo(({ log, onSigned, onTriggerEdit, readOnly
                 });
             } else {
                 toast({
-                    title: "Entree signee",
-                    description: "Votre signature a ete enregistree.",
+                    title: "Entrée signée",
+                    description: "Votre signature a été enregistrée.",
                     className: "bg-green-600 text-white border-none",
                 });
+                emitWalletChanged();
                 onSigned({ ...log, pilotSigned: true, pilotSignedAt: new Date() });
             }
         } catch {

@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/SpinnerVariants";
 import { FileText, CheckCircle2, ShieldCheck, Minus, Plus, Info, AlertTriangle, Trash2 } from "lucide-react";
+import { FlightChargePreview, FlightChargeSummary } from "@/components/logbook/FlightChargePreview";
+import { emitWalletChanged } from "@/lib/walletEvents";
 
 interface Props {
     log: flight_logs | null;
@@ -69,6 +71,8 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
     const [fuelAdded, setFuelAdded] = useState("");
     const [machineAnomalies, setMachineAnomalies] = useState("RAS");
     const [personalObservation, setPersonalObservation] = useState("");
+    // Tarif manquant (portefeuille activé) : la signature serait refusée.
+    const [chargeBlocked, setChargeBlocked] = useState(false);
 
     useEffect(() => {
         if (log) {
@@ -158,6 +162,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
                     toast({ title: "Erreur signature", description: signRes.error, variant: "destructive" });
                     return;
                 }
+                emitWalletChanged();
             }
 
             toast({
@@ -252,6 +257,11 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
                         <div className="mt-2 ml-11 flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             Signé le {new Date(log.pilotSignedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                        </div>
+                    )}
+                    {isSigned && (
+                        <div className="mt-1 ml-11">
+                            <FlightChargeSummary logID={log.id} />
                         </div>
                     )}
                 </div>
@@ -410,6 +420,14 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
                         </div>
                     )}
 
+                    {!isReadOnly && (
+                        <FlightChargePreview
+                            flight={log}
+                            minutes={previewTimes.durationMinutes > 0 ? previewTimes.durationMinutes : null}
+                            onBlockedChange={setChargeBlocked}
+                        />
+                    )}
+
                     <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-3">
                         {isReadOnly ? (
                             <Button onClick={() => onOpenChange(false)} className="bg-slate-600 hover:bg-slate-700 text-white w-full sm:w-auto">
@@ -434,7 +452,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
                                 <Button onClick={() => handleSave(false)} disabled={loading || signing || deleting} variant="outline" className="border-slate-200 w-full sm:w-auto">
                                     {loading ? <Spinner className="w-4 h-4" /> : "Enregistrer"}
                                 </Button>
-                                <Button onClick={() => handleSave(true)} disabled={loading || signing || deleting} className="bg-[#774BBE] hover:bg-[#6538a5] text-white w-full sm:w-auto sm:min-w-[140px]">
+                                <Button onClick={() => handleSave(true)} disabled={loading || signing || deleting || chargeBlocked} className="bg-[#774BBE] hover:bg-[#6538a5] text-white w-full sm:w-auto sm:min-w-[140px]">
                                     {signing ? (
                                         <div className="flex items-center gap-2"><Spinner className="w-4 h-4 text-white" /><span>Signature...</span></div>
                                     ) : (

@@ -9,6 +9,7 @@ import NewSession from '@/components/NewSession';
 import DeleteManySessions from '@/components/DeleteManySessions';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { useBaptemePrefetch } from '../BaptemePendingContext';
+import { CalendarWalletNotice } from '@/components/wallet/WalletBookingBlock';
 
 interface Props {
     sessions: flight_sessions[];
@@ -436,6 +437,8 @@ const GlobalCalendarPhone = ({ sessions, setSessions, planesProp, usersProps }: 
                         </div>
                     </div>
                 </div>
+
+                <CalendarWalletNotice className="px-4 py-2 bg-white" />
 
                 {/* 2. CALENDRIER HORIZONTAL (STRIP) — carrousel centré, slide continu inter-mois */}
                 <div className='bg-white border-b border-slate-100 py-3'>

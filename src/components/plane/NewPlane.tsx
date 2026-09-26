@@ -25,6 +25,9 @@ import { DropDownClasse } from './DropDownClasse';
 import { clearCache } from '@/lib/cache';
 import { CLUB_PLANE_MANAGE_ROLES, CLUB_USAGE_VALUES } from '@/lib/planeVisibility';
 import { cn } from '@/lib/utils';
+import { useCurrentClub } from '@/app/context/useCurrentClub';
+import { parseEurosToCents } from '@/lib/wallet';
+import PlaneRateField from './PlaneRateField';
 
 interface Props {
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
@@ -55,7 +58,11 @@ const NewPlane = ({ setPlanes }: Props) => {
         // machine créée (avant, elle n'a pas d'id, donc pas de chemin de
         // stockage possible).
         imagePath: null,
+        instructionHourlyRateCents: null,
     };
+    // Tarif écolage (AER-66) : saisi à la création si le portefeuille est activé.
+    const { currentClub } = useCurrentClub();
+    const [rateInput, setRateInput] = useState("");
 
     const [plane, setPlane] = useState<planes>(initialPlaneState);
     // 'club' = machine du club (gestionnaires) ; 'private' = machine perso.
@@ -64,6 +71,7 @@ const NewPlane = ({ setPlanes }: Props) => {
     const resetForm = () => {
         setPlane(initialPlaneState);
         setKind(isManagement ? "club" : "private");
+        setRateInput("");
         setError("");
     };
 
@@ -75,6 +83,12 @@ const NewPlane = ({ setPlanes }: Props) => {
 
         if (!plane.name || !plane.immatriculation) {
             setError("Veuillez remplir les champs obligatoires");
+            return;
+        }
+
+        const rateCents = rateInput.trim() === "" ? null : parseEurosToCents(rateInput);
+        if (rateInput.trim() !== "" && rateCents == null) {
+            setError("Tarif écolage invalide (ex. : 120 ou 120,50).");
             return;
         }
 
@@ -91,6 +105,7 @@ const NewPlane = ({ setPlanes }: Props) => {
                 // exige au moins un). Le jour où le champ revient dans le
                 // formulaire, il suffit de repasser la sélection de l'utilisateur.
                 usageTypes: kind === "club" ? CLUB_USAGE_VALUES : [],
+                instructionHourlyRateCents: kind === "club" ? rateCents : null,
             });
 
             if (res.error) {
@@ -238,6 +253,19 @@ const NewPlane = ({ setPlanes }: Props) => {
                             />
                         </div>
                     </div>
+
+                    {currentClub?.walletEnabled && isManagement && kind === "club" && (
+                        <>
+                            <div className="h-px bg-slate-100 w-full" />
+                            <PlaneRateField
+                                value={rateInput}
+                                onChange={setRateInput}
+                                isPrivate={false}
+                                instructorRateCents={currentClub.instructorHourlyRateCents}
+                                disabled={loading}
+                            />
+                        </>
+                    )}
                 </div>
 
                 {/* --- Footer Fixe (Gris) --- */}

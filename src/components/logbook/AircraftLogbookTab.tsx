@@ -397,7 +397,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = fal
                                     <span className="text-sm font-semibold text-slate-800">
                                         {new Date(log.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                                     </span>
-                                    <SignFlightLogButton log={log} onSigned={handleSigned} readOnly={readOnly} />
+                                    <SignFlightLogButton log={log} onSigned={handleSigned} onTriggerEdit={readOnly ? undefined : () => handleRowClick(log)} readOnly={readOnly} />
                                 </div>
 
                                 {/* Machine : nom + immatriculation */}

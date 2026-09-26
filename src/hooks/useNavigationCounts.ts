@@ -9,6 +9,8 @@ import { getMaintenanceAlerts } from "@/api/db/maintenance";
 import { getPendingBaptemeCount } from "@/api/db/bapteme";
 import { MAINTENANCE_ALERTS_EVENT } from "@/lib/maintenanceEvents";
 import { BAPTEME_REQUESTS_EVENT } from "@/lib/baptemeEvents";
+import { useWallet, WalletStatus } from "@/hooks/useWallet";
+import { isBookingGatedRole } from "@/lib/wallet";
 
 /** Événement global (window) émis quand une demande d'adhésion est traitée. */
 export const CLUB_REQUESTS_EVENT = "refresh-club-requests";
@@ -23,6 +25,10 @@ export interface NavigationCounts {
     maintenanceCount: number;
     /** Demandes de baptême en attente que l'utilisateur peut traiter. */
     baptemeCount: number;
+    /** Élève / pilote à solde nul ou négatif : il ne peut plus réserver. */
+    walletAlert: boolean;
+    /** Solde de l'utilisateur connecté (portefeuille élève, AER-66). */
+    wallet: WalletStatus;
 }
 
 /**
@@ -99,5 +105,10 @@ export function useNavigationCounts(): NavigationCounts {
         return () => window.removeEventListener(BAPTEME_REQUESTS_EVENT, fetchBaptemes);
     }, [clubID]);
 
-    return { requestCount, maintenanceCount, baptemeCount };
+    // Portefeuille : la pastille ne concerne que les rôles bloqués à
+    // l'inscription (pour la gestion, un solde négatif n'est pas une tâche).
+    const wallet = useWallet();
+    const walletAlert = wallet.enabled && isBookingGatedRole(role) && wallet.state === "empty";
+
+    return { requestCount, maintenanceCount, baptemeCount, walletAlert, wallet };
 }

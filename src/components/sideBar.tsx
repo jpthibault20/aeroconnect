@@ -22,6 +22,8 @@ import { updateUserClub } from "@/api/db/users";
 import packageJson from "../../package.json";
 import { cn } from "@/lib/utils";
 import type { NavigationCounts } from "@/hooks/useNavigationCounts";
+import { useCurrentClub } from "@/app/context/useCurrentClub";
+import { formatCents, isBookingGatedRole } from "@/lib/wallet";
 
 interface props {
     clubsProp: Club[]
@@ -36,7 +38,9 @@ const SideBar = ({ clubsProp, counts }: props) => {
     const searchParams = useSearchParams();
     const clubID = searchParams.get("clubID");
     const [clubForAdmin, setClubForAdmin] = React.useState<string | null>(clubID);
-    const { requestCount, maintenanceCount, baptemeCount } = counts;
+    const { requestCount, maintenanceCount, baptemeCount, walletAlert, wallet } = counts;
+    const { currentClub } = useCurrentClub();
+    const showBalance = wallet.enabled && isBookingGatedRole(currentUser?.role) && wallet.balanceCents != null;
 
     const handleNavigation = (href: string) => {
         router.push(href);
@@ -125,6 +129,7 @@ const SideBar = ({ clubsProp, counts }: props) => {
                     <nav className="space-y-1">
                         {navigationLinks
                             .filter((link) => link.roles.includes(currentUser?.role as userRole))
+                            .filter((link) => !link.requiresWallet || !!currentClub?.walletEnabled)
                             .map((link) => {
                                 const IconComponent = link.icon;
                                 const isActive = pathname === link.path;
@@ -137,7 +142,8 @@ const SideBar = ({ clubsProp, counts }: props) => {
                                         : link.name === "Avions"
                                             ? maintenanceCount
                                             : 0;
-                                const showBadge = badgeCount > 0;
+                                const isWalletAlert = link.path === "/wallet" && walletAlert;
+                                const showBadge = badgeCount > 0 || isWalletAlert;
 
                                 return (
                                     <Link
@@ -163,7 +169,7 @@ const SideBar = ({ clubsProp, counts }: props) => {
                                             {/* --- BULLE DE NOTIFICATION --- */}
                                             {showBadge && (
                                                 <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-sm ring-2 ring-[#1A1B1E] animate-in zoom-in-50 duration-300">
-                                                    {badgeCount}
+                                                    {isWalletAlert ? "!" : badgeCount}
                                                 </span>
                                             )}
                                         </span>
@@ -197,6 +203,14 @@ const SideBar = ({ clubsProp, counts }: props) => {
                         <p className="text-xs text-slate-500 truncate">
                             {getRoleLabel(currentUser?.role)}
                         </p>
+                        {showBalance && (
+                            <p className={cn(
+                                "text-xs font-mono tabular-nums truncate",
+                                wallet.state === "empty" ? "text-red-300" : wallet.state === "low" ? "text-amber-300" : "text-emerald-300"
+                            )}>
+                                Solde : {formatCents(wallet.balanceCents as number)}
+                            </p>
+                        )}
                     </div>
                 </Link>
 
