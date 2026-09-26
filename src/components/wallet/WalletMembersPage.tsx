@@ -8,7 +8,7 @@ import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { getClubWallets, WalletMemberRow } from "@/api/db/wallet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/SpinnerVariants";
+import FlightLoader from "@/components/loader/FlightLoader";
 import { cn } from "@/lib/utils";
 import { formatCents, formatSignedCents, isOverdrawn, transactionLabel } from "@/lib/wallet";
 import { WALLET_EVENT } from "@/lib/walletEvents";
@@ -89,7 +89,7 @@ const WalletMembersPage = () => {
     const rows = useMemo(() => (data ? applyFilter(data.rows, filter, query) : []), [data, filter, query]);
 
     if (error) return <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">{error}</div>;
-    if (!data) return <div className="flex justify-center py-16"><Spinner className="w-6 h-6 text-[#774BBE]" /></div>;
+    if (!data) return <FlightLoader variant="inline" className="py-12" />;
 
     const { canOperate, totals } = data;
     const detailHref = (id: string) => `/wallet?clubID=${currentClub?.id ?? ""}&userID=${id}`;

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/toaster";
+import FlightLandingHost from "@/components/loader/FlightLandingHost";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className="">
         {children}
         <Toaster />
+        <FlightLandingHost />
       </body>
     </html>
   );

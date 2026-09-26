@@ -6,7 +6,7 @@ import { ArrowLeft, CircleMinus, CirclePlus, Eye, HelpCircle, Wallet } from "luc
 import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { getMemberWallet, WalletTransactionView } from "@/api/db/wallet";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/SpinnerVariants";
+import FlightLoader from "@/components/loader/FlightLoader";
 import { cn } from "@/lib/utils";
 import { BALANCE_STATE_LABELS, formatCents, formatDurationHM, formatSignedCents } from "@/lib/wallet";
 import { WALLET_EVENT } from "@/lib/walletEvents";
@@ -86,7 +86,7 @@ const MemberWalletDetail = ({ userID, openCredit = false }: Props) => {
         return <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">{error}</div>;
     }
     if (!data) {
-        return <div className="flex justify-center py-16"><Spinner className="w-6 h-6 text-[#774BBE]" /></div>;
+        return <FlightLoader variant="inline" className="py-12" />;
     }
 
     const { member, isSelf, canOperate, state, balanceCents, month, year } = data;

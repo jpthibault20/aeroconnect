@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { BaptemeOption, planes } from "@prisma/client";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/SpinnerVariants";
+import FlightLoader from "@/components/loader/FlightLoader";
 import AlertConfirmDeleted from "@/components/AlertConfirmDeleted";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -98,9 +98,7 @@ const BaptemeOptionsManager = ({ plane, active }: Props) => {
             </div>
 
             {loading ? (
-                <div className="flex items-center justify-center py-8">
-                    <Spinner className="w-6 h-6 text-[#774BBE]" />
-                </div>
+                <FlightLoader variant="inline" />
             ) : (
                 <>
                     {(showForm || editingOption) && (

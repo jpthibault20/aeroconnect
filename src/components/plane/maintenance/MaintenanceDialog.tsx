@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/SpinnerVariants";
+import FlightLoader from "@/components/loader/FlightLoader";
 import AlertConfirmDeleted from "@/components/AlertConfirmDeleted";
 import { Wrench, Plus, FileDown, Bell, History, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -281,9 +282,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                 {/* Body */}
                 <div className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0">
                     {loading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Spinner className="w-6 h-6 text-[#774BBE]" />
-                        </div>
+                        <FlightLoader variant="inline" className="py-10" />
                     ) : tab === "interventions" ? (
                         interventionFormOpen ? (
                             <InterventionForm

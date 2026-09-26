@@ -1,6 +1,6 @@
 /**
  * @file InitialLoading.tsx
- * @brief A React component that displays a loading spinner while the current user data is being fetched.
+ * @brief A React component that displays the flight loading animation while the current user data is being fetched.
  * 
  * This component checks if the current user's data is available. If the data is still loading,
  * it displays a spinner indicating that the data is being fetched. Once the data is available,
@@ -17,7 +17,7 @@
 import React, { useEffect } from 'react';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { useRouter } from 'next/navigation';
-// import { Spinner } from './ui/SpinnerVariants';
+import FlightLoader from './loader/FlightLoader';
 
 interface props {
     className?: string;
@@ -50,9 +50,7 @@ const InitialLoading = ({ children, className, clubIDURL }: props) => {
 
     if (isLoading) {
         return (
-            <div className={`${className} flex justify-center items-center`}>
-                {/* <Spinner>Loading...</Spinner> */}
-            </div>
+            <FlightLoader variant="page" className={className} />
         );
     }
     return (
