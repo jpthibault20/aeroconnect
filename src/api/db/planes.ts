@@ -197,35 +197,6 @@ export const updateOperationalByID = async (planeID: string, operational: boolea
     }
 };
 
-export const getPlaneByID = async (planeID: string) => {
-    try {
-        const plane = await prisma.planes.findUnique({
-            where: {
-                id: planeID,
-            },
-        });
-
-        return plane;
-    } catch {
-        return { error: 'Plane get failed' };
-    }
-};
-
-export const getPlanesByID = async (planeID: string[]) => {
-    try {
-        const planes = await prisma.planes.findMany({
-            where: {
-                id: {
-                    in: planeID.filter((id): id is string => id !== null)
-                }
-            }
-        });
-        return planes;
-    } catch {
-        return { error: "Erreur lors de la récupération des avions" };
-    }
-};
-
 export const getAllPlanesOperational = async (clubID: string) => {
     const auth = await requireAuth();
     if ('error' in auth) return { error: auth.error };

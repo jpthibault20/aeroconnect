@@ -52,36 +52,6 @@ export interface InvitedStudent {
     phone: string,
 }
 
-interface UserMin {
-    firstName: string,
-    lastName: string,
-    email: string,
-    phone: string,
-}
-
-export const createUser = async (dataUser: UserMin) => {
-    if (!dataUser.firstName || !dataUser.lastName || !dataUser.email || !dataUser.phone) {
-        return { error: 'Missing required fields' }
-    }
-
-    try {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const user = await prisma.user.create({
-            data: {
-                firstName: dataUser.firstName,
-                lastName: dataUser.lastName,
-                email: dataUser.email,
-                phone: dataUser.phone,
-            },
-        });
-        return { succes: "User created successfully" };
-
-    } catch {
-        return {
-            error: 'User creation failed',
-        };
-    }
-}
 
 export const getAllUser = async (clubID: string) => {
     const auth = await requireAuth();
@@ -307,40 +277,6 @@ export const updateUser = async (user: User) => {
     } catch {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
-}
-
-export const getUserByID = async (id: string[]) => {
-    try {
-        const user = await prisma.user.findMany({
-            where: {
-                id: {
-                    in: id
-                }
-            }
-        })
-        return user;
-    } catch {
-        return { error: "Erreur lors de la récupération des utilisateurs" };
-    }
-
-}
-
-export const getInsctructors = async (clubID: string | undefined) => {
-    if (!clubID) {
-        return { error: "Une erreur est survenue (E_001: clubID is undefined)" };
-    }
-    try {
-        const instructors = await prisma.user.findMany({
-            where: {
-                clubID,
-                role: { in: [userRole.INSTRUCTOR, userRole.ADMIN, userRole.OWNER] }
-            }
-        })
-        return instructors;
-    } catch {
-        return { error: "Erreur lors de la récupération des instructeurs" };
-    }
-
 }
 
 export const blockUser = async (userID: string, restricted: boolean) => {

@@ -1,5 +1,6 @@
 "use server";
-import { ClubFormValues } from "@/components/NewClub";
+import codeNewClubIsValid from "@/api/client/newClubValidation";
+import { clubFormSchema, ClubFormValues } from "@/schemas/club";
 import { defaultMinutes } from "@/config/config";
 import { dayFr } from "@/config/config";
 import { sendNotificationRequestClub } from "@/lib/mail";
@@ -11,6 +12,9 @@ import { requireAuth } from "./users";
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 export const getAllClubs = async () => {
+    const auth = await requireAuth();
+    if ("error" in auth) return [];
+
     try {
         const clubs = await prisma.club.findMany({
             select: {
@@ -30,12 +34,18 @@ export const getAllClubs = async () => {
     }
 };
 
+// Name only: called by a member who is not in the club yet, and the full row
+// holds the public booking token, contact details and wallet settings.
 export const getClub = async (clubID: string) => {
+    const auth = await requireAuth();
+    if ("error" in auth) return;
+
     try {
         const club = await prisma.club.findUnique({
             where: {
                 id: clubID,
-            }
+            },
+            select: { id: true, Name: true },
         });
 
         return club;
@@ -44,7 +54,21 @@ export const getClub = async (clubID: string) => {
     }
 };
 
-export const createClub = async (data: ClubFormValues, userID: string) => {
+// The creator becomes OWNER of the new club, so this is a privilege grant: the
+// user is always the signed-in one (never a client parameter), the security code
+// is re-checked here (the client-side OTP step can be bypassed), and the user is
+// only attached once the club has actually been created, never to an existing one.
+export const createClub = async (input: ClubFormValues, code: number) => {
+    const auth = await requireAuth();
+    if ("error" in auth) return { error: auth.error };
+    if (auth.user.clubID) return { error: "Vous êtes déjà rattaché à un club." };
+
+    if (!(await codeNewClubIsValid(code))) return { error: "Code de sécurité incorrect." };
+
+    const parsed = clubFormSchema.safeParse(input);
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Saisie invalide" };
+    const data = parsed.data;
+
     const startHour = parseInt(data.workStartTime, 10);
     const endHour = parseInt(data.workEndTime, 10);
 
@@ -54,50 +78,54 @@ export const createClub = async (data: ClubFormValues, userID: string) => {
     );
 
     try {
-        await prisma.club.create({
-            data: {
-                id: data.id,
-                Name: data.name,
-                Address: data.address,
-                City: data.city,
-                ZipCode: data.zipCode,
-                OwnerId: [userID],
-                DaysOn: dayFr,
-                HoursOn: allWorkingHour,
-                SessionDurationMin: data.sessionDuration,
-                AvailableMinutes: defaultMinutes,
-            },
-        });
+        await prisma.$transaction([
+            prisma.club.create({
+                data: {
+                    id: data.id,
+                    Name: data.name,
+                    Address: data.address,
+                    City: data.city,
+                    ZipCode: data.zipCode,
+                    OwnerId: [auth.user.id],
+                    DaysOn: dayFr,
+                    HoursOn: allWorkingHour,
+                    SessionDurationMin: data.sessionDuration,
+                    AvailableMinutes: defaultMinutes,
+                },
+            }),
+            prisma.user.update({
+                where: { id: auth.user.id },
+                data: {
+                    clubID: data.id,
+                    clubIDRequest: null,
+                    role: userRole.OWNER,
+                },
+            }),
+        ]);
         return { success: "Club créé avec succès !" };
     } catch {
         return { error: "Erreur lors de la création du club ou club déjà existant" };
-    } finally {
-        await prisma.user.update({
-            where: {
-                id: userID
-            },
-            data: {
-                clubID: data.id,
-                clubIDRequest: null,
-                role: userRole.OWNER
-            }
-        });
-
     }
 };
 
-export const requestClubID = async (clubID: string, userID: string) => {
+// Always the signed-in user: a request filed on someone else's behalf could then
+// be accepted to pull them into another club.
+export const requestClubID = async (clubID: string) => {
     if (!clubID) {
         return { error: "Une erreur est survenue (E_001: clubID is undefined)" };
     }
-    if (!userID) {
-        return { error: "Une erreur est survenue (E_001: userID is undefined)" };
-    }
+
+    const auth = await requireAuth();
+    if ("error" in auth) return { error: auth.error };
+    if (auth.user.clubID) return { error: "Vous êtes déjà rattaché à un club." };
 
     try {
+        const club = await prisma.club.findUnique({ where: { id: clubID }, select: { id: true } });
+        if (!club) return { error: "Le club demandé est introuvable." };
+
         await prisma.user.update({
             where: {
-                id: userID
+                id: auth.user.id
             },
             data: {
                 clubIDRequest: clubID
@@ -144,32 +172,27 @@ export const acceptMembershipRequest = async (userID: string, clubID: string | n
     }
 
     try {
-        const [user, club] = await Promise.all([
-            prisma.user.update({
-                where: { 
-                    id: userID 
-                },
-                data: { 
-                    clubIDRequest: null, 
-                    clubID: clubID,
-                    role: role,
-                    classes: classes
-                },
-                select: { 
-                    email: true 
-                }
-            }),
-            prisma.club.findUnique({
-                where: { id: clubID },
-                select: { id: true },
-            }),
-        ]);
-
-        if (!club) {
-            return { error: "Le club spécifié est introuvable." };
+        // Only a pending request for THIS club can be accepted: otherwise a manager
+        // could pull any user (from any club) into their own. The condition sits in
+        // the update itself so it cannot race with a withdrawn request.
+        const accepted = await prisma.user.updateMany({
+            where: {
+                id: userID,
+                clubIDRequest: clubID,
+            },
+            data: {
+                clubIDRequest: null,
+                clubID: clubID,
+                role: role,
+                classes: classes
+            },
+        });
+        if (accepted.count !== 1) {
+            return { error: "Aucune demande d'adhésion en attente pour ce membre." };
         }
 
-        await sendNotificationRequestClub(user.email as string, club.id)
+        const user = await prisma.user.findUnique({ where: { id: userID }, select: { email: true } });
+        if (user?.email) await sendNotificationRequestClub(user.email, clubID)
 
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch {
@@ -185,39 +208,27 @@ export const rejectMembershipRequest = async (userID: string) => {
     const auth = await requireAuth(MANAGEMENT_ROLES);
     if ('error' in auth) return { error: auth.error };
 
+    if (!auth.user.clubID) return { error: "Permissions insuffisantes" };
+
     try {
-        await prisma.user.update({
+        // Only requests addressed to the manager's own club.
+        const rejected = await prisma.user.updateMany({
             where: {
-                id: userID
+                id: userID,
+                clubIDRequest: auth.user.clubID,
             },
             data: {
                 clubIDRequest: null
             }
         });
+        if (rejected.count !== 1) {
+            return { error: "Aucune demande d'adhésion en attente pour ce membre." };
+        }
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
     }
 };
-
-export const getClubAdress = async (clubID: string) => {
-    try {
-        const club = await prisma.club.findUnique({
-            where: {
-                id: clubID
-            },
-            select: {
-                Country: true,
-                ZipCode: true,
-                City: true,
-                Address: true,
-            }
-        });
-        return club;
-    } catch {
-        return null;
-    }
-}
 
 export interface ConfigClub {
     clubName: string;

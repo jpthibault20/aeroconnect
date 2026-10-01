@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
@@ -15,7 +14,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "./ui/select";
-import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { createClub } from "@/api/db/club";
 import { Spinner } from "./ui/SpinnerVariants";
 import {
@@ -32,26 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import codeNewClubIsValid from "@/api/client/newClubValidation";
-
-// --- Validation schema ---
-const clubFormSchema = z.object({
-    name: z.string().min(1, "Le nom du club est requis"),
-    id: z.string().min(3, "L'ID du club doit faire 3 caractères min.").toUpperCase(),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    zipCode: z.string().optional(),
-    workStartTime: z.string({ required_error: "Heure d'ouverture requise" }).min(1, "Heure d'ouverture requise"),
-    workEndTime: z.string({ required_error: "Heure de fermeture requise" }).min(1, "Heure de fermeture requise"),
-    sessionDuration: z.number().default(60)
-}).refine(
-    (data) => parseInt(data.workEndTime) - parseInt(data.workStartTime) >= 3,
-    {
-        path: ["workEndTime"],
-        message: "La journée doit durer au moins 3h.",
-    }
-);
-
-export type ClubFormValues = z.infer<typeof clubFormSchema>;
+import { clubFormSchema, ClubFormValues } from "@/schemas/club";
 
 interface Props {
     setNewClub: React.Dispatch<React.SetStateAction<boolean>>;
@@ -59,7 +38,6 @@ interface Props {
 
 const NewClub = ({ setNewClub }: Props) => {
     const [formError, setFormError] = useState<string | null>(null);
-    const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
     const [authorizedCreateNewClub, setAuthorizedCreateNewClub] = useState(false);
     const [code, setCode] = useState("");
@@ -80,7 +58,7 @@ const NewClub = ({ setNewClub }: Props) => {
         setLoading(true);
         setFormError(null);
         try {
-            const res = await createClub(data, currentUser?.id as string);
+            const res = await createClub(data, Number(code));
             if (res.error) {
                 setFormError(res.error);
             } else if (res.success) {

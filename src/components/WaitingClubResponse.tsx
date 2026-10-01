@@ -12,7 +12,7 @@ interface props {
 const WaitingClubResponse = ({ clubIDprops }: props) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [club, setClub] = useState<Club>();
+    const [club, setClub] = useState<Pick<Club, "id" | "Name">>();
     const { currentUser } = useCurrentUser();
 
     const fetchClub = async () => {

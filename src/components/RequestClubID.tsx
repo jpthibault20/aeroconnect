@@ -9,7 +9,6 @@ import {
 import { IoIosWarning } from 'react-icons/io';
 import { Button } from './ui/button';
 import { requestClubID } from '@/api/db/club';
-import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Spinner } from './ui/SpinnerVariants';
 import { Building2, ArrowRight, PlusCircle } from 'lucide-react';
 
@@ -30,7 +29,6 @@ interface props {
 }
 
 const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequestClubID, setSelectedClubID, setLoading }: props) => {
-    const { currentUser } = useCurrentUser();
     const [localSelectedId, setLocalSelectedId] = useState<string>("");
 
     const onSubmit = async () => {
@@ -43,7 +41,7 @@ const RequestClubID = ({ setError, clubs, loading, error, newClubButton, setRequ
         setSelectedClubID(localSelectedId);
 
         try {
-            const res = await requestClubID(localSelectedId, currentUser!.id);
+            const res = await requestClubID(localSelectedId);
             if (res.error) {
                 setError(res.error);
             } else {
