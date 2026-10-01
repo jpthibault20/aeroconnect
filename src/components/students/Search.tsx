@@ -10,7 +10,6 @@ interface Props {
 const Search = ({ searchQuery, setSearchQuery }: Props) => {
     return (
         <div className="relative w-full md:w-72">
-            {/* Icône positionnée en absolu à gauche */}
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <SearchIcon className="h-4 w-4 text-slate-400" />
             </div>

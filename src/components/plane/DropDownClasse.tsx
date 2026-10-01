@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -19,26 +19,17 @@ interface Props {
 export const DropDownClasse = ({ planeProp, setPlaneProp }: Props) => {
     const { currentClub } = useCurrentClub();
 
-    // Filtrer les classes disponibles selon le club
-    const [classesList, setClassesList] = useState(
-        aircraftClasses.filter(c => currentClub?.classes.includes(c.id))
-    );
+    // Classes available for the club
+    const classesList = aircraftClasses.filter(c => currentClub?.classes.includes(c.id));
 
-    useEffect(() => {
-        setClassesList(
-            aircraftClasses.filter(c => currentClub?.classes.includes(c.id))
-        );
-    }, [currentClub]);
-
-    // Trouver le label actuel pour l'afficher
     const currentLabel = classesList.find(c => c.id === planeProp.classes)?.label || "Sélectionner une classe";
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger className={cn(
                 "w-full flex justify-between items-center text-left",
-                "bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm", // Style Input standard
-                "focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent", // Focus neutre
+                "bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm",
+                "focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent",
                 "transition-all hover:bg-slate-100"
             )}>
                 <span className="text-slate-900 truncate">

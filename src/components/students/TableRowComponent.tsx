@@ -15,13 +15,14 @@ import UpdateUserComponent from './UpdateUserComponent';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Pencil, Trash2, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import MemberWalletLink from '../wallet/MemberWalletLink';
 
 interface Props {
     user: User;
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
 }
 
-// Configuration des couleurs et labels pour les rôles
+// Role colors and labels
 const roleConfig: Record<string, { label: string; color: string; border: string }> = {
     OWNER: { label: 'Président', color: 'bg-purple-100 text-[#774BBE]', border: 'border-purple-200' },
     ADMIN: { label: 'Admin', color: 'bg-slate-100 text-slate-700', border: 'border-slate-200' },
@@ -70,7 +71,7 @@ const TableRowComponent = ({ user, setUsers }: Props) => {
                     variant: "destructive"
                 });
             }
-        } catch (error) {
+        } catch {
             toast({ title: "Erreur technique", variant: "destructive" });
         } finally {
             setLoading(false);
@@ -84,14 +85,14 @@ const TableRowComponent = ({ user, setUsers }: Props) => {
     return (
         <TableRow className="group hover:bg-slate-50 transition-colors">
 
-            {/* 1. Avatar (Visuel) */}
+            {/* 1. Avatar */}
             <TableCell className="text-center py-3">
                 <div className="mx-auto h-9 w-9 rounded-full bg-gradient-to-br from-[#774BBE] to-[#6035a0] flex items-center justify-center text-white text-xs font-bold shadow-sm border-2 border-white ring-1 ring-slate-100">
                     {initials}
                 </div>
             </TableCell>
 
-            {/* 2. Identité (Nom + Email) */}
+            {/* 2. Identity (name + email) */}
             <TableCell className="pl-4">
                 <div className="flex flex-col">
                     <span className="font-semibold text-slate-900 text-sm">
@@ -103,7 +104,7 @@ const TableRowComponent = ({ user, setUsers }: Props) => {
                 </div>
             </TableCell>
 
-            {/* 3. Rôle (Badge) */}
+            {/* 3. Role (badge) */}
             <TableCell className="text-center hidden sm:table-cell">
                 <span className={cn(
                     "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
@@ -114,7 +115,7 @@ const TableRowComponent = ({ user, setUsers }: Props) => {
                 </span>
             </TableCell>
 
-            {/* 4. Téléphone (Caché sur mobile) */}
+            {/* 4. Phone (hidden on mobile) */}
             <TableCell className="text-center hidden md:table-cell">
                 {user.phone ? (
                     <div className="flex items-center justify-center gap-1 text-slate-600 text-sm">
@@ -126,17 +127,20 @@ const TableRowComponent = ({ user, setUsers }: Props) => {
                 )}
             </TableCell>
 
-            {/* 5. Statut (Restreint) */}
+            {/* 5. Status (restricted) */}
             <TableCell className="text-center">
                 <div className="flex justify-center">
                     <Restricted user={user} />
                 </div>
             </TableCell>
 
-            {/* 6. Actions (Edit / Delete) */}
+            {/* 6. Actions (edit / delete) */}
             {canManage && (
                 <TableCell className="text-right pr-4">
                     <div className="flex items-center justify-end gap-1 opacity-100  transition-opacity">
+
+                        {/* Wallet: shortcut to credit the member */}
+                        <MemberWalletLink member={user} />
 
                         {/* Edit Button */}
                         <UpdateUserComponent

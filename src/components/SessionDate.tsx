@@ -12,7 +12,6 @@ const SessionDate = ({ startDate, endDate }: SessionDateProps) => {
 
     return (
         <div className="flex items-center gap-4 pb-4 w-full">
-            {/* Début */}
             <div className="flex-1 space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                     Début
@@ -23,12 +22,10 @@ const SessionDate = ({ startDate, endDate }: SessionDateProps) => {
                 </div>
             </div>
 
-            {/* Séparateur */}
             <div className="flex items-center justify-center pt-5">
                 <ArrowRight className="w-4 h-4 text-slate-300" />
             </div>
 
-            {/* Fin */}
             <div className="flex-1 space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                     Fin

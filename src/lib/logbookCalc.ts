@@ -10,8 +10,8 @@ export function isInstructorRole(role: userRole): boolean {
     return INSTRUCTOR_ROLES.includes(role);
 }
 
-// pilotFunction est déduit de la nature du vol + du rôle de l'utilisateur qui
-// crée l'entrée. Plus d'input direct côté UI.
+// pilotFunction is derived from the flight type + the role of the user creating
+// the entry. No direct UI input anymore.
 export function derivePilotFunction(
     nature: flightNature,
     userRoleValue: userRole
@@ -20,43 +20,42 @@ export function derivePilotFunction(
     return isInstructorRole(userRoleValue) ? "I" : "EP";
 }
 
-// ─── Format de saisie du compteur moteur (hobbs) ───
-// Tous les hobbs sont STOCKÉS en heures décimales (123,5 = 123 h 30 min) : c'est
-// la source-of-truth unique sur laquelle reposent computeDurationMinutes et
-// plane.hobbsTotal. Le format ci-dessous ne concerne QUE la saisie/l'affichage
-// dans les popups : certains compteurs s'affichent en décimal, d'autres en
-// HH:MM (123,30 = 123 h 30 min). La conversion vers le décimal canonique se fait
-// à la saisie (cf. HobbsInput) pour ne rien changer au reste de l'application.
+// ─── Hobbs counter input format ───
+// All Hobbs values are STORED as decimal hours (123.5 = 123 h 30 min): the single
+// source of truth for computeDurationMinutes and plane.hobbsTotal. The format
+// below ONLY affects input/display in the popups: some counters show decimals,
+// others HH:MM (123,30 = 123 h 30 min). Conversion to the canonical decimal
+// happens on input (see HobbsInput) so nothing else in the app changes.
 export type HobbsFormat = "HMS" | "DECIMAL";
 
-// Décompose des heures décimales en heures entières + minutes (0-59).
-// 123,5 -> { hours: 123, minutes: 30 }
+// Splits decimal hours into whole hours + minutes (0-59).
+// 123.5 -> { hours: 123, minutes: 30 }
 export function decimalToHoursMinutes(value: number): { hours: number; minutes: number } {
     const totalMinutes = Math.round(value * 60);
     return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
 }
 
-// Recompose des heures + minutes en heures décimales canoniques (valeur stockée).
-// (123, 30) -> 123,5. Arrondi à 4 décimales pour garder des nombres propres
-// (1/60 = 0,0166… non terminant) tout en conservant la résolution à la minute.
+// Rebuilds hours + minutes into canonical decimal hours (stored value).
+// (123, 30) -> 123.5. Rounded to 4 decimals to keep clean numbers
+// (1/60 = 0.0166… is non-terminating) while keeping minute resolution.
 export function hoursMinutesToDecimal(hours: number, minutes: number): number {
     return Math.round((hours + minutes / 60) * 1e4) / 1e4;
 }
 
 export interface HobbsParseResult {
-    // Heures décimales canoniques, ou null si vide / invalide.
+    // Canonical decimal hours, or null if empty / invalid.
     decimal: number | null;
-    // true uniquement en HH:MM quand la partie minutes est >= 60.
+    // true only in HH:MM when the minutes part is >= 60.
     minutesInvalid: boolean;
 }
 
-// Interprète une saisie HH:MM. Séparateur libre : « , », « . » ou « : » (le
-// point et la virgule sont sur le clavier numérique mobile). Les chiffres après
-// le séparateur sont des MINUTES (0-59), pas une fraction décimale.
+// Parses an HH:MM input. Free separator: ",", "." or ":" (dot and comma are on
+// the mobile numeric keypad). Digits after the separator are MINUTES (0-59), not
+// a decimal fraction.
 //   "123"     -> 123 h 00
-//   "123,30"  -> 123 h 30   (idem "123.30" / "123:30")
+//   "123,30"  -> 123 h 30   (same for "123.30" / "123:30")
 //   "123,5"   -> 123 h 05
-//   "123,75"  -> minutes invalides
+//   "123,75"  -> invalid minutes
 function parseHmsInput(raw: string): HobbsParseResult {
     const s = raw.trim();
     if (s === "") return { decimal: null, minutesInvalid: false };
@@ -85,12 +84,12 @@ function parseDecimalInput(raw: string): HobbsParseResult {
     return { decimal: isNaN(v) ? null : v, minutesInvalid: false };
 }
 
-// Parse une saisie utilisateur (popups) vers des heures décimales canoniques.
+// Parses a user input (popups) into canonical decimal hours.
 export function parseHobbsInput(raw: string, format: HobbsFormat): HobbsParseResult {
     return format === "HMS" ? parseHmsInput(raw) : parseDecimalInput(raw);
 }
 
-// Heures décimales canoniques -> chaîne affichée dans le champ selon le format.
+// Canonical decimal hours -> string shown in the field for the given format.
 export function formatHobbsValue(value: number | null, format: HobbsFormat): string {
     if (value == null) return "";
     if (format === "DECIMAL") return String(value);
@@ -98,8 +97,8 @@ export function formatHobbsValue(value: number | null, format: HobbsFormat): str
     return `${hours}:${String(minutes).padStart(2, "0")}`;
 }
 
-// Durée en minutes : calculée à la volée depuis les heures moteur. Pas stockée
-// en DB pour rester source-of-truth unique (hobbs).
+// Duration in minutes: computed on the fly from the Hobbs hours. Not stored in
+// the DB to keep a single source of truth (Hobbs).
 export function computeDurationMinutes(
     hobbsStart: number | null | undefined,
     hobbsEnd: number | null | undefined
@@ -110,31 +109,31 @@ export function computeDurationMinutes(
     return Math.round(diff * 60);
 }
 
-// ─── Compteur moteur de l'aéronef (plane.hobbsTotal) ───
-// Invariant : le compteur ne recule JAMAIS par effet de bord d'une saisie.
-// Chaque entrée de carnet est une lecture du compteur physique par le pilote :
-// son hobbsStart est figé à la création (= compteur courant), et sa fin fait
-// avancer le compteur dès la création, signée ou non, pour que le pilote
-// suivant voie un début à jour. La signature ne fait que verrouiller l'entrée.
-//
-// Signer/créer un vol antérieur APRÈS un vol postérieur (fin plus petite que
-// le compteur) ne doit donc pas ramener le compteur en arrière — c'est
-// exactement le bug qui a corrompu les débuts de tous les vols suivants.
+// ─── Plane Hobbs counter (plane.hobbsTotal) ───
+// Invariant: the counter NEVER goes backwards as a side effect of an entry.
+// Each logbook entry is a reading of the physical counter by the pilot: its
+// hobbsStart is frozen at creation (= current counter), and its end advances the
+// counter on creation, signed or not, so the next pilot sees an up-to-date start.
+// Signing only locks the entry.
+// 
+// Signing/creating an earlier flight AFTER a later one (end lower than the
+// counter) must therefore not move the counter back: exactly the bug that
+// corrupted the starts of every following flight.
 
-// Égalité de deux lectures de compteur (valeurs arrondies à 4 décimales,
-// cf. hoursMinutesToDecimal) avec une tolérance sous la minute.
+// Equality of two counter readings (values rounded to 4 decimals, see
+// hoursMinutesToDecimal) with a sub-minute tolerance.
 function sameHobbs(a: number, b: number): boolean {
     return Math.abs(a - b) < 1e-6;
 }
 
-// Nouveau compteur après création ou modification d'une entrée.
-//   current     : plane.hobbsTotal courant (null = compteur inconnu)
-//   previousEnd : hobbsEnd stocké de l'entrée AVANT modification (null en création)
-//   nextEnd     : hobbsEnd après modification (null = inchangé / non saisi)
-// Si l'entrée était « en tête » (sa fin précédente EST le compteur courant),
-// sa nouvelle fin remplace le compteur : c'est le seul cas où il peut
-// baisser, et c'est une correction explicite de la dernière lecture (faute
-// de frappe). Sinon : max(courant, fin), jamais de recul.
+// New counter after creating or editing an entry.
+//   current     : current plane.hobbsTotal (null = unknown counter)
+//   previousEnd : stored hobbsEnd of the entry BEFORE the edit (null on creation)
+//   nextEnd     : hobbsEnd after the edit (null = unchanged / not entered)
+// If the entry was the "head" (its previous end IS the current counter), its new
+// end replaces the counter: the only case where it can go down, as an explicit
+// correction of the last reading (typo). Otherwise: max(current, end), never
+// backwards.
 export function advanceHobbsTotal(
     current: number | null | undefined,
     previousEnd: number | null | undefined,
@@ -146,9 +145,9 @@ export function advanceHobbsTotal(
     return Math.max(current, nextEnd);
 }
 
-// Compteur après suppression d'une entrée (non signée). Si elle était en
-// tête, on revient à son début (dernière lecture connue avant ce vol) ; sinon
-// un autre vol a déjà poussé le compteur plus loin et on n'y touche pas.
+// Counter after deleting an (unsigned) entry. If it was the head, go back to its
+// start (last known reading before this flight); otherwise another flight has
+// already pushed the counter further and it is left alone.
 export function rollbackHobbsTotal(
     current: number | null | undefined,
     log: { hobbsStart: number | null; hobbsEnd: number | null }
@@ -158,9 +157,9 @@ export function rollbackHobbsTotal(
     return log.hobbsStart ?? current;
 }
 
-// ─── Règles de résolution du début (hobbsStart) côté serveur ───
-// Extraites des server actions createFlightLog / updateFlightLog /
-// signFlightLog pour être testables sans base.
+// ─── Server-side hobbsStart resolution rules ───
+// Extracted from the createFlightLog / updateFlightLog / signFlightLog server
+// actions so they can be tested without a DB.
 
 export const HOBBS_END_BEFORE_START_ERROR =
     "Les heures moteur de fin doivent être supérieures à celles de début";
@@ -169,7 +168,7 @@ export const HOBBS_START_UNRESOLVED_ERROR =
 
 export type HobbsRuleResult<T> = ({ ok: true } & T) | { ok: false; error: string };
 
-// fin > début, uniquement quand les deux sont connus.
+// end > start, only when both are known.
 export function validateHobbsRange(
     hobbsStart: number | null | undefined,
     hobbsEnd: number | null | undefined
@@ -180,12 +179,12 @@ export function validateHobbsRange(
     return { ok: true };
 }
 
-// Création : le début est le compteur courant de la machine, point. La valeur
-// envoyée par le client n'est prise en compte que :
-//  - par un OWNER/ADMIN (override, mauvaise pratique assumée : correction de
-//    saisie ou vol antérieur saisi en retard) ;
-//  - quand le compteur est inconnu (machine jamais loguée) : la première
-//    entrée l'initialise avec la valeur lue sur l'aéronef, quel que soit le rôle.
+// Creation: the start is the plane's current counter, period. The value sent by
+// the client is only used:
+//  - by an OWNER/ADMIN (override, an accepted bad practice: fixing an entry or an
+//    earlier flight entered late);
+//  - when the counter is unknown (plane never logged): the first entry
+//    initializes it with the value read on the aircraft, whatever the role.
 export function resolveCreateHobbsStart(args: {
     planeHobbsTotal: number | null;
     requested: number | undefined;
@@ -197,10 +196,10 @@ export function resolveCreateHobbsStart(args: {
     return args.planeHobbsTotal;
 }
 
-// Modification : seul un OWNER/ADMIN peut toucher au début ; pour les autres
-// rôles la valeur envoyée est ignorée silencieusement (le client est censé
-// bloquer le champ) et la validation se fait contre le début stocké.
-// startOverride : valeur à écrire en base (undefined = ne pas toucher).
+// Update: only an OWNER/ADMIN can change the start; for other roles the value
+// sent is silently ignored (the client is supposed to lock the field) and
+// validation runs against the stored start.
+// startOverride: value to write to the DB (undefined = leave untouched).
 export function resolveUpdateHobbs(args: {
     existing: { hobbsStart: number | null; hobbsEnd: number | null };
     requestedStart: number | undefined;
@@ -215,10 +214,10 @@ export function resolveUpdateHobbs(args: {
     return { ok: true, hobbsStart, hobbsEnd, startOverride };
 }
 
-// Signature : le début a normalement été figé à la création. Reste le cas des
-// entrées historiques (auto-créées, début null) : on le fige sur le compteur
-// courant si c'est encore cohérent (compteur < fin), sinon le compteur a déjà
-// dépassé ce vol et seul un OWNER/ADMIN peut renseigner le début à la main.
+// Signing: the start was normally frozen at creation. What remains is historical
+// entries (auto-created, null start): freeze it to the current counter if still
+// consistent (counter < end), otherwise the counter has already passed this
+// flight and only an OWNER/ADMIN can set the start manually.
 export function resolveSignHobbsStart(args: {
     logStart: number | null;
     logEnd: number | null;
@@ -254,15 +253,15 @@ export function computeFlightTimes(log: {
 }
 
 export interface FlightTimesResolved extends FlightTimes {
-    // true quand la durée a été estimée avec un début provisoire (vol non signé,
-    // hobbsStart pas encore figé). À NE PAS compter dans les totaux/export officiels.
+    // true when the duration was estimated with a provisional start (unsigned flight,
+    // hobbsStart not frozen yet). Must NOT be counted in official totals/exports.
     provisional: boolean;
 }
 
-// Comme computeFlightTimes, mais pour un vol non signé (hobbsStart === null),
-// on utilise le hobbs courant de l'avion comme début provisoire afin d'afficher
-// une durée INDICATIVE dans le tableau, cohérente avec l'aperçu de la popup.
-// hobbsStart est figé définitivement à la signature (cf. signFlightLog).
+// Like computeFlightTimes, but for an unsigned flight (hobbsStart === null) the
+// plane's current Hobbs is used as a provisional start to show an INDICATIVE
+// duration in the table, consistent with the popup preview. hobbsStart is frozen
+// for good on signing (see signFlightLog).
 export function computeFlightTimesWithFallback(
     log: {
         hobbsStart: number | null;
@@ -282,7 +281,7 @@ export function computeFlightTimesWithFallback(
     return { ...times, provisional: times.durationMinutes > 0 };
 }
 
-// Validation de la cohérence nature / sous-type.
+// Flight type / sub-type consistency check.
 export function validateNatureSubType(
     nature: flightNature,
     subType: instructionSubType | null | undefined
@@ -309,7 +308,7 @@ export const INSTRUCTION_SUBTYPE_LABELS: Record<instructionSubType, string> = {
     EXAM: "Examen",
 };
 
-// Libellé court (pour les tableaux et PDF).
+// Short label (tables and PDF).
 export function formatNature(
     nature: flightNature,
     subType: instructionSubType | null
@@ -319,7 +318,7 @@ export function formatNature(
     return `Instr. (${INSTRUCTION_SUBTYPE_LABELS[subType]})`;
 }
 
-// Libellé long pour affichage détaillé.
+// Long label for detailed display.
 export function formatNatureLong(
     nature: flightNature,
     subType: instructionSubType | null

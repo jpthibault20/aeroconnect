@@ -1,9 +1,9 @@
 import { MachineUsage } from "@prisma/client";
 
-// Libellés FR des usages d'une machine du club.
-// Volontairement conservé alors que plus aucun composant ne l'importe : le champ
-// « Usages » est masqué des formulaires et des fiches en attendant d'être
-// exploité par une règle métier (instruction / location). Ne pas supprimer.
+// French labels of a club plane's usages.
+// Deliberately kept although no component imports it anymore: the "Usages"
+// field is hidden from forms and plane cards until a business rule uses it
+// (instruction / rental). Do not delete.
 export const USAGE_OPTIONS: { value: MachineUsage; label: string }[] = [
     { value: "INSTRUCTION", label: "Instruction" },
     { value: "LOCATION", label: "Location" },

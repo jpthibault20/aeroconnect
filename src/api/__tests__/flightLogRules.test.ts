@@ -17,11 +17,10 @@ import {
 } from "@/lib/logbookCalc";
 
 /**
- * Tests des règles du carnet de vol (flight_logs).
- * Logique extraite de logbook.ts + helpers logbookCalc.ts.
+ * Logbook (flight_logs) rules. Logic extracted from logbook.ts + logbookCalc.ts.
  */
 
-// --- Signature ---
+// --- Signing ---
 
 function canSignFlight(authUserID: string, logPilotID: string, pilotSigned: boolean): { allowed: boolean; reason?: string } {
     if (authUserID !== logPilotID) return { allowed: false, reason: "Seul le pilote concerné peut signer" };
@@ -29,16 +28,15 @@ function canSignFlight(authUserID: string, logPilotID: string, pilotSigned: bool
     return { allowed: true };
 }
 
-// --- Suppression ---
+// --- Deletion ---
 
-// Miroir fidèle de deleteFlightLog (src/api/db/logbook.ts). Ordre des contrôles :
-//  1. requireAuth(LOGBOOK_WRITE_ROLES) — STUDENT et USER exclus du gate d'écriture.
-//  2. isolation club — le vol doit appartenir au club de l'utilisateur.
-//  3. vol signé → verrouillé, jamais supprimable ici (même OWNER/ADMIN).
-//  4. sinon : OWNER/ADMIN suppriment n'importe quel vol non signé du club ;
-//     tout autre rôle autorisé ne peut supprimer QUE son propre vol
-//     (auth.user.id === log.pilotID) — cas d'usage : l'instructeur supprime le
-//     log auto-créé d'une séance où l'élève ne s'est pas présenté.
+// Faithful mirror of deleteFlightLog (src/api/db/logbook.ts). Check order:
+//  1. requireAuth(LOGBOOK_WRITE_ROLES): STUDENT and USER are excluded.
+//  2. club isolation: the flight must belong to the user's club.
+//  3. signed flight → locked, never deletable here (not even OWNER/ADMIN).
+//  4. otherwise: OWNER/ADMIN delete any unsigned flight of the club; any other
+//     allowed role can only delete THEIR OWN flight (auth.user.id === log.pilotID),
+//     e.g. an instructor deleting the auto-created log of a no-show session.
 const WRITE_ROLES: userRole[] = [userRole.PILOT, userRole.INSTRUCTOR, userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 const OVERRIDE_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN];
 
@@ -80,9 +78,9 @@ describe("Règles du carnet de vol", () => {
         });
 
         it("arrondi au plus proche", () => {
-            // 1.51h = 90.6min → arrondi à 91
+            // 1.51h = 90.6min → rounded to 91
             expect(computeDurationMinutes(0, 1.51)).toBe(91);
-            // 1.005h = 60.3min → arrondi à 60
+            // 1.005h = 60.3min → rounded to 60
             expect(computeDurationMinutes(0, 1.005)).toBe(60);
         });
     });
@@ -99,7 +97,7 @@ describe("Règles du carnet de vol", () => {
             expect(hoursMinutesToDecimal(123, 30)).toBe(123.5);
             expect(hoursMinutesToDecimal(123, 15)).toBe(123.25);
             expect(hoursMinutesToDecimal(0, 6)).toBe(0.1);
-            // 18 min ≠ 30 min : c'est précisément le bug que le format HH:MM corrige.
+            // 18 min ≠ 30 min: exactly the bug the HH:MM format fixes.
             expect(hoursMinutesToDecimal(123, 18)).toBe(123.3);
         });
 
@@ -111,11 +109,11 @@ describe("Règles du carnet de vol", () => {
         });
 
         it("une saisie HH:MM '123:30' donne la bonne durée vs '123:18'", () => {
-            // Vol de 30 min réel saisi en HH:MM puis converti en décimal.
-            const start = hoursMinutesToDecimal(123, 0); // 123,0
-            const end30 = hoursMinutesToDecimal(123, 30); // 123,5
+            // Actual 30 min flight entered as HH:MM then converted to decimal.
+            const start = hoursMinutesToDecimal(123, 0);
+            const end30 = hoursMinutesToDecimal(123, 30);
             expect(computeDurationMinutes(start, end30)).toBe(30);
-            const end18 = hoursMinutesToDecimal(123, 18); // 123,3
+            const end18 = hoursMinutesToDecimal(123, 18);
             expect(computeDurationMinutes(start, end18)).toBe(18);
         });
     });
@@ -167,7 +165,7 @@ describe("Règles du carnet de vol", () => {
         it("hobbsStart figé : durée définitive, non provisoire", () => {
             const t = computeFlightTimesWithFallback(
                 { hobbsStart: 100, hobbsEnd: 101.5, pilotFunction: "P" },
-                123 // hobbs avion ignoré car hobbsStart déjà figé
+                123 // plane Hobbs ignored because hobbsStart is already frozen
             );
             expect(t.durationMinutes).toBe(90);
             expect(t.provisional).toBe(false);
@@ -327,7 +325,7 @@ describe("Règles du carnet de vol", () => {
     });
 
     describe("Suppression d'un vol NON signé", () => {
-        // Contexte commun : un vol non signé du club-1 appartenant à pilot-1.
+        // Shared context: an unsigned club-1 flight belonging to pilot-1.
         const UNSIGNED = false;
 
         describe("OWNER / ADMIN (override) — n'importe quel vol non signé du club", () => {
@@ -344,7 +342,7 @@ describe("Règles du carnet de vol", () => {
 
         describe("Pilote propriétaire du vol — son propre vol non signé", () => {
             it("l'instructeur supprime le log auto-créé d'une séance (élève absent)", () => {
-                // Cas d'usage principal : pilotID du log = instructeur.
+                // Main use case: the log's pilotID is the instructor.
                 const r = canDeleteFlightLog(userRole.INSTRUCTOR, "instr-1", "instr-1", UNSIGNED, "club-1", "club-1");
                 expect(r.allowed).toBe(true);
             });
@@ -392,7 +390,7 @@ describe("Règles du carnet de vol", () => {
             });
 
             it("l'isolation club est vérifiée AVANT le statut signé", () => {
-                // Un vol d'un autre club renvoie le refus club, pas le refus signé.
+                // A flight from another club gets the club refusal, not the signed refusal.
                 const r = canDeleteFlightLog(userRole.OWNER, "owner-1", "pilot-1", true, "club-1", "club-2");
                 expect(r.reason).toBe("Permissions insuffisantes");
             });
@@ -429,12 +427,12 @@ describe("Règles du carnet de vol", () => {
             });
 
             it("vol antérieur saisi en retard (fin < compteur) : le compteur ne recule PAS", () => {
-                // Cas prod : BOUR signe son 06/09 (fin 1345) après le 08/09 (fin 1346).
+                // Prod case: BOUR signs their 06/09 flight (end 1345) after the 08/09 one (end 1346).
                 expect(advanceHobbsTotal(1346, null, 1345)).toBe(1346);
             });
 
             it("correction de la fin de l'entrée en tête : sa nouvelle fin remplace le compteur", () => {
-                // L'entrée en tête (fin 1349.0167 = compteur) est corrigée à 1347.
+                // The head entry (end 1349.0167 = counter) is corrected to 1347.
                 expect(advanceHobbsTotal(1349.0167, 1349.0167, 1347)).toBe(1347);
             });
 
@@ -468,33 +466,33 @@ describe("Règles du carnet de vol", () => {
         });
 
         it("rejoue la chronologie prod du 05 au 13/09 sans corrompre le compteur", () => {
-            // Chaque étape = plane.hobbsTotal après l'action, avec la nouvelle règle.
-            let counter: number | null = 1344.25;                 // 05/09 signé 1344 -> 1344:15
+            // Each step = plane.hobbsTotal after the action, with the new rule.
+            let counter: number | null = 1344.25;                 // 05/09 signed 1344 -> 1344:15
 
-            counter = advanceHobbsTotal(counter, null, 1345);     // 06/09 BOUR crée (non signé) 1344:15 -> 1345
+            counter = advanceHobbsTotal(counter, null, 1345);     // 06/09 BOUR creates (unsigned) 1344:15 -> 1345
             expect(counter).toBe(1345);
 
-            counter = advanceHobbsTotal(counter, null, 1346);     // 08/09 JP crée+signe 1345 -> 1346
+            counter = advanceHobbsTotal(counter, null, 1346);     // 08/09 JP creates+signs 1345 -> 1346
             expect(counter).toBe(1346);
 
-            counter = advanceHobbsTotal(counter, null, 1345);     // 08/09 BOUR signe enfin son 06/09
-            expect(counter).toBe(1346);                           // ← ne recule plus (bug B)
+            counter = advanceHobbsTotal(counter, null, 1345);     // 08/09 BOUR finally signs their 06/09
+            expect(counter).toBe(1346);                           // ← no longer goes backwards (bug B)
 
-            // 12/09 : le début proposé est 1346, pas 1345.
+            // 12/09: the suggested start is 1346, not 1345.
             const start12 = counter;
             expect(start12).toBe(1346);
-            counter = advanceHobbsTotal(counter, null, 1347.5);   // 12/09 JP crée (non signé)
+            counter = advanceHobbsTotal(counter, null, 1347.5);   // 12/09 JP creates (unsigned)
             expect(counter).toBe(1347.5);
 
-            // Il s'aperçoit d'une faute de frappe et supprime l'entrée : retour au début.
+            // They spot a typo and delete the entry: back to the start.
             counter = rollbackHobbsTotal(counter, { hobbsStart: start12, hobbsEnd: 1347.5 });
-            expect(counter).toBe(1346);                           // ← plus de compteur fantôme (bug A)
+            expect(counter).toBe(1346);                           // ← no more ghost counter (bug A)
         });
 
         it("deux pilotes croisés : correction et suppression ne touchent que l'entrée en tête", () => {
             let counter: number | null = 1346;
 
-            // A crée 1346 -> 1347, puis B crée 1347 -> 1348.5 : B est en tête.
+            // A creates 1346 -> 1347, then B creates 1347 -> 1348.5: B is the head entry.
             const a = { hobbsStart: 1346, hobbsEnd: 1347 };
             counter = advanceHobbsTotal(counter, null, a.hobbsEnd);
             const b = { hobbsStart: counter as number, hobbsEnd: 1348.5 };
@@ -502,15 +500,15 @@ describe("Règles du carnet de vol", () => {
             counter = advanceHobbsTotal(counter, null, b.hobbsEnd);
             expect(counter).toBe(1348.5);
 
-            // A corrige sa fin (faute de frappe 1347 -> 1346.75) : plus en tête, pas de recul.
+            // A fixes its end (typo 1347 -> 1346.75): no longer the head, no rollback.
             counter = advanceHobbsTotal(counter, a.hobbsEnd, 1346.75);
             expect(counter).toBe(1348.5);
 
-            // A supprime son entrée : pas en tête, compteur inchangé.
+            // A deletes its entry: not the head, counter unchanged.
             counter = rollbackHobbsTotal(counter, { ...a, hobbsEnd: 1346.75 });
             expect(counter).toBe(1348.5);
 
-            // B supprime la sienne : en tête, retour au début de B (1347), pas à celui de A.
+            // B deletes its entry: head, back to B's start (1347), not A's.
             counter = rollbackHobbsTotal(counter, b);
             expect(counter).toBe(1347);
         });

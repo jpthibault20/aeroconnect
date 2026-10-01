@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { filterPilotePlane, getFreePlanesUsers } from "../popupCalendar";
 import { flight_sessions, planes, User, userRole } from "@prisma/client";
 
-// --- Helpers pour créer des données de test ---
+// --- Test data helpers ---
 
 const makeUser = (overrides: Partial<User> = {}): User => ({
     id: "user-1",
@@ -33,6 +33,7 @@ const makePlane = (overrides: Partial<planes> = {}): planes => ({
     hobbsTotal: 1200,
     ownerID: null,
     usageTypes: [],
+    instructionHourlyRateCents: null,
     maintenanceHistory: null,
     imagePath: null,
     ...overrides,
@@ -131,7 +132,7 @@ describe("filterPilotePlane", () => {
 describe("getFreePlanesUsers", () => {
     it("retourne vide si props invalides", () => {
         const session = makeSession();
-        const result = getFreePlanesUsers(session, [], null as any, null as any);
+        const result = getFreePlanesUsers(session, [], null as unknown as User[], null as unknown as planes[]);
         expect(result).toEqual({ students: [], planes: [] });
     });
 

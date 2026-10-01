@@ -17,17 +17,15 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
     if (ClubIDprop) {
         const clubID = Array.isArray(ClubIDprop) ? ClubIDprop[0] : ClubIDprop;
 
-        // Fonction pour récupérer les avions depuis Prisma
         const fetchPlanes = async () => {
             return prisma.planes.findMany({
                 where: { clubID },
             });
         };
 
-        // Récupération des avions depuis le cache ou la base de données. Le cache
-        // contient TOUTES les machines du club ; on filtre ensuite par visibilité
-        // selon l'utilisateur courant (les machines privées des autres membres
-        // ne doivent pas apparaître).
+        // Planes from the cache or the DB. The cache holds ALL the club's planes; they
+        // are then filtered by visibility for the current user (other members' private
+        // planes must not show).
         const allPlanes: planes[] = await getFromCache(`planes:${clubID}`, fetchPlanes);
         const auth = await getUser();
         const currentUser = 'user' in auth ? auth.user : null;
@@ -35,10 +33,9 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             ? filterVisiblePlanes(allPlanes, currentUser)
             : [];
 
-        // Président (OWNER) et admin voient toutes les machines du club, y compris
-        // les machines privées des autres membres : on résout le nom du
-        // propriétaire pour l'afficher dans la liste. Pour les autres rôles, la
-        // colonne n'est pas rendue : inutile de faire la requête.
+        // President (OWNER) and admin see every club plane, including other members'
+        // private planes: the owner's name is resolved to show it in the list. For other
+        // roles the column is not rendered, so the query is skipped.
         const canViewOwner =
             currentUser?.role === userRole.OWNER || currentUser?.role === userRole.ADMIN;
         let ownerNames: Record<string, string> = {};

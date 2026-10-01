@@ -51,11 +51,11 @@ const Filter = ({
 }: Props) => {
     const { currentUser } = useCurrentUser();
 
-    // shouldCloseOnScroll : désactivé car HeroUI écoute tous les scrolls de la page ;
-    // sur téléphone le moindre appui dans la popup (mise en avant de l'élément qui
-    // prend le focus, barre d'URL) déclenche un scroll et refermait le filtre.
-    // shouldCloseOnBlur : les menus déroulants et le calendrier sont rendus dans des
-    // portails hors de la popup, le focus qui y part ne doit pas la fermer.
+    // shouldCloseOnScroll: disabled because HeroUI listens to every scroll on the
+    // page; on phones the slightest tap in the popup (focused element scrolled into
+    // view, URL bar) triggers a scroll and closed the filter.
+    // shouldCloseOnBlur: dropdowns and the calendar are rendered in portals outside
+    // the popup, so focus moving there must not close it.
     return (
         <Popover
             placement="bottom-end"

@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
@@ -15,7 +14,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "./ui/select";
-import { useCurrentUser } from "@/app/context/useCurrentUser";
 import { createClub } from "@/api/db/club";
 import { Spinner } from "./ui/SpinnerVariants";
 import {
@@ -32,26 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import codeNewClubIsValid from "@/api/client/newClubValidation";
-
-// --- Schéma de validation ---
-const clubFormSchema = z.object({
-    name: z.string().min(1, "Le nom du club est requis"),
-    id: z.string().min(3, "L'ID du club doit faire 3 caractères min.").toUpperCase(),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    zipCode: z.string().optional(),
-    workStartTime: z.string().min(1, "Heure de début requise"),
-    workEndTime: z.string().min(1, "Heure de fin requise"),
-    sessionDuration: z.number().default(60)
-}).refine(
-    (data) => parseInt(data.workEndTime) - parseInt(data.workStartTime) >= 3,
-    {
-        path: ["workEndTime"],
-        message: "La journée doit durer au moins 3h.",
-    }
-);
-
-export type ClubFormValues = z.infer<typeof clubFormSchema>;
+import { clubFormSchema, ClubFormValues } from "@/schemas/club";
 
 interface Props {
     setNewClub: React.Dispatch<React.SetStateAction<boolean>>;
@@ -59,7 +38,6 @@ interface Props {
 
 const NewClub = ({ setNewClub }: Props) => {
     const [formError, setFormError] = useState<string | null>(null);
-    const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
     const [authorizedCreateNewClub, setAuthorizedCreateNewClub] = useState(false);
     const [code, setCode] = useState("");
@@ -72,20 +50,21 @@ const NewClub = ({ setNewClub }: Props) => {
         formState: { errors },
     } = useForm<ClubFormValues>({
         resolver: zodResolver(clubFormSchema),
-        defaultValues: { sessionDuration: 60 },
+        // Real values, not placeholders: 09:00-18:00 can be kept without touching the selects.
+        defaultValues: { sessionDuration: 60, workStartTime: "09", workEndTime: "18" },
     });
 
     const onSubmit = async (data: ClubFormValues) => {
         setLoading(true);
         setFormError(null);
         try {
-            const res = await createClub(data, currentUser?.id as string);
+            const res = await createClub(data, Number(code));
             if (res.error) {
                 setFormError(res.error);
             } else if (res.success) {
                 window.location.href = '/calendar?clubID=' + data.id;
             }
-        } catch (error) {
+        } catch {
             setFormError("Une erreur technique est survenue.");
         } finally {
             setLoading(false);
@@ -103,17 +82,15 @@ const NewClub = ({ setNewClub }: Props) => {
         }
     };
 
-    // Styles Helpers
     const inputStyle = "bg-slate-50 border-slate-200 focus:ring-[#774BBE] focus:border-[#774BBE]";
     const sectionTitleStyle = "text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-3 pb-1 border-b border-slate-100";
 
-    // --- ÉCRAN 1 : FORMULAIRE CRÉATION ---
+    // --- SCREEN 1: CREATION FORM ---
     if (authorizedCreateNewClub) {
         return (
             <div className="animate-in slide-in-from-right-4 duration-300">
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
-                    {/* Identité */}
                     <div>
                         <h3 className={sectionTitleStyle}>
                             <Building2 className="w-4 h-4 text-[#774BBE]" /> Identité du Club
@@ -132,7 +109,6 @@ const NewClub = ({ setNewClub }: Props) => {
                         </div>
                     </div>
 
-                    {/* Localisation */}
                     <div>
                         <h3 className={sectionTitleStyle}>
                             <MapPin className="w-4 h-4 text-[#774BBE]" /> Localisation
@@ -155,7 +131,6 @@ const NewClub = ({ setNewClub }: Props) => {
                         </div>
                     </div>
 
-                    {/* Horaires */}
                     <div>
                         <h3 className={sectionTitleStyle}>
                             <Clock className="w-4 h-4 text-[#774BBE]" /> Paramètres par défaut
@@ -168,9 +143,9 @@ const NewClub = ({ setNewClub }: Props) => {
                                     control={control}
                                     render={({ field }) => (
                                         <Select onValueChange={field.onChange} value={field.value}>
-                                            <SelectTrigger className={inputStyle}><SelectValue placeholder="09:00" /></SelectTrigger>
+                                            <SelectTrigger className={inputStyle}><SelectValue placeholder="Choisir" /></SelectTrigger>
 
-                                            {/* CORRECTION ICI : z-[10000] et max-h pour le scroll */}
+                                            {/* z-[10000] to stay above the dialog, max-h for scrolling */}
                                             <SelectContent className="max-h-[200px] z-[10000]">
                                                 {hours.map(h => <SelectItem key={h} value={h}>{h}:00</SelectItem>)}
                                             </SelectContent>
@@ -185,9 +160,9 @@ const NewClub = ({ setNewClub }: Props) => {
                                     control={control}
                                     render={({ field }) => (
                                         <Select onValueChange={field.onChange} value={field.value}>
-                                            <SelectTrigger className={inputStyle}><SelectValue placeholder="18:00" /></SelectTrigger>
+                                            <SelectTrigger className={inputStyle}><SelectValue placeholder="Choisir" /></SelectTrigger>
 
-                                            {/* CORRECTION ICI : z-[10000] et max-h pour le scroll */}
+                                            {/* z-[10000] to stay above the dialog, max-h for scrolling */}
                                             <SelectContent className="max-h-[200px] z-[10000]">
                                                 {hours.map(h => <SelectItem key={h} value={h}>{h}:00</SelectItem>)}
                                             </SelectContent>
@@ -196,17 +171,16 @@ const NewClub = ({ setNewClub }: Props) => {
                                 />
                             </div>
                         </div>
+                        {errors.workStartTime && <p className="text-xs text-red-500 mt-1">{errors.workStartTime.message}</p>}
                         {errors.workEndTime && <p className="text-xs text-red-500 mt-1">{errors.workEndTime.message}</p>}
                     </div>
 
-                    {/* Erreur API */}
                     {formError && (
                         <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center gap-2">
                             <span>⚠️</span> {formError}
                         </div>
                     )}
 
-                    {/* Footer Buttons */}
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                         <Button
                             variant="ghost"
@@ -230,7 +204,7 @@ const NewClub = ({ setNewClub }: Props) => {
         );
     }
 
-    // --- ÉCRAN 2 : VÉRIFICATION OTP ---
+    // --- SCREEN 2: OTP VERIFICATION ---
     else {
         return (
             <div className="flex flex-col items-center justify-center py-6 space-y-6 animate-in zoom-in-95 duration-300">

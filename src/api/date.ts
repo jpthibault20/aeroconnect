@@ -4,7 +4,7 @@ import { flight_sessions } from "@prisma/client";
 export interface DayInfo {
     dayName: string;
     dayNumber: number;
-    month: number; // Ajout du numéro du mois
+    month: number;
     year: number;
     isToday: boolean;
 }
@@ -14,36 +14,35 @@ export const getDaysOfWeek = (inputDate: Date): DayInfo[] => {
     const currentDate = new Date();
     const daysOfWeek: DayInfo[] = [];
 
-    // Trouver le premier jour de la semaine (lundi)
-    const dayOfWeek = (date.getDay() + 6) % 7; // 0 = dimanche, 1 = lundi, ..., 6 = samedi
-    date.setDate(date.getDate() - dayOfWeek); // Reculer jusqu'au lundi
+    // Go back to the Monday of the week
+    const dayOfWeek = (date.getDay() + 6) % 7; // 0 = Monday, ..., 6 = Sunday
+    date.setDate(date.getDate() - dayOfWeek);
 
-    // Parcourir les 7 jours de la semaine
     for (let i = 0; i < 7; i++) {
-        // Cloner la date pour éviter les effets de bord
+        // Clone the date to avoid side effects
         const day = new Date(date.getTime());
 
         const dayInfo: DayInfo = {
-            dayName: day.toLocaleString('default', { weekday: 'long' }), // Nom du jour
-            dayNumber: day.getDate(), // Numéro du jour
-            month: day.getMonth(), // Numéro du mois (ajouter 1 car getMonth() est zéro-indexé)
+            dayName: day.toLocaleString('default', { weekday: 'long' }),
+            dayNumber: day.getDate(),
+            month: day.getMonth(), // 0-based
             year: day.getFullYear(),
-            isToday: day.toDateString() === currentDate.toDateString(), // Comparaison pour savoir si c'est aujourd'hui
+            isToday: day.toDateString() === currentDate.toDateString(),
         };
 
         daysOfWeek.push(dayInfo);
-        date.setDate(date.getDate() + 1); // Passer au jour suivant
+        date.setDate(date.getDate() + 1);
     }
 
     return daysOfWeek;
 };
 
 /**
- * Sessions tombant dans la semaine affichée (lundi -> dimanche) de `date`.
+ * Sessions falling in the displayed week (Monday -> Sunday) of `date`.
  *
- * Même convention que getSessionsFromDate : `sessionDateStart` est stockée en
- * wall-clock UTC, donc comparée par ses composantes UTC aux jours de la semaine
- * (eux exprimés en local par getDaysOfWeek).
+ * Same convention as getSessionsFromDate: `sessionDateStart` is stored as UTC
+ * wall-clock, so its UTC parts are compared to the week days (which
+ * getDaysOfWeek builds in local time).
  */
 export const getSessionsOfWeek = (date: Date, sessions: flight_sessions[]): flight_sessions[] => {
     const days = new Set(
@@ -59,7 +58,6 @@ export const getSessionsFromDate = (date: Date, sessions: flight_sessions[]): fl
     return sessions?.filter((session) => {
         const sessionDate = session.sessionDateStart;
 
-        // Comparer les dates (année, mois, jour)
         return sessionDate.getUTCFullYear() === date.getFullYear() &&
             sessionDate.getUTCMonth() === date.getMonth() &&
             sessionDate.getUTCDate() === date.getDate() &&
@@ -90,7 +88,7 @@ export function getCompleteWeeks(date: Date) {
     const getMonday = (d: Date): Date => {
         const dateCopy = new Date(d);
         const day = dateCopy.getDay();
-        const diff = (day === 0 ? -6 : 1) - day; // Lundi comme premier jour
+        const diff = (day === 0 ? -6 : 1) - day; // Monday as the first day
         dateCopy.setDate(dateCopy.getDate() + diff);
         return dateCopy;
     };
@@ -117,7 +115,7 @@ export function getCompleteWeeks(date: Date) {
 
     const weeks = [];
 
-    // Tant que le lundi courant est dans le mois ou la semaine inclut des jours du mois courant
+    // Loop while the current Monday is in the month or the week includes days of the month
     while (currentMonday.getMonth() === month || addDays(currentMonday, 6).getMonth() === month) {
         const week = [];
         for (let i = 0; i < 7; i++) {
@@ -135,8 +133,8 @@ export function getCompleteWeeks(date: Date) {
                 fullDate: day,
             });
         }
-        weeks.push(week); // Ajouter la semaine complète au tableau
-        currentMonday = addDays(currentMonday, 7); // Passer au lundi suivant
+        weeks.push(week);
+        currentMonday = addDays(currentMonday, 7);
     }
 
     return weeks;
@@ -152,11 +150,13 @@ export const getFlightSessionsForDay = (dayDate: Date, sessions: flight_sessions
     });
 };
 
+// Decimal hour -> "HH:MM" (8.5 -> "08:30", 8.25 -> "08:15").
+// The decimal part is a fraction of an hour, not minutes.
 export const formatTime = (numberValue: number) => {
-    const [hours, minutes] = numberValue.toString().split('.');
-    const formattedHours = hours.padStart(2, '0');
-    const formattedMinutes = minutes ? minutes.padEnd(2, '0') : '00';
-    return `${formattedHours}:${formattedMinutes}`;
+    const totalMinutes = Math.round(numberValue * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 };
 
 export const formatDate = (date: Date) => {

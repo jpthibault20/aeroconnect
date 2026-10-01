@@ -23,9 +23,10 @@ import {
     validatePlaneImage,
 } from "@/lib/planeImage";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { sanitizeRateCents } from "@/lib/wallet";
 
-// Rôles habilités à inscrire un élève à une séance (miroir de MANAGEMENT_ROLES
-// dans users.ts, qui garde addStudentToSession).
+// Roles allowed to book a student on a session (mirrors MANAGEMENT_ROLES in
+// users.ts, which guards addStudentToSession).
 const STUDENT_ASSIGN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 export interface CreatePlaneInput {
@@ -33,11 +34,13 @@ export interface CreatePlaneInput {
     name: string;
     immatriculation: string;
     classes: number;
-    // 'club'  => machine du club (propriétaire = le club, réservé aux rôles de
-    //            gestion). 'private' => machine privée du créateur.
+    // 'club'    => club plane (owned by the club, management roles only).
+    // 'private' => the creator's private plane.
     kind: "club" | "private";
-    // Usages, uniquement pour une machine du club.
+    // Usages, club planes only.
     usageTypes?: MachineUsage[];
+    // Instruction rate (cents/h), club planes only.
+    instructionHourlyRateCents?: number | null;
 }
 
 export const createPlane = async (dataPlane: CreatePlaneInput) => {
@@ -45,7 +48,7 @@ export const createPlane = async (dataPlane: CreatePlaneInput) => {
         return { error: 'Missing required fields' };
     }
 
-    // Tout membre authentifié peut créer une machine SAUF le rôle USER de base.
+    // Any authenticated member can create a plane EXCEPT the base USER role.
     const auth = await requireAuth();
     if ('error' in auth) return { error: auth.error };
 
@@ -53,15 +56,20 @@ export const createPlane = async (dataPlane: CreatePlaneInput) => {
         return { error: "Permissions insuffisantes" };
     }
 
-    // Détermination du type de machine + propriétaire (logique pure, testée).
+    // Plane type + owner resolution (pure, tested logic).
     const resolution = resolvePlaneCreation(auth.user, dataPlane.kind, dataPlane.usageTypes ?? []);
     if ("error" in resolution) {
         return { error: resolution.error };
     }
     const { ownerID, usageTypes } = resolution;
 
+    // Instruction rate: not applicable to a private plane (club instructor rate instead).
+    const rate = sanitizeRateCents(dataPlane.instructionHourlyRateCents);
+    if (rate === undefined) return { error: "Tarif écolage invalide" };
+    const instructionHourlyRateCents = ownerID == null ? rate : null;
+
     try {
-        // Vérification de l'existence d'un avion avec le même nom ou la même immatriculation
+        // Reject a plane with the same name or registration
         const existingPlane = await prisma.planes.findFirst({
             where: {
                 OR: [
@@ -77,7 +85,6 @@ export const createPlane = async (dataPlane: CreatePlaneInput) => {
             };
         }
 
-        // Création du nouvel avion si aucun duplicata n'est trouvé
         await prisma.planes.create({
             data: {
                 clubID: dataPlane.clubID,
@@ -86,10 +93,11 @@ export const createPlane = async (dataPlane: CreatePlaneInput) => {
                 classes: dataPlane.classes,
                 ownerID,
                 usageTypes,
+                instructionHourlyRateCents,
             },
         });
 
-        // Récupération et retour des avions VISIBLES par le créateur pour ce club
+        // Return the planes VISIBLE to the creator for this club
         const planes = await prisma.planes.findMany({
             where: {
                 clubID: dataPlane.clubID,
@@ -122,7 +130,7 @@ export const getPlanes = async (clubID: string) => {
             }
         });
 
-        // Masque les machines privées des autres membres.
+        // Hide other members' private planes.
         return filterVisiblePlanes(planes, auth.user);
     } catch {
         return [];
@@ -146,8 +154,7 @@ export const deletePlane = async (planeID: string) => {
             return { error: 'Plane not found' };
         }
 
-        // Machine du club => rôles de gestion ; machine privée => propriétaire,
-        // président ou admin.
+        // Club plane => management roles; private plane => owner, president or admin.
         if (!canManagePlane(plane, auth.user)) {
             return { error: "Permissions insuffisantes" };
         }
@@ -156,8 +163,7 @@ export const deletePlane = async (planeID: string) => {
             where: { id: planeID }
         });
 
-        // La ligne est partie : on nettoie le fichier associé pour ne pas
-        // laisser d'orphelin dans le bucket.
+        // The row is gone: clean up the associated file so no orphan stays in the bucket.
         await removeStoredPlaneImage(plane.imagePath, planeID);
 
         return { success: 'Plane deleted successfully' };
@@ -191,35 +197,6 @@ export const updateOperationalByID = async (planeID: string, operational: boolea
     }
 };
 
-export const getPlaneByID = async (planeID: string) => {
-    try {
-        const plane = await prisma.planes.findUnique({
-            where: {
-                id: planeID,
-            },
-        });
-
-        return plane;
-    } catch {
-        return { error: 'Plane get failed' };
-    }
-};
-
-export const getPlanesByID = async (planeID: string[]) => {
-    try {
-        const planes = await prisma.planes.findMany({
-            where: {
-                id: {
-                    in: planeID.filter((id): id is string => id !== null) // Filtrer les valeurs nulles
-                }
-            }
-        });
-        return planes;
-    } catch {
-        return { error: "Erreur lors de la récupération des avions" };
-    }
-};
-
 export const getAllPlanesOperational = async (clubID: string) => {
     const auth = await requireAuth();
     if ('error' in auth) return { error: auth.error };
@@ -232,8 +209,8 @@ export const getAllPlanesOperational = async (clubID: string) => {
                 operational: true
             }
         })
-        // Masque les machines privées des autres membres (mais garde la machine
-        // privée du membre courant, pour qu'il puisse la réserver).
+        // Hide other members' private planes (but keep the current member's private
+        // plane so they can book it).
         return filterVisiblePlanes(planes, auth.user);
     } catch {
         return { error: "Erreur lors de la récupération des avions" };
@@ -258,16 +235,23 @@ export const updatePlane = async (plane: planes) => {
             return { error: 'Permissions insuffisantes' };
         }
 
-        // Compteur horaire : gestion (OWNER/ADMIN) sur toute machine, et le
-        // propriétaire sur sa propre machine privée.
+        // Hobbs counter: management (OWNER/ADMIN) on any plane, and the owner on their
+        // own private plane.
         const canEditHobbs = canEditPlaneHobbs(existing, auth.user);
 
-        // Les usages ne concernent que les machines du club : on ne les met à
-        // jour que pour une machine du club (ownerID null), avec les valeurs
-        // valides. Le type privé/club (ownerID) n'est pas modifiable ici.
+        // Usages only apply to club planes: only updated for a club plane (ownerID
+        // null), with valid values. The private/club type (ownerID) cannot change here.
         const nextUsageTypes = existing.ownerID == null
             ? sanitizeClubUsages(plane.usageTypes)
             : existing.usageTypes;
+
+        // Instruction rate: club planes only (canManagePlane already guarantees a
+        // management role for a club plane).
+        const rate = sanitizeRateCents(plane.instructionHourlyRateCents);
+        if (rate === undefined) return { error: "Tarif écolage invalide" };
+        const nextRate = existing.ownerID == null && plane.instructionHourlyRateCents !== undefined
+            ? rate
+            : existing.instructionHourlyRateCents;
 
         await prisma.planes.update({
             where: { id: plane.id },
@@ -278,6 +262,7 @@ export const updatePlane = async (plane: planes) => {
                 classes: plane.classes,
                 hobbsTotal: canEditHobbs ? plane.hobbsTotal : existing.hobbsTotal,
                 usageTypes: nextUsageTypes,
+                instructionHourlyRateCents: nextRate,
             }
         });
 
@@ -288,10 +273,10 @@ export const updatePlane = async (plane: planes) => {
 };
 
 /**
- * Réattribue le propriétaire d'une machine : à un membre du club (elle devient
- * privée) ou « au club » (newOwnerID null). Réservé au président et à l'admin
- * (cf. PRIVATE_PLANE_OVERSIGHT_ROLES) — un propriétaire ne peut pas se
- * réassigner lui-même ni transférer sa machine à un autre membre.
+ * Reassigns a plane's owner: to a club member (it becomes private) or to the
+ * club (newOwnerID null). President and admin only (see
+ * PRIVATE_PLANE_OVERSIGHT_ROLES): an owner cannot reassign it themselves or
+ * transfer their plane to another member.
  */
 export const updatePlaneOwner = async (planeID: string, newOwnerID: string | null) => {
     if (!planeID) {
@@ -330,9 +315,9 @@ export const updatePlaneOwner = async (planeID: string, newOwnerID: string | nul
 };
 
 /**
- * Supprime le fichier d'une photo dans le bucket. « Best effort » : un fichier
- * orphelin est sans conséquence fonctionnelle, alors qu'échouer ici ferait
- * échouer un remplacement de photo ou une suppression de machine.
+ * Deletes a photo file from the bucket. Best effort: an orphan file has no
+ * functional impact, whereas failing here would fail a photo replacement or a
+ * plane deletion.
  */
 const removeStoredPlaneImage = async (imagePath: string | null, planeID: string) => {
     if (!imagePath || !isPlaneImagePathOwnedBy(imagePath, planeID)) return;
@@ -343,19 +328,18 @@ const removeStoredPlaneImage = async (imagePath: string | null, planeID: string)
     try {
         await supabase.storage.from(PLANE_IMAGE_BUCKET).remove([imagePath]);
     } catch {
-        // Ignoré volontairement (cf. commentaire ci-dessus).
+        // Deliberately ignored (see comment above).
     }
 };
 
 /**
- * Envoie (ou remplace) la photo d'une machine.
+ * Uploads (or replaces) a plane's photo.
  *
- * Le fichier arrive dans un FormData sous la clé "file", déjà redimensionné par
- * le navigateur (cf. PlaneImageInput). Le serveur revalide type et taille : le
- * redimensionnement client est un confort, jamais une garantie.
+ * The file comes in a FormData under the "file" key, already resized by the
+ * browser (see PlaneImageInput). The server revalidates type and size: client
+ * resizing is a convenience, never a guarantee.
  *
- * L'enregistrement est immédiat — la photo ne dépend pas du bouton « Enregistrer »
- * du formulaire de modification.
+ * Saved immediately: the photo does not depend on the edit form's "Save" button.
  */
 export const uploadPlaneImage = async (planeID: string, formData: FormData) => {
     if (!planeID) {
@@ -372,8 +356,8 @@ export const uploadPlaneImage = async (planeID: string, formData: FormData) => {
 
     const invalid = validatePlaneImage({ type: file.type, size: file.size });
     if (invalid) return { error: invalid };
-    // Redondant avec validatePlaneImage, mais c'est ce test qui restreint le
-    // type au sous-ensemble accepté par buildPlaneImagePath.
+    // Redundant with validatePlaneImage, but this check narrows the type to the
+    // subset accepted by buildPlaneImagePath.
     if (!isPlaneImageMimeType(file.type)) {
         return { error: "Format non supporté. Utilisez une image JPEG, PNG ou WebP." };
     }
@@ -404,8 +388,8 @@ export const uploadPlaneImage = async (planeID: string, formData: FormData) => {
             data: { imagePath },
         });
 
-        // L'ancienne photo n'est supprimée qu'une fois la nouvelle en base :
-        // en cas d'échec intermédiaire, la machine garde une photo valide.
+        // The old photo is only deleted once the new one is in the DB: if something fails
+        // in between, the plane keeps a valid photo.
         await removeStoredPlaneImage(existing.imagePath, planeID);
 
         return { success: 'Photo enregistrée', imagePath };
@@ -414,7 +398,7 @@ export const uploadPlaneImage = async (planeID: string, formData: FormData) => {
     }
 };
 
-/** Retire la photo d'une machine (fichier + référence en base). */
+/** Removes a plane's photo (file + DB reference). */
 export const deletePlaneImage = async (planeID: string) => {
     if (!planeID) {
         return { error: 'Missing planeID' };
@@ -443,14 +427,13 @@ export const deletePlaneImage = async (planeID: string) => {
 };
 
 /**
- * Machines proposables à un élève donné pour un créneau donné.
+ * Planes that can be offered to a given student for a given slot.
  *
- * Chargée à la demande par le formulaire « ajouter un élève » : la page
- * calendrier ne transmet au navigateur que les machines visibles par
- * l'utilisateur courant (cf. filterVisiblePlanes dans calendar/ServerPageComp),
- * donc jamais la machine privée de l'élève qu'un gestionnaire veut inscrire.
- * C'est le serveur qui résout la liste, du point de vue de l'élève — sans
- * diffuser au passage les machines privées des autres membres.
+ * Loaded on demand by the "add a student" form: the calendar page only sends the
+ * browser the planes visible to the current user (see filterVisiblePlanes in
+ * calendar/ServerPageComp), so never the private plane of the student a manager
+ * wants to book. The server resolves the list from the student's point of view,
+ * without leaking other members' private planes.
  */
 export const getPlanesForStudentOnSession = async (sessionID: string, studentID: string) => {
     const auth = await requireAuth(STUDENT_ASSIGN_ROLES);
@@ -491,13 +474,65 @@ export const getPlanesForStudentOnSession = async (sessionID: string, studentID:
             unavailablePlaneIDs,
         });
 
-        // On ne renvoie que le strict nécessaire à l'affichage de la liste
-        // (`isPrivate` sert à distinguer visuellement machine club et privée).
+        // Only return what the list needs (`isPrivate` visually distinguishes club and
+        // private planes).
         return {
             success: true,
             planes: planes.map((p) => ({ id: p.id, name: p.name, isPrivate: p.ownerID != null })),
         };
     } catch {
         return { error: "Erreur lors de la récupération des machines." };
+    }
+};
+
+/**
+ * Instruction rate of a CLUB plane (AER-66), from the list's "Rates" dialog.
+ * Management roles only (canManagePlane on a club plane), same club.
+ * null => no rate.
+ */
+export const updatePlaneInstructionRate = async (planeID: string, rateCents: number | null) => {
+    const auth = await requireAuth();
+    if ('error' in auth) return { error: auth.error };
+
+    const rate = sanitizeRateCents(rateCents);
+    if (rate === undefined) return { error: "Tarif écolage invalide" };
+
+    try {
+        const existing = await prisma.planes.findUnique({ where: { id: planeID } });
+        if (!existing || existing.clubID !== auth.user.clubID || !canManagePlane(existing, auth.user)) {
+            return { error: 'Permissions insuffisantes' };
+        }
+        if (existing.ownerID != null) {
+            return { error: "Une machine privée n'a pas de tarif écolage : c'est le tarif instructeur du club qui s'applique." };
+        }
+        await prisma.planes.update({ where: { id: planeID }, data: { instructionHourlyRateCents: rate } });
+        return { success: 'Tarif écolage enregistré', instructionHourlyRateCents: rate };
+    } catch {
+        return { error: "Erreur lors de l'enregistrement du tarif" };
+    }
+};
+
+// Roles that log a flight for a student (instructor) or on behalf of a member
+// (president / admin / manager).
+const FLIGHT_LOG_FOR_OTHERS_ROLES: userRole[] = [userRole.INSTRUCTOR, userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+
+/**
+ * A club member's private planes, for logging a flight: an instructor can log
+ * the flight on THEIR student's private plane, which they do not see in the
+ * plane list (see canLogFlightOnPlane).
+ */
+export const getMemberPrivatePlanes = async (memberID: string) => {
+    const auth = await requireAuth(FLIGHT_LOG_FOR_OTHERS_ROLES);
+    if ('error' in auth) return { error: auth.error };
+
+    try {
+        const member = await prisma.user.findUnique({ where: { id: memberID }, select: { clubID: true } });
+        if (!member || !auth.user.clubID || member.clubID !== auth.user.clubID) {
+            return { error: 'Permissions insuffisantes' };
+        }
+        const list = await prisma.planes.findMany({ where: { clubID: auth.user.clubID, ownerID: memberID } });
+        return { success: true as const, planes: list };
+    } catch {
+        return { error: 'Erreur lors de la récupération des machines' };
     }
 };

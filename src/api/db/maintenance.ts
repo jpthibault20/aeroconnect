@@ -4,8 +4,8 @@ import { randomUUID } from "crypto";
 import { MaintenanceTask } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
-import { canAccessMaintenance } from "@/lib/planeVisibility";
-import { isPlaneOverdue } from "@/lib/maintenance";
+import { canAccessMaintenance, canViewPlane } from "@/lib/planeVisibility";
+import { getOverdueTasks, isPlaneOverdue } from "@/lib/maintenance";
 import {
     InterventionInput,
     interventionInputSchema,
@@ -15,9 +15,8 @@ import {
     taskInputSchema,
 } from "@/schemas/maintenance";
 
-// Charge une machine et vérifie que l'utilisateur courant a accès à sa
-// maintenance (même club + règle privé/club). Renvoie soit { plane, auth },
-// soit { error }.
+// Loads a plane and checks the current user can access its maintenance (same
+// club + private/club rule). Returns either { plane, auth } or { error }.
 const loadPlaneForMaintenance = async (planeID: string) => {
     const auth = await requireAuth();
     if ("error" in auth) return { error: auth.error };
@@ -32,7 +31,7 @@ const loadPlaneForMaintenance = async (planeID: string) => {
     return { plane, auth };
 };
 
-// ─── Lecture ───
+// ─── Read ───
 
 export const getPlaneMaintenance = async (planeID: string) => {
     const loaded = await loadPlaneForMaintenance(planeID);
@@ -51,7 +50,7 @@ export const getPlaneMaintenance = async (planeID: string) => {
     };
 };
 
-// ─── Interventions (historique JSON sur la machine) ───
+// ─── Interventions (JSON history on the plane) ───
 
 export const addMaintenanceIntervention = async (
     planeID: string,
@@ -72,9 +71,9 @@ export const addMaintenanceIntervention = async (
         date: data.date,
         type: data.type,
         description: data.description,
-        // Clé omise si absente : stocker `undefined` peut être rejeté par Prisma,
-        // et stocker `null` casserait la relecture (schéma `comment` optionnel,
-        // pas nullable).
+        // Key omitted when absent: storing `undefined` may be rejected by Prisma, and
+        // storing `null` would break reading it back (`comment` is optional in the
+        // schema, not nullable).
         ...(data.comment ? { comment: data.comment } : {}),
         engineHours: data.engineHours,
         createdById: auth.user.id,
@@ -92,9 +91,9 @@ export const addMaintenanceIntervention = async (
                 data: { maintenanceHistory: nextHistory },
             });
 
-            // Association à un rappel : l'intervention clôture le rappel et
-            // réinitialise son compteur (date + heures moteur de l'intervention,
-            // à défaut l'heure moteur courante de la machine).
+            // Linked to a reminder: the intervention closes the reminder and resets its
+            // counter (date + Hobbs of the intervention, falling back to the plane's current
+            // Hobbs).
             if (data.taskID) {
                 const task = await tx.maintenanceTask.findUnique({
                     where: { id: data.taskID },
@@ -138,10 +137,9 @@ export const updateMaintenanceIntervention = async (
     if (index === -1) return { error: "Intervention introuvable" };
     const existing = history[index];
 
-    // On ne touche pas à l'auteur / la date de saisie d'origine : seuls les
-    // champs saisis par l'utilisateur sont modifiables. Pas de ré-association à
-    // un rappel ici (contrairement à l'ajout) pour éviter de réinitialiser un
-    // compteur par effet de bord lors d'une simple correction.
+    // The original author / entry date are left untouched: only user-entered fields
+    // can change. No reminder re-linking here (unlike on add) so a simple correction
+    // cannot reset a counter as a side effect.
     const updated: MaintenanceIntervention = {
         id: existing.id,
         date: data.date,
@@ -193,7 +191,7 @@ export const deleteMaintenanceIntervention = async (
     }
 };
 
-// ─── Rappels récurrents (table MaintenanceTask) ───
+// ─── Recurring reminders (MaintenanceTask table) ───
 
 export const addMaintenanceTask = async (planeID: string, input: TaskInput) => {
     const parsed = taskInputSchema.safeParse(input);
@@ -271,12 +269,12 @@ export const deleteMaintenanceTask = async (taskID: string) => {
     }
 };
 
-// ─── Alertes (bulle de notification onglet Avions) ───
+// ─── Alerts (notification badge on the Planes tab) ───
 
 /**
- * Nombre de machines (parmi celles dont l'utilisateur voit la maintenance) ayant
- * au moins un rappel en retard, et la liste de leurs IDs. Sert à la bulle de
- * notification et au surlignage dans la modale.
+ * Number of planes (among those whose maintenance the user can see) with at
+ * least one overdue reminder, and their IDs. Used by the notification badge and
+ * the highlighting in the dialog.
  */
 export const getMaintenanceAlerts = async (clubID: string) => {
     const auth = await requireAuth();
@@ -306,5 +304,54 @@ export const getMaintenanceAlerts = async (clubID: string) => {
         return { count: overduePlaneIDs.length, overduePlaneIDs };
     } catch {
         return { count: 0, overduePlaneIDs: [] as string[] };
+    }
+};
+
+// ─── Warning when creating an availability (AER-43) ───
+
+export interface OverduePlaneWarning {
+    planeID: string;
+    // Overdue reminder labels (e.g. "100 h inspection").
+    overdueTasks: string[];
+}
+
+/**
+ * Club planes with at least one overdue maintenance reminder, among those the
+ * user can SEE (and therefore offer on a slot), not only those whose maintenance
+ * they manage: a pilot opening a slot must be warned too. Only reminder labels
+ * are returned, not maintenance details. Non-blocking warning.
+ */
+export const getOverduePlanesForBooking = async (clubID: string) => {
+    const auth = await requireAuth();
+    if ("error" in auth) return { overduePlanes: [] as OverduePlaneWarning[] };
+    if (auth.user.clubID !== clubID) return { overduePlanes: [] as OverduePlaneWarning[] };
+
+    try {
+        const planes = await prisma.planes.findMany({ where: { clubID } });
+        const visible = planes.filter((p) => canViewPlane(p, auth.user));
+        if (visible.length === 0) return { overduePlanes: [] as OverduePlaneWarning[] };
+
+        const tasks = await prisma.maintenanceTask.findMany({
+            where: { planeId: { in: visible.map((p) => p.id) } },
+            orderBy: { createdAt: "asc" },
+        });
+        const tasksByPlane = new Map<string, MaintenanceTask[]>();
+        for (const t of tasks) {
+            const arr = tasksByPlane.get(t.planeId);
+            if (arr) arr.push(t);
+            else tasksByPlane.set(t.planeId, [t]);
+        }
+
+        const now = new Date();
+        const overduePlanes: OverduePlaneWarning[] = [];
+        for (const p of visible) {
+            const overdue = getOverdueTasks(tasksByPlane.get(p.id) ?? [], p.hobbsTotal ?? null, now);
+            if (overdue.length > 0) {
+                overduePlanes.push({ planeID: p.id, overdueTasks: overdue.map((t) => t.title) });
+            }
+        }
+        return { overduePlanes };
+    } catch {
+        return { overduePlanes: [] as OverduePlaneWarning[] };
     }
 };

@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
 
 /**
- * Logique de validation des heures moteur extraite du composant
- * CompleteFlightDialog (côté client, avant appel du server action).
- * On teste la logique pure, pas les composants.
+ * Hobbs validation logic extracted from CompleteFlightDialog (client side,
+ * before calling the server action).
  */
 
 type ValidationResult = { valid: true } | { valid: false; message: string };
@@ -85,8 +84,8 @@ describe("Validation heures moteur", () => {
         });
     });
 
-    // Vols historiques « sans appareil » (sentinelle noPlane retirée des
-    // formulaires) : hasPlane=false, aucun compteur horaire à saisir.
+    // Historical "no plane" flights (noPlane sentinel removed from the forms):
+    // hasPlane=false, no counter to enter.
     describe("vol sans machine (données historiques)", () => {
         it("accepte toujours pour la signature", () => {
             const result = validateHobbs("", "", false, true);

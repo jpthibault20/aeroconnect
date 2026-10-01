@@ -8,17 +8,18 @@ import { toast } from "@/hooks/use-toast";
 import { Spinner } from "@/components/ui/SpinnerVariants";
 import { Check, Clock, PenLine } from "lucide-react";
 import { signButtonState } from "@/lib/logbookDisplay";
+import { emitWalletChanged } from "@/lib/walletEvents";
 
 interface Props {
     log: flight_logs;
     onSigned: (updated: flight_logs) => void;
-    // Si fourni, le clic sur le bouton "Signer" délègue à ce callback (typiquement
-    // pour ouvrir la popup de complétion qui validera puis signera) au lieu de
-    // signer directement. Indépendamment, le clic est stop-propagé pour éviter
-    // tout double-déclenchement avec un onClick parent (row click).
+    // If provided, clicking "Sign" delegates to this callback (typically to open the
+    // completion popup, which validates then signs) instead of signing directly.
+    // Either way, the click stops propagation to avoid double-firing a parent
+    // onClick (row click).
     onTriggerEdit?: () => void;
-    // Lecture seule : afficher le STATUT (signé / en attente) sans jamais proposer
-    // l'action "Signer" (ex : un élève qui consulte le carnet de route de sa machine).
+    // Read-only: show the STATUS (signed / pending) without ever offering the "Sign"
+    // action (e.g. a student viewing their plane's logbook).
     readOnly?: boolean;
 }
 
@@ -26,8 +27,8 @@ const SignFlightLogButton = React.memo(({ log, onSigned, onTriggerEdit, readOnly
     const { currentUser } = useCurrentUser();
     const [loading, setLoading] = useState(false);
 
-    // Gabarit pill commun : même hauteur, même padding, même rythme — seules
-    // couleur + icône changent pour différencier les 3 états.
+    // Shared pill template: same height, padding and rhythm; only color + icon
+    // change to tell the 3 states apart.
     const pillBase = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap";
 
     const state = signButtonState(log, currentUser?.id, readOnly);
@@ -43,8 +44,8 @@ const SignFlightLogButton = React.memo(({ log, onSigned, onTriggerEdit, readOnly
         );
     }
 
-    // Non signé mais non signable (lecture seule, ou l'utilisateur n'est pas le
-    // pilote du vol) : statut "En attente", sans action.
+    // Unsigned but not signable (read-only, or the user is not the flight's pilot):
+    // "Pending" status, no action.
     if (state === "pending") {
         return (
             <span className={`${pillBase} bg-slate-50 text-slate-500 border-slate-200`}>
@@ -71,10 +72,11 @@ const SignFlightLogButton = React.memo(({ log, onSigned, onTriggerEdit, readOnly
                 });
             } else {
                 toast({
-                    title: "Entree signee",
-                    description: "Votre signature a ete enregistree.",
+                    title: "Entrée signée",
+                    description: "Votre signature a été enregistrée.",
                     className: "bg-green-600 text-white border-none",
                 });
+                emitWalletChanged();
                 onSigned({ ...log, pilotSigned: true, pilotSignedAt: new Date() });
             }
         } catch {

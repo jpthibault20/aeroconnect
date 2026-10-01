@@ -7,7 +7,7 @@ import {
 } from "@/lib/logbookDisplay";
 
 // ─────────────────────────────────────────────────────────────
-// groupLogsByMachine — export « Tous les aéronefs »
+// groupLogsByMachine: "All planes" export
 // ─────────────────────────────────────────────────────────────
 
 describe("groupLogsByMachine", () => {
@@ -52,7 +52,7 @@ describe("groupLogsByMachine", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// canExportAircraftLogbook — activation du bouton d'export
+// canExportAircraftLogbook: export button enabled state
 // ─────────────────────────────────────────────────────────────
 
 describe("canExportAircraftLogbook", () => {
@@ -67,7 +67,7 @@ describe("canExportAircraftLogbook", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// signButtonState — colonne "Signé"
+// signButtonState: "Signed" column
 // ─────────────────────────────────────────────────────────────
 
 describe("signButtonState", () => {
@@ -98,7 +98,7 @@ describe("signButtonState", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// shouldShowStudent — affichage de l'élève sur la ligne
+// shouldShowStudent: showing the student on the row
 // ─────────────────────────────────────────────────────────────
 
 describe("shouldShowStudent", () => {

@@ -12,7 +12,7 @@ import { BaptemeOptionInput } from "@/schemas/baptemeOptions";
 
 interface Props {
     planeID: string;
-    // Formule à éditer ; absente => création.
+    // Package to edit; absent => creation.
     option?: BaptemeOption;
     onSaved: (option: BaptemeOption) => void;
     onCancel: () => void;

@@ -1,6 +1,6 @@
 /**
  * @file InitialLoading.tsx
- * @brief A React component that displays a loading spinner while the current user data is being fetched.
+ * @brief A React component that displays the flight loading animation while the current user data is being fetched.
  * 
  * This component checks if the current user's data is available. If the data is still loading,
  * it displays a spinner indicating that the data is being fetched. Once the data is available,
@@ -17,7 +17,7 @@
 import React, { useEffect } from 'react';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { useRouter } from 'next/navigation';
-// import { Spinner } from './ui/SpinnerVariants';
+import FlightLoader from './loader/FlightLoader';
 
 interface props {
     className?: string;
@@ -33,14 +33,14 @@ const InitialLoading = ({ children, className, clubIDURL }: props) => {
     useEffect(() => {
         if (!currentUser) return;
         if (
-            // Cas 1 : Si clubIDURL a une valeur mais qu'elle ne correspond pas à currentUser?.clubID
+            // Case 1: clubIDURL is set but does not match currentUser?.clubID
             (clubIDURL && currentUser?.clubID !== clubIDURL) ||
-            // Cas 2 : Si les deux ont une valeur mais qu'elles ne correspondent pas
+            // Case 2: both are set but do not match
             (currentUser?.clubID && clubIDURL && currentUser.clubID !== clubIDURL) ||
-            // Cas 3 : Si currentUser?.clubID a une valeur mais pas clubIDURL
+            // Case 3: currentUser?.clubID is set but clubIDURL is not
             (currentUser?.clubID && !clubIDURL)
         ) {
-            router.replace("/"); // Redirection
+            router.replace("/");
         }
         else {
             setIsLoading(false);
@@ -50,9 +50,7 @@ const InitialLoading = ({ children, className, clubIDURL }: props) => {
 
     if (isLoading) {
         return (
-            <div className={`${className} flex justify-center items-center`}>
-                {/* <Spinner>Loading...</Spinner> */}
-            </div>
+            <FlightLoader variant="page" className={className} />
         );
     }
     return (

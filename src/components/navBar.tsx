@@ -9,6 +9,7 @@ import { Button } from './ui/button'
 import { LogOut, Menu, X, ChevronDown } from 'lucide-react'
 import { signOut } from '@/app/auth/login/action'
 import { updateUserClub } from '@/api/db/users'
+import { toast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import Image from 'next/image'
 import packageJson from "../../package.json";
@@ -20,141 +21,69 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { getAllUserRequestedClubID } from "@/api/db/club";
-import { getMaintenanceAlerts } from "@/api/db/maintenance";
-import { getPendingBaptemeCount } from "@/api/db/bapteme";
-import { MAINTENANCE_ALERTS_EVENT } from "@/lib/maintenanceEvents";
-import { BAPTEME_REQUESTS_EVENT } from "@/lib/baptemeEvents";
+import type { NavigationCounts } from "@/hooks/useNavigationCounts";
+import { useCurrentClub } from "@/app/context/useCurrentClub";
+import { isBookingGatedRole } from "@/lib/wallet";
+import BalancePill from "./wallet/BalancePill";
 import { usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Club } from '@prisma/client'
 
 interface NavBarProps {
     clubsProp: Club[]
+    counts: NavigationCounts
 }
 
-const NavBar = ({ clubsProp }: NavBarProps) => {
+const NavBar = ({ clubsProp, counts }: NavBarProps) => {
     const { currentUser } = useCurrentUser()
     const [isOpen, setIsOpen] = useState(false)
-    const [requestCount, setRequestCount] = useState(0);
-    const [maintenanceCount, setMaintenanceCount] = useState(0);
-    const [baptemeCount, setBaptemeCount] = useState(0);
+    const { requestCount, maintenanceCount, baptemeCount, walletAlert, wallet } = counts;
+    const { currentClub } = useCurrentClub();
+    const showBalance = wallet.enabled && isBookingGatedRole(currentUser?.role) && wallet.balanceCents != null;
     const pathname = usePathname();
-    const [refreshTrigger, setRefreshTrigger] = React.useState(0);
     const searchParams = useSearchParams();
     const clubID = searchParams.get("clubID");
     const [clubForAdmin, setClubForAdmin] = useState<string | null>(clubID);
-
-    // --- EFFECT: Récupérer les notifications ---
-    useEffect(() => {
-        const fetchRequests = async () => {
-            // Définition explicite des rôles pour TypeScript
-            const allowedRoles: userRole[] = [userRole.ADMIN, userRole.OWNER, userRole.MANAGER];
-
-            // Vérification si l'utilisateur a le droit de voir les demandes
-            const canManage = currentUser?.role && allowedRoles.includes(currentUser.role);
-
-            if (clubID && canManage) {
-                try {
-                    const requests = await getAllUserRequestedClubID(clubID);
-                    // Mise à jour du compteur si la réponse est un tableau
-                    if (Array.isArray(requests)) {
-                        setRequestCount(requests.length);
-                    }
-                } catch (error) {
-                }
-            }
-        };
-
-        // Appel immédiat au chargement du composant
-        fetchRequests();
-
-        // --- GESTION DE L'AUTO-REFRESH ---
-
-        // Fonction qui sera appelée quand l'événement est déclenché
-        const handleRefresh = () => {
-            // On incrémente ce compteur, ce qui modifie une dépendance du useEffect
-            // et force React à relancer 'fetchRequests()'
-            setRefreshTrigger((prev) => prev + 1);
-        };
-
-        // On écoute l'événement global personnalisé
-        window.addEventListener('refresh-club-requests', handleRefresh);
-
-        // Fonction de nettoyage (très important pour éviter les fuites de mémoire)
-        return () => {
-            window.removeEventListener('refresh-club-requests', handleRefresh);
-        };
-
-    }, [clubID, currentUser, refreshTrigger]);
-
-    // --- EFFECT: Rappels de maintenance en retard ---
-    useEffect(() => {
-        if (!clubID) return;
-
-        const fetchAlerts = async () => {
-            try {
-                const res = await getMaintenanceAlerts(clubID);
-                setMaintenanceCount(res.count);
-            } catch {
-            }
-        };
-
-        fetchAlerts();
-        window.addEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
-        return () => window.removeEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
-    }, [clubID, currentUser]);
-
-    // --- EFFECT: Baptêmes en attente ---
-    useEffect(() => {
-        if (!clubID) return;
-
-        const fetchBaptemes = async () => {
-            try {
-                const res = await getPendingBaptemeCount(clubID);
-                setBaptemeCount(res.count);
-            } catch {
-            }
-        };
-
-        fetchBaptemes();
-        window.addEventListener(BAPTEME_REQUESTS_EVENT, fetchBaptemes);
-        return () => window.removeEventListener(BAPTEME_REQUESTS_EVENT, fetchBaptemes);
-    }, [clubID, currentUser]);
 
     const handleClubChange = async (newClubID: string) => {
         setClubForAdmin(newClubID);
         setIsOpen(false);
         if (currentUser?.id) {
-            await updateUserClub(currentUser.id, newClubID);
-            window.location.href = `/calendar?clubID=${newClubID}`;
+            const res = await updateUserClub(currentUser.id, newClubID);
+            if ('error' in res) {
+                setClubForAdmin(clubID);
+                toast({ title: "Changement de club impossible", description: res.error, variant: "destructive" });
+                return;
+            }
+            // Full reload: user / club contexts are re-read server-side.
+            window.location.assign(`/calendar?clubID=${newClubID}`);
         }
     };
 
     const filteredLinks = navigationLinks.filter(link =>
         link.roles.includes(currentUser?.role as userRole)
+        && (!link.requiresWallet || !!currentClub?.walletEnabled)
     )
 
-    // --- Indicateur de défilement du menu ---
-    // Le panneau ne montre que quelques entrées à la fois sur un petit écran, et
-    // rien n'indiquait qu'il y en avait d'autres en dessous : la barre de
-    // défilement de Radix ne s'affiche qu'au survol, donc jamais sur tactile.
-    // D'où le défilement natif (meilleure inertie au doigt) + ce dégradé.
+    // --- Menu scroll indicator ---
+    // On a small screen the panel only shows a few entries at a time, and nothing
+    // hinted there were more below: Radix's scrollbar only shows on hover, so never
+    // on touch. Hence native scrolling (better touch inertia) + this gradient.
     const listRef = useRef<HTMLDivElement>(null);
     const [canScrollDown, setCanScrollDown] = useState(false);
 
     const updateScrollHint = () => {
         const el = listRef.current;
         if (!el) return;
-        // 8 px de marge : évite de laisser le dégradé allumé en fin de course à
-        // cause des arrondis de hauteur.
+        // 8 px margin: avoids leaving the gradient on at the end because of height
+        // rounding.
         setCanScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 8);
     };
 
     useEffect(() => {
         if (!isOpen) return;
-        // La liste n'est montée qu'à l'ouverture du panneau : on mesure une fois
-        // la première image peinte.
+        // The list is only mounted when the panel opens: measure once on the first
+        // painted frame.
         const frame = requestAnimationFrame(updateScrollHint);
         return () => cancelAnimationFrame(frame);
     }, [isOpen, filteredLinks.length]);
@@ -181,7 +110,7 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                     >
                         {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
 
-                        {!isOpen && (requestCount > 0 || maintenanceCount > 0 || baptemeCount > 0) && (
+                        {!isOpen && (requestCount > 0 || maintenanceCount > 0 || baptemeCount > 0 || walletAlert) && (
                             <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
                         )}
 
@@ -194,12 +123,9 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                         <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
                     </div>
 
-                    {/* En-tête et pied de panneau volontairement compacts : chaque
-                        pixel repris ici est une entrée de menu visible en plus. */}
+                    {/* Panel header and footer deliberately compact: every pixel saved here is one more visible menu entry. */}
                     <SheetHeader className="px-6 pt-2 pb-4 text-left">
-                        {/* Titre et description réservés aux lecteurs d'écran : le
-                            panneau se passe d'en-tête visible, mais Radix exige les
-                            deux pour renseigner aria-labelledby / aria-describedby. */}
+                        {/* Title and description for screen readers only: the panel has no visible header, but Radix requires both to fill aria-labelledby / aria-describedby. */}
                         <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
                         <SheetDescription className="sr-only">
                             Accédez aux différentes pages de l&apos;application et à votre profil.
@@ -221,14 +147,21 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                                 <span className="font-bold text-lg text-slate-800 leading-tight truncate">
                                     {currentUser?.firstName} {currentUser?.lastName}
                                 </span>
-                                <span className="text-xs font-semibold text-[#774BBE] uppercase tracking-wider bg-purple-50 px-2 py-0.5 rounded-full w-fit mt-1">
-                                    {getRoleLabel(currentUser?.role)}
-                                </span>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                    <span className="text-xs font-semibold text-[#774BBE] uppercase tracking-wider bg-purple-50 px-2 py-0.5 rounded-full w-fit">
+                                        {getRoleLabel(currentUser?.role)}
+                                    </span>
+                                    {showBalance && wallet.state && (
+                                        <Link href={`/wallet?clubID=${currentUser?.clubID}`} onClick={() => setIsOpen(false)}>
+                                            <BalancePill balanceCents={wallet.balanceCents as number} state={wallet.state} />
+                                        </Link>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </SheetHeader>
 
-                    {/* --- SECTION ADMIN : SELECTEUR CLUB --- */}
+                    {/* --- ADMIN SECTION: CLUB SELECTOR --- */}
                     {currentUser?.role === userRole.ADMIN && (
                         <div className="px-6 pb-4">
                             <DropdownMenu>
@@ -275,31 +208,29 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                                             : item.name === "Avions"
                                                 ? maintenanceCount
                                                 : 0;
-                                    const showBadge = badgeCount > 0;
+                                    const isWalletAlert = item.path === "/wallet" && walletAlert;
+                                    const showBadge = badgeCount > 0 || isWalletAlert;
 
-                                    // 4. Déterminer si le lien est actif
                                     const isActive = pathname === item.path;
 
                                     return (
                                         <Link
                                             key={item.path}
                                             href={`${item.path}?clubID=${currentUser?.clubID}`}
-                                            // 5. Application des styles conditionnels
                                             className={cn(
                                                 "flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all active:scale-[0.98] group justify-between",
                                                 isActive
-                                                    ? "bg-[#774BBE]/10 text-[#774BBE]" // Style Actif : Fond violet très clair + texte violet
-                                                    : "text-slate-600 hover:bg-purple-50 hover:text-[#774BBE]" // Style Inactif
+                                                    ? "bg-[#774BBE]/10 text-[#774BBE]"
+                                                    : "text-slate-600 hover:bg-purple-50 hover:text-[#774BBE]"
                                             )}
                                             onClick={() => setIsOpen(false)}
                                         >
                                             <div className="flex items-center gap-3">
-                                                {/* Pastille compacte : à l'ancienne taille, trois
-                                                    entrées seulement tenaient à l'écran. */}
+                                                {/* Compact badge: at the old size, only three entries fit on screen. */}
                                                 <span className={cn(
                                                     "p-1.5 rounded-lg transition-all",
                                                     isActive
-                                                        ? "bg-white shadow-sm text-[#774BBE]" // Icône Active : Fond blanc + icône violette
+                                                        ? "bg-white shadow-sm text-[#774BBE]"
                                                         : "bg-slate-50 text-slate-500 group-hover:bg-white group-hover:shadow-sm group-hover:text-[#774BBE]"
                                                 )}>
                                                     <item.icon className="h-4 w-4" />
@@ -309,7 +240,7 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
 
                                             {showBadge && (
                                                 <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-500 px-2 text-xs font-bold text-white shadow-sm">
-                                                    {badgeCount}
+                                                    {isWalletAlert ? "!" : badgeCount}
                                                 </span>
                                             )}
                                         </Link>
@@ -317,8 +248,7 @@ const NavBar = ({ clubsProp }: NavBarProps) => {
                                 })}
                             </div>
 
-                            {/* « Il y a d'autres entrées en dessous » : dégradé + chevron,
-                                masqués dès qu'on atteint le bas de la liste. */}
+                            {/* "There are more entries below": gradient + chevron, hidden once the bottom of the list is reached. */}
                             {canScrollDown && (
                                 <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-12 items-end justify-center bg-gradient-to-t from-white via-white/80 to-transparent">
                                     <ChevronDown className="h-4 w-4 animate-bounce text-slate-400" />

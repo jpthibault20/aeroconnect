@@ -1,4 +1,3 @@
-// ProtectLayout.tsx
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getUser } from "@/api/db/users";
@@ -13,7 +12,6 @@ export default async function ProtectLayout({
 }: {
     children: ReactNode;
 }) {
-    // Récupérer les informations utilisateur côté serveur
     const res = await getUser();
     const clubs = await prisma.club.findMany();
 
@@ -23,7 +21,6 @@ export default async function ProtectLayout({
 
     const { user } = res;
 
-    // Rediriger si l'utilisateur n'est pas connecté
     if (!user) {
         redirect('/auth/login');
     }

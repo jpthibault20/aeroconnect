@@ -4,7 +4,7 @@ import React, { useEffect } from 'react'
 import Link from 'next/link'
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { newPasswordSchema, NewPasswordSchema } from "../../schemas/newPasswordSchema"; // Assure-toi que le chemin est correct
+import { newPasswordSchema, NewPasswordSchema } from "../../schemas/newPasswordSchema";
 import { useSearchParams } from 'next/navigation';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -12,13 +12,14 @@ import { Logo } from '../Logo';
 import Image from 'next/image';
 import { Spinner } from '../ui/SpinnerVariants';
 import { forgotPassword } from '@/app/auth/forgotPassword/action';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 
 const ForgotPassword = () => {
     const [loading, setLoading] = React.useState(false);
     const [message, setMessage] = React.useState('');
     const [messageG, setMessageG] = React.useState('');
-    const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
+    const searchParams = useSearchParams();
 
     useEffect(() => {
         setMessage(searchParams.get('message') ?? '');
@@ -34,19 +35,22 @@ const ForgotPassword = () => {
         resolver: zodResolver(newPasswordSchema),
     });
 
-    const onSubmit = (data: NewPasswordSchema) => {
+    const onSubmit = async (data: NewPasswordSchema) => {
         setLoading(true);
 
         try {
-            // Logique de soumission du formulaire, comme un appel API
             const formData = new FormData();
             formData.append('email', data.email);
-            forgotPassword(formData);
-
+            await forgotPassword(formData);
         } catch (error) {
+            // The action's redirect() (success or business error) must propagate.
+            if (isRedirectError(error)) throw error;
+            // Unexpected network / server error (business cases go through redirect).
+            setMessageG('');
+            setMessage("Une erreur technique est survenue. Veuillez réessayer.");
         } finally {
             reset();
-
+            setLoading(false);
         }
     };
 

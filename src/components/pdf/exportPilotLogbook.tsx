@@ -8,8 +8,8 @@ interface Props {
     logs: flight_logs[];
     pilotName: string;
     periodLabel: string;
-    // Pilote dont on génère le carnet (pour fonction effective EP si studentID).
-    // null/undefined = vue brute (manager en "ALL").
+    // Pilot whose logbook is generated (for the effective EP function if studentID).
+    // null/undefined = raw view (manager in "ALL").
     displayedPilotID?: string | null;
 }
 
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     },
 });
 
-// Colonnes du carnet de vol pilote
+// Pilot logbook columns
 const columns = [
     { label: "Date", width: "6%" },
     { label: "Aéronef", width: "11%" },
@@ -116,7 +116,7 @@ const columns = [
 const ROWS_PER_PAGE = 32;
 
 export const PilotLogbookDocument = ({ logs, pilotName, periodLabel, displayedPilotID }: Props) => {
-    // Ordre historique : du vol le plus ancien (en haut) au plus récent (en bas).
+    // Chronological order: oldest flight (top) to most recent (bottom).
     const sortedLogs = [...logs].sort(
         (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
@@ -130,7 +130,7 @@ export const PilotLogbookDocument = ({ logs, pilotName, periodLabel, displayedPi
         pages.push([]);
     }
 
-    // Fonction effective d'un log pour le pilote affiché.
+    // Effective function of a log for the displayed pilot.
     const effFn = (log: flight_logs): pilotFunction =>
         displayedPilotID && log.studentID === displayedPilotID ? "EP" : log.pilotFunction;
 
@@ -181,8 +181,8 @@ export const PilotLogbookDocument = ({ logs, pilotName, periodLabel, displayedPi
                                 hobbsEnd: log.hobbsEnd,
                                 pilotFunction: fn,
                             });
-                            // Si user est studentID → "Avec" = l'instructeur, qui est le pilotID du log
-                            // (plus de colonne instructor* séparée stockée pour les nouvelles entrées).
+                            // If the user is the studentID → "With" = the instructor, who is the log's
+                            // pilotID (no separate instructor* columns stored for new entries).
                             const compagnon =
                                 fn === "EP"
                                     ? `${log.instructorLastName ?? log.pilotLastName ?? ""} ${(log.instructorFirstName ?? log.pilotFirstName ?? "").slice(0, 1)}.`

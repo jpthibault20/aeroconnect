@@ -3,9 +3,9 @@ import { render } from "@react-email/render";
 import BaptemeClientConfirmed from "@/emails/BaptemeClientConfirmed";
 
 /**
- * L'email de confirmation doit porter les coordonnées du pilote : c'est le seul
- * canal dont dispose un client extérieur (non membre, sans compte) pour joindre
- * quelqu'un en cas d'imprévu le jour du vol.
+ * The confirmation email must carry the pilot's contact details: it is the only
+ * channel an external customer (non-member, no account) has to reach someone if
+ * something comes up on the flight day.
  */
 const baseProps = {
     firstName: "Paul",
@@ -49,7 +49,7 @@ describe("Email de confirmation baptême — contact du pilote", () => {
     it("masque toute la section si le pilote est introuvable", async () => {
         const html = await render(BaptemeClientConfirmed({ ...baseProps, pilot: null }));
         expect(html).not.toContain("Votre pilote");
-        // Le reste de l'email reste intact.
+        // The rest of the email is unchanged.
         expect(html).toContain("F-JABC");
         expect(html).toContain("contact@club.fr");
     });

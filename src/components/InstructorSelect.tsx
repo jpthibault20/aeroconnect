@@ -10,7 +10,7 @@ interface InstructorSelectProps {
 
 const InstructorSelect = ({ instructors, selectedInstructor, onInstructorChange }: InstructorSelectProps) => {
 
-    // Auto-sélection s'il n'y a qu'un seul choix
+    // Auto-select when there is only one choice
     useEffect(() => {
         if (instructors.length === 1) {
             onInstructorChange(instructors[0].id);
@@ -31,7 +31,7 @@ const InstructorSelect = ({ instructors, selectedInstructor, onInstructorChange 
                 </SelectItem>
                 {instructors.map(item => (
                     <SelectItem key={item.id} value={item.id}>
-                        {/* Format : NOM Prénom */}
+                        {/* Format: LASTNAME Firstname */}
                         <span className="font-semibold text-slate-700">{item.lastName.toUpperCase()}</span>
                         <span className="text-slate-600 ml-1">{item.firstName}</span>
                     </SelectItem>

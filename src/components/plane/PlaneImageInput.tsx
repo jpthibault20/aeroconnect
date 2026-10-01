@@ -15,41 +15,68 @@ interface Props {
     planeID: string;
     planeName: string;
     imagePath: string | null;
-    // Remonte le nouveau chemin (ou null après suppression) pour que le parent
-    // rafraîchisse sa liste sans recharger la page.
+    // Reports the new path (or null after deletion) so the parent refreshes its list
+    // without reloading the page.
     onChange: (imagePath: string | null) => void;
     disabled?: boolean;
 }
 
-// Cible du redimensionnement navigateur : au-delà, on ne gagne rien à
-// l'affichage (la plus grande vignette fait ~600 px de large) et on paie en
-// temps d'envoi.
+// Browser resize target: beyond this nothing is gained on display (the largest
+// thumbnail is ~600 px wide) and upload time suffers.
 const MAX_WIDTH = 1600;
 const MIN_WIDTH = 800;
-// Budget visé après compression : marge sous PLANE_IMAGE_MAX_BYTES (2 Mo) pour
-// absorber les photos les plus détaillées (feuillage, hangar...) qui
-// compressent moins bien que la moyenne.
+// Target size after compression: margin under PLANE_IMAGE_MAX_BYTES (2 MB) to
+// absorb the most detailed photos (foliage, hangar...) which compress worse than
+// average.
 const TARGET_BYTES = 1.2 * 1024 * 1024;
-// Essayés du plus qualitatif au plus compact : le premier essai qui tient dans
-// le budget est retenu, à la résolution courante.
+// Tried from best quality to most compact: the first attempt within budget is
+// kept, at the current resolution.
 const QUALITY_STEPS = [0.82, 0.7, 0.6, 0.5];
 
 class UnsupportedImageFormatError extends Error {}
 
+type OutputFormat = { mime: "image/webp" | "image/jpeg"; fileName: string };
+
+let outputFormatPromise: Promise<OutputFormat> | null = null;
+
 /**
- * Redimensionne et ré-encode l'image dans le navigateur avant envoi.
+ * Picks the encoding format once per page. iOS Safari decodes WebP but cannot
+ * encode it: toBlob("image/webp") silently returns a PNG, which ignores the
+ * quality setting and weighs several MB for a photo. JPEG is the fallback since
+ * every browser encodes it with a real quality setting.
+ */
+function getOutputFormat(): Promise<OutputFormat> {
+    outputFormatPromise ??= new Promise((resolve) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1;
+        canvas.height = 1;
+        canvas.toBlob((blob) => {
+            resolve(
+                blob?.type === "image/webp"
+                    ? { mime: "image/webp", fileName: "photo.webp" }
+                    : { mime: "image/jpeg", fileName: "photo.jpg" }
+            );
+        }, "image/webp");
+    });
+    return outputFormatPromise;
+}
+
+/**
+ * Resizes and re-encodes the image in the browser before upload.
  *
- * Descend la qualité puis, si besoin, la résolution jusqu'à passer sous
- * TARGET_BYTES — une photo de téléphone haute résolution ne tient pas toujours
- * en un seul essai à qualité 0.82. Garde le meilleur essai obtenu même s'il
- * dépasse encore le budget : la validation serveur tranchera, plutôt que
- * d'envoyer le fichier original de plusieurs dizaines de Mo.
+ * Lowers the quality, then the resolution if needed, until it fits under
+ * TARGET_BYTES: a high-resolution phone photo does not always fit in a single
+ * attempt at quality 0.82. Keeps the best attempt even if still over budget: the
+ * server validation decides, rather than uploading an original of several dozen MB.
  *
- * Lève UnsupportedImageFormatError si le navigateur ne sait pas du tout décoder
- * le fichier (HEIC/HEIF non pris en charge, par exemple) : l'appelant décide
- * alors du message à afficher plutôt que de tenter un envoi voué à l'échec.
+ * Throws UnsupportedImageFormatError if the browser cannot decode the file at all
+ * (unsupported HEIC/HEIF, or a photo too large for the phone's memory): the
+ * caller then picks the message to show rather than attempting an upload bound
+ * to fail.
  */
 async function resizeImage(file: File): Promise<File> {
+    const format = await getOutputFormat();
+
     let bitmap: ImageBitmap;
     try {
         bitmap = await createImageBitmap(file);
@@ -68,37 +95,44 @@ async function resizeImage(file: File): Promise<File> {
             const canvas = document.createElement("canvas");
             canvas.width = width;
             canvas.height = height;
-            const context = canvas.getContext("2d");
-            if (!context) break;
-            context.drawImage(bitmap, 0, 0, width, height);
+            try {
+                const context = canvas.getContext("2d");
+                if (!context) break;
+                context.drawImage(bitmap, 0, 0, width, height);
 
-            for (const quality of QUALITY_STEPS) {
-                const blob = await new Promise<Blob | null>((resolve) =>
-                    canvas.toBlob(resolve, "image/webp", quality)
-                );
-                if (!blob) continue;
-                if (!smallest || blob.size < smallest.size) smallest = blob;
-                if (blob.size <= TARGET_BYTES) {
-                    return new File([blob], "photo.webp", { type: blob.type });
+                for (const quality of QUALITY_STEPS) {
+                    const blob = await new Promise<Blob | null>((resolve) =>
+                        canvas.toBlob(resolve, format.mime, quality)
+                    );
+                    if (!blob) continue;
+                    if (!smallest || blob.size < smallest.size) smallest = blob;
+                    if (blob.size <= TARGET_BYTES) {
+                        return new File([blob], format.fileName, { type: blob.type });
+                    }
                 }
+            } finally {
+                // iOS Safari caps the total canvas memory and only frees it lazily:
+                // shrinking the canvas releases its buffer right away.
+                canvas.width = 0;
+                canvas.height = 0;
             }
 
             if (width <= MIN_WIDTH) break;
             width = Math.max(MIN_WIDTH, Math.round(width * 0.75));
         }
 
-        // Format illisible en WebP (vieux Safari) : les blobs produits sont
-        // alors en PNG et bien plus lourds — on tente quand même le meilleur.
-        if (smallest) return new File([smallest], "photo", { type: smallest.type });
+        // Nothing within budget: send the smallest attempt anyway, the server
+        // validation decides.
+        if (smallest) return new File([smallest], format.fileName, { type: smallest.type });
         return file;
     } finally {
         bitmap.close();
     }
 }
 
-// Repère un fichier HEIC/HEIF au type MIME (souvent vide sur iOS) ou à
-// l'extension, pour proposer une explication ciblée plutôt qu'un message
-// générique quand le navigateur ne sait pas le décoder.
+// Detects a HEIC/HEIF file by MIME type (often empty on iOS) or extension, to
+// give a specific explanation rather than a generic message when the browser
+// cannot decode it.
 function looksLikeHeic(file: File): boolean {
     return /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
 }
@@ -112,8 +146,8 @@ const PlaneImageInput = ({ planeID, planeName, imagePath, onChange, disabled }: 
 
     const onSelectFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        // Réinitialise l'input tout de suite : sans ça, resélectionner le même
-        // fichier après une erreur ne déclenche aucun évènement.
+        // Reset the input right away: otherwise reselecting the same file after an error
+        // fires no event.
         event.target.value = "";
         if (!file) return;
 
@@ -129,12 +163,11 @@ const PlaneImageInput = ({ planeID, planeName, imagePath, onChange, disabled }: 
                     setError(
                         looksLikeHeic(file)
                             ? "Ce format de photo (HEIC/HEIF) n'est pas lisible par ce navigateur. Sur iPhone : Réglages > Appareil photo > Formats > \"Le plus compatible\", puis reprenez la photo — ou choisissez une photo déjà au format JPEG."
-                            : "Ce format de photo n'est pas lisible par ce navigateur. Utilisez une image JPEG, PNG ou WebP."
+                            : "Impossible de lire cette photo sur cet appareil (format non pris en charge ou photo trop grande). Réessayez avec une image JPEG, PNG ou WebP, ou une photo de plus petite taille."
                     );
                     return;
                 }
-                // Échec inattendu du redimensionnement : on tente l'envoi tel
-                // quel, la validation ci-dessous tranchera.
+                // Unexpected resize failure: try uploading as is, the validation below decides.
                 payload = file;
             }
 

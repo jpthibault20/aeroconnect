@@ -1,11 +1,11 @@
 import { flight_logs } from "@prisma/client";
 
 /**
- * Helpers d'affichage / export du carnet de vol, factorisés en fonctions pures
- * pour être partagés entre les composants et les tests (cf. convention CLAUDE.md).
+ * Logbook display / export helpers, factored into pure functions shared by the
+ * components and the tests (see CLAUDE.md).
  */
 
-// ─── Carnet de route machine : export PDF ───
+// ─── Plane logbook: PDF export ───
 
 export interface MachineLogGroup<T> {
     planeRegistration: string;
@@ -14,11 +14,10 @@ export interface MachineLogGroup<T> {
 }
 
 /**
- * Regroupe des vols par machine pour l'export « Tous les aéronefs » (une section
- * PDF par machine). La clé de regroupement est planeID si présent, sinon
- * l'immatriculation dénormalisée (robuste aux machines supprimées). Le nom et
- * l'immatriculation de la section proviennent des champs dénormalisés du 1er vol.
- * Résultat trié par immatriculation.
+ * Groups flights by plane for the "All planes" export (one PDF section per
+ * plane). The grouping key is planeID if present, otherwise the denormalized
+ * registration (robust to deleted planes). The section's name and registration
+ * come from the first flight's denormalized fields. Sorted by registration.
  */
 export function groupLogsByMachine<
     T extends Pick<flight_logs, "planeID" | "planeRegistration" | "planeName">
@@ -39,21 +38,21 @@ export function groupLogsByMachine<
         .sort((a, b) => a.planeRegistration.localeCompare(b.planeRegistration));
 }
 
-/** L'export du carnet de route est possible dès qu'il y a au moins un vol. */
+/** The plane logbook can be exported as soon as there is at least one flight. */
 export function canExportAircraftLogbook(logs: unknown[]): boolean {
     return logs.length > 0;
 }
 
-// ─── Bouton / colonne "Signé" ───
+// ─── "Signed" button / column ───
 
 export type SignButtonState = "signed" | "pending" | "signable";
 
 /**
- * État à afficher pour un vol dans la colonne "Signé" :
- *  - "signed"   : déjà signé (pastille verte) ;
- *  - "pending"  : non signé, mais l'utilisateur ne peut pas signer (lecture seule
- *                 ou il n'est pas le pilote du vol) → statut "En attente" ;
- *  - "signable" : non signé et l'utilisateur est le pilote → bouton "Signer".
+ * State shown for a flight in the "Signed" column:
+ *  - "signed"   : already signed (green badge);
+ *  - "pending"  : unsigned, but the user cannot sign (read-only or not the
+ *                 flight's pilot) → "Pending" status;
+ *  - "signable" : unsigned and the user is the pilot → "Sign" button.
  */
 export function signButtonState(
     log: Pick<flight_logs, "pilotSigned" | "pilotID">,
@@ -65,11 +64,11 @@ export function signButtonState(
     return "signable";
 }
 
-// ─── Affichage de l'élève (carnet de route) ───
+// ─── Showing the student (plane logbook) ───
 
 /**
- * Faut-il afficher l'élève sur la ligne ? Uniquement pour un vol d'instruction
- * dont l'élève est renseigné (les vols CDB n'ont pas d'élève).
+ * Should the student be shown on the row? Only for an instruction flight with a
+ * student set (CDB flights have no student).
  */
 export function shouldShowStudent(
     log: Pick<flight_logs, "flightNature" | "studentFirstName" | "studentLastName">

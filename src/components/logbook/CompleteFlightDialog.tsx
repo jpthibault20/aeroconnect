@@ -33,14 +33,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/SpinnerVariants";
 import { FileText, CheckCircle2, ShieldCheck, Minus, Plus, Info, AlertTriangle, Trash2 } from "lucide-react";
+import { FlightChargePreview, FlightChargeSummary } from "@/components/logbook/FlightChargePreview";
+import { emitWalletChanged } from "@/lib/walletEvents";
 
 interface Props {
     log: flight_logs | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onCompleted: (updated: flight_logs) => void;
-    // Appelé après une suppression réussie (retire la ligne côté parent / avance
-    // la file des vols en attente). Le bouton "Supprimer" n'apparaît que si fourni.
+    // Called after a successful deletion (removes the row in the parent / advances
+    // the queue of pending flights). The "Delete" button only shows if provided.
     onDeleted?: (deleted: flight_logs) => void;
     defaultAirfield?: string;
     defaultHobbsStart?: number;
@@ -63,12 +65,14 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
     const [hobbsStartDisplay, setHobbsStartDisplay] = useState("");
     const [hobbsStartUnlocked, setHobbsStartUnlocked] = useState(false);
     const [hobbsEnd, setHobbsEnd] = useState("");
-    // Format de saisie du compteur (HH:MM par défaut). N'affecte que l'UI : la
-    // valeur reste stockée en heures décimales canoniques.
+    // Hobbs input format (HH:MM by default). UI only: the value is still stored as
+    // canonical decimal hours.
     const [hobbsFormat, setHobbsFormat] = useState<HobbsFormat>("HMS");
     const [fuelAdded, setFuelAdded] = useState("");
     const [machineAnomalies, setMachineAnomalies] = useState("RAS");
     const [personalObservation, setPersonalObservation] = useState("");
+    // Missing rate (wallet enabled): signing would be refused.
+    const [chargeBlocked, setChargeBlocked] = useState(false);
 
     useEffect(() => {
         if (log) {
@@ -95,11 +99,11 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
 
     if (!log) return null;
 
-    // Vol sans machine (théorique ou perso)
+    // Flight without a plane (ground school or personal)
     const hasPlane = !!log.planeID;
 
-    // Durée affichée : recalculée à la volée depuis les hobbs (saisis ou
-    // stockés). Si rien n'est saisi, on n'affiche pas de durée.
+    // Displayed duration: recomputed on the fly from the Hobbs (entered or stored).
+    // Nothing entered => no duration shown.
     const previewTimes = computeFlightTimes({
         hobbsStart: log.hobbsStart ?? (defaultHobbsStart ?? null),
         hobbsEnd: hobbsEnd ? parseFloat(hobbsEnd) : (log.hobbsEnd ?? null),
@@ -158,6 +162,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
                     toast({ title: "Erreur signature", description: signRes.error, variant: "destructive" });
                     return;
                 }
+                emitWalletChanged();
             }
 
             toast({
@@ -209,8 +214,8 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
         }
     };
 
-    // Suppression possible pour un vol non signé, si le parent a fourni un
-    // callback (le contrôle d'autorisation réel est fait côté serveur).
+    // Deletion allowed for an unsigned flight if the parent provided a callback (the
+    // real authorization check is server-side).
     const canDelete = !!onDeleted && !isSigned && !isStudent;
 
     const companion = log.pilotFunction === "EP"
@@ -254,6 +259,11 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
                             Signé le {new Date(log.pilotSignedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                         </div>
                     )}
+                    {isSigned && (
+                        <div className="mt-1 ml-11">
+                            <FlightChargeSummary logID={log.id} />
+                        </div>
+                    )}
                 </div>
 
                 {/* Body — scrollable */}
@@ -270,7 +280,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
                             <span>Seul votre instructeur peut compléter ce vol. Vous y avez accès en lecture.</span>
                         </div>
                     )}
-                    {/* Aérodromes */}
+                    {/* Airfields */}
                     <div className="space-y-4">
                         <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">
                             Aérodromes
@@ -289,7 +299,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
 
                     <div className="h-px bg-slate-100 w-full" />
 
-                    {/* Mouvements */}
+                    {/* Movements */}
                     <div className="space-y-4">
                         <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">
                             Mouvements
@@ -310,7 +320,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
                         </div>
                     </div>
 
-                    {/* Machine — masqué si pas d'avion */}
+                    {/* Plane (hidden when there is no plane) */}
                     {hasPlane && (
                         <>
                             <div className="h-px bg-slate-100 w-full" />
@@ -410,6 +420,14 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
                         </div>
                     )}
 
+                    {!isReadOnly && (
+                        <FlightChargePreview
+                            flight={log}
+                            minutes={previewTimes.durationMinutes > 0 ? previewTimes.durationMinutes : null}
+                            onBlockedChange={setChargeBlocked}
+                        />
+                    )}
+
                     <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-3">
                         {isReadOnly ? (
                             <Button onClick={() => onOpenChange(false)} className="bg-slate-600 hover:bg-slate-700 text-white w-full sm:w-auto">
@@ -434,7 +452,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
                                 <Button onClick={() => handleSave(false)} disabled={loading || signing || deleting} variant="outline" className="border-slate-200 w-full sm:w-auto">
                                     {loading ? <Spinner className="w-4 h-4" /> : "Enregistrer"}
                                 </Button>
-                                <Button onClick={() => handleSave(true)} disabled={loading || signing || deleting} className="bg-[#774BBE] hover:bg-[#6538a5] text-white w-full sm:w-auto sm:min-w-[140px]">
+                                <Button onClick={() => handleSave(true)} disabled={loading || signing || deleting || chargeBlocked} className="bg-[#774BBE] hover:bg-[#6538a5] text-white w-full sm:w-auto sm:min-w-[140px]">
                                     {signing ? (
                                         <div className="flex items-center gap-2"><Spinner className="w-4 h-4 text-white" /><span>Signature...</span></div>
                                     ) : (
@@ -448,7 +466,7 @@ const CompleteFlightDialog = ({ log, open, onOpenChange, onCompleted, onDeleted,
 
             </DialogContent>
 
-            {/* Confirmation de suppression */}
+            {/* Delete confirmation */}
             <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>

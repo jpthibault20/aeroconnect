@@ -2,21 +2,20 @@ import { describe, it, expect } from "vitest";
 import { userRole } from "@prisma/client";
 
 /**
- * MATRICE COMPLÈTE D'ACCÈS PAR RÔLE
- * Chaque test vérifie qu'un rôle spécifique peut ou ne peut pas
- * effectuer une action donnée.
+ * FULL ROLE ACCESS MATRIX
+ * Each test checks whether a given role can or cannot perform an action.
  *
- * Légende rôles :
- *   USER       = compte créé, pas encore dans un club
- *   STUDENT    = élève inscrit dans un club
- *   PILOT      = pilote autonome (non instructeur)
- *   INSTRUCTOR = instructeur
- *   MANAGER    = gestionnaire du club
- *   ADMIN      = administrateur
- *   OWNER      = propriétaire du club
+ * Roles:
+ *   USER       = account created, not in a club yet
+ *   STUDENT    = student member of a club
+ *   PILOT      = licensed pilot (not an instructor)
+ *   INSTRUCTOR = instructor
+ *   MANAGER    = club manager
+ *   ADMIN      = administrator
+ *   OWNER      = club owner (president)
  */
 
-// --- Constantes de rôles (identiques au code source) ---
+// --- Role constants (identical to the source code) ---
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
 const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
@@ -117,8 +116,8 @@ describe("Rôle INSTRUCTOR", () => {
         it("créer/supprimer des sessions", () => expect(can(role, MANAGEMENT_ROLES)).toBe(true));
         it("s'inscrire comme élève sur un autre vol", () => expect(can(role, STUDENT_ELIGIBLE_ROLES)).toBe(true));
         it("signer son propre vol", () => {
-            // signFlightLog vérifie auth.user.id === log.pilotID, pas le rôle
-            const canSign = true; // identité, pas rôle
+            // signFlightLog checks auth.user.id === log.pilotID, not the role
+            const canSign = true;
             expect(canSign).toBe(true);
         });
     });
@@ -227,7 +226,7 @@ describe("Rôle OWNER", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// USER (pas encore dans un club)
+// USER (not in a club yet)
 // ─────────────────────────────────────────────────────────────
 
 describe("Rôle USER (sans club)", () => {
@@ -244,17 +243,17 @@ describe("Rôle USER (sans club)", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// ACTIONS SENSIBLES : QUI PEUT SIGNER / COMPLÉTER
+// SENSITIVE ACTIONS: WHO CAN SIGN / COMPLETE
 // ─────────────────────────────────────────────────────────────
 
 describe("Actions sensibles par rôle", () => {
     describe("Signature d'un vol", () => {
         it("seul le pilote du vol peut signer, quel que soit son rôle", () => {
             for (const role of ALL_ROLES) {
-                // La signature est liée à l'identité, pas au rôle
+                // Signing is tied to identity, not role
                 const canSign = (authID: string, pilotID: string) => authID === pilotID;
-                expect(canSign("pilot-1", "pilot-1")).toBe(true);
-                expect(canSign("pilot-1", "pilot-2")).toBe(false);
+                expect(canSign("pilot-1", "pilot-1"), role).toBe(true);
+                expect(canSign("pilot-1", "pilot-2"), role).toBe(false);
             }
         });
     });

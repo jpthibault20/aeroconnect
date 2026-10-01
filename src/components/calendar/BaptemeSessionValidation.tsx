@@ -17,19 +17,20 @@ import type { PendingBaptemeItem } from "@/components/dashboard/PendingBaptemeRe
 interface Props {
     sessions: flight_sessions[];
     setSessions: React.Dispatch<React.SetStateAction<flight_sessions[]>>;
-    // Ouverture de la popup : sert de filet quand le préchargement du calendrier
-    // n'a pas (encore) couvert ces créneaux — hors calendrier, notamment.
+    // Popup open state: fallback when the calendar prefetch has not (yet) covered
+    // these slots, notably outside the calendar.
     open: boolean;
 }
 
 /**
- * Validation d'une demande de baptême directement depuis la popup d'un créneau,
- * avec exactement les mêmes droits qu'en page Club (pilote assigné au créneau
- * OU gestion, cf. canValidateBapteme).
+ * Accepts a discovery-flight request straight from a slot's popup, with exactly
+ * the same rights as on the Club page (pilot assigned to the slot OR management,
+ * see canValidateBapteme).
  *
- * Les données viennent du cache alimenté en arrière-plan par le calendrier
- * (BaptemePendingProvider) : le bloc s'affiche donc dès l'ouverture, sans
- * attendre le serveur. Ne rend rien s'il n'y a rien à valider.
+ * Data comes from the cache filled in the background by the calendar
+ * (BaptemePendingProvider), so the block shows as soon as the popup opens,
+ * without waiting for the server. Renders nothing when there is nothing to
+ * validate.
  */
 const BaptemeSessionValidation = ({ sessions, setSessions, open }: Props) => {
     const { get, prefetch, resolve } = useBaptemePending();
@@ -38,9 +39,9 @@ const BaptemeSessionValidation = ({ sessions, setSessions, open }: Props) => {
     const sessionIDs = useValidatableBaptemeSessionIDs(sessions);
     const sessionIDsKey = sessionIDs.join(",");
 
-    // Filet : si le calendrier n'a pas préchargé ces créneaux (popup ouverte
-    // depuis la page « Vols », ou plage changée entre-temps), on les demande à
-    // l'ouverture. Sans effet quand le cache les connaît déjà.
+    // Fallback: if the calendar did not prefetch these slots (popup opened from the
+    // "Flights" page, or range changed meanwhile), request them on open. No-op when
+    // the cache already knows them.
     useEffect(() => {
         if (!open || sessionIDsKey === "") return;
         prefetch(sessionIDsKey.split(","));
@@ -65,9 +66,9 @@ const BaptemeSessionValidation = ({ sessions, setSessions, open }: Props) => {
         }
 
         resolve(item.sessionID);
-        // Recale le calendrier sans recharger : validée, la demande inscrit le
-        // client en invité ; refusée, elle rouvre le créneau. Le commentaire du
-        // vol est déjà celui posé à la création du hold : on n'y touche pas.
+        // Update the calendar without reloading: accepted, the request books the
+        // customer as a guest; rejected, it reopens the slot. The flight comment is
+        // already the one set when the hold was created: leave it.
         setSessions((prev) =>
             prev.map((s) =>
                 s.id !== item.sessionID

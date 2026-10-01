@@ -1,22 +1,20 @@
 import { userRole } from "@prisma/client";
 
 /**
- * Permissions du carnet de vol, factorisées en fonctions pures pour être
- * partagées entre le serveur, les composants client et les tests (évite la
- * dérive entre le code et les tests « miroir »).
+ * Logbook permissions, factored into pure functions shared by the server, the
+ * client components and the tests (avoids drift between code and "mirror" tests).
  *
- * Rappels produit :
- *  - L'élève (STUDENT) vole toujours avec un instructeur : ses vols sont des
- *    sessions du calendrier auto-loguées. Il NE fait PAS de saisie manuelle et
- *    ne signe PAS (seul l'instructeur signe). Il consulte son carnet en lecture
- *    seule.
- *  - Le PILOT gère son propre carnet (saisies manuelles, signature de ses vols)
- *    mais ne gère pas les vols des autres ni le carnet de route machine.
- *  - Les rôles de gestion (INSTRUCTOR/MANAGER/OWNER/ADMIN) gèrent au-delà.
+ * Product reminders:
+ *  - A STUDENT always flies with an instructor: their flights are auto-logged
+ *    calendar sessions. They do NOT enter flights manually and do NOT sign (only
+ *    the instructor signs). They view their logbook read-only.
+ *  - A PILOT manages their own logbook (manual entries, signing their flights)
+ *    but not other people's flights nor the plane logbook.
+ *  - Management roles (INSTRUCTOR/MANAGER/OWNER/ADMIN) go beyond that.
  */
 
-// Rôles « gestion carnet » : voient/gèrent au-delà de leur propre carnet
-// (onglet carnet de route machine, sélecteur de pilote, vols des autres).
+// "Logbook management" roles: see/manage beyond their own logbook (plane logbook
+// tab, pilot selector, other people's flights).
 export const LOGBOOK_MANAGE_ROLES: userRole[] = [
     userRole.OWNER,
     userRole.ADMIN,
@@ -24,7 +22,7 @@ export const LOGBOOK_MANAGE_ROLES: userRole[] = [
     userRole.INSTRUCTOR,
 ];
 
-// Rôles ayant accès à la page /logbook (nav + garde de page).
+// Roles with access to the /logbook page (nav + page guard).
 export const LOGBOOK_PAGE_ROLES: userRole[] = [
     userRole.OWNER,
     userRole.ADMIN,
@@ -42,15 +40,14 @@ export function canAccessLogbookPage(role: userRole | undefined): boolean {
     return !!role && LOGBOOK_PAGE_ROLES.includes(role);
 }
 
-// Qui peut créer une entrée manuelle de carnet : les rôles de gestion + le
-// PILOT (pour son propre carnet). PAS le STUDENT (vol toujours avec instructeur).
+// Who can create a manual logbook entry: management roles + PILOT (for their own
+// logbook). NOT STUDENT (always flies with an instructor).
 export function canAddManualLogEntry(role: userRole | undefined): boolean {
     return canManageLogbook(role) || role === userRole.PILOT;
 }
 
-// L'onglet « carnet de route machine » : réservé aux rôles de gestion, OU à un
-// membre propriétaire d'au moins une machine privée (pour consulter le carnet de
-// route de SA machine — en lecture seule s'il n'est pas gestionnaire).
+// The "plane logbook" tab: management roles only, OR a member owning at least one
+// private plane (to view THEIR plane's logbook, read-only if not management).
 export function canSeeAircraftLogbook(
     role: userRole | undefined,
     opts?: { ownsPrivatePlane?: boolean }
@@ -58,13 +55,12 @@ export function canSeeAircraftLogbook(
     return canManageLogbook(role) || !!opts?.ownsPrivatePlane;
 }
 
-// Le sélecteur de pilote (voir le carnet d'un autre) reste réservé aux gestions.
+// The pilot selector (viewing someone else's logbook) stays management only.
 export function canSelectAnyPilot(role: userRole | undefined): boolean {
     return canManageLogbook(role);
 }
 
-// L'élève est en lecture seule (pas d'édition, pas de signature, colonne
-// « Signé » masquée).
+// Students are read-only (no editing, no signing, "Signed" column hidden).
 export function isLogbookReadOnly(role: userRole | undefined): boolean {
     return role === userRole.STUDENT;
 }

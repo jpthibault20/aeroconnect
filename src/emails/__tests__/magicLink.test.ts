@@ -3,12 +3,12 @@ import { render } from "@react-email/render";
 import MagicLinkEmail from "@/emails/MagicLink";
 
 /**
- * Email de confirmation d'inscription (`sendVerificationEmail`).
+ * Sign-up confirmation email (`sendVerificationEmail`).
  *
- * ⚠ Ce template n'est actuellement branché à aucun flux : la création de compte
- * s'appuie sur l'email envoyé par Supabase (`supabase.auth.signUp`). Les tests
- * ci-dessous verrouillent son rendu pour le jour où il sera remis en service —
- * en particulier le lien, qui doit rester ABSOLU (cf. lib/appUrl).
+ * ⚠ This template is currently not wired to any flow: account creation relies on
+ * the email sent by Supabase (`supabase.auth.signUp`). These tests lock its
+ * rendering for when it is put back into service, especially the link, which
+ * must stay ABSOLUTE (see lib/appUrl).
  */
 const clubAdress = {
     countrie: "France",
@@ -52,8 +52,8 @@ describe("Email de confirmation d'inscription", () => {
     });
 
     it("régression : un lien sans domaine partirait relatif, donc cassé", async () => {
-        // Symptôme déjà rencontré sur le lien baptême (« http://dashboard/… ») :
-        // si le lien passé ici n'est pas absolu, le client mail le réécrit.
+        // Symptom already seen on the discovery-flight link ("http://dashboard/…"): if
+        // the link passed here is not absolute, the mail client rewrites it.
         const html = await render(
             MagicLinkEmail({
                 magicLink: "/auth/new-verification?token=abc",

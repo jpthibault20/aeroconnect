@@ -1,13 +1,12 @@
 /**
  * @file DaySelector.tsx
- * @brief Composant de navigation temporelle (Semaine précédente / Aujourd'hui / Semaine suivante).
- * * Refonte UI : Style "Capsule" unifié pour une meilleure intégration dans la toolbar.
+ * @brief Time navigation (previous week / today / next week).
  */
 
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import React from 'react'
 import { Button } from '../ui/button';
-import { cn } from '@/lib/utils'; // Utilisation de cn pour fusionner les classes proprement
+import { cn } from '@/lib/utils';
 
 interface props {
     className?: string;
@@ -16,16 +15,12 @@ interface props {
     onClickToday?: () => void;
 }
 
-/**
- * @function DaySelector
- */
 const DaySelector = ({ className, onClickNextWeek, onClickPreviousWeek, onClickToday }: props) => {
     return (
         <div className={cn(
             "flex items-center gap-0.5 p-1 bg-white border border-slate-200 rounded-lg shadow-sm",
             className
         )}>
-            {/* Bouton Précédent */}
             <Button
                 variant="ghost"
                 size="icon"
@@ -36,10 +31,8 @@ const DaySelector = ({ className, onClickNextWeek, onClickPreviousWeek, onClickT
                 <ChevronLeft className="h-4 w-4" />
             </Button>
 
-            {/* Séparateur vertical subtil */}
             <div className="w-px h-4 bg-slate-200 mx-1" />
 
-            {/* Bouton Aujourd'hui */}
             <Button
                 variant="ghost"
                 size="sm"
@@ -50,10 +43,8 @@ const DaySelector = ({ className, onClickNextWeek, onClickPreviousWeek, onClickT
                 <span>Aujourd&apos;hui</span>
             </Button>
 
-            {/* Séparateur vertical subtil */}
             <div className="w-px h-4 bg-slate-200 mx-1" />
 
-            {/* Bouton Suivant */}
             <Button
                 variant="ghost"
                 size="icon"

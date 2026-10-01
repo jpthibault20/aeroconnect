@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 /**
- * Formule de vol baptême (durée + tarif) configurée sur une machine du club.
- * Validée côté client (formulaire de gestion) ET côté serveur
- * (src/api/db/baptemeOptions.ts), même convention que src/schemas/maintenance.ts.
+ * Discovery-flight package (duration + price) configured on a club plane.
+ * Validated client-side (management form) AND server-side
+ * (src/api/db/baptemeOptions.ts), same convention as src/schemas/maintenance.ts.
  */
 export const baptemeOptionInputSchema = z.object({
     durationMin: z.number().int().positive("La durée doit être un nombre de minutes positif"),

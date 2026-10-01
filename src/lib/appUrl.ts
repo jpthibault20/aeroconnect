@@ -1,21 +1,21 @@
 /**
- * URL de base de l'application, pour construire les liens ABSOLUS des emails.
+ * Base URL of the app, to build ABSOLUTE links in emails.
  *
- * Un lien sans domaine (« /dashboard?clubID=… ») est réécrit par les clients
- * mail en « http://dashboard/?clubID=… » : il ne mène nulle part. Tout lien
- * envoyé par email doit donc passer par ce helper.
+ * A link without a domain ("/dashboard?clubID=…") is rewritten by mail clients as
+ * "http://dashboard/?clubID=…" and leads nowhere. Every link sent by email must
+ * therefore go through this helper.
  *
- * Deux variables coexistent historiquement dans le projet :
- *  - NEXT_PUBLIC_APP_URL : utilisée par les emails (mail.ts, bapteme.ts) ;
- *  - WEBSITE_LINK : utilisée par la redirection Supabase (forgotPassword).
- * On accepte les deux (NEXT_PUBLIC_APP_URL prioritaire) pour qu'un
- * environnement qui n'en configure qu'une reste fonctionnel.
+ * Two variables historically coexist in the project:
+ *  - NEXT_PUBLIC_APP_URL: used by the emails (mail.ts, bapteme.ts);
+ *  - WEBSITE_LINK: used by the Supabase redirect (forgotPassword).
+ * Both are accepted (NEXT_PUBLIC_APP_URL first) so an environment configuring
+ * only one keeps working.
  */
 
 /**
- * Normalise une URL de base : espaces et slash(s) final(aux) retirés, schéma
- * ajouté s'il manque (sans schéma, un client mail retombe sur un lien relatif).
- * Renvoie "" si rien n'est configuré.
+ * Normalizes a base URL: trims spaces and trailing slash(es), adds the scheme if
+ * missing (without a scheme a mail client falls back to a relative link).
+ * Returns "" if nothing is configured.
  */
 export function normalizeBaseUrl(raw: string | undefined | null): string {
     const value = (raw ?? "").trim().replace(/\/+$/, "");
@@ -30,8 +30,8 @@ export function appUrl(): string {
     const url = normalizeBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? process.env.WEBSITE_LINK);
     if (!url && !warned) {
         warned = true;
-        // Sans domaine, les liens partent cassés silencieusement : on le signale
-        // dans les logs serveur plutôt que de laisser passer.
+        // Without a domain, links go out silently broken: flag it in the server logs
+        // rather than letting it through.
         console.warn(
             "[appUrl] NEXT_PUBLIC_APP_URL (ou WEBSITE_LINK) n'est pas défini : les liens des emails seront relatifs, donc invalides."
         );

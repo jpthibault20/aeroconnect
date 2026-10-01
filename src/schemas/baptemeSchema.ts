@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 /**
- * Schéma de validation de la demande publique de réservation d'un baptême.
- * Validé côté client (react-hook-form) ET côté serveur (createBaptemeRequest),
- * conformément à la convention (cf. src/schemas/maintenance.ts).
+ * Validation schema of the public discovery-flight booking request.
+ * Validated client-side (react-hook-form) AND server-side (createBaptemeRequest),
+ * per the convention (see src/schemas/maintenance.ts).
  */
 export const baptemeRequestSchema = z.object({
     firstName: z.string().min(2, "Le prénom doit comporter au moins 2 caractères"),
@@ -20,8 +20,8 @@ export const baptemeRequestSchema = z.object({
         .or(z.literal("")),
     sessionID: z.string().min(1, "Veuillez choisir un créneau"),
     planeID: z.string().min(1, "Veuillez choisir un appareil"),
-    // Formule (durée + tarif) choisie, si la machine en propose. Vide si la
-    // machine n'a aucune formule configurée (aucun choix à faire dans ce cas).
+    // Chosen package (duration + price), if the plane offers some. Empty if the
+    // plane has no package configured (no choice to make then).
     baptemeOptionID: z.string().optional().or(z.literal("")),
 });
 

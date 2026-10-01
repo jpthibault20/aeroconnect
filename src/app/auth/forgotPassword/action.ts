@@ -7,16 +7,14 @@ import { forgotPasswordRedirect, passwordResetRedirectTo } from "@/lib/authFlow"
 export async function forgotPassword(formData: FormData) {
     const supabase = await createClient()
 
-    // Récupérer l'email du formulaire
     const email = formData.get('email') as string
 
     if (!email) {
         return redirect(forgotPasswordRedirect('missingEmail'))
     }
 
-    // Utiliser Supabase pour envoyer un email de réinitialisation de mot de passe
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        // Page vers laquelle rediriger après réinitialisation
+        // Page to redirect to after the reset
         redirectTo: passwordResetRedirectTo(process.env.WEBSITE_LINK),
     })
 
@@ -24,6 +22,5 @@ export async function forgotPassword(formData: FormData) {
         return redirect(forgotPasswordRedirect('sendError'))
     }
 
-    // Réponse après envoi réussi
     return redirect(forgotPasswordRedirect('sent'))
 }

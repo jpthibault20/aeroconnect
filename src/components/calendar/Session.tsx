@@ -19,8 +19,6 @@ interface Props {
 const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
     const { currentUser } = useCurrentUser()
 
-    // --- 1. Logique (Memoïsée) ---
-
     const allowedPlanes = useMemo(() => {
         return planesProp.filter((p) => currentUser?.classes.includes(p.classes))
     }, [planesProp, currentUser?.classes]);
@@ -84,7 +82,6 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
 
     if (sessions.length === 0) return null;
 
-    // --- 2. Design Desktop Pro ---
     return (
         <SessionPopup
             sessions={[...bookedSessions, ...availableSessions]}
@@ -98,21 +95,16 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
                     "group relative flex flex-col gap-1 rounded-lg p-2 text-xs transition-all duration-200 h-full overflow-hidden select-none border",
 
                     isFullyBooked
-                        // ÉTAT COMPLET : 
-                        // Fond gris-violet très clair qui se fond un peu avec le calendrier mais reste distinct.
-                        // Pas d'ombre (flat) pour montrer qu'il n'est pas "actif".
-                        // Opacité réduite pour ne pas attirer l'attention.
+                        // FULL STATE: very light grey-purple background that blends a bit with the
+                        // calendar but stays distinct. Flat (no shadow) and reduced opacity so it does
+                        // not draw attention.
                         ? "bg-slate-100/80 border-slate-200 text-slate-500 cursor-default"
 
-                        // ÉTAT DISPONIBLE : 
-                        // Fond BLANC PUR pour trancher avec le gris du calendrier.
-                        // Ombre portée pour donner du relief (effet carte).
-                        // Bordure gauche Violette (#774BBE) marqueur de la charte.
-                        // AJOUT : border-slate-200 remplace border-transparent pour une fine bordure tout autour
+                        // AVAILABLE STATE: pure WHITE background to contrast with the grey calendar,
+                        // drop shadow for a card effect, purple (#774BBE) left border as the brand marker.
                         : "bg-white border-[#9a82c0] border-l-[4px] border-l-[#774BBE] shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
                 )}
             >
-                {/* Ligne Horaire */}
                 <div className={cn(
                     "flex items-center font-bold mb-0.5",
                     isFullyBooked ? "text-slate-500" : "text-[#774BBE]"
@@ -121,7 +113,6 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
                     <span className="truncate tracking-tight">{timeString}</span>
                 </div>
 
-                {/* Info Avion */}
                 <div className={cn(
                     "flex items-center gap-2 truncate",
                     isFullyBooked ? "text-slate-400" : "text-slate-700 font-medium"
@@ -130,7 +121,6 @@ const Session = ({ sessions, setSessions, usersProps, planesProp }: Props) => {
                     <span className="truncate">{planesString}</span>
                 </div>
 
-                {/* Info Instructeur */}
                 <div className={cn(
                     "flex items-center gap-2 truncate",
                     isFullyBooked ? "text-slate-400" : "text-slate-500"

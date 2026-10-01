@@ -49,8 +49,8 @@ const describeInterval = (task: MaintenanceTask): string => {
     return parts.join(" / ");
 };
 
-// Marge restante (ou dépassement) borne par borne : un rappel peut être dépassé
-// en heures moteur tout en restant dans les temps sur la borne calendaire.
+// Remaining margin (or overrun) per limit: a reminder can be overdue in Hobbs
+// hours while still on time for the calendar limit.
 const describeRemaining = (due: MaintenanceDueStatus): string => {
     const parts: string[] = [];
     if (due.hoursRemaining != null) {
@@ -83,8 +83,8 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
     const [editingTask, setEditingTask] = useState<MaintenanceTask | null>(null);
     const [editingIntervention, setEditingIntervention] = useState<MaintenanceIntervention | null>(null);
     const [exporting, setExporting] = useState(false);
-    // ID en cours de suppression : pilote le `loading` d'AlertConfirmDeleted (qui
-    // se referme sur la transition true → false).
+    // ID being deleted: drives AlertConfirmDeleted's `loading` (which closes on the
+    // true → false transition).
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const notifyAlertsChanged = useCallback(() => {
@@ -116,8 +116,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
         }
     }, [open, load]);
 
-    // Changer d'onglet referme le formulaire en cours : chaque onglet ne pilote
-    // que ses propres saisies.
+    // Switching tabs closes the open form: each tab only drives its own inputs.
     const switchTab = (next: Tab) => {
         setTab(next);
         setShowInterventionForm(false);
@@ -131,7 +130,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
         setInterventions(next);
         setShowInterventionForm(false);
         setEditingIntervention(null);
-        // Une intervention peut avoir clôturé un rappel : on recharge les tâches.
+        // An intervention may have closed a reminder: reload the tasks.
         void load();
         notifyAlertsChanged();
         toast({
@@ -242,7 +241,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                     </DialogHeader>
                 </div>
 
-                {/* Onglets + export */}
+                {/* Tabs + export */}
                 <div className="px-6 py-3 border-b border-slate-100 flex flex-wrap items-center gap-2 flex-shrink-0">
                     <div role="tablist" className="flex flex-1 sm:flex-none gap-1 rounded-lg bg-slate-100 p-1">
                         <Button
@@ -281,9 +280,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                 {/* Body */}
                 <div className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0">
                     {loading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Spinner className="w-6 h-6 text-[#774BBE]" />
-                        </div>
+                        <div className="py-10"><Spinner /></div>
                     ) : tab === "interventions" ? (
                         interventionFormOpen ? (
                             <InterventionForm
@@ -296,8 +293,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                             />
                         ) : (
                             <>
-                                {/* Rappels à venir : rappel en lecture seule, l'édition se fait
-                                    dans l'onglet « Rappels ». */}
+                                {/* Upcoming reminders: read-only here, editing happens in the "Reminders" tab. */}
                                 <section className="space-y-3">
                                     <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                                         <Bell className="w-3.5 h-3.5" /> Rappels à venir
@@ -351,7 +347,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                                     )}
                                 </section>
 
-                                {/* Historique des interventions */}
+                                {/* Intervention history */}
                                 <section className="space-y-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
@@ -373,7 +369,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                                                 <div key={it.id} className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
                                                     <div className="min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                            <span className="text-sm font-medium text-slate-800">{it.description}</span>
+                                                            {it.description && <span className="text-sm font-medium text-slate-800">{it.description}</span>}
                                                             <span className="inline-flex items-center text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200 rounded-full px-2 py-0.5">
                                                                 {it.type}
                                                             </span>
@@ -425,7 +421,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                             onCancel={() => { setShowReminderForm(false); setEditingTask(null); }}
                         />
                     ) : (
-                        /* Onglet Rappels : liste éditable */
+                        /* Reminders tab: editable list */
                         <section className="space-y-3">
                             <div className="flex items-center justify-between gap-3">
                                 <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">

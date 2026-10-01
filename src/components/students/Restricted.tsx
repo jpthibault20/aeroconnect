@@ -22,12 +22,12 @@ const Restricted = ({ user }: props) => {
                     setBlocked(!blocked)
                     clearCache(`users:${user.clubID}`)
                 }
-            } catch (error) {
+            } catch {
                 toast({
                     title: "Oups, une erreur est survenue",
                     duration: 5000,
                     style: {
-                        background: '#ab0b0b', //rouge : ab0b0b
+                        background: '#ab0b0b',
                         color: '#fff',
                     }
                 });
@@ -36,7 +36,7 @@ const Restricted = ({ user }: props) => {
                     title: "Utilisateur modifié avec succès",
                     duration: 5000,
                     style: {
-                        background: '#0bab15', //rouge : ab0b0b
+                        background: '#0bab15',
                         color: '#fff',
                     }
                 });

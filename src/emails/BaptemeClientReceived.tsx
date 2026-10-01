@@ -11,8 +11,8 @@ interface BaptemeClientReceivedProps {
     startDate: string;
     endDate: string;
     planeName: string;
-    // Formule choisie (durée + tarif), ex. "30 min – 90 €". null si la machine
-    // n'avait pas de formule configurée.
+    // Chosen package (duration + price), e.g. "30 min – 90 €". null if the plane had
+    // no package configured.
     optionLabel: string | null;
     clubName: string | null;
     clubAdress: clubAdressType;

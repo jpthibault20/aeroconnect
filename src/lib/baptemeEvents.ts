@@ -1,9 +1,9 @@
 /**
- * Nom de l'événement global (window) émis quand une demande de baptême est
- * traitée (validée ou refusée). La navigation l'écoute pour recalculer la bulle
- * de notification du menu « Club ».
+ * Name of the global (window) event fired when a discovery-flight request is
+ * handled (accepted or rejected). The navigation listens to it to recompute the
+ * "Club" menu badge.
  *
- * Isolé dans son propre module (sans dépendance UI) pour ne pas tirer de code
- * lourd dans le bundle de navigation.
+ * Kept in its own module (no UI dependency) so no heavy code is pulled into the
+ * navigation bundle.
  */
 export const BAPTEME_REQUESTS_EVENT = "refresh-bapteme-requests";

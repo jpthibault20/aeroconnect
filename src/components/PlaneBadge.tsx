@@ -2,11 +2,11 @@ import React from 'react';
 import { Lock } from 'lucide-react';
 
 /**
- * Pastille « Privé » / « Club » d'une machine, pour distinguer d'un coup d'œil
- * un appareil personnel d'un appareil de la flotte dans les listes de sélection.
+ * "Private" / "Club" badge of a plane, to tell a personal plane from a fleet
+ * plane at a glance in selection lists.
  *
- * Reprend la charte déjà en place dans la page Avions (ambre + cadenas pour le
- * privé) afin que le même objet se lise partout de la même façon.
+ * Reuses the styling of the Planes page (amber + padlock for private) so the same
+ * thing reads the same everywhere.
  */
 const PlaneBadge = ({ isPrivate }: { isPrivate: boolean }) => (
     isPrivate ? (

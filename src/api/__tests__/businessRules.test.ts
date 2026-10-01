@@ -3,8 +3,7 @@ import { flight_sessions, userRole, User, planes } from "@prisma/client";
 import { getFreePlanesUsers } from "../popupCalendar";
 
 /**
- * Tests des règles métier confirmées par le product owner.
- * Chaque describe correspond à une règle métier spécifique.
+ * Business rules confirmed by the product owner, one describe per rule.
  */
 
 // --- Helpers ---
@@ -38,6 +37,7 @@ const makePlane = (overrides: Partial<planes> = {}): planes => ({
     hobbsTotal: 1200,
     ownerID: null,
     usageTypes: [],
+    instructionHourlyRateCents: null,
     maintenanceHistory: null,
     imagePath: null,
     ...overrides,
@@ -74,7 +74,7 @@ const makeSession = (overrides: Partial<flight_sessions> = {}): flight_sessions 
     ...overrides,
 });
 
-// --- RÈGLE : Un élève ne peut PAS être inscrit à 2 sessions au même créneau ---
+// --- RULE: a student cannot be booked on 2 sessions in the same slot ---
 
 describe("Un élève ne peut pas être inscrit à 2 sessions au même créneau", () => {
     it("l'élève déjà inscrit au même créneau n'apparaît pas dans les étudiants libres", () => {
@@ -96,7 +96,6 @@ describe("Un élève ne peut pas être inscrit à 2 sessions au même créneau",
             studentID: null,
         });
 
-        // Les deux sessions ont la même date de début
         const result = getFreePlanesUsers(session2, [session1, session2], [student], [plane1, plane2]);
         const studentIds = result.students.map(s => s.id);
         expect(studentIds).not.toContain("stu-1");
@@ -123,7 +122,7 @@ describe("Un élève ne peut pas être inscrit à 2 sessions au même créneau",
     });
 });
 
-// --- RÈGLE : Un instructeur peut être inscrit comme élève sur un autre vol ---
+// --- RULE: an instructor can be booked as a student on another flight ---
 
 describe("Un instructeur peut être inscrit comme élève sur un autre vol", () => {
     it("un INSTRUCTOR apparaît dans la liste des étudiants disponibles", () => {
@@ -146,7 +145,7 @@ describe("Un instructeur peut être inscrit comme élève sur un autre vol", () 
     });
 });
 
-// --- RÈGLE : Un ADMIN/MANAGER est exclu de la liste des étudiants ---
+// --- RULE: ADMIN/MANAGER are excluded from the student list ---
 
 describe("Admins et managers exclus de la liste des étudiants", () => {
     it("un ADMIN n'apparaît pas comme étudiant possible", () => {
@@ -166,12 +165,11 @@ describe("Admins et managers exclus de la liste des étudiants", () => {
     });
 });
 
-// --- RÈGLE : Vol sans machine (données historiques) ---
-//
-// La sentinelle noPlane a été retirée des formulaires : aucune nouvelle séance
-// ne peut en porter. Ces cas restent couverts parce que les séances et vols
-// DÉJÀ enregistrés doivent continuer de s'afficher correctement
-// (cf. LEGACY_NO_PLANE_ID dans lib/utils.ts).
+// --- RULE: flight without a plane (historical data) ---
+// 
+// The noPlane sentinel was removed from the forms: no new session can carry it.
+// These cases stay covered because ALREADY recorded sessions and flights must
+// still render correctly (see LEGACY_NO_PLANE_ID in lib/utils.ts).
 
 describe("Vol sans machine (séances historiques)", () => {
     it("noPlane donne planeID null dans le flight_log", () => {
@@ -208,7 +206,7 @@ describe("Vol sans machine (séances historiques)", () => {
     });
 });
 
-// --- RÈGLE : Heures moteur - cohérence entre vols sur le même avion ---
+// --- RULE: Hobbs consistency between flights on the same plane ---
 
 describe("Cohérence heures moteur entre vols", () => {
     it("le hobbsEnd d'un vol devrait être le hobbsStart du suivant", () => {
@@ -219,13 +217,13 @@ describe("Cohérence heures moteur entre vols", () => {
 
     it("le hobbsStart peut être modifié (pas forcément = au précédent)", () => {
         const vol1HobbsEnd = 1234.5;
-        const vol2HobbsStart = 1235.0; // modifié manuellement
+        const vol2HobbsStart = 1235.0; // edited manually
         expect(vol2HobbsStart).not.toBe(vol1HobbsEnd);
-        expect(vol2HobbsStart).toBeGreaterThan(0); // mais toujours valide
+        expect(vol2HobbsStart).toBeGreaterThan(0);
     });
 });
 
-// --- RÈGLE : Un vol théorique n'a PAS besoin de décollages/atterrissages ---
+// --- RULE: a ground-school flight needs no takeoffs/landings ---
 
 describe("Vol théorique", () => {
     it("un vol théorique est identifié par planeRegistration THEORIQUE", () => {
@@ -241,7 +239,7 @@ describe("Vol théorique", () => {
     });
 });
 
-// --- RÈGLE : Filtrage des avions par classe d'élève ---
+// --- RULE: planes filtered by the student's class ---
 
 describe("Filtrage avions par classe d'élève", () => {
     it("un élève ne voit que les avions de ses classes", () => {
@@ -272,9 +270,8 @@ describe("Filtrage avions par classe d'élève", () => {
     });
 
     it("seule la séance théorique échappe encore au filtrage par classe", () => {
-        // L'option « sans appareil » (noPlane) a été retirée des formulaires :
-        // toute machine sélectionnable est désormais une vraie machine, donc
-        // soumise au filtrage par classe.
+        // The "no plane" option (noPlane) was removed from the forms: every selectable
+        // plane is now a real plane, and therefore subject to class filtering.
         const shouldFilter = (planeId: string) => planeId !== "classroomSession";
         expect(shouldFilter("classroomSession")).toBe(false);
         expect(shouldFilter("p1")).toBe(true);

@@ -2,23 +2,21 @@ import { describe, it, expect } from "vitest";
 import { checkSessionDate, newSession, interfaceSessions } from "../sessions";
 
 /**
- * INSTRUCTEUR OBLIGATOIRE SUR UNE SÉANCE.
+ * AN INSTRUCTOR IS REQUIRED ON A SESSION.
  *
- * Contexte : la fiche membre proposait une case « Utilisateur Autonome — peut
- * réserver sans instructeur ». Ce libellé était trompeur : le drapeau
- * `canSubscribeWithoutPlan` qu'il pilotait n'a jamais concerné l'instructeur,
- * seulement l'option « sans avion » (cf. commit c5b9618, « add possibility
- * subscribe without plane only if option is activated »). La réservation sans
- * instructeur n'a jamais été implémentée.
+ * Background: the member form used to offer an "Autonomous user — can book
+ * without an instructor" checkbox. That label was misleading: the
+ * `canSubscribeWithoutPlan` flag behind it never concerned the instructor, only
+ * the "no plane" option (see commit c5b9618). Booking without an instructor was
+ * never implemented.
  *
- * Ces tests verrouillent la règle RÉELLE, pour qu'un futur changement soit
- * délibéré et non accidentel :
- *  - toute séance porte un pilote (flight_sessions.pilotID est non-nullable) ;
- *  - la création refuse explicitement l'absence d'instructeur ;
- *  - un élève ne crée pas de séance, il s'inscrit sur celle d'un instructeur.
+ * These tests lock the ACTUAL rule so any future change is deliberate:
+ *  - every session has a pilot (flight_sessions.pilotID is non-nullable);
+ *  - creation explicitly rejects a missing instructor;
+ *  - a student does not create sessions, they book an instructor's session.
  *
- * On appelle ici les VRAIES fonctions (pas de copie de la règle dans le test) :
- * les contrôles ci-dessous se produisent avant tout accès à la base.
+ * The REAL functions are called here (no copy of the rule in the test): the
+ * checks below happen before any database access.
  */
 
 const baseSessionData = (over: Partial<interfaceSessions> = {}): interfaceSessions => ({
@@ -44,7 +42,7 @@ describe("Création d'une séance — instructeur obligatoire", () => {
     });
 
     it("newSession refuse aussi, indépendamment de checkSessionDate", async () => {
-        // Double barrière : l'appelant pourrait sauter la validation préalable.
+        // Double barrier: the caller could skip the upfront validation.
         const res = await newSession(baseSessionData(), undefined);
         expect(res).toEqual({ error: "L'instructeur est obligatoire" });
     });
@@ -56,25 +54,24 @@ describe("Création d'une séance — instructeur obligatoire", () => {
 });
 
 /**
- * Conséquence côté élève : il n'existe aucun chemin « je réserve seul ».
+ * Consequence for students: there is no "I book alone" path.
  *
- * L'inscription (studentRegistration / addStudentToSession) s'applique
- * TOUJOURS à une séance existante, donc à une séance qui a un pilote. Il n'y a
- * pas de création de séance par un élève : newSession est gardée par
- * requireAuth(OWNER, ADMIN, MANAGER, INSTRUCTOR).
+ * Booking (studentRegistration / addStudentToSession) ALWAYS applies to an
+ * existing session, hence one that has a pilot. Students cannot create sessions:
+ * newSession is guarded by requireAuth(OWNER, ADMIN, MANAGER, INSTRUCTOR).
  */
 describe("Réservation autonome — état réel de la fonctionnalité", () => {
     it("aucune séance ne peut exister sans pilote", async () => {
-        // Vérifié ici au niveau du seul point d'entrée de création. Le schéma
-        // Prisma le garantit aussi : flight_sessions.pilotID est non-nullable.
+        // Checked here at the single creation entry point. The Prisma schema also
+        // guarantees it: flight_sessions.pilotID is non-nullable.
         const sansInstructeur = await newSession(baseSessionData(), undefined);
         expect("error" in sansInstructeur).toBe(true);
     });
 
     it("le drapeau canSubscribeWithoutPlan ne porte AUCUNE règle d'instructeur", () => {
-        // Documenté volontairement : si quelqu'un réactive une case
-        // « peut réserver sans instructeur » branchée sur ce drapeau, ce test
-        // rappelle qu'il n'existe aucune implémentation derrière.
+        // Documented on purpose: if someone re-enables a "can book without an
+        // instructor" checkbox wired to this flag, this test is a reminder that nothing
+        // implements it.
         const flagUsages = ["option « sans avion » (retirée)"];
         expect(flagUsages).not.toContain("réservation sans instructeur");
     });

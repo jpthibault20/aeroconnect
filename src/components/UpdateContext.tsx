@@ -1,4 +1,3 @@
-// UpdateContext.tsx
 "use client";
 import { useEffect } from "react";
 import { useCurrentUser } from "@/app/context/useCurrentUser";

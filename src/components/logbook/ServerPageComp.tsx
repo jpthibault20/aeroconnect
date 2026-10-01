@@ -28,7 +28,7 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
                 orderBy: { date: 'desc' },
             });
         } catch {
-            // Table flight_logs peut ne pas exister si la migration n'est pas faite
+            // The flight_logs table may not exist if the migration has not run
         }
 
         const [allPlanes, users, auth] = await Promise.all([
@@ -37,9 +37,8 @@ const ServerPageComp = async ({ ClubIDprop }: PageProps) => {
             getUser(),
         ]);
 
-        // Masque les machines privées des autres membres (le sélecteur de saisie
-        // manuelle et l'onglet machine ne doivent montrer que les machines du
-        // club + la machine privée du membre courant).
+        // Hide other members' private planes (the manual entry selector and the plane tab
+        // must only show club planes + the current member's private plane).
         const currentUser = 'user' in auth ? auth.user : null;
         const planes = currentUser ? filterVisiblePlanes(allPlanes, currentUser) : [];
 

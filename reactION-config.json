@@ -1,0 +1,7 @@
+{
+	"system": "win32",
+	"executablePath": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+	"localhost": "localhost:3000",
+	"headless_browser": false,
+	"reactTheme": "dark"
+}

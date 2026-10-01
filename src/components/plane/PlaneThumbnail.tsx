@@ -4,26 +4,23 @@ import { planeImagePublicUrl } from "@/lib/planeImage";
 import { cn } from "@/lib/utils";
 
 interface Props {
-    // Chemin brut stocké en base (planes.imagePath), pas une URL.
+    // Raw path stored in the DB (planes.imagePath), not a URL.
     imagePath: string | null;
-    // Sert de texte alternatif : le nom de la machine.
+    // Used as alt text: the plane's name.
     name: string;
-    // Taille, arrondi et couleurs du repli — fournis par l'appelant pour que
-    // chaque contexte garde son gabarit (rond dans un tableau, carré arrondi
-    // dans une carte…).
+    // Size, rounding and fallback colors, provided by the caller so each context
+    // keeps its shape (round in a table, rounded square in a card…).
     className?: string;
     iconClassName?: string;
-    // Indication de taille pour next/image. À ajuster si la vignette dépasse
-    // nettement 48 px de large.
+    // Size hint for next/image. Adjust if the thumbnail gets much wider than 48 px.
     sizes?: string;
 }
 
 /**
- * Vignette d'une machine : sa photo, ou l'icône avion en repli.
+ * Plane thumbnail: its photo, or the plane icon as a fallback.
  *
- * Centralise les deux cas pour qu'une machine sans photo garde exactement
- * l'apparence qu'elle avait avant l'arrivée des photos, et qu'on n'ait pas à
- * redéclarer le repli à chaque emplacement.
+ * Centralizes both cases so a plane without a photo looks exactly as it did
+ * before photos existed, and the fallback is not redeclared everywhere.
  */
 const PlaneThumbnail = ({ imagePath, name, className, iconClassName, sizes = "48px" }: Props) => {
     const imageUrl = planeImagePublicUrl(imagePath);

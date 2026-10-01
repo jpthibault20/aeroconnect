@@ -27,6 +27,15 @@ if (!process.env.SENDER_EMAIL) {
 const resend = new Resend(process.env.RESEND_API_KEY);
 const senderMailAdress = process.env.SENDER_EMAIL;
 
+// Resend does not throw on failure: it returns `{ error }`. Turn it into an
+// exception so the caller (see lib/notifications) can warn the user.
+const sendEmailOrThrow = async (payload: Parameters<typeof resend.emails.send>[0]) => {
+  const { error } = await resend.emails.send(payload);
+  if (error) {
+    throw new Error(`Envoi de l'e-mail impossible : ${error.message}`);
+  }
+}
+
 const formattedDate = (date: Date) => {
   const formatedDateString = date.toISOString();
 
@@ -76,6 +85,7 @@ export const sendVerificationEmail = async (email: string, token: string, clubID
 };
 
 export const sendNotificationBooking = async (email: string, studentFirstname: string, studentLastname: string, startDate: Date, endDate: Date, clubID: string, planeName: string, pilotComment: string, studentComment: string) => {
+  if (!email) return;
   const formatedStartDate = formattedDate(startDate)
   const formatedEndDate = formattedDate(endDate)
   const clubData = await getClubData(clubID);
@@ -86,7 +96,7 @@ export const sendNotificationBooking = async (email: string, studentFirstname: s
 
   const { name, adress } = clubData;
 
-  await resend.emails.send({
+  await sendEmailOrThrow({
     from: senderMailAdress,
     to: email,
     subject: "Un élève s'est inscrit un vol",
@@ -105,6 +115,7 @@ export const sendNotificationBooking = async (email: string, studentFirstname: s
 }
 
 export const sendStudentNotificationBooking = async (email: string, startDate: Date, endDate: Date, clubID: string, planeName: string, pilotComment: string, studentComment: string) => {
+  if (!email) return;
   const formatedStartDate = formattedDate(startDate)
   const formatedEndDate = formattedDate(endDate)
   const clubData = await getClubData(clubID);
@@ -115,7 +126,7 @@ export const sendStudentNotificationBooking = async (email: string, startDate: D
 
   const { name, adress } = clubData;
 
-  await resend.emails.send({
+  await sendEmailOrThrow({
     from: senderMailAdress,
     to: email,
     subject: "Confirmation de votre inscription a un vol",
@@ -137,39 +148,34 @@ export const sendNotificationRemoveAppointment = async (
   endDate: Date,
   club: Club
 ) => {
-  // Validation précoce et rapide
   if (!email || !club?.Name) {
     return;
   }
 
-  try {
-    // Déstructuration et formatage en une seule étape
-    const {
-      Name: clubName,
-      Country: countrie,
-      ZipCode: zipCode,
-      City: city,
-      Address: adress
-    } = club;
+  const {
+    Name: clubName,
+    Country: countrie,
+    ZipCode: zipCode,
+    City: city,
+    Address: adress
+  } = club;
 
-    const formatedStartDate = formattedDate(startDate);
-    const formatedEndDate = formattedDate(endDate);
+  const formatedStartDate = formattedDate(startDate);
+  const formatedEndDate = formattedDate(endDate);
 
-    // Configuration minimale pour réduire la charge
-    await resend.emails.send({
-      from: senderMailAdress,
-      to: email,
-      subject: "Vol annulé",
-      react: NotificationSudentRemove({
-        startDate: formatedStartDate,
-        endDate: formatedEndDate,
-        clubName,
-        clubAdress: { countrie, zipCode, city, adress }
-      })
-    });
-  } catch {
-    // silently fail - email is non-critical
-  }
+  // The failure is reported to the caller, which warns the user without undoing
+  // the already saved action (see lib/notifications).
+  await sendEmailOrThrow({
+    from: senderMailAdress,
+    to: email,
+    subject: "Vol annulé",
+    react: NotificationSudentRemove({
+      startDate: formatedStartDate,
+      endDate: formatedEndDate,
+      clubName,
+      clubAdress: { countrie, zipCode, city, adress }
+    })
+  });
 };
 
 export const sendNotificationSudentRemoveForPilot = async (
@@ -178,39 +184,34 @@ export const sendNotificationSudentRemoveForPilot = async (
   endDate: Date,
   club: Club
 ) => {
-  // Validation précoce et rapide
   if (!email || !club?.Name) {
     return;
   }
 
-  try {
-    // Déstructuration et formatage en une seule étape
-    const {
-      Name: clubName,
-      Country: countrie,
-      ZipCode: zipCode,
-      City: city,
-      Address: adress
-    } = club;
+  const {
+    Name: clubName,
+    Country: countrie,
+    ZipCode: zipCode,
+    City: city,
+    Address: adress
+  } = club;
 
-    const formatedStartDate = formattedDate(startDate);
-    const formatedEndDate = formattedDate(endDate);
+  const formatedStartDate = formattedDate(startDate);
+  const formatedEndDate = formattedDate(endDate);
 
-    // Configuration minimale pour réduire la charge
-    await resend.emails.send({
-      from: senderMailAdress,
-      to: email,
-      subject: "Vol annulé",
-      react: NotificationSudentRemoveForPilot({
-        startDate: formatedStartDate,
-        endDate: formatedEndDate,
-        clubName,
-        clubAdress: { countrie, zipCode, city, adress }
-      })
-    });
-  } catch {
-    // silently fail - email is non-critical
-  }
+  // The failure is reported to the caller, which warns the user without undoing
+  // the already saved action (see lib/notifications).
+  await sendEmailOrThrow({
+    from: senderMailAdress,
+    to: email,
+    subject: "Vol annulé",
+    react: NotificationSudentRemoveForPilot({
+      startDate: formatedStartDate,
+      endDate: formatedEndDate,
+      clubName,
+      clubAdress: { countrie, zipCode, city, adress }
+    })
+  });
 };
 
 export const sendNotificationRequestClub = async (email: string, clubID: string) => {
@@ -271,7 +272,7 @@ export const sendNotificationUpdateNoteHandler = async ({ receiver, pilote, stud
 
 }
 
-// ─── Baptêmes (réservation publique) ───
+// ─── Discovery flights (public booking) ───
 
 interface BaptemeClientContact {
   firstName: string;
@@ -280,8 +281,8 @@ interface BaptemeClientContact {
   phone: string;
 }
 
-// Notifie le pilote assigné (ou la gestion) qu'un baptême attend sa validation.
-// L'échec d'envoi ne doit pas casser la création de la demande => try/catch.
+// Notifies the assigned pilot (or management) that a discovery flight awaits
+// validation. A sending failure must not break the request creation => try/catch.
 export const sendBaptemePilotNotification = async (
   pilotEmail: string,
   startDate: Date,
@@ -323,7 +324,7 @@ export const sendBaptemePilotNotification = async (
   }
 };
 
-// Accusé « demande reçue » envoyé au client juste après sa soumission.
+// "Request received" acknowledgment sent to the customer right after submitting.
 export const sendBaptemeClientReceived = async (
   email: string,
   firstName: string,
@@ -358,7 +359,7 @@ export const sendBaptemeClientReceived = async (
   }
 };
 
-// Email de confirmation soigné envoyé au client après validation par le club.
+// Confirmation email sent to the customer once the club accepts.
 export const sendBaptemeClientConfirmed = async (
   email: string,
   firstName: string,
@@ -371,8 +372,8 @@ export const sendBaptemeClientConfirmed = async (
 ) => {
   if (!email) return;
   try {
-    // Le pilote est joint au mail pour que le client puisse le contacter
-    // directement le jour du vol (cf. section « Votre pilote »).
+    // The pilot is included in the email so the customer can reach them directly on
+    // the flight day (see the "Your pilot" section).
     const [club, pilot] = await Promise.all([
       prisma.club.findUnique({
         where: { id: clubID },
@@ -431,7 +432,7 @@ export const sendBaptemeClientConfirmed = async (
   }
 };
 
-// Email courtois de refus, invitant le client à choisir un autre créneau.
+// Polite rejection email, inviting the customer to pick another slot.
 export const sendBaptemeClientRejected = async (
   email: string,
   firstName: string,

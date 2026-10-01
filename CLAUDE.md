@@ -4,7 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-AeroConnect — Next.js app for managing flying club / ULM-club operations: bookings, fleet, members, flight logbook. UI strings, error messages, and comments are written in French; preserve that convention when editing user-facing text.
+AeroConnect — Next.js app for managing flying club / ULM-club operations: bookings, fleet, members, flight logbook. UI strings and error messages are written in French; preserve that convention when editing user-facing text. Code comments are written in English: keep only comments that explain something non-obvious (a business rule, a pitfall, a "why").
+
+## Rules for Claude
+
+### Git: read-only
+- **Never commit, push, or change the git state.** No `git add`, `commit`, `push`, `pull`, `merge`, `rebase`, `reset`, `checkout`/`switch`, `stash`, `branch`, `tag`, `mv`, `rm`, `restore`, `cherry-pick`, and no `gh pr` or other GitHub write action. The user reviews the working-tree diff and commits and pushes themselves.
+- Read-only commands are fine: `git status`, `git diff`, `git log`, `git show`, `git blame`.
+- Rename or delete files with ordinary file operations, not `git mv` / `git rm`, so everything stays visible as uncommitted changes.
+
+### Database: `.env` is a development database
+- `DATABASE_URL` / `DIRECT_URL` in the local `.env` point to a **dedicated development** Supabase database. The production database is fully separate: its credentials exist only in Vercel's environment for the `main` branch, and it cannot be reached from the local dev context.
+- You may therefore apply migrations to the `.env` database without asking: `npx prisma migrate dev`, `npx prisma migrate deploy`, `npx prisma migrate status` / `diff`, and `npm run build` (whose `postbuild` runs `migrate deploy`). Production migrations are applied automatically by the Vercel build on `main`.
+- Still ask before anything that wipes or rewrites dev data (`prisma migrate reset`, `db push --force-reset`, dropping tables, mass deletes): other people may rely on that data for testing.
 
 ## Commands
 
@@ -37,6 +49,7 @@ Node version is pinned to `22.x` (`.nvmrc`).
 - Multi-tenancy is enforced by `clubID`: after `requireAuth`, server actions must check `auth.user.clubID === resource.clubID` before reading or mutating. There is no row-level security in the DB — the application is the only barrier.
 - The Prisma client is a global singleton (`src/api/prisma.ts`) — always `import prisma from '@/api/prisma'`, never `new PrismaClient()`.
 - Server actions return `{ error: string }` or `{ success: string, ... }` shapes; callers narrow with `'error' in result`. Keep that convention.
+- Student wallet (AER-66): balances live in `Wallet` (one row per club + user, never on `User`, whose rows leak to clients) and an append-only `WalletTransaction` ledger. Every balance change goes through `src/api/walletLedger.ts`, which is deliberately **not** `"use server"` (no auth checks inside, must never be callable from the browser); the authorized entry points are `src/api/db/wallet.ts` and `signFlightLog` / `updateFlightLog`. Pricing rules are pure helpers in `src/lib/wallet.ts`, shared by the pre-signature preview and the actual debit.
 
 ### Domain model (`prisma/schema.prisma`)
 - `User` carries `clubID`, `role` (`userRole` enum: USER / STUDENT / PILOT / OWNER / ADMIN / INSTRUCTOR / MANAGER), and an `Int[] classes` field listing which ULM classes the user is rated on.
@@ -48,7 +61,8 @@ Node version is pinned to `22.x` (`.nvmrc`).
 
 ### Migrations
 - Active migrations live in `prisma/migrations/`; older history was squashed and moved to `prisma/migrations_old_backup/` — do **not** copy from the backup folder when authoring a new migration.
-- `DATABASE_URL` is the pooled connection; `directUrl` (`DIRECT_URL`) is required for migrations. Both must be set.
+- `DATABASE_URL` is the pooled connection; `directUrl` (`DIRECT_URL`) is required for migrations. Both must be set. Locally they point to the dev database (see "Rules for Claude").
+- A migration must be applied before the code that uses it runs: Prisma selects every column, so a missing column breaks unrelated pages at runtime (e.g. `Club.walletEnabled does not exist`).
 
 ### Auth (Supabase)
 - `src/utils/supabase/{server,client,middleware}.ts` are the three Supabase factories. Server actions and route handlers use `server.ts`; client components use `client.ts`; the root middleware uses `middleware.ts`.

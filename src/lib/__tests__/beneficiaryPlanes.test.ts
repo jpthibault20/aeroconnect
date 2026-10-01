@@ -3,11 +3,11 @@ import { userRole } from "@prisma/client";
 import { filterPlanesForBeneficiary } from "@/lib/planeVisibility";
 
 /**
- * Machines proposées à l'inscription d'un élève.
+ * Planes offered when booking a student.
  *
- * Règle : la liste se calcule du point de vue du BÉNÉFICIAIRE (celui qui va
- * voler), jamais de celui qui saisit. Cas d'usage : un manager inscrit par
- * téléphone un élève qui possède sa propre machine.
+ * Rule: the list is computed from the BENEFICIARY's point of view (the one who
+ * will fly), never the one entering it. Use case: a manager books over the phone
+ * a student who owns their own plane.
  */
 
 const STUDENT = "student-1";
@@ -26,8 +26,8 @@ const otherPrivatePlane = plane({ id: "p-autre", ownerID: OTHER, classes: 3 });
 
 const student = (classes = [3]) => ({ id: STUDENT, role: userRole.STUDENT, classes });
 
-// Le créneau ne propose que la machine du club : c'est le cas réel, l'instructeur
-// ne voit pas la machine privée de l'élève au moment de créer la séance.
+// The slot only offers the club plane: the real case, the instructor does not see
+// the student's private plane when creating the session.
 const slot = { offeredPlaneIDs: ["p-club"] };
 
 const ids = <T extends { id: string }>(list: T[]) => list.map((p) => p.id).sort();
@@ -48,14 +48,14 @@ describe("filterPlanesForBeneficiary — machine personnelle de l'élève", () =
     });
 
     it("la classe reste exigée, y compris sur SA propre machine", () => {
-        // Posséder une machine ne dispense pas d'être qualifié dessus.
+        // Owning a plane does not exempt from being rated on it.
         const perso = plane({ id: "p-perso", ownerID: STUDENT, classes: 6 });
         const res = filterPlanesForBeneficiary([clubPlane, perso], student([3]), slot);
         expect(ids(res)).toEqual(["p-club"]);
     });
 
     it("une machine du club non proposée sur le créneau reste exclue", () => {
-        // L'instructeur choisit les machines club qu'il met à disposition.
+        // The instructor chooses which club planes they make available.
         const autreClub = plane({ id: "p-club-2", classes: 3 });
         const res = filterPlanesForBeneficiary([clubPlane, autreClub], student(), slot);
         expect(ids(res)).toEqual(["p-club"]);
@@ -72,8 +72,8 @@ describe("filterPlanesForBeneficiary — machine personnelle de l'élève", () =
 
 describe("filterPlanesForBeneficiary — indépendance vis-à-vis de celui qui saisit", () => {
     it("le résultat ne dépend QUE du bénéficiaire", () => {
-        // Même appel, quel que soit le rôle du gestionnaire : la fonction ne
-        // reçoit pas l'utilisateur courant, c'est le cœur de la correction.
+        // Same call whatever the manager's role: the function does not receive the
+        // current user, that is the heart of the fix.
         const attendu = ids(filterPlanesForBeneficiary([clubPlane, studentPlane], student(), slot));
         expect(attendu).toEqual(["p-club", "p-perso"]);
     });
@@ -96,8 +96,8 @@ describe("filterPlanesForBeneficiary — indépendance vis-à-vis de celui qui s
 
 describe("filterPlanesForBeneficiary — cas des rôles de supervision", () => {
     it("un président bénéficiaire voit les privées des autres SI le créneau les propose", () => {
-        // canViewPlane autorise OWNER/ADMIN à voir toutes les privées ; la règle
-        // « proposée sur le créneau » continue de s'appliquer pour celles-ci.
+        // canViewPlane lets OWNER/ADMIN see every private plane; the "offered on the
+        // slot" rule still applies to them.
         const president = { id: "pres", role: userRole.OWNER, classes: [3] };
         const res = filterPlanesForBeneficiary([otherPrivatePlane], president, {
             offeredPlaneIDs: ["p-autre"],

@@ -8,33 +8,32 @@ import { BAPTEME_HOLD_STUDENT_ID, canValidateBapteme } from "@/lib/bapteme";
 import type { PendingBaptemeItem } from "@/components/dashboard/PendingBaptemeRequests";
 
 /**
- * Cache des demandes de baptême en attente, indexé par créneau.
+ * Cache of pending discovery-flight requests, keyed by slot.
  *
- * Sans lui, la popup d'un créneau doit attendre un aller-retour serveur avant
- * d'afficher le bloc de validation — le pilote ouvre le vol et ne voit d'abord
- * rien. Le calendrier précharge donc en arrière-plan, et UNIQUEMENT sur la
- * plage réellement affichée (semaine sur ordinateur, jour sur téléphone) : rien
- * ne sert de scanner les deux ans de créneaux gardés en mémoire.
+ * Without it, a slot's popup has to wait for a server round trip before showing
+ * the validation block: the pilot opens the flight and first sees nothing. The
+ * calendar therefore prefetches in the background, and ONLY for the range
+ * actually displayed (week on desktop, day on phone): no point scanning the two
+ * years of slots kept in memory.
  *
- * Trois états par créneau :
- *  - absent du cache  => encore inconnu (la popup déclenche alors sa propre requête) ;
- *  - null             => interrogé, rien à valider ici ;
- *  - PendingBaptemeItem => demande en attente que l'utilisateur peut traiter.
+ * Three states per slot:
+ *  - absent from the cache => still unknown (the popup then fires its own request);
+ *  - null                 => queried, nothing to validate here;
+ *  - PendingBaptemeItem   => pending request the user can handle.
  */
 type BaptemeEntry = PendingBaptemeItem | null;
 
 interface BaptemePendingValue {
-    /** undefined tant que le créneau n'a pas été interrogé. */
+    /** undefined until the slot has been queried. */
     get: (sessionID: string) => BaptemeEntry | undefined;
-    /** Charge en arrière-plan les créneaux encore inconnus. */
+    /** Loads the still-unknown slots in the background. */
     prefetch: (sessionIDs: string[]) => void;
-    /** Marque un créneau comme traité (demande validée / refusée). */
+    /** Marks a slot as handled (request accepted / rejected). */
     resolve: (sessionID: string) => void;
 }
 
-// Valeur par défaut inerte : SessionPopup sert aussi hors du calendrier
-// (page « Vols »), où il n'y a pas de préchargement — la popup retombe alors
-// sur son chargement à l'ouverture.
+// Inert default: SessionPopup is also used outside the calendar ("Flights"
+// page), where there is no prefetch; the popup then falls back to loading on open.
 const noop: BaptemePendingValue = {
     get: () => undefined,
     prefetch: () => { },
@@ -47,11 +46,11 @@ export const useBaptemePending = () => useContext(BaptemePendingContext);
 
 export const BaptemePendingProvider = ({ children }: { children: React.ReactNode }) => {
     const [entries, setEntries] = useState<Record<string, BaptemeEntry>>({});
-    // Requêtes en vol : évite qu'un changement de semaine pendant le chargement
-    // ne redemande les mêmes créneaux.
+    // In-flight requests: prevents a week change during loading from requesting the
+    // same slots again.
     const inFlight = useRef<Set<string>>(new Set());
-    // Miroir du cache, lu dans `prefetch` sans le remettre en dépendance : la
-    // fonction doit rester stable, sinon les effets qui l'appellent rebouclent.
+    // Mirror of the cache, read in `prefetch` without making it a dependency: the
+    // function must stay stable, otherwise the effects calling it loop.
     const entriesRef = useRef(entries);
     entriesRef.current = entries;
 
@@ -65,16 +64,16 @@ export const BaptemePendingProvider = ({ children }: { children: React.ReactNode
         (async () => {
             try {
                 const res = await getPendingBaptemeRequestsBySessions(missing);
-                // Tout créneau interrogé est mémorisé, même sans demande : c'est
-                // ce qui distingue « rien à valider » de « pas encore chargé ».
+                // Every queried slot is remembered, even without a request: that is what tells
+                // "nothing to validate" apart from "not loaded yet".
                 const next: Record<string, BaptemeEntry> = {};
                 missing.forEach((id) => { next[id] = null; });
                 if (Array.isArray(res)) {
                     res.forEach((item) => { next[item.sessionID] = item; });
                     setEntries((prev) => ({ ...prev, ...next }));
                 }
-                // En cas d'erreur serveur on ne mémorise rien : la popup
-                // retentera à l'ouverture plutôt que d'afficher un faux « vide ».
+                // On server error nothing is stored: the popup retries on open rather than
+                // showing a false "empty".
             } finally {
                 missing.forEach((id) => inFlight.current.delete(id));
             }
@@ -85,10 +84,10 @@ export const BaptemePendingProvider = ({ children }: { children: React.ReactNode
         setEntries((prev) => ({ ...prev, [sessionID]: null }));
     }, []);
 
-    // `get` est volontairement recréé à chaque mise à jour du cache : c'est ce
-    // qui change l'identité de la valeur de contexte et re-rend les popups
-    // ouvertes quand le préchargement arrive. Il se lit pendant le rendu, jamais
-    // en dépendance d'effet (contrairement à `prefetch`, resté stable).
+    // `get` is deliberately recreated on every cache update: that changes the
+    // context value's identity and re-renders open popups when the prefetch lands.
+    // It is read during render, never as an effect dependency (unlike `prefetch`,
+    // which stays stable).
     const value = useMemo(
         () => ({ get: (sessionID: string) => entries[sessionID], prefetch, resolve }),
         [entries, prefetch, resolve]
@@ -100,10 +99,10 @@ export const BaptemePendingProvider = ({ children }: { children: React.ReactNode
 };
 
 /**
- * Créneaux de `sessions` tenus par une demande de baptême que l'utilisateur
- * courant peut traiter (pilote assigné ou gestion). Ce tri côté client évite
- * toute requête quand il n'y a rien à valider — le cas normal ; le serveur
- * revérifie les droits sur ce qu'il renvoie.
+ * Slots of `sessions` held by a discovery-flight request the current user can
+ * handle (assigned pilot or management). This client-side filter avoids any
+ * request when there is nothing to validate (the normal case); the server
+ * rechecks rights on what it returns.
  */
 export const useValidatableBaptemeSessionIDs = (sessions: flight_sessions[]) => {
     const { currentUser } = useCurrentUser();
@@ -120,13 +119,13 @@ export const useValidatableBaptemeSessionIDs = (sessions: flight_sessions[]) => 
 };
 
 /**
- * Précharge, en arrière-plan, les demandes portant sur les créneaux affichés.
- * À appeler depuis une vue calendrier en lui passant SES sessions visibles.
+ * Prefetches, in the background, the requests on the displayed slots.
+ * Call it from a calendar view with ITS visible sessions.
  */
 export const useBaptemePrefetch = (visibleSessions: flight_sessions[]) => {
     const { prefetch } = useBaptemePending();
     const sessionIDs = useValidatableBaptemeSessionIDs(visibleSessions);
-    // Clé stable : `sessionIDs` est un nouveau tableau à chaque rendu.
+    // Stable key: `sessionIDs` is a new array on every render.
     const key = sessionIDs.join(",");
 
     useEffect(() => {

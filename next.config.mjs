@@ -3,17 +3,14 @@ import { fileURLToPath } from "node:url";
 
 /** @type {import('next').NextConfig} */
 
-// Racine du projet, figée explicitement. Sans ça, Turbopack la déduit en
-// remontant l'arborescence à la recherche de lockfiles et retient le plus
-// externe — ici un package-lock.json isolé à la racine du profil utilisateur,
-// qui lui ferait surveiller tout le profil (OneDrive compris) au lieu du seul
-// dépôt.
+// Pin the project root explicitly. Otherwise Turbopack infers it by walking up
+// looking for lockfiles and picks the outermost one (a stray package-lock.json in
+// the user profile), making it watch the whole profile instead of the repo.
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 
-// Hôte du projet Supabase, déduit de NEXT_PUBLIC_SUPABASE_URL quand elle est
-// disponible au build. Les photos de machines sont servies depuis le bucket
-// public de Supabase Storage : sans cette autorisation, next/image refuse de
-// les optimiser. Repli sur un joker si la variable manque au moment du build.
+// Supabase host, derived from NEXT_PUBLIC_SUPABASE_URL when available at build
+// time. Plane photos are served from a public Supabase Storage bucket; without
+// this entry next/image refuses to optimize them. Falls back to a wildcard.
 const supabaseHostname = (() => {
     try {
         return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname;
@@ -28,10 +25,9 @@ const nextConfig = {
         root: projectRoot,
     },
     experimental: {
-        // Les photos de machines (src/lib/planeImage.ts) sont acceptées jusqu'à
-        // 2 Mo côté serveur. Sans ce réglage, la limite par défaut des Server
-        // Actions (1 Mo) rejette silencieusement l'envoi avant même d'exécuter
-        // `uploadPlaneImage`, avec une erreur réseau générique côté client.
+        // Plane photos (src/lib/planeImage.ts) are accepted up to 2 MB server-side. The
+        // default Server Actions limit (1 MB) would silently reject the upload before
+        // `uploadPlaneImage` runs, with a generic network error on the client.
         serverActions: {
             bodySizeLimit: "3mb",
         },
