@@ -128,6 +128,12 @@ model Club {
   // Hourly rate (cents) charged for instruction flights on a PRIVATE plane: the
   // student only pays the instructor. null => not set.
   instructorHourlyRateCents   Int?
+  // Minimum balance (cents) a STUDENT / PILOT needs to book a slot (AER-73):
+  // booking allowed if balance >= threshold. Any amount, negative included (a
+  // tolerated overdraft); a very low value amounts to never blocking.
+  walletBookingMinCents       Int      @default(0)
+  // Email the member when their balance drops below the "low" threshold.
+  walletLowBalanceEmail       Boolean  @default(true)
 }
 
 model MaintenanceTask {

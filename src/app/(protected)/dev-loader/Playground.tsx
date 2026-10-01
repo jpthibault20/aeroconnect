@@ -9,6 +9,7 @@ import {
     CYCLE_MS,
     MIN_DISPLAY_MS,
     SLOW_LOADING_MS,
+    TAXI_MS,
     cyclePose,
     flightDistance,
     landingDistance,
@@ -17,8 +18,8 @@ import {
 
 /** Simulated load durations: under the display threshold, short, medium, long. */
 const DURATIONS = [
-    { label: "0,1 s", ms: 100, hint: "l'avion vole quand même 2 s : décollage puis atterrissage" },
-    { label: "1 s", ms: 1000, hint: "idem : 2 s au total" },
+    { label: "0,1 s", ms: 100, hint: "l'avion roule quand même 1 s, sans décoller" },
+    { label: "1,5 s", ms: 1500, hint: "décollage après 1 s de roulage, puis atterrissage" },
     { label: "3 s", ms: 3000, hint: "atterrissage depuis la croisière" },
     { label: "10 s", ms: 10000, hint: "message « chargement long » après 8 s" },
 ];
@@ -141,7 +142,7 @@ export default function Playground() {
     }, [chain]);
 
     const cycleFrame = useMemo(() => {
-        const frame = { pose: cyclePose(progress), distance: flightDistance(progress * CYCLE_MS) };
+        const frame = { pose: cyclePose(progress), distance: flightDistance(TAXI_MS + progress * CYCLE_MS) };
         return () => frame;
     }, [progress]);
 
@@ -149,7 +150,7 @@ export default function Playground() {
         const from = cyclePose(landingFrom);
         const frame = {
             pose: landingPose(from, landingK),
-            distance: flightDistance(landingFrom * CYCLE_MS) + landingDistance(from, landingK),
+            distance: flightDistance(TAXI_MS + landingFrom * CYCLE_MS) + landingDistance(from, landingK),
         };
         return () => frame;
     }, [landingFrom, landingK]);
@@ -163,7 +164,7 @@ export default function Playground() {
                     <h1 className="text-xl font-semibold text-gray-900">Banc d&apos;essai — animation de chargement</h1>
                     <p className="mt-1 text-sm text-gray-600">
                         AER-70. Page réservée au développement (404 en production). Affichage minimal :{" "}
-                        {MIN_DISPLAY_MS / 1000} s atterrissage compris, message de chargement long : {SLOW_LOADING_MS / 1000} s.
+                        {MIN_DISPLAY_MS / 1000} s de roulage (freinage compris), message de chargement long : {SLOW_LOADING_MS / 1000} s.
                     </p>
                 </header>
 

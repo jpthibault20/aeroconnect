@@ -20,7 +20,7 @@ import { Spinner } from '../ui/SpinnerVariants'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { getPlanes } from '@/api/db/planes'
-import { centsToInput, parseEurosToCents } from '@/lib/wallet'
+import { bookingMinRequirement, centsToInput, parseEurosToCents, parseSignedEurosToCents } from '@/lib/wallet'
 import { isPrivatePlane } from '@/lib/planeVisibility'
 import { emitWalletChanged } from '@/lib/walletEvents'
 import WalletConfirmDialog from '../wallet/WalletConfirmDialog'
@@ -72,7 +72,7 @@ const SECTION_FIELDS: Record<SectionId, string[]> = {
     horaires: ['hourStart', 'hourEnd', 'totalHours'],
     flotte: ['classes'],
     regles: ['timeOfSession'],
-    paiement: ['instructorRate'],
+    paiement: ['instructorRate', 'bookingMin'],
     presidence: ['owners'],
     bapteme: [],
 };
@@ -128,9 +128,13 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
     const [instructorRate, setInstructorRate] = useState<string>(centsToInput(currentClub?.instructorHourlyRateCents));
     const [walletConfirm, setWalletConfirm] = useState<"enable" | "disable" | null>(null);
     const [planesWithoutRate, setPlanesWithoutRate] = useState<{ id: string; name: string; immatriculation: string }[]>([]);
+    // AER-73: minimum balance to book (may be negative) and "low balance" email.
+    const [bookingMin, setBookingMin] = useState<string>(centsToInput(currentClub?.walletBookingMinCents ?? 0));
+    const [lowBalanceEmail, setLowBalanceEmail] = useState<boolean>(currentClub?.walletLowBalanceEmail ?? true);
+    const bookingMinCents = parseSignedEurosToCents(bookingMin);
 
     // Unsaved changes: compared with the last saved state.
-    const snapshot = JSON.stringify({ config, walletEnabled, instructorRate });
+    const snapshot = JSON.stringify({ config, walletEnabled, instructorRate, bookingMin, lowBalanceEmail });
     const [savedSnapshot, setSavedSnapshot] = useState(snapshot);
     const isDirty = snapshot !== savedSnapshot;
 
@@ -178,6 +182,10 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
             showErrors({ ...errors, instructorRate: "Saisissez un tarif valide (ex. : 35 ou 35,50)." });
             return;
         }
+        if (bookingMinCents == null) {
+            showErrors({ ...errors, bookingMin: "Saisissez un montant valide (ex. : 0, 50 ou -200)." });
+            return;
+        }
         if (validateConfig()) {
             try {
                 setLoading(true);
@@ -185,12 +193,20 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
                     ...config,
                     walletEnabled,
                     instructorHourlyRateCents: rateCents,
+                    walletBookingMinCents: bookingMinCents,
+                    walletLowBalanceEmail: lowBalanceEmail,
                 })
                 if (result.error) {
                     toast({ title: "Erreur", description: result.error, variant: "destructive" });
                 } else {
-                    // The menu, the calendar… read walletEnabled from the club context.
-                    setCurrentClub(prev => prev ? { ...prev, walletEnabled, instructorHourlyRateCents: rateCents } : prev);
+                    // The menu, the calendar… read the wallet settings from the club context.
+                    setCurrentClub(prev => prev ? {
+                        ...prev,
+                        walletEnabled,
+                        instructorHourlyRateCents: rateCents,
+                        walletBookingMinCents: bookingMinCents,
+                        walletLowBalanceEmail: lowBalanceEmail,
+                    } : prev);
                     emitWalletChanged();
                     setSavedSnapshot(snapshot);
                     toast({
@@ -432,7 +448,7 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
                 <div>
                     <Label className="text-base">Activer le portefeuille élève</Label>
                     <p className="text-xs text-slate-500">
-                        Débite automatiquement les vols d&apos;instruction signés et bloque l&apos;inscription des élèves et pilotes dont le solde est nul ou négatif.
+                        Débite automatiquement les vols d&apos;instruction signés et bloque l&apos;inscription des élèves et pilotes dont le solde est sous le seuil configuré.
                     </p>
                 </div>
                 <Switch
@@ -461,6 +477,38 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
                             Appliqué aux vols d&apos;instruction sur une machine privée : l&apos;élève ne paie que l&apos;instructeur.
                             Sur une machine du club, le tarif écolage de la machine inclut déjà l&apos;instructeur.
                         </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="bookingMin">Solde minimum pour réserver (€)</Label>
+                        <Input
+                            id="bookingMin"
+                            inputMode="decimal"
+                            placeholder="Ex. : 0"
+                            value={bookingMin}
+                            onChange={(e) => {
+                                setBookingMin(e.target.value);
+                                setErrors(prev => ({ ...prev, bookingMin: "" }));
+                            }}
+                            className={cn(inputStyle, "max-w-[200px] font-mono")}
+                        />
+                        {errors.bookingMin && <p className="text-xs text-red-500">{errors.bookingMin}</p>}
+                        <p className="text-xs text-slate-500">
+                            {bookingMinCents != null
+                                ? <>Les élèves et pilotes peuvent s&apos;inscrire si leur solde est {bookingMinRequirement(bookingMinCents)}. </>
+                                : null}
+                            Un montant négatif autorise un découvert (ex. : -200 pour 200 € de découvert) ; un montant très bas ne bloque jamais.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 gap-4">
+                        <div>
+                            <Label className="text-base">Email « solde faible »</Label>
+                            <p className="text-xs text-slate-500">
+                                Prévient le membre par email quand son solde passe sous une heure de vol sur la machine d&apos;école la moins chère, ou sous le seuil de réservation.
+                            </p>
+                        </div>
+                        <Switch checked={lowBalanceEmail} onCheckedChange={setLowBalanceEmail} />
                     </div>
 
                     {planesWithoutRate.length > 0 && (
@@ -565,7 +613,7 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
         {
             id: 'paiement', title: 'Paiement des vols', icon: Wallet, content: paiementContent,
             summary: walletEnabled
-                ? ['Portefeuille activé', instructorRate && `${instructorRate} €/h`, planesWithoutRate.length > 0 && `${planesWithoutRate.length} alerte${planesWithoutRate.length > 1 ? 's' : ''}`].filter(Boolean).join(' · ')
+                ? ['Portefeuille activé', instructorRate && `${instructorRate} €/h`, bookingMin.trim() && `seuil ${bookingMin} €`, planesWithoutRate.length > 0 && `${planesWithoutRate.length} alerte${planesWithoutRate.length > 1 ? 's' : ''}`].filter(Boolean).join(' · ')
                 : 'Portefeuille désactivé',
         },
         { id: 'presidence', title: 'Présidence', icon: Users, content: presidenceContent, summary: `${ownersCount} président${ownersCount > 1 ? 's' : ''}` },
@@ -673,7 +721,7 @@ const SettingsPage = ({ users, clubID, publicToken, onTokenChange }: Props) => {
                 <p>Dès l&apos;enregistrement de la configuration :</p>
                 <ul className="list-disc pl-5 space-y-1">
                     <li>chaque vol d&apos;instruction signé (hors baptême) débitera automatiquement le compte de l&apos;élève ;</li>
-                    <li>les élèves et pilotes dont le solde est nul ou négatif ne pourront plus s&apos;inscrire aux créneaux ;</li>
+                    <li>les élèves et pilotes dont le solde est sous le seuil de réservation (0 € par défaut) ne pourront plus s&apos;inscrire aux créneaux ;</li>
                     <li><strong>tous les soldes démarrent à 0 €.</strong> Pensez à enregistrer les paiements déjà reçus.</li>
                 </ul>
             </WalletConfirmDialog>

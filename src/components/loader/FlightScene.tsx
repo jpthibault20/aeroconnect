@@ -210,7 +210,7 @@ export default function FlightScene({ frame, animate, className }: Props) {
                 }}
             >
                 {/* Landing gear */}
-                <path d="M4 -6.8 L8 -2.6 M21 -6.8 L21.5 -2.2" stroke="#3F3A4A" strokeWidth="1.4" strokeLinecap="round" />
+                <path d="M8 -6.8 L8 -2.6 M21 -6.8 L21.5 -2.2" stroke="#3F3A4A" strokeWidth="1.4" strokeLinecap="round" />
                 <circle cx="8" cy="-2.3" r="2.3" fill="#27232E" />
                 <circle cx="8" cy="-2.3" r="0.8" fill="#A9A3B5" />
                 <circle cx="21.5" cy="-1.9" r="1.9" fill="#27232E" />

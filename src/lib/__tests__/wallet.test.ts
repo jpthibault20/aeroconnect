@@ -5,6 +5,7 @@ import {
     balanceTextClass,
     isOverdrawn,
     bookingBlockedMessage,
+    bookingMinRequirement,
     canBookWithBalance,
     canManageWallet,
     canOperateMemberWallet,
@@ -21,8 +22,10 @@ import {
     isBillableFlight,
     isBookingGatedRole,
     parseEurosToCents,
+    parseSignedEurosToCents,
     resolveFlightRate,
     resolvePayerID,
+    sanitizeBookingMinCents,
     transactionLabel,
 } from "@/lib/wallet";
 import { walletOperationSchema } from "@/schemas/wallet";
@@ -113,26 +116,68 @@ describe("seuil et état du solde", () => {
         expect(computeLowThresholdCents([])).toBeNull();
     });
 
-    it("états", () => {
-        expect(balanceState(0, 12_000)).toBe("empty");
-        expect(balanceState(-1, 12_000)).toBe("empty");
-        expect(balanceState(5_000, 12_000)).toBe("low");
-        expect(balanceState(12_000, 12_000)).toBe("ok");
-        expect(balanceState(1, null)).toBe("ok");
+    it("états (seuil de réservation à 0 €)", () => {
+        expect(balanceState(-1, 12_000, 0)).toBe("blocked");
+        expect(balanceState(0, 12_000, 0)).toBe("low"); // AER-73: 0 € no longer blocks
+        expect(balanceState(5_000, 12_000, 0)).toBe("low");
+        expect(balanceState(12_000, 12_000, 0)).toBe("ok");
+        expect(balanceState(1, null, 0)).toBe("ok");
+    });
+
+    it("états : le blocage suit le seuil configuré", () => {
+        expect(balanceState(4_000, 12_000, 5_000)).toBe("blocked");
+        expect(balanceState(5_000, 12_000, 5_000)).toBe("low");
+        expect(balanceState(-15_000, 12_000, -20_000)).toBe("low"); // tolerated overdraft
+        expect(balanceState(-20_001, 12_000, -20_000)).toBe("blocked");
+        expect(balanceState(15_000, 12_000, 20_000)).toBe("blocked"); // threshold above "low"
     });
 
     it("passage sous le seuil détecté une seule fois", () => {
-        expect(crossedLowThreshold(20_000, 5_000, 12_000)).toBe(true);
-        expect(crossedLowThreshold(20_000, -500, 12_000)).toBe(true);
-        expect(crossedLowThreshold(5_000, 1_000, 12_000)).toBe(false); // already low
-        expect(crossedLowThreshold(5_000, 20_000, 12_000)).toBe(false); // going back up
-        expect(crossedLowThreshold(500, 0, null)).toBe(true); // no threshold: depleted
+        expect(crossedLowThreshold(20_000, 5_000, 12_000, 0)).toBe(true);
+        expect(crossedLowThreshold(20_000, -500, 12_000, 0)).toBe(true);
+        expect(crossedLowThreshold(5_000, 1_000, 12_000, 0)).toBe(false); // already low
+        expect(crossedLowThreshold(5_000, 20_000, 12_000, 0)).toBe(false); // going back up
+        expect(crossedLowThreshold(500, -1, null, 0)).toBe(true); // no "low" threshold: blocked
+        expect(crossedLowThreshold(500, 0, null, 0)).toBe(false); // 0 € still allowed
+        expect(crossedLowThreshold(30_000, 15_000, 12_000, 20_000)).toBe(true); // blocked above "low"
     });
 
-    it("inscription : solde strictement positif", () => {
-        expect(canBookWithBalance(1)).toBe(true);
-        expect(canBookWithBalance(0)).toBe(false);
-        expect(canBookWithBalance(-100)).toBe(false);
+    it("inscription : solde supérieur ou égal au seuil (borne incluse)", () => {
+        expect(canBookWithBalance(1, 0)).toBe(true);
+        expect(canBookWithBalance(0, 0)).toBe(true);
+        expect(canBookWithBalance(-1, 0)).toBe(false);
+        expect(canBookWithBalance(5_000, 5_000)).toBe(true);
+        expect(canBookWithBalance(4_999, 5_000)).toBe(false);
+        expect(canBookWithBalance(-20_000, -20_000)).toBe(true);
+        expect(canBookWithBalance(-20_001, -20_000)).toBe(false);
+    });
+
+    it("libellé du seuil", () => {
+        expect(bookingMinRequirement(0)).toBe("positif ou nul");
+        expect(bookingMinRequirement(5_000)).toBe("d'au moins 50,00 €");
+        expect(bookingMinRequirement(-20_000)).toBe("d'au moins −200,00 €");
+    });
+});
+
+describe("seuil de réservation : saisie et contrôle", () => {
+    it("parseSignedEurosToCents", () => {
+        expect(parseSignedEurosToCents("0")).toBe(0);
+        expect(parseSignedEurosToCents("50,5")).toBe(5_050);
+        expect(parseSignedEurosToCents("-200")).toBe(-20_000);
+        expect(parseSignedEurosToCents("−12,50")).toBe(-1_250);
+        expect(parseSignedEurosToCents("")).toBeNull();
+        expect(parseSignedEurosToCents("--5")).toBeNull();
+        expect(parseSignedEurosToCents("abc")).toBeNull();
+    });
+
+    it("sanitizeBookingMinCents", () => {
+        expect(sanitizeBookingMinCents(0)).toBe(0);
+        expect(sanitizeBookingMinCents(-20_000)).toBe(-20_000);
+        expect(sanitizeBookingMinCents(10_000_000)).toBe(10_000_000);
+        expect(sanitizeBookingMinCents(10_000_001)).toBeUndefined();
+        expect(sanitizeBookingMinCents(1.5)).toBeUndefined();
+        expect(sanitizeBookingMinCents("0")).toBeUndefined();
+        expect(sanitizeBookingMinCents(null)).toBeUndefined();
     });
 });
 
@@ -218,15 +263,17 @@ describe("libellés et messages", () => {
     });
 
     it("message de blocage avec contact du club", () => {
-        const msg = bookingBlockedMessage(-1_250, { firstNameContact: "Marc", lastNameContact: "Lefèvre", mailContact: "c@club.fr", phoneContact: "0612345678" });
+        const msg = bookingBlockedMessage(-1_250, 0, { firstNameContact: "Marc", lastNameContact: "Lefèvre", mailContact: "c@club.fr", phoneContact: "0612345678" });
         expect(msg).toContain("−12,50 €");
+        expect(msg).toContain("positif ou nul");
         expect(msg).toContain("Marc LEFÈVRE");
         expect(msg).toContain("0612345678");
     });
 
     it("message de blocage sans contact", () => {
-        const msg = bookingBlockedMessage(0, { firstNameContact: null, lastNameContact: null, mailContact: null, phoneContact: null });
+        const msg = bookingBlockedMessage(0, 5_000, { firstNameContact: null, lastNameContact: null, mailContact: null, phoneContact: null });
         expect(msg).toContain("président");
+        expect(msg).toContain("d'au moins 50,00 €");
     });
 });
 
@@ -279,9 +326,11 @@ describe("isOverdrawn / balanceTextClass", () => {
         expect(isOverdrawn(500)).toBe(false);
     });
 
-    it("couleurs : rouge si négatif, ambre à 0, neutre sinon", () => {
-        expect(balanceTextClass(-1_250)).toBe("text-red-600");
-        expect(balanceTextClass(0)).toBe("text-amber-600");
-        expect(balanceTextClass(4_500)).toBe("text-slate-400");
+    it("couleurs : rouge si négatif, ambre si bloqué sans dette, neutre sinon", () => {
+        expect(balanceTextClass(-1_250, 0)).toBe("text-red-600");
+        expect(balanceTextClass(-1_250, -20_000)).toBe("text-red-600"); // debt, even if allowed
+        expect(balanceTextClass(0, 0)).toBe("text-slate-400");
+        expect(balanceTextClass(2_000, 5_000)).toBe("text-amber-600");
+        expect(balanceTextClass(4_500, 0)).toBe("text-slate-400");
     });
 });

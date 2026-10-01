@@ -16,11 +16,13 @@ interface Props {
 }
 
 /**
- * AeroConnect loading animation (AER-70): an ultralight takes off, flies and
- * lands in a loop while the content loads.
+ * AeroConnect loading animation (AER-70): an ultralight taxis for TAXI_MS, then
+ * takes off, flies and lands in a loop while the content loads.
  *
- * - Shown for at least MIN_DISPLAY_MS, landing included: if the content arrives
- *   earlier, FlightLandingHost extends the flight on top.
+ * - Shown for at least MIN_DISPLAY_MS (taxi only): if the content arrives
+ *   earlier, FlightLandingHost extends the taxi on top.
+ * - When loading ends, the plane lands (or brakes if still taxiing) before the
+ *   content is revealed.
  * - Successive loaders (loading.tsx → Suspense → InitialLoading → client data)
  *   share the same flight: no restart in between.
  * - When loading ends, the plane lands fast then fades out.

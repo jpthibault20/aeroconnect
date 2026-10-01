@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/SpinnerVariants";
-import FlightLoader from "@/components/loader/FlightLoader";
 import AlertConfirmDeleted from "@/components/AlertConfirmDeleted";
 import { Wrench, Plus, FileDown, Bell, History, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -281,7 +280,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                 {/* Body */}
                 <div className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0">
                     {loading ? (
-                        <FlightLoader variant="inline" className="py-10" />
+                        <div className="py-10"><Spinner /></div>
                     ) : tab === "interventions" ? (
                         interventionFormOpen ? (
                             <InterventionForm
@@ -370,7 +369,7 @@ const MaintenanceDialog = ({ plane, open, onOpenChange }: Props) => {
                                                 <div key={it.id} className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
                                                     <div className="min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                            <span className="text-sm font-medium text-slate-800">{it.description}</span>
+                                                            {it.description && <span className="text-sm font-medium text-slate-800">{it.description}</span>}
                                                             <span className="inline-flex items-center text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200 rounded-full px-2 py-0.5">
                                                                 {it.type}
                                                             </span>

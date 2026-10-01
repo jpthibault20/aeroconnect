@@ -149,7 +149,7 @@ export const getMyWalletStatus = async () => {
 
     const club = await prisma.club.findUnique({
         where: { id: auth.user.clubID },
-        select: { walletEnabled: true },
+        select: { walletEnabled: true, walletBookingMinCents: true },
     });
     if (!club?.walletEnabled) return { success: true as const, enabled: false as const };
 
@@ -162,7 +162,8 @@ export const getMyWalletStatus = async () => {
         enabled: true as const,
         balanceCents,
         lowThresholdCents: threshold,
-        state: balanceState(balanceCents, threshold),
+        bookingMinCents: club.walletBookingMinCents,
+        state: balanceState(balanceCents, threshold, club.walletBookingMinCents),
     };
 };
 
@@ -210,7 +211,8 @@ export const getMemberWallet = async (userID: string | null, page = 0) => {
         },
         balanceCents,
         lowThresholdCents: threshold,
-        state: balanceState(balanceCents, threshold),
+        bookingMinCents: club.walletBookingMinCents,
+        state: balanceState(balanceCents, threshold, club.walletBookingMinCents),
         month,
         year,
         ...txPage,
@@ -256,7 +258,7 @@ export const getClubWallets = async () => {
             return {
                 ...m,
                 balanceCents,
-                state: balanceState(balanceCents, threshold),
+                state: balanceState(balanceCents, threshold, club.walletBookingMinCents),
                 lastOperation: last ? { type: last.type, authorID: last.authorID, createdAt: last.createdAt } : null,
             };
         })
@@ -281,6 +283,7 @@ export const getClubWallets = async () => {
         rows,
         totals,
         lowThresholdCents: threshold,
+        bookingMinCents: club.walletBookingMinCents,
         hasAnyTransaction: lastOps.length > 0,
     };
 };

@@ -26,7 +26,7 @@ import SessionContacts from "./calendar/SessionContacts";
 import BaptemeSessionValidation from "./calendar/BaptemeSessionValidation";
 import { cn, LEGACY_NO_PLANE_ID } from "@/lib/utils";
 import { useWallet } from "@/hooks/useWallet";
-import { canBookWithBalance, formatCents, isBookingGatedRole } from "@/lib/wallet";
+import { formatCents, isBookingGatedRole } from "@/lib/wallet";
 import { emitWalletChanged } from "@/lib/walletEvents";
 import { WalletBookingBlock } from "./wallet/WalletBookingBlock";
 
@@ -58,11 +58,11 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     const [session, setSession] = useState<flight_sessions>();
     const [studentComment, setStudentComment] = useState("");
 
-    // Wallet (AER-66): student / pilot with a balance ≤ 0 => booking blocked (the
+    // Wallet (AER-66, AER-73): student / pilot below the club threshold => booking blocked (the
     // server refuses anyway, see studentRegistration).
     const wallet = useWallet();
     const walletGated = wallet.enabled && isBookingGatedRole(currentUser?.role) && wallet.balanceCents != null;
-    const walletBlocked = walletGated && !canBookWithBalance(wallet.balanceCents as number);
+    const walletBlocked = walletGated && wallet.state === "blocked";
     const walletLow = walletGated && !walletBlocked && wallet.state === "low";
 
     // Bookable planes: visibility (club + own private plane) ∩ allowed class.
@@ -350,7 +350,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                     ) : walletBlocked ? (
 
                         // --- BOOKING BLOCKED: BALANCE DEPLETED ---
-                        <WalletBookingBlock balanceCents={wallet.balanceCents as number} />
+                        <WalletBookingBlock balanceCents={wallet.balanceCents as number} bookingMinCents={wallet.bookingMinCents ?? 0} />
 
                     ) : (
 

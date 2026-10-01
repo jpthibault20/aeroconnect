@@ -8,13 +8,20 @@ import { getMemberWallet, WalletTransactionView } from "@/api/db/wallet";
 import { Button } from "@/components/ui/button";
 import FlightLoader from "@/components/loader/FlightLoader";
 import { cn } from "@/lib/utils";
-import { BALANCE_STATE_LABELS, formatCents, formatDurationHM, formatSignedCents } from "@/lib/wallet";
+import { BALANCE_STATE_LABELS, BalanceState, formatCents, formatDurationHM, formatSignedCents, isOverdrawn } from "@/lib/wallet";
 import { WALLET_EVENT } from "@/lib/walletEvents";
-import { BALANCE_STATE_STYLES } from "./BalancePill";
+import { balanceStateStyle } from "./BalancePill";
 import ClubPaymentContact from "./ClubPaymentContact";
 import TransactionHistory from "./TransactionHistory";
 import WalletOperationDialog, { OperationKind } from "./WalletOperationDialog";
 import { ROLE_LABELS } from "./roleLabels";
+
+// Label seen by management: debt first, then whether bookings are blocked.
+function memberStateLabel(state: BalanceState, balanceCents: number): string {
+    if (isOverdrawn(balanceCents)) return state === "blocked" ? "À découvert : inscriptions bloquées" : "À découvert";
+    if (state === "blocked") return "Solde insuffisant : inscriptions bloquées";
+    return state === "low" ? "Solde faible" : "Solde suffisant";
+}
 
 type WalletData = Extract<Awaited<ReturnType<typeof getMemberWallet>>, { success: true }>;
 
@@ -85,12 +92,13 @@ const MemberWalletDetail = ({ userID, openCredit = false }: Props) => {
         return <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">{error}</div>;
     }
     if (!data) {
-        return <FlightLoader variant="inline" className="py-12" />;
+        // Negative margins cancel WalletPageComponent's padding: the landing overlay only
+        // covers the loader's box, so the padding strip would reveal the content underneath.
+        return <FlightLoader variant="page" className="-m-4 w-auto flex-1 md:-m-8" />;
     }
 
     const { member, isSelf, canOperate, state, balanceCents, month, year } = data;
-    // At 0 €: bookings blocked but no debt (amber, not red).
-    const style = state === "empty" && balanceCents === 0 ? BALANCE_STATE_STYLES.low : BALANCE_STATE_STYLES[state];
+    const style = balanceStateStyle(state, balanceCents);
     const readOnlyViewer = !isSelf && !canOperate;
     const contactOpen = showContact || state !== "ok";
     const monthLabel = new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
@@ -151,7 +159,7 @@ const MemberWalletDetail = ({ userID, openCredit = false }: Props) => {
                     </div>
                     <p className={cn("text-4xl font-bold font-mono tabular-nums tracking-tight", style.text)}>{formatCents(balanceCents)}</p>
                     <span className={cn("inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold", style.pill)}>
-                        {isSelf ? BALANCE_STATE_LABELS[state] : balanceCents < 0 ? "À découvert : inscriptions bloquées" : state === "empty" ? "Solde nul : inscriptions bloquées" : state === "low" ? "Solde faible" : "Solde positif"}
+                        {isSelf ? BALANCE_STATE_LABELS[state] : memberStateLabel(state, balanceCents)}
                     </span>
                     {transactions[0] && (
                         <p className="text-xs text-slate-400">

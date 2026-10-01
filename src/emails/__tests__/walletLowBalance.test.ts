@@ -3,13 +3,13 @@ import { render } from "@react-email/render";
 import WalletLowBalance from "@/emails/WalletLowBalance";
 
 /**
- * "Low / depleted balance" email (AER-66): must explain the situation and give a
+ * "Low / insufficient balance" email (AER-66): must explain the situation and give a
  * way to top up (club contact + absolute link).
  */
 const baseProps = {
     firstName: "Léa",
     balance: "25,00 €",
-    isEmpty: false,
+    isBlocked: false,
     contactName: "Marc LEFÈVRE",
     phoneContact: "0612345678",
     mailContact: "contact@club.fr",
@@ -28,8 +28,8 @@ describe("Email solde faible", () => {
         expect(html).toContain("Pensez à recharger");
     });
 
-    it("solde épuisé : explique que les inscriptions sont bloquées", async () => {
-        const html = await render(WalletLowBalance({ ...baseProps, balance: "−12,50 €", isEmpty: true }));
+    it("solde insuffisant : explique que les inscriptions sont bloquées", async () => {
+        const html = await render(WalletLowBalance({ ...baseProps, balance: "−12,50 €", isBlocked: true }));
         expect(html).toContain("−12,50 €");
         expect(html).toContain("ne pouvez plus vous inscrire");
     });

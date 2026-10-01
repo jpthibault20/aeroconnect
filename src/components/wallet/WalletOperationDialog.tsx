@@ -12,10 +12,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/SpinnerVariants";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useCurrentClub } from "@/app/context/useCurrentClub";
 import { recordWalletOperation } from "@/api/db/wallet";
 import { walletOperationSchema } from "@/schemas/wallet";
 import {
     balanceTextClass,
+    canBookWithBalance,
     centsToInput,
     formatCents,
     parseEurosToCents,
@@ -62,6 +64,7 @@ const WalletOperationDialog = ({ open, onOpenChange, members, memberID, initialK
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [confirmNegative, setConfirmNegative] = useState(false);
+    const { currentClub } = useCurrentClub();
 
     // Reset the form on every open.
     useEffect(() => {
@@ -172,7 +175,7 @@ const WalletOperationDialog = ({ open, onOpenChange, members, memberID, initialK
                                         <SelectItem key={m.id} value={m.id}>
                                             <span className="flex items-center gap-3">
                                                 <span>{m.lastName.toUpperCase()} {m.firstName}</span>
-                                                <span className={cn("text-xs font-mono tabular-nums", balanceTextClass(m.balanceCents))}>
+                                                <span className={cn("text-xs font-mono tabular-nums", balanceTextClass(m.balanceCents, currentClub?.walletBookingMinCents ?? 0))}>
                                                     {formatCents(m.balanceCents)}
                                                 </span>
                                             </span>
@@ -369,7 +372,9 @@ const WalletOperationDialog = ({ open, onOpenChange, members, memberID, initialK
                     <p>
                         Le solde de {memberName(member)} passera à{" "}
                         <span className="font-mono tabular-nums font-semibold text-red-600">{formatCents(newBalance)}</span>.
-                        Ce membre ne pourra plus s&apos;inscrire aux créneaux tant que son solde n&apos;est pas rechargé.
+                        {canBookWithBalance(newBalance, currentClub?.walletBookingMinCents ?? 0)
+                            ? " Ce membre sera à découvert."
+                            : " Ce membre ne pourra plus s'inscrire aux créneaux tant que son solde n'est pas rechargé."}
                     </p>
                 )}
             </WalletConfirmDialog>

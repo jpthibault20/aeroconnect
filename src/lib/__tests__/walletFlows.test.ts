@@ -134,47 +134,63 @@ function isReject(plan: ReturnType<typeof planFlightCharge>): plan is Extract<ty
 const contact = { firstNameContact: "Marc", lastNameContact: "Lefèvre", mailContact: "c@club.fr", phoneContact: "0612345678" };
 
 describe("bookingWalletBlock — inscription par l'élève / le pilote", () => {
-    it("bloque un élève ou un pilote à solde nul ou négatif", () => {
+    const block = (role: userRole, balanceCents: number, bookingMinCents = 0, walletEnabled = true) =>
+        bookingWalletBlock({ walletEnabled, role, balanceCents, bookingMinCents, contact });
+
+    it("bloque un élève ou un pilote sous le seuil", () => {
         for (const role of [userRole.STUDENT, userRole.PILOT]) {
-            expect(bookingWalletBlock({ walletEnabled: true, role, balanceCents: 0, contact })).toContain("Marc LEFÈVRE");
-            expect(bookingWalletBlock({ walletEnabled: true, role, balanceCents: -1_250, contact })).not.toBeNull();
+            expect(block(role, -1)).toContain("Marc LEFÈVRE");
+            expect(block(role, -1_250)).not.toBeNull();
+            expect(block(role, 4_999, 5_000)).toContain("d'au moins 50,00 €");
         }
     });
 
-    it("autorise un solde strictement positif, même faible", () => {
-        expect(bookingWalletBlock({ walletEnabled: true, role: userRole.STUDENT, balanceCents: 1, contact })).toBeNull();
+    it("AER-73 : autorise un solde à 0 € avec le seuil par défaut", () => {
+        expect(block(userRole.STUDENT, 0)).toBeNull();
+        expect(block(userRole.PILOT, 0)).toBeNull();
+    });
+
+    it("autorise un solde au seuil (borne incluse), y compris un découvert toléré", () => {
+        expect(block(userRole.STUDENT, 5_000, 5_000)).toBeNull();
+        expect(block(userRole.STUDENT, -15_000, -20_000)).toBeNull();
+        expect(block(userRole.STUDENT, -20_001, -20_000)).not.toBeNull();
     });
 
     it("ne bloque jamais les autres rôles", () => {
         for (const role of [userRole.INSTRUCTOR, userRole.OWNER, userRole.ADMIN, userRole.MANAGER]) {
-            expect(bookingWalletBlock({ walletEnabled: true, role, balanceCents: -5_000, contact })).toBeNull();
+            expect(block(role, -5_000)).toBeNull();
         }
     });
 
     it("ne bloque rien si le portefeuille est désactivé", () => {
-        expect(bookingWalletBlock({ walletEnabled: false, role: userRole.STUDENT, balanceCents: -5_000, contact })).toBeNull();
+        expect(block(userRole.STUDENT, -5_000, 0, false)).toBeNull();
     });
 });
 
 describe("managerBookingWarning — inscription par la gestion", () => {
     const member = { clubID: "club-1", role: userRole.STUDENT, firstName: "Léa", lastName: "Dupont" };
 
-    it("avertit (sans bloquer) pour un élève à solde ≤ 0", () => {
-        const warning = managerBookingWarning({ walletEnabled: true, clubID: "club-1", member, balanceCents: -1_250 });
+    const warn = (overrides: Partial<Parameters<typeof managerBookingWarning>[0]>) =>
+        managerBookingWarning({ walletEnabled: true, clubID: "club-1", member, balanceCents: -1_250, bookingMinCents: 0, ...overrides });
+
+    it("avertit (sans bloquer) pour un élève sous le seuil", () => {
+        const warning = warn({});
         expect(warning).toContain("Léa DUPONT");
         expect(warning).toContain("−12,50 €");
-        expect(managerBookingWarning({ walletEnabled: true, clubID: "club-1", member, balanceCents: 0 })).not.toBeNull();
+        expect(warn({ balanceCents: 4_000, bookingMinCents: 5_000 })).not.toBeNull();
     });
 
-    it("pas d'avertissement si le solde est positif", () => {
-        expect(managerBookingWarning({ walletEnabled: true, clubID: "club-1", member, balanceCents: 500 })).toBeNull();
+    it("pas d'avertissement au seuil ou au-dessus", () => {
+        expect(warn({ balanceCents: 0 })).toBeNull();
+        expect(warn({ balanceCents: 500 })).toBeNull();
+        expect(warn({ balanceCents: -1_250, bookingMinCents: -20_000 })).toBeNull();
     });
 
     it("pas d'avertissement pour un invité externe, un autre club, un rôle non concerné ou portefeuille désactivé", () => {
-        expect(managerBookingWarning({ walletEnabled: true, clubID: "club-1", member: null, balanceCents: 0 })).toBeNull();
-        expect(managerBookingWarning({ walletEnabled: true, clubID: "club-1", member: { ...member, clubID: "club-2" }, balanceCents: 0 })).toBeNull();
-        expect(managerBookingWarning({ walletEnabled: true, clubID: "club-1", member: { ...member, role: userRole.INSTRUCTOR }, balanceCents: 0 })).toBeNull();
-        expect(managerBookingWarning({ walletEnabled: false, clubID: "club-1", member, balanceCents: 0 })).toBeNull();
+        expect(warn({ member: null })).toBeNull();
+        expect(warn({ member: { ...member, clubID: "club-2" } })).toBeNull();
+        expect(warn({ member: { ...member, role: userRole.INSTRUCTOR } })).toBeNull();
+        expect(warn({ walletEnabled: false })).toBeNull();
     });
 });
 

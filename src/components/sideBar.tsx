@@ -209,7 +209,7 @@ const SideBar = ({ clubsProp, counts }: props) => {
                         {showBalance && (
                             <p className={cn(
                                 "text-xs font-mono tabular-nums truncate",
-                                wallet.state === "empty" ? "text-red-300" : wallet.state === "low" ? "text-amber-300" : "text-emerald-300"
+                                wallet.state === "blocked" ? "text-red-300" : wallet.state === "low" ? "text-amber-300" : "text-emerald-300"
                             )}>
                                 Solde : {formatCents(wallet.balanceCents as number)}
                             </p>

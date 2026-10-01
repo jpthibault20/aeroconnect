@@ -66,7 +66,6 @@ const InterventionForm = ({ planeID, currentHobbs, tasks, intervention, onSaved,
 
     const onSubmit = async () => {
         setError("");
-        if (!description.trim()) return setError("Description requise");
 
         const input: InterventionInput = {
             date,
@@ -129,7 +128,7 @@ const InterventionForm = ({ planeID, currentHobbs, tasks, intervention, onSaved,
             </div>
 
             <div className="space-y-2">
-                <Label className="text-slate-700 font-medium">Description</Label>
+                <Label className="text-slate-700 font-medium">Description <span className="text-slate-400 font-normal">(facultatif)</span></Label>
                 <Input
                     value={description}
                     disabled={loading}

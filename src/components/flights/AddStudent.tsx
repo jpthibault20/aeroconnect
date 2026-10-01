@@ -62,6 +62,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     // choosing. Loaded on open.
     const { currentClub } = useCurrentClub();
     const walletEnabled = !!currentClub?.walletEnabled;
+    const bookingMinCents = currentClub?.walletBookingMinCents ?? 0;
     const [balances, setBalances] = useState<Record<string, number> | null>(null);
 
     useEffect(() => {
@@ -76,7 +77,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
     const selectedMember = usersProp.find((u) => u.id === studentId);
     const selectedBalance = selectedMember && balances ? balances[selectedMember.id] ?? 0 : null;
     const walletWarning = walletEnabled && selectedMember && selectedBalance != null
-        && isBookingGatedRole(selectedMember.role) && !canBookWithBalance(selectedBalance)
+        && isBookingGatedRole(selectedMember.role) && !canBookWithBalance(selectedBalance, bookingMinCents)
         ? `Le solde de ${selectedMember.firstName} ${selectedMember.lastName.toUpperCase()} est de ${formatCents(selectedBalance)}. L'inscription reste possible, et le vol sera débité à la signature. Pensez à régulariser avec l'élève.`
         : "";
 
@@ -343,7 +344,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                             <span className="flex items-center gap-3">
                                                 <span className="truncate">{item.name}</span>
                                                 {balance != null && (
-                                                    <span className={cn("text-xs font-mono tabular-nums", balanceTextClass(balance))}>
+                                                    <span className={cn("text-xs font-mono tabular-nums", balanceTextClass(balance, bookingMinCents))}>
                                                         {formatCents(balance)}
                                                     </span>
                                                 )}

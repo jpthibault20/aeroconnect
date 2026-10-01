@@ -22,9 +22,9 @@ type Filter = "all" | "overdrawn" | "blocked" | "low" | "ok" | "students" | "pil
 const FILTER_LABELS: Record<Filter, string> = {
     all: "Tous les membres",
     overdrawn: "À découvert (solde négatif)",
-    blocked: "Inscription bloquée (solde ≤ 0)",
+    blocked: "Inscription bloquée (solde sous le seuil)",
     low: "Solde faible",
-    ok: "Solde positif",
+    ok: "Solde suffisant",
     students: "Élèves",
     pilots: "Pilotes",
 };
@@ -36,7 +36,7 @@ function applyFilter(rows: WalletMemberRow[], filter: Filter, query: string): Wa
         switch (filter) {
             case "all": return true;
             case "overdrawn": return isOverdrawn(r.balanceCents);
-            case "blocked": return r.state === "empty";
+            case "blocked": return r.state === "blocked";
             case "low": return r.state === "low";
             case "ok": return r.state === "ok";
             case "students": return r.role === userRole.STUDENT;
@@ -89,7 +89,9 @@ const WalletMembersPage = () => {
     const rows = useMemo(() => (data ? applyFilter(data.rows, filter, query) : []), [data, filter, query]);
 
     if (error) return <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">{error}</div>;
-    if (!data) return <FlightLoader variant="inline" className="py-12" />;
+    // Negative margins cancel WalletPageComponent's padding: the landing overlay only
+    // covers the loader's box, so the padding strip would reveal the content underneath.
+    if (!data) return <FlightLoader variant="page" className="-m-4 w-auto flex-1 md:-m-8" />;
 
     const { canOperate, totals } = data;
     const detailHref = (id: string) => `/wallet?clubID=${currentClub?.id ?? ""}&userID=${id}`;
@@ -165,7 +167,7 @@ const WalletMembersPage = () => {
             {rows.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
                     {filter === "overdrawn" ? "Aucun membre à découvert."
-                        : filter === "blocked" ? "Aucun membre bloqué : tous les soldes sont positifs."
+                        : filter === "blocked" ? "Aucun membre bloqué : tous les soldes atteignent le seuil de réservation."
                             : "Aucun membre trouvé."}
                 </div>
             ) : (

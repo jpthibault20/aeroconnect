@@ -28,7 +28,7 @@ import { computeDurationMinutes } from "@/lib/logbookCalc";
 export const WALLET_MANAGE_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 // View club members' wallets (read-only for INSTRUCTOR).
 export const WALLET_VIEW_ROLES: userRole[] = [...WALLET_MANAGE_ROLES, userRole.INSTRUCTOR];
-// Roles blocked from booking when their balance is zero or negative.
+// Roles blocked from booking when their balance is below the club threshold.
 export const WALLET_BOOKING_GATED_ROLES: userRole[] = [userRole.STUDENT, userRole.PILOT];
 // Roles never listed in wallet management (non-member / platform admin).
 export const WALLET_HIDDEN_ROLES: userRole[] = [userRole.USER, userRole.ADMIN];
@@ -240,32 +240,36 @@ export interface WalletContactInfo {
 }
 
 /**
- * Self-booking: blocking message if it is a student / pilot with a balance ≤ 0
- * in a club with the wallet enabled, null otherwise.
+ * Self-booking: blocking message if it is a student / pilot whose balance is
+ * below the club threshold, in a club with the wallet enabled; null otherwise.
  */
 export function bookingWalletBlock(args: {
     walletEnabled: boolean;
     role: userRole;
     balanceCents: number;
+    bookingMinCents: number;
     contact: WalletContactInfo;
 }): string | null {
     if (!args.walletEnabled || !isBookingGatedRole(args.role)) return null;
-    return canBookWithBalance(args.balanceCents) ? null : bookingBlockedMessage(args.balanceCents, args.contact);
+    return canBookWithBalance(args.balanceCents, args.bookingMinCents)
+        ? null
+        : bookingBlockedMessage(args.balanceCents, args.bookingMinCents, args.contact);
 }
 
 /**
  * Booking of a student by management: never blocked, but a warning if the
- * student / pilot (same club) has a balance ≤ 0. null otherwise.
+ * student / pilot (same club) is below the club threshold. null otherwise.
  */
 export function managerBookingWarning(args: {
     walletEnabled: boolean;
     clubID: string;
     member: { clubID: string | null; role: userRole; firstName: string; lastName: string } | null;
     balanceCents: number;
+    bookingMinCents: number;
 }): string | null {
-    const { walletEnabled, clubID, member, balanceCents } = args;
+    const { walletEnabled, clubID, member, balanceCents, bookingMinCents } = args;
     if (!walletEnabled || !member || member.clubID !== clubID || !isBookingGatedRole(member.role)) return null;
-    if (canBookWithBalance(balanceCents)) return null;
+    if (canBookWithBalance(balanceCents, bookingMinCents)) return null;
     return `Le solde de ${member.firstName} ${member.lastName.toUpperCase()} est de ${formatCents(balanceCents)}. L'inscription est enregistrée et le vol sera débité à la signature : pensez à régulariser avec l'élève.`;
 }
 
@@ -289,7 +293,8 @@ export function operationToMovement(kind: "CREDIT" | "WITHDRAW", amountCents: nu
 
 // ─── Balance state ───
 
-export type BalanceState = "ok" | "low" | "empty";
+// "blocked": below the club booking threshold (bookings refused for gated roles).
+export type BalanceState = "ok" | "low" | "blocked";
 
 /**
  * "Low balance" threshold: cost of one hour on the cheapest training plane (club
@@ -306,47 +311,58 @@ export function computeLowThresholdCents(
     return rates.length > 0 ? Math.min(...rates) : null;
 }
 
-export function balanceState(balanceCents: number, lowThresholdCents: number | null): BalanceState {
-    if (balanceCents <= 0) return "empty";
+/**
+ * The "low" threshold stays independent from the booking threshold (AER-73): a
+ * member can be "low" while still allowed to book, or blocked above it when the
+ * club requires a high minimum.
+ */
+export function balanceState(balanceCents: number, lowThresholdCents: number | null, bookingMinCents: number): BalanceState {
+    if (!canBookWithBalance(balanceCents, bookingMinCents)) return "blocked";
     if (lowThresholdCents != null && balanceCents < lowThresholdCents) return "low";
     return "ok";
 }
 
 /**
- * Did the balance just drop below the "low" threshold (depleted included)? Used
+ * Did the balance just drop below the "low" threshold (blocked included)? Used
  * to send the email only once per crossing, with no state to store.
  */
 export function crossedLowThreshold(
     beforeCents: number,
     afterCents: number,
-    lowThresholdCents: number | null
+    lowThresholdCents: number | null,
+    bookingMinCents: number
 ): boolean {
-    const wasLow = balanceState(beforeCents, lowThresholdCents) !== "ok";
-    const isLow = balanceState(afterCents, lowThresholdCents) !== "ok";
+    const wasLow = balanceState(beforeCents, lowThresholdCents, bookingMinCents) !== "ok";
+    const isLow = balanceState(afterCents, lowThresholdCents, bookingMinCents) !== "ok";
     return !wasLow && isLow;
 }
 
 /**
- * Overdrawn = the member OWES the club money (strictly negative balance). At 0 €
- * they can no longer book, but they are not overdrawn.
+ * Overdrawn = the member OWES the club money (strictly negative balance),
+ * whether or not the club threshold still lets them book.
  */
 export function isOverdrawn(balanceCents: number): boolean {
     return balanceCents < 0;
 }
 
 /**
- * Color of a balance amount in lists: red if overdrawn, amber at 0 € (bookings
- * blocked), neutral otherwise.
+ * Color of a balance amount in lists: red if overdrawn, amber if blocked without
+ * debt (threshold above 0 €), neutral otherwise.
  */
-export function balanceTextClass(balanceCents: number): string {
+export function balanceTextClass(balanceCents: number, bookingMinCents: number): string {
     if (isOverdrawn(balanceCents)) return "text-red-600";
-    if (balanceCents === 0) return "text-amber-600";
+    if (!canBookWithBalance(balanceCents, bookingMinCents)) return "text-amber-600";
     return "text-slate-400";
 }
 
-/** Booking allowed (balance-wise): strictly positive. */
-export function canBookWithBalance(balanceCents: number): boolean {
-    return balanceCents > 0;
+/** Booking allowed (balance-wise): balance at or above the club threshold. */
+export function canBookWithBalance(balanceCents: number, bookingMinCents: number): boolean {
+    return balanceCents >= bookingMinCents;
+}
+
+/** "positif ou nul" / "d'au moins 50,00 €" / "d'au moins −200,00 €". */
+export function bookingMinRequirement(bookingMinCents: number): string {
+    return bookingMinCents === 0 ? "positif ou nul" : `d'au moins ${formatCents(bookingMinCents)}`;
 }
 
 // ─── Formatting / input ───
@@ -391,7 +407,16 @@ export function parseEurosToCents(input: string): number | null {
     return Number(whole) * 100 + Number(decimals.padEnd(2, "0"));
 }
 
-/** Cents -> input field value ("120,00"), empty if null. */
+/** Same as parseEurosToCents, a leading "-" or "−" allowed ("-200", "−12,50"). */
+export function parseSignedEurosToCents(input: string): number | null {
+    const trimmed = input.trim();
+    const negative = /^[-−]/.test(trimmed);
+    const cents = parseEurosToCents(negative ? trimmed.slice(1) : trimmed);
+    if (cents == null) return null;
+    return negative ? -cents : cents;
+}
+
+/** Cents -> input field value ("120,00", "-200,00"), empty if null. */
 export function centsToInput(cents: number | null | undefined): string {
     if (cents == null) return "";
     return (cents / 100).toFixed(2).replace(".", ",");
@@ -404,6 +429,17 @@ export function centsToInput(cents: number | null | undefined): string {
 export function sanitizeRateCents(value: unknown): number | null | undefined {
     if (value === null || value === undefined || value === "") return null;
     if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 10_000_000) return undefined;
+    return value;
+}
+
+const BOOKING_MIN_LIMIT_CENTS = 10_000_000;
+
+/**
+ * Booking threshold received from the client: integer cents, negative allowed,
+ * within ±100 000 €. undefined => invalid value, to be rejected.
+ */
+export function sanitizeBookingMinCents(value: unknown): number | undefined {
+    if (typeof value !== "number" || !Number.isInteger(value) || Math.abs(value) > BOOKING_MIN_LIMIT_CENTS) return undefined;
     return value;
 }
 
@@ -448,14 +484,15 @@ export function transactionLabel(type: WalletTransactionType, authorID: string |
 }
 
 export const BALANCE_STATE_LABELS: Record<BalanceState, string> = {
-    ok: "Solde positif",
+    ok: "Solde suffisant",
     low: "Solde faible : pensez à recharger votre compte",
-    empty: "Solde épuisé : inscriptions aux créneaux bloquées",
+    blocked: "Solde insuffisant : inscriptions aux créneaux bloquées",
 };
 
 /** Booking block message, with the club contact if any. */
 export function bookingBlockedMessage(
     balanceCents: number,
+    bookingMinCents: number,
     contact: { firstNameContact: string | null; lastNameContact: string | null; mailContact: string | null; phoneContact: string | null }
 ): string {
     const name = [contact.firstNameContact, contact.lastNameContact?.toUpperCase()].filter(Boolean).join(" ");
@@ -463,5 +500,5 @@ export function bookingBlockedMessage(
     const who = name || ways
         ? `Contactez ${name || "le club"}${ways ? ` (${ways})` : ""} pour recharger votre compte.`
         : "Adressez-vous au président ou à un instructeur du club pour recharger votre compte.";
-    return `Votre solde est de ${formatCents(balanceCents)}. Pour vous inscrire à un créneau, il doit être positif. ${who}`;
+    return `Votre solde est de ${formatCents(balanceCents)}. Pour vous inscrire à un créneau, il doit être ${bookingMinRequirement(bookingMinCents)}. ${who}`;
 }

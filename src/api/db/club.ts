@@ -3,7 +3,7 @@ import { ClubFormValues } from "@/components/NewClub";
 import { defaultMinutes } from "@/config/config";
 import { dayFr } from "@/config/config";
 import { sendNotificationRequestClub } from "@/lib/mail";
-import { sanitizeRateCents } from "@/lib/wallet";
+import { sanitizeBookingMinCents, sanitizeRateCents } from "@/lib/wallet";
 import { userRole } from "@prisma/client";
 import prisma from "../prisma";
 import { requireAuth } from "./users";
@@ -243,6 +243,8 @@ export interface ConfigClub {
     phoneContact: string;
     walletEnabled?: boolean; // student wallet (AER-66)
     instructorHourlyRateCents?: number | null; // instructor rate (private plane), cents/h
+    walletBookingMinCents?: number; // minimum balance to book (AER-73), cents, may be negative
+    walletLowBalanceEmail?: boolean; // "low balance" email enabled (AER-73)
 }
 
 export const updateClub = async (clubID: string, data: ConfigClub) => {
@@ -256,6 +258,10 @@ export const updateClub = async (clubID: string, data: ConfigClub) => {
     const instructorRate = sanitizeRateCents(data.instructorHourlyRateCents);
     if (instructorRate === undefined) {
         return { error: "Tarif horaire instructeur invalide" };
+    }
+    const bookingMin = data.walletBookingMinCents === undefined ? undefined : sanitizeBookingMinCents(data.walletBookingMinCents);
+    if (data.walletBookingMinCents !== undefined && bookingMin === undefined) {
+        return { error: "Solde minimum pour réserver invalide" };
     }
 
     // layout of working hours
@@ -293,6 +299,8 @@ const updateClub = prisma.club.update({
         phoneContact: data.phoneContact,
         ...(data.walletEnabled !== undefined && { walletEnabled: data.walletEnabled }),
         ...(data.instructorHourlyRateCents !== undefined && { instructorHourlyRateCents: instructorRate }),
+        ...(bookingMin !== undefined && { walletBookingMinCents: bookingMin }),
+        ...(data.walletLowBalanceEmail !== undefined && { walletLowBalanceEmail: data.walletLowBalanceEmail === true }),
     },
 });
 

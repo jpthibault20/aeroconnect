@@ -40,8 +40,8 @@ const clubFormSchema = z.object({
     address: z.string().optional(),
     city: z.string().optional(),
     zipCode: z.string().optional(),
-    workStartTime: z.string().min(1, "Heure de début requise"),
-    workEndTime: z.string().min(1, "Heure de fin requise"),
+    workStartTime: z.string({ required_error: "Heure d'ouverture requise" }).min(1, "Heure d'ouverture requise"),
+    workEndTime: z.string({ required_error: "Heure de fermeture requise" }).min(1, "Heure de fermeture requise"),
     sessionDuration: z.number().default(60)
 }).refine(
     (data) => parseInt(data.workEndTime) - parseInt(data.workStartTime) >= 3,
@@ -72,7 +72,8 @@ const NewClub = ({ setNewClub }: Props) => {
         formState: { errors },
     } = useForm<ClubFormValues>({
         resolver: zodResolver(clubFormSchema),
-        defaultValues: { sessionDuration: 60 },
+        // Real values, not placeholders: 09:00-18:00 can be kept without touching the selects.
+        defaultValues: { sessionDuration: 60, workStartTime: "09", workEndTime: "18" },
     });
 
     const onSubmit = async (data: ClubFormValues) => {
@@ -164,7 +165,7 @@ const NewClub = ({ setNewClub }: Props) => {
                                     control={control}
                                     render={({ field }) => (
                                         <Select onValueChange={field.onChange} value={field.value}>
-                                            <SelectTrigger className={inputStyle}><SelectValue placeholder="09:00" /></SelectTrigger>
+                                            <SelectTrigger className={inputStyle}><SelectValue placeholder="Choisir" /></SelectTrigger>
 
                                             {/* z-[10000] to stay above the dialog, max-h for scrolling */}
                                             <SelectContent className="max-h-[200px] z-[10000]">
@@ -181,7 +182,7 @@ const NewClub = ({ setNewClub }: Props) => {
                                     control={control}
                                     render={({ field }) => (
                                         <Select onValueChange={field.onChange} value={field.value}>
-                                            <SelectTrigger className={inputStyle}><SelectValue placeholder="18:00" /></SelectTrigger>
+                                            <SelectTrigger className={inputStyle}><SelectValue placeholder="Choisir" /></SelectTrigger>
 
                                             {/* z-[10000] to stay above the dialog, max-h for scrolling */}
                                             <SelectContent className="max-h-[200px] z-[10000]">
@@ -192,6 +193,7 @@ const NewClub = ({ setNewClub }: Props) => {
                                 />
                             </div>
                         </div>
+                        {errors.workStartTime && <p className="text-xs text-red-500 mt-1">{errors.workStartTime.message}</p>}
                         {errors.workEndTime && <p className="text-xs text-red-500 mt-1">{errors.workEndTime.message}</p>}
                     </div>
 

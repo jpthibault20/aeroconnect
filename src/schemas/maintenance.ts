@@ -28,8 +28,8 @@ export const maintenanceInterventionSchema = z.object({
     date: z.string(),
     // Maintenance type (see MAINTENANCE_TYPES; free string to stay flexible).
     type: z.string().min(1),
-    // What was done.
-    description: z.string().min(1),
+    // What was done (optional, may be empty).
+    description: z.string(),
     // Optional comment.
     comment: z.string().optional(),
     // Hobbs hours at the time of the intervention (snapshot of hobbsTotal).
@@ -54,7 +54,7 @@ export const maintenanceHistorySchema = z.array(maintenanceInterventionSchema);
 export const interventionInputSchema = z.object({
     date: z.string().min(1, "Date requise"),
     type: z.string().min(1, "Type requis"),
-    description: z.string().min(1, "Description requise"),
+    description: z.string(),
     comment: z.string().optional(),
     // Hobbs hours at the time of the intervention (may be empty => null).
     engineHours: z.number().nullable(),

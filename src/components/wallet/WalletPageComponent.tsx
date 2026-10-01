@@ -39,8 +39,9 @@ const WalletPageComponent = ({ userID, openCredit = false }: { userID: string | 
     }
 
     return (
-        <div className="min-h-full bg-slate-50 p-4 md:p-8 font-sans text-slate-800">
-            <div className="mx-auto max-w-6xl">{content}</div>
+        <div className="flex min-h-full flex-col bg-slate-50 p-4 md:p-8 font-sans text-slate-800">
+            {/* Flex column so the full-page loader of the child views fills the height. */}
+            <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">{content}</div>
         </div>
     );
 };

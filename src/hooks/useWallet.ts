@@ -13,6 +13,8 @@ export interface WalletStatus {
     /** Balance of the signed-in user (cents), null until loaded. */
     balanceCents: number | null;
     lowThresholdCents: number | null;
+    /** Club minimum balance to book (AER-73), null until loaded. */
+    bookingMinCents: number | null;
     state: BalanceState | null;
 }
 
@@ -44,7 +46,7 @@ export function useWallet(): WalletStatus {
     const key = `${currentUser?.id ?? ""}:${currentClub?.id ?? ""}`;
 
     const [status, setStatus] = useState<Omit<WalletStatus, "enabled">>({
-        balanceCents: null, lowThresholdCents: null, state: null,
+        balanceCents: null, lowThresholdCents: null, bookingMinCents: null, state: null,
     });
 
     useEffect(() => {
@@ -55,7 +57,7 @@ export function useWallet(): WalletStatus {
             try {
                 const res = await loadStatus(key);
                 if (cancelled || "error" in res || !res.enabled) return;
-                setStatus({ balanceCents: res.balanceCents, lowThresholdCents: res.lowThresholdCents, state: res.state });
+                setStatus({ balanceCents: res.balanceCents, lowThresholdCents: res.lowThresholdCents, bookingMinCents: res.bookingMinCents, state: res.state });
             } catch {
             }
         };

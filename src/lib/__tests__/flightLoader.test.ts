@@ -6,6 +6,7 @@ import {
     LOADING_MESSAGES,
     MESSAGE_INTERVAL_MS,
     MIN_DISPLAY_MS,
+    TAXI_MS,
     createFlightCoordinator,
     cyclePose,
     flightDistance,
@@ -81,13 +82,21 @@ describe("cyclePose", () => {
 });
 
 describe("flightPose / flightDistance", () => {
-    it("enchaîne les cycles", () => {
-        expect(flightPose(CYCLE_MS * 3 + 1234)).toEqual(flightPose(1234));
+    it("roule au sol pendant le roulage initial, puis enchaîne sur le cycle sans raccord", () => {
+        for (let t = 0; t < TAXI_MS; t += 50) {
+            expect(flightPose(t)).toEqual(cyclePose(0));
+        }
+        expect(flightPose(TAXI_MS)).toEqual(cyclePose(0));
+        expect(flightPose(TAXI_MS + CYCLE_MS * 0.5).altitude).toBe(1);
     });
 
-    it("avance toujours, y compris au passage d'un cycle à l'autre", () => {
+    it("enchaîne les cycles", () => {
+        expect(flightPose(TAXI_MS + CYCLE_MS * 3 + 1234)).toEqual(flightPose(TAXI_MS + 1234));
+    });
+
+    it("avance toujours, y compris au décollage et au passage d'un cycle à l'autre", () => {
         let prev = flightDistance(0);
-        for (let t = 16; t < CYCLE_MS * 2.5; t += 16) {
+        for (let t = 16; t < TAXI_MS + CYCLE_MS * 2.5; t += 16) {
             const d = flightDistance(t);
             expect(d).toBeGreaterThan(prev);
             expect(d - prev).toBeLessThan(5);
@@ -174,10 +183,15 @@ describe("landingPose", () => {
 });
 
 describe("affichage minimal", () => {
-    it("laisse l'avion nettement décoller avant l'atterrissage imposé", () => {
-        const pose = flightPose(MIN_DISPLAY_MS - LANDING_MS);
-        expect(pose.altitude).toBeGreaterThan(0.7);
-        expect(landingDuration(pose)).toBe(LANDING_MS);
+    it("ne fait que rouler : l'arrêt imposé est un simple freinage au sol", () => {
+        const pose = flightPose(MIN_DISPLAY_MS - GROUND_STOP_MS);
+        expect(pose.altitude).toBe(0);
+        expect(landingDuration(pose)).toBe(GROUND_STOP_MS);
+    });
+
+    it("décolle si le chargement dépasse le roulage initial", () => {
+        expect(flightPose(TAXI_MS + CYCLE_MS * 0.2).altitude).toBeGreaterThan(0.5);
+        expect(landingDuration(flightPose(TAXI_MS + CYCLE_MS * 0.2))).toBe(LANDING_MS);
     });
 });
 
@@ -193,7 +207,7 @@ describe("messageIndex", () => {
 describe("createFlightCoordinator", () => {
     function setup() {
         let t = 1000;
-        const coordinator = createFlightCoordinator(() => t, { graceMs: 120, minDisplayMs: 2000 });
+        const coordinator = createFlightCoordinator(() => t, { graceMs: 120, minDisplayMs: 1000 });
         return { coordinator, advance: (ms: number) => (t += ms) };
     }
 
@@ -219,8 +233,8 @@ describe("createFlightCoordinator", () => {
         advance(100);
         coordinator.leave(snapshot);
         const { landingAt } = coordinator.getHandoff()!;
-        // Landing ends exactly 2 s after the flight started.
-        expect(landingAt + LANDING_MS).toBe(1000 + 2000);
+        // Braking ends exactly 1 s after the loading started.
+        expect(landingAt + GROUND_STOP_MS).toBe(1000 + 1000);
     });
 
     it("n'atterrit pas si le loader n'était pas affiché (taille nulle)", () => {

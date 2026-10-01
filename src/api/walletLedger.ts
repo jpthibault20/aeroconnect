@@ -229,34 +229,34 @@ function getResend(): Resend | null {
 }
 
 /**
- * "Low balance" email, only sent when crossing the threshold (depleted
- * included). Call AFTER the transaction: a sending failure must never roll back
- * a wallet operation.
+ * "Low balance" email, only sent when crossing the threshold (blocked
+ * included) and if the club has not turned it off (AER-73). Call AFTER the
+ * transaction: a sending failure must never roll back a wallet operation.
  */
 export async function notifyLowBalanceIfCrossed(movement: WalletMovementResult | null): Promise<void> {
     if (!movement) return;
     try {
+        const club = await prisma.club.findUnique({ where: { id: movement.clubID } });
+        if (!club?.walletLowBalanceEmail) return;
         const threshold = await getClubLowThresholdCents(movement.clubID);
-        if (!crossedLowThreshold(movement.beforeCents, movement.afterCents, threshold)) return;
+        if (!crossedLowThreshold(movement.beforeCents, movement.afterCents, threshold, club.walletBookingMinCents)) return;
 
-        const [user, club] = await Promise.all([
-            prisma.user.findUnique({ where: { id: movement.userID }, select: { email: true, firstName: true, clubID: true } }),
-            prisma.club.findUnique({ where: { id: movement.clubID } }),
-        ]);
-        if (!user?.email || !club || user.clubID !== club.id) return;
+        const user = await prisma.user.findUnique({ where: { id: movement.userID }, select: { email: true, firstName: true, clubID: true } });
+        if (!user?.email || user.clubID !== club.id) return;
 
         const resend = getResend();
         if (!resend) return;
         const contactName = [club.firstNameContact, club.lastNameContact?.toUpperCase()].filter(Boolean).join(" ") || null;
+        const isBlocked = balanceState(movement.afterCents, threshold, club.walletBookingMinCents) === "blocked";
 
         await resend.emails.send({
             from: process.env.SENDER_EMAIL as string,
             to: user.email,
-            subject: balanceState(movement.afterCents, threshold) === "empty" ? "Votre solde est épuisé" : "Votre solde est faible",
+            subject: isBlocked ? "Votre solde est insuffisant" : "Votre solde est faible",
             react: WalletLowBalance({
                 firstName: user.firstName,
                 balance: formatCents(movement.afterCents),
-                isEmpty: balanceState(movement.afterCents, threshold) === "empty",
+                isBlocked,
                 contactName,
                 phoneContact: club.phoneContact,
                 mailContact: club.mailContact,

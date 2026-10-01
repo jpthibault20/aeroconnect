@@ -17,8 +17,9 @@ import { bookingWalletBlock, isBookingGatedRole } from '@/lib/wallet';
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
 const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
-// Blocking message if the user (STUDENT / PILOT) has a balance ≤ 0 in a club
-// whose wallet is enabled; null otherwise.
+// Blocking message if the user (STUDENT / PILOT) is below the club booking
+// threshold, with the wallet enabled; null otherwise. A member without a Wallet
+// row counts as 0 €.
 async function checkWalletBooking(user: User): Promise<string | null> {
     if (!user.clubID || !isBookingGatedRole(user.role)) return null;
     const club = await prisma.club.findUnique({ where: { id: user.clubID } });
@@ -28,7 +29,13 @@ async function checkWalletBooking(user: User): Promise<string | null> {
         select: { balanceCents: true },
     });
     // Pure, tested decision (see bookingWalletBlock in src/lib/wallet.ts).
-    return bookingWalletBlock({ walletEnabled: club.walletEnabled, role: user.role, balanceCents: wallet?.balanceCents ?? 0, contact: club });
+    return bookingWalletBlock({
+        walletEnabled: club.walletEnabled,
+        role: user.role,
+        balanceCents: wallet?.balanceCents ?? 0,
+        bookingMinCents: club.walletBookingMinCents,
+        contact: club,
+    });
 }
 
 export interface interfaceSessions {

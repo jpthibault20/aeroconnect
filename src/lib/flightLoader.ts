@@ -16,6 +16,11 @@
  *   moves forward as it climbs (the camera follows with a slight lag).
  */
 
+/**
+ * Initial taxi before the first takeoff: a load shorter than this never leaves
+ * the ground (no takeoff immediately followed by a landing).
+ */
+export const TAXI_MS = 1000;
 /** Duration of a full taxi → takeoff → cruise → landing cycle. */
 export const CYCLE_MS = 5200;
 /** Accelerated landing played when loading ends mid-flight. */
@@ -30,10 +35,10 @@ export const FADE_MS = 180;
  */
 export const HANDOFF_GRACE_MS = 120;
 /**
- * Minimum display time, landing included: even if the content is ready earlier,
- * the loader stays 2 s (full takeoff then landing).
+ * Minimum display time, braking included: even if the content is ready earlier,
+ * the plane taxis for the whole initial taxi, then stops.
  */
-export const MIN_DISPLAY_MS = 2000;
+export const MIN_DISPLAY_MS = TAXI_MS;
 /** Rotation of the messages under the animation. */
 export const MESSAGE_INTERVAL_MS = 1800;
 /** Beyond this, a message reassures about an unusually long load. */
@@ -86,9 +91,8 @@ function sample(keys: readonly Keyframe[], t: number): number {
     return keys[keys.length - 1].v;
 }
 
-// The keys at 0 and 1 are identical: the cycle loops seamlessly. Takeoff is
-// deliberately early in the cycle: on a minimal display (MIN_DISPLAY_MS) the
-// plane has clearly climbed before landing.
+// The keys at 0 and 1 are identical: the cycle loops seamlessly. The cycle
+// starts after the initial taxi (TAXI_MS), whose pose is the one at t = 0.
 const ALTITUDE: readonly Keyframe[] = [
     { t: 0, v: 0 },
     { t: 0.1, v: 0 }, // taxi
@@ -138,9 +142,13 @@ export function cyclePose(progress: number): FlightPose {
     };
 }
 
-/** Pose after `elapsedMs` of flight, cycles chained. */
+/** Pose while taxiing: identical to the start of the cycle, so takeoff joins seamlessly. */
+const TAXI_POSE = cyclePose(0);
+
+/** Pose after `elapsedMs` of loading: initial taxi, then cycles chained. */
 export function flightPose(elapsedMs: number): FlightPose {
-    return cyclePose(cycleProgress(Math.max(0, elapsedMs)));
+    if (elapsedMs < TAXI_MS) return TAXI_POSE;
+    return cyclePose(cycleProgress(elapsedMs - TAXI_MS));
 }
 
 // Distance traveled along a cycle, integrated once and for all: the runway and
@@ -158,8 +166,15 @@ const CYCLE_DISTANCE_TABLE: number[] = (() => {
 })();
 const CYCLE_DISTANCE = CYCLE_DISTANCE_TABLE[DISTANCE_SAMPLES];
 
-/** Distance (SVG units) traveled after `elapsedMs` of flight. */
+const TAXI_PX_PER_MS = TAXI_POSE.speed * CRUISE_PX_PER_MS;
+
+/** Distance (SVG units) traveled after `elapsedMs` of loading. */
 export function flightDistance(elapsedMs: number): number {
+    const taxiing = Math.min(TAXI_MS, Math.max(0, elapsedMs));
+    return taxiing * TAXI_PX_PER_MS + cycleDistance(elapsedMs - TAXI_MS);
+}
+
+function cycleDistance(elapsedMs: number): number {
     const elapsed = Math.max(0, elapsedMs);
     const cycles = Math.floor(elapsed / CYCLE_MS);
     const x = cycleProgress(elapsed) * DISTANCE_SAMPLES;
@@ -269,7 +284,7 @@ export interface FlightCoordinator {
     /**
      * A loader disappears. `snapshot` is null if it was not displayed (zero-size
      * element): the flight then stops without animation. Otherwise the landing is
-     * scheduled, never before MIN_DISPLAY_MS.
+     * scheduled, never ending before MIN_DISPLAY_MS.
      */
     leave(snapshot: LoaderSnapshot | null, anchor?: Element | null): void;
     /** True if a flight is in progress (loader shown or landing pending). */
@@ -311,8 +326,9 @@ export function createFlightCoordinator(
             active = Math.max(0, active - 1);
             if (active > 0) return;
             if (snapshot && startedAt !== null) {
-                // The landing (LANDING_MS) ends at MIN_DISPLAY_MS at the earliest.
-                const earliestLanding = startedAt + minDisplayMs - LANDING_MS;
+                // Still taxiing at that point (MIN_DISPLAY_MS <= TAXI_MS): the stop
+                // is a ground braking, ending at MIN_DISPLAY_MS at the earliest.
+                const earliestLanding = startedAt + minDisplayMs - GROUND_STOP_MS;
                 handoff = {
                     ...snapshot,
                     anchor,

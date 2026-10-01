@@ -11,11 +11,11 @@ import { canSwitchClub } from '@/lib/clubAccess';
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
 // Non-blocking warning when management books a student / pilot whose balance is
-// zero or negative, with the wallet enabled (AER-66).
+// below the club booking threshold, with the wallet enabled (AER-66, AER-73).
 async function walletBookingWarning(memberID: string, clubID: string | null): Promise<string | null> {
     if (!clubID) return null;
     const [club, member, wallet] = await Promise.all([
-        prisma.club.findUnique({ where: { id: clubID }, select: { walletEnabled: true } }),
+        prisma.club.findUnique({ where: { id: clubID }, select: { walletEnabled: true, walletBookingMinCents: true } }),
         prisma.user.findUnique({ where: { id: memberID }, select: { clubID: true, role: true, firstName: true, lastName: true } }),
         prisma.wallet.findUnique({ where: { clubID_userID: { clubID, userID: memberID } }, select: { balanceCents: true } }),
     ]);
@@ -25,6 +25,7 @@ async function walletBookingWarning(memberID: string, clubID: string | null): Pr
         clubID,
         member,
         balanceCents: wallet?.balanceCents ?? 0,
+        bookingMinCents: club?.walletBookingMinCents ?? 0,
     });
 }
 

@@ -700,7 +700,7 @@ const NewFlightLogDialog = ({ planes: planesList, users, onCreated }: Props) => 
                                                                     <span className="flex items-center gap-3">
                                                                         <span>{u.firstName} {u.lastName}</span>
                                                                         {balance != null && (
-                                                                            <span className={cn("text-xs font-mono tabular-nums", balanceTextClass(balance))}>
+                                                                            <span className={cn("text-xs font-mono tabular-nums", balanceTextClass(balance, currentClub?.walletBookingMinCents ?? 0))}>
                                                                                 {formatCents(balance)}
                                                                             </span>
                                                                         )}

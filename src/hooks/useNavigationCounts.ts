@@ -108,7 +108,7 @@ export function useNavigationCounts(): NavigationCounts {
     // Wallet: the badge only concerns roles blocked from booking (for management, a
     // negative balance is not a task).
     const wallet = useWallet();
-    const walletAlert = wallet.enabled && isBookingGatedRole(role) && wallet.state === "empty";
+    const walletAlert = wallet.enabled && isBookingGatedRole(role) && wallet.state === "blocked";
 
     return { requestCount, maintenanceCount, baptemeCount, walletAlert, wallet };
 }
