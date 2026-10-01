@@ -1,6 +1,6 @@
 /**
  * @file TableRowComponent.tsx
- * @brief Composant de ligne optimisé pour l'affichage des sessions de vol.
+ * @brief Row component for flight sessions.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -18,7 +18,6 @@ import {
     MessageSquareMore,
     ArrowRight,
     Trash2,
-    UserPlus,
     User as UserIcon,
     GraduationCap,
     PlaneTakeoff,
@@ -30,10 +29,10 @@ import { Button } from '../ui/button';
 import { resolveSessionKind, SESSION_KIND_LABEL, SessionKind } from '@/lib/sessionType';
 import { formatSessionDate, formatSessionTime } from '@/api/global function/dateServeur';
 
-// Rendu du badge « Type » par nature de séance. Le violet de la charte marque le
-// baptême, cohérent avec le reste de la feature (lien public, calendrier).
-// UNDETERMINED garde la même pastille, en gris et bordure pointillée : la
-// colonne reste remplie sans suggérer une nature déjà décidée.
+// "Type" badge per session kind. The brand purple marks discovery flights,
+// consistent with the rest of the feature (public link, calendar). UNDETERMINED
+// keeps the same badge, grey with a dashed border: the column stays filled
+// without suggesting an already decided kind.
 const KIND_STYLES: Record<SessionKind, { className: string; Icon: typeof PlaneIcon }> = {
     UNDETERMINED: { className: "bg-slate-50 text-slate-400 border-slate-200 border-dashed", Icon: Minus },
     THEORETICAL: { className: "bg-blue-50 text-blue-700 border-blue-100", Icon: GraduationCap },
@@ -63,56 +62,49 @@ const TableRowComponent = ({
     const { currentUser } = useCurrentUser();
     const [isChecked, setIsChecked] = useState(false);
 
-    // --- 1. CALCULS & LOGIQUE (Sortis du JSX) ---
+    // --- 1. COMPUTATIONS & LOGIC ---
 
-    // --- 1. CALCULS & LOGIQUE ---
-
-    // Gestion des permissions
+    // Permissions
     const isOwner = session.studentID === currentUser?.id;
 
-    // Correction TypeScript : On définit le type du tableau explicitement
     const managementRoles: userRole[] = [userRole.ADMIN, userRole.OWNER, userRole.INSTRUCTOR, userRole.MANAGER];
     const isAdminOrInstructor = currentUser?.role && managementRoles.includes(currentUser.role);
 
     const canDeleteStudent = isAdminOrInstructor || isOwner;
     const canDeleteSession = isAdminOrInstructor;
 
-    // Correction TypeScript ici aussi pour les pilotes/étudiants
     const studentRoles: userRole[] = [userRole.PILOT, userRole.STUDENT];
     const canSubscribe = currentUser?.role && studentRoles.includes(currentUser.role);
-    // Gestion des dates
     const startDate = new Date(session.sessionDateStart);
     const endDate = new Date(startDate.getTime() + session.sessionDateDuration_min * 60000);
-    // Les sessions sont stockées en wall-clock UTC (cf. lib/clubTime.ts) : lire
-    // en heure locale du navigateur (toLocaleTimeString sans timeZone) décale
-    // l'affichage de l'offset du fuseau, jusqu'à +2h en France l'été.
+    // Sessions are stored as UTC wall-clock (see lib/clubTime.ts): reading in the
+    // browser's local time (toLocaleTimeString without timeZone) shifts the display
+    // by the time zone offset, up to +2h in France in summer.
     const formatTime = (date: Date) => formatSessionTime(date);
     const formatDate = (date: Date) => formatSessionDate(date, { day: 'numeric', month: 'short' });
 
 
-    // Gestion de l'avion (Memo pour éviter les calculs inutiles)
     const planeDisplay = useMemo(() => {
-        // Cas 1 : Session Théorique
+        // Case 1: classroom session
         if (session.planeID.includes("classroomSession")) {
             return { name: "Salle de cours", type: "TH" };
         }
 
-        // Cas 2 : Avion Réel
+        // Case 2: real plane
         const foundPlane = planesProp.find(p => p.id === session.planeID[0]);
 
         if (foundPlane) {
-            // On crée un nouvel objet standardisé pour TypeScript
             return {
                 name: foundPlane.name,
-                type: "PLANE" // On force un type "PLANE" ici
+                type: "PLANE"
             };
         }
 
-        // Cas 3 : Inconnu
+        // Case 3: unknown
         return { name: "Inconnu", type: "??" };
     }, [session.planeID, planesProp]);
 
-    // Tant qu'aucun inscrit, le type n'est pas déterminé (cf. lib/sessionType).
+    // Until someone is booked, the type is undetermined (see lib/sessionType).
     const sessionKind = resolveSessionKind(session);
     const kindStyle = KIND_STYLES[sessionKind];
     // --- 2. SYNC CHECKBOX ---
@@ -128,10 +120,10 @@ const TableRowComponent = ({
         });
     };
 
-    // --- 3. RENDERERS (Pour alléger le return principal) ---
+    // --- 3. RENDERERS ---
 
     const renderStudentCell = () => {
-        // Cas 1 : Il y a un élève inscrit
+        // Case 1: a student is booked
         if (session.studentID && session.studentLastName) {
             return (
                 <div className='flex items-center justify-center gap-2 group'>
@@ -150,7 +142,7 @@ const TableRowComponent = ({
             );
         }
 
-        // Cas 2 : Pas d'élève - Admin/Instructeur peut ajouter
+        // Case 2: no student, admin/instructor can add one
         if (isAdminOrInstructor) {
             return (
                 <AddStudent session={session} setSessions={setSessions} sessions={sessions} planesProp={planesProp} usersProp={usersProp}>
@@ -159,7 +151,7 @@ const TableRowComponent = ({
             );
         }
 
-        // Cas 3 : Pas d'élève - Pilote/Élève peut s'inscrire
+        // Case 3: no student, pilot/student can subscribe
         if (canSubscribe) {
             return (
                 <SessionPopup sessions={[session]} setSessions={setSessions} usersProps={usersProp} planesProp={planesProp} noSessions={true}>
@@ -176,17 +168,14 @@ const TableRowComponent = ({
     return (
         <TableRow className={cn("group transition-colors hover:bg-slate-50/80", isChecked && "bg-purple-50/30")}>
 
-            {/* Checkbox */}
             <TableCell className='text-center w-[50px]'>
                 <Checkbox checked={isChecked} onCheckedChange={(c) => onChecked(!!c)} />
             </TableCell>
 
-            {/* Date */}
             <TableCell className='text-center font-medium text-slate-700'>
                 {formatDate(startDate)}
             </TableCell>
 
-            {/* Horaire */}
             <TableCell>
                 <div className='flex justify-center items-center gap-2 text-sm bg-slate-100/50 py-1 px-2 rounded-md w-fit mx-auto border border-slate-100'>
                     <span className="text-slate-600">{formatTime(startDate)}</span>
@@ -195,7 +184,7 @@ const TableRowComponent = ({
                 </div>
             </TableCell>
 
-            {/* Type de séance : déterminé seulement une fois quelqu'un inscrit */}
+            {/* Session type: only determined once someone is booked */}
             <TableCell className="text-center">
                 <div
                     className={cn(
@@ -209,24 +198,20 @@ const TableRowComponent = ({
                 </div>
             </TableCell>
 
-            {/* Instructeur */}
             <TableCell className='text-center'>
                 <div className="font-medium text-slate-800">
                     {session.pilotLastName.toUpperCase()} {session.pilotFirstName?.charAt(0)}.
                 </div>
             </TableCell>
 
-            {/* Élève (Logique complexe encapsulée) */}
             <TableCell className='text-center'>
                 {renderStudentCell()}
             </TableCell>
 
-            {/* Avion (Nom) */}
             <TableCell className='text-center text-slate-600 text-sm'>
                 {planeDisplay.name}
             </TableCell>
 
-            {/* Commentaires */}
             <TableCell className='text-center'>
                 <ShowCommentSession session={session} setSessions={setSessions} usersProp={usersProp}>
                     <div className={cn(
@@ -243,7 +228,6 @@ const TableRowComponent = ({
                 </ShowCommentSession>
             </TableCell>
 
-            {/* Actions (Supprimer) */}
             <TableCell className='text-right'>
                 {canDeleteSession && (
                     <DeleteFlightSession

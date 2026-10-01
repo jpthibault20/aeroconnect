@@ -16,24 +16,20 @@ interface Props {
 const AircraftClassSelector = ({ disabled, classes, setClasses }: Props) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const { currentClub } = useCurrentClub();
-    const [classesList, setClassesList] = useState(aircraftClasses.filter(c => currentClub?.classes.includes(c.id)));
-    const dropdownRef = useRef<HTMLDivElement>(null); // Typage explicite
+    // Offered classes: those enabled for the current club.
+    const classesList = aircraftClasses.filter(c => currentClub?.classes.includes(c.id));
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        setClassesList(aircraftClasses.filter(c => currentClub?.classes.includes(c.id)))
-    }, [currentClub])
-
-    // Fermer le dropdown si on clique à l'extérieur
+    // Close the dropdown on outside click
     const handleClickOutside = (event: MouseEvent) => {
         if (
             dropdownRef.current &&
-            !dropdownRef.current.contains(event.target as Node) // Vérification sécurisée
+            !dropdownRef.current.contains(event.target as Node)
         ) {
             setIsDropdownOpen(false);
         }
     };
 
-    // Ajout et suppression de l'écouteur d'événement
     useEffect(() => {
         document.addEventListener("mousedown", handleClickOutside);
         return () => {
@@ -57,7 +53,6 @@ const AircraftClassSelector = ({ disabled, classes, setClasses }: Props) => {
     return (
         <div>
             <div className="rounded-md shadow-sm border border-gray-200 p-2 flex flex-row justify-between items-center">
-                {/* Section des classes sélectionnées */}
                 <div className="flex flex-wrap gap-2">
                     {classes.map((classId) => {
                         const aircraftClass = classesList.find((c) => c.id === classId);
@@ -81,7 +76,6 @@ const AircraftClassSelector = ({ disabled, classes, setClasses }: Props) => {
                     })}
                 </div>
 
-                {/* Dropdown pour sélectionner les classes */}
                 <div ref={dropdownRef} className="relative flex-1">
                     <button
                         type="button"

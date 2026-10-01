@@ -11,7 +11,7 @@ interface Props {
     hobbsTotal: number | null;
     interventions: MaintenanceIntervention[];
     tasks: MaintenanceTask[];
-    // Date de génération (passée en prop pour rester déterministe / testable).
+    // Generation date (passed as a prop to stay deterministic / testable).
     generatedAt: Date;
 }
 
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     },
 });
 
-// Colonnes de l'historique des interventions.
+// Intervention history columns.
 const interventionCols = [
     { label: "Date", width: "12%" },
     { label: "Type", width: "16%" },
@@ -72,7 +72,7 @@ const interventionCols = [
     { label: "Saisi par", width: "10%" },
 ];
 
-// Colonnes des rappels.
+// Reminder columns.
 const taskCols = [
     { label: "Intitulé", width: "30%" },
     { label: "Périodicité", width: "22%" },
@@ -107,7 +107,6 @@ export const MaintenanceDocument = ({
                     Heures moteur actuelles : {hobbsTotal != null ? `${hobbsTotal.toFixed(1)} h` : "—"}
                 </Text>
 
-                {/* Rappels */}
                 <Text style={styles.sectionTitle}>Rappels d&apos;entretien</Text>
                 {tasks.length === 0 ? (
                     <Text style={styles.empty}>Aucun rappel configuré.</Text>
@@ -147,7 +146,6 @@ export const MaintenanceDocument = ({
                     </View>
                 )}
 
-                {/* Historique */}
                 <Text style={styles.sectionTitle}>Historique des interventions</Text>
                 {interventions.length === 0 ? (
                     <Text style={styles.empty}>Aucune intervention enregistrée.</Text>

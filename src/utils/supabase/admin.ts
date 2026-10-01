@@ -1,19 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * Client Supabase « service role ».
+ * "Service role" Supabase client.
  *
- * ⚠️ SERVEUR UNIQUEMENT. La clé contourne toutes les policies : ne jamais
- * importer ce module depuis un composant client, et ne jamais préfixer la
- * variable d'environnement par NEXT_PUBLIC_.
+ * ⚠️ SERVER ONLY. The key bypasses every policy: never import this module from a
+ * client component, and never prefix the environment variable with NEXT_PUBLIC_.
  *
- * Sert exclusivement au stockage de fichiers (photos de machines). L'écriture
- * est autorisée par le server action APRÈS `requireAuth` + `canManagePlane` +
- * contrôle du `clubID` — comme partout ailleurs dans l'app, l'autorisation vit
- * dans le code, pas dans la base (cf. CLAUDE.md).
+ * Used exclusively for file storage (plane photos). Writing is authorized by the
+ * server action AFTER `requireAuth` + `canManagePlane` + the `clubID` check: as
+ * everywhere else in the app, authorization lives in the code, not the database
+ * (see CLAUDE.md).
  *
- * Retourne null si la clé n'est pas configurée, pour que l'appelant puisse
- * renvoyer un message clair plutôt que de planter.
+ * Returns null if the key is not configured, so the caller can return a clear
+ * message rather than crash.
  */
 export function createAdminClient() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

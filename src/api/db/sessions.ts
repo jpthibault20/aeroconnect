@@ -1,15 +1,42 @@
 "use server";
 
-import { Club, flight_sessions, NatureOfTheft, User, userRole } from '@prisma/client';
-import { differenceInMinutes, isBefore } from 'date-fns';
+import { NatureOfTheft, User, userRole } from '@prisma/client';
 import prisma from '../prisma';
-import { convertMinutesToHours } from '../global function/dateServeur';
 import { requireAuth } from './users';
 import { resolveBaptemeHold } from './baptemeHold';
-import { canViewPlane } from '@/lib/planeVisibility';
+import { toClubWallClock } from '@/lib/clubTime';
+import {
+    canCreateSessionsFor,
+    checkStudentRegistration,
+    checkStudentRemoval,
+    CLASSROOM_SESSION_ID,
+    resolveCommentUpdate,
+} from '@/lib/sessionRules';
+import { bookingWalletBlock, isBookingGatedRole } from '@/lib/wallet';
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER, userRole.INSTRUCTOR];
 const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+
+// Blocking message if the user (STUDENT / PILOT) is below the club booking
+// threshold, with the wallet enabled; null otherwise. A member without a Wallet
+// row counts as 0 €.
+async function checkWalletBooking(user: User): Promise<string | null> {
+    if (!user.clubID || !isBookingGatedRole(user.role)) return null;
+    const club = await prisma.club.findUnique({ where: { id: user.clubID } });
+    if (!club?.walletEnabled) return null;
+    const wallet = await prisma.wallet.findUnique({
+        where: { clubID_userID: { clubID: club.id, userID: user.id } },
+        select: { balanceCents: true },
+    });
+    // Pure, tested decision (see bookingWalletBlock in src/lib/wallet.ts).
+    return bookingWalletBlock({
+        walletEnabled: club.walletEnabled,
+        role: user.role,
+        balanceCents: wallet?.balanceCents ?? 0,
+        bookingMinCents: club.walletBookingMinCents,
+        contact: club,
+    });
+}
 
 export interface interfaceSessions {
     instructorId: string;
@@ -23,19 +50,28 @@ export interface interfaceSessions {
     planeId: string[];
     classes: number[];
     comment: string;
-    // Types de vol du créneau (sélection multiple). DISCOVERY marque un créneau
-    // baptême, exposé au public via le lien de réservation.
+    // Flight types of the slot (multi-select). DISCOVERY marks a discovery-flight
+    // slot, exposed to the public through the booking link.
     natureOfTheft: NatureOfTheft[];
 }
 
-export const checkSessionDate = async (sessionData: interfaceSessions, user: User | undefined) => {
+export const checkSessionDate = async (sessionData: interfaceSessions, instructorInput: Pick<User, "id"> | undefined) => {
     if (!sessionData.date) {
         return { error: "La date de la session est obligatoire" };
     }
 
-    if (!user) {
+    if (!instructorInput) {
         return { error: "L'instructeur est obligatoire" };
     }
+
+    // Only the instructor ID comes from the client: it is re-read from the DB and
+    // must belong to the signed-in user's club (AER-67).
+    const auth = await requireAuth(MANAGEMENT_ROLES);
+    if ('error' in auth) return { error: auth.error };
+    const user = await prisma.user.findUnique({ where: { id: instructorInput.id } });
+    const allowed = canCreateSessionsFor(auth.user, user, ADMIN_ROLES);
+    if (!allowed.ok) return { error: allowed.error };
+    if (!user) return { error: "L'instructeur est obligatoire" };
 
     const now = new Date();
 
@@ -102,7 +138,7 @@ export const checkSessionDate = async (sessionData: interfaceSessions, user: Use
         }
     }
 
-    // Vérifier les conflits pour chaque session à créer avec une seule requête
+    // Check conflicts for every session to create in a single query
     const existingSessions = await prisma.flight_sessions.findMany({
         where: {
             clubID: user.clubID as string,
@@ -119,26 +155,25 @@ export const checkSessionDate = async (sessionData: interfaceSessions, user: Use
 
 }
 
-export const newSession = async (sessionData: interfaceSessions, instructor: User | undefined) => {
+export const newSession = async (sessionData: interfaceSessions, instructorInput: Pick<User, "id"> | undefined) => {
     if (!sessionData.date) {
         return { error: "La date de la session est obligatoire" };
     }
 
-    if (!instructor) {
+    if (!instructorInput) {
         return { error: "L'instructeur est obligatoire" };
     }
 
     const auth = await requireAuth(MANAGEMENT_ROLES);
     if ('error' in auth) return { error: auth.error };
 
-    // ADMIN/OWNER/MANAGER peuvent créer pour n'importe quel instructeur du même club
-    const isManager = ADMIN_ROLES.includes(auth.user.role);
-    if (!isManager && auth.user.id !== instructor.id) {
-        return { error: "Non autorisé" };
-    }
-    if (auth.user.clubID !== instructor.clubID) {
-        return { error: "Non autorisé" };
-    }
+    // ADMIN/OWNER/MANAGER can create for any instructor of the same club, others for
+    // themselves. The instructor (name, club) is re-read from the DB: only its ID
+    // comes from the client (AER-67).
+    const instructor = await prisma.user.findUnique({ where: { id: instructorInput.id } });
+    const allowed = canCreateSessionsFor(auth.user, instructor, ADMIN_ROLES);
+    if (!allowed.ok) return { error: allowed.error };
+    if (!instructor) return { error: "L'instructeur est obligatoire" };
 
     const baseSessionDateStart = new Date(Date.UTC(
         sessionData.date.getUTCFullYear(),
@@ -150,11 +185,10 @@ export const newSession = async (sessionData: interfaceSessions, instructor: Use
     ));
 
     const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
-    const sessionDurationMs = sessionData.duration * 60 * 1000; // Convertir la durée en ms
+    const sessionDurationMs = sessionData.duration * 60 * 1000;
     const sessionsToCreate: { sessionDateStart: Date; sessionDateDuration_min: number }[] = [];
 
     if (sessionData.endReccurence) {
-        // Préparer la date de fin récurrence
         const endReccurence = new Date(sessionData.endReccurence);
         endReccurence.setUTCDate(endReccurence.getUTCDate() + 1);
 
@@ -170,7 +204,6 @@ export const newSession = async (sessionData: interfaceSessions, instructor: Use
             }
         }
     } else {
-        // Calculer la date de fin pour une session unique
         const dateEndSession = new Date(Date.UTC(
             baseSessionDateStart.getUTCFullYear(),
             baseSessionDateStart.getUTCMonth(),
@@ -226,59 +259,6 @@ export const newSession = async (sessionData: interfaceSessions, instructor: Use
     }
 };
 
-export const getAllSessions = async (clubID: string, monthSelected: Date) => {
-
-    try {
-        const sessions = await prisma.flight_sessions.findMany({
-            where: {
-                clubID: clubID,
-                sessionDateStart: {
-                    gte: new Date(monthSelected.getFullYear(), monthSelected.getMonth(), 1, 0, 0, 0, 0),
-                    lte: new Date(monthSelected.getFullYear(), monthSelected.getMonth() + 1, 0, 23, 59, 59, 999)
-                },
-            },
-        });
-
-        return sessions;
-    } catch {
-        return { error: "Erreur lors de la récupération des sessions de vol" };
-    }
-
-};
-
-export const getAllFutureSessions = async (clubID: string) => {
-    try {
-        const sessions = await prisma.flight_sessions.findMany({
-            where: {
-                clubID: clubID,
-                sessionDateStart: {
-                    gte: new Date()
-                }
-            }
-        })
-
-        return sessions;
-    } catch {
-        return { error: "Erreur lors de la récupération des sessions de vol" };
-    }
-
-};
-
-export const getPlanes = async (clubID: string) => {
-    try {
-        const planes = await prisma.planes.findMany({
-            where: {
-                clubID: clubID
-            }
-        })
-
-        return planes;
-    } catch {
-        return { error: "Erreur lors de la récupération des avions" };
-    }
-
-};
-
 export const removeSessionsByID = async (sessionIDs: string[]) => {
     const auth = await requireAuth(MANAGEMENT_ROLES);
     if ('error' in auth) return { error: auth.error };
@@ -297,36 +277,30 @@ export const removeSessionsByID = async (sessionIDs: string[]) => {
     }
 };
 
-export const removeStudentFromSessionID = async (session: flight_sessions, timeZoneOffset: number, club: Club, user: User) => {
+/**
+ * Removes a student from a slot. Only the slot ID comes from the client: session,
+ * club and user are re-read from the DB (AER-67). Rules in checkStudentRemoval
+ * (src/lib/sessionRules.ts).
+ */
+export const removeStudentFromSessionID = async (sessionID: string) => {
     const auth = await requireAuth();
     if ('error' in auth) return { error: auth.error };
+    if (!sessionID) return { error: "Session introuvable ou incomplète." };
 
     try {
-        // Validation précoce
-        if (!session || !session.sessionDateStart || !session.studentID || !session.pilotID) {
-            return { error: "Session introuvable ou incomplète." };
-        }
+        const session = await prisma.flight_sessions.findUnique({ where: { id: sessionID } });
+        if (!session) return { error: "Session introuvable ou incomplète." };
+        const club = await prisma.club.findUnique({ where: { id: session.clubID } });
+        if (!club) return { error: "Session introuvable ou non accessible." };
 
-        const nowUTC = new Date();
-        nowUTC.setMinutes(nowUTC.getMinutes() - timeZoneOffset);
+        const check = checkStudentRemoval({
+            user: auth.user,
+            club,
+            session,
+            now: toClubWallClock(new Date()),
+        });
+        if (!check.ok) return { error: check.error };
 
-        const minutesUntilSession = differenceInMinutes(session.sessionDateStart, nowUTC);
-
-        const allowedRoles: userRole[] = [userRole.ADMIN, userRole.INSTRUCTOR, userRole.OWNER, userRole.MANAGER];
-
-        if(!allowedRoles.includes(user.role) && !club.userCanUnsubscribe) {
-            return { error: "Les inscriptions sont désactivées par le club, se raprocher de l'administrateur du club." };
-        }
-        if (
-            !allowedRoles.includes(user.role) &&
-            (isBefore(session.sessionDateStart, nowUTC) || minutesUntilSession < club.timeDelayUnsubscribeminutes)
-        ) {
-            return { error: `La session ne peut être modifiée que si elle est dans plus de ${convertMinutesToHours(club.timeDelayUnsubscribeminutes)}` };
-        }
-
-
-
-        // Mettre à jour la session en une seule requête
         await prisma.flight_sessions.update({
             where: { id: session.id },
             data: {
@@ -347,149 +321,81 @@ export const removeStudentFromSessionID = async (session: flight_sessions, timeZ
     }
 };
 
-export const getSessionPlanes = async (sessionID: string) => {
-    try {
-        // Récupère la session pour obtenir les IDs des avions
-        const session = await prisma.flight_sessions.findUnique({
-            where: {
-                id: sessionID
-            },
-        });
-
-
-        // Si aucun planeID n'est trouvé, retourne un tableau vide
-        if (!session?.planeID || session.planeID.length === 0) {
-            return [];
-        }
-
-        // Recherche des informations sur les avions dans la table `planes` pour chaque ID dans `planeID`
-        const planes = await prisma.planes.findMany({
-            where: {
-                id: {
-                    in: session.planeID // Utilise `in` pour rechercher tous les avions correspondant aux IDs dans le tableau
-                },
-                operational: true // Ajoute la condition pour que seuls les avions opérationnels soient récupérés
-            },
-            select: {
-                id: true,
-                name: true
-            }
-        });
-
-
-        return planes; // Retourne le tableau d'avions avec `id` et `name`
-    } catch {
-        return [];
-    }
-};
-
-export const studentRegistration = async (session: flight_sessions, student: User, planeID: string, club: Club, localTimeOffset: number, studentComment: string) => {
+/**
+ * Books the SIGNED-IN user on a slot. Only the slot, plane and comment come from
+ * the client: user, club, slot and plane are re-read from the DB (AER-67).
+ * Booking someone else goes through addStudentToSession (management). Rules in
+ * checkStudentRegistration.
+ */
+export const studentRegistration = async (sessionID: string, planeID: string, studentComment: string) => {
     const auth = await requireAuth();
     if ('error' in auth) return { error: auth.error };
+    const student = auth.user;
 
-    if (!session || !student || !planeID || !club) {
+    if (!sessionID || !planeID) {
         return { error: "Une erreur est survenue (E_00x: paramètres invalides)" };
     }
 
-    if (club.userCanSubscribe === false) {
-        return { error: "Les inscriptions sont désactivées par le club, se raprocher de l'administrateur du club." };
-    }
-
     try {
-        // Étape 1 : Charger les données critiques
-        const [conflictingSessions, plane] = await Promise.all([
+        const session = await prisma.flight_sessions.findUnique({ where: { id: sessionID } });
+        if (!session || session.clubID !== student.clubID) {
+            return { error: "Session introuvable ou non accessible." };
+        }
+
+        const isClassroom = planeID === CLASSROOM_SESSION_ID;
+        const [club, plane, clubPlanes, conflictingSessions, holdState] = await Promise.all([
+            prisma.club.findUnique({ where: { id: session.clubID } }),
+            isClassroom ? null : prisma.planes.findUnique({ where: { id: planeID } }),
+            prisma.planes.findMany({ where: { clubID: session.clubID }, select: { id: true, ownerID: true } }),
+            // Student or plane already taken at the same time.
             prisma.flight_sessions.findMany({
                 where: {
+                    sessionDateStart: session.sessionDateStart,
+                    id: { not: session.id },
                     OR: [
                         { studentID: student.id },
                         { studentPlaneID: planeID },
                     ],
                 },
-                select: {
-                    studentID: true,
-                    studentPlaneID: true,
-                    sessionDateStart: true,
-                },
+                select: { id: true },
             }),
-            prisma.planes.findUnique({
-                where: { id: planeID },
-            })
+            resolveBaptemeHold(session.id),
         ]);
+        if (!club) return { error: "Session introuvable ou non accessible." };
 
-        // Vérifications critiques
-        if (!student) {
-            return { error: "Élève introuvable." };
-        }
-
-        if (planeID != "classroomSession" && !plane?.operational) {
-            return { error: "L'avion est désactivé par l'administrateur du club." };
-        }
-
-        // Défense en profondeur : une machine privée ne peut être réservée que
-        // par son propriétaire (ou le président/admin). L'UI ne la montre déjà
-        // pas aux autres, mais on bloque aussi côté serveur.
-        if (plane && !canViewPlane(plane, student)) {
-            return { error: "Cette machine privée ne vous appartient pas." };
-        }
-
-        if (!session || session.clubID !== student.clubID) {
-            return { error: "Session introuvable ou non accessible." };
-        }
-
-        const sessionDate = session.sessionDateStart;
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - localTimeOffset + club.timeDelaySubscribeminutes);
-
-        if (sessionDate < now) {
-            return { error: `La session doit être dans minimum ${convertMinutesToHours(club.timeDelaySubscribeminutes)}. contacter l'instructeur pour vous inscrire` };
-        }
-
-
-        if (student.restricted) {
-            return { error: "Contacter l'administrateur pour plus d'informations. (E_002: restricted)" };
-        }
-
-        const allowedRoles = ["STUDENT", "PILOT", "OWNER", "ADMIN", "INSTRUCTOR"];
-        if (!allowedRoles.includes(student.role)) {
-            return { error: "Vous n'avez pas les droits pour vous inscrire à une session. (E_003: User)" };
-        }
-
-        const conflictingSession = conflictingSessions.find((s) =>
-            s.sessionDateStart.getTime() === session.sessionDateStart.getTime()
-        );
-        if (conflictingSession) {
-            return { error: "Conflit détecté avec une autre session (élève ou avion)." };
-        }
-
-        // Un créneau tenu par une demande de baptême en attente (ou déjà occupé)
-        // ne peut pas être réservé par un élève tant que le hold n'est pas levé.
-        const holdState = await resolveBaptemeHold(session.id);
-        if (holdState.held) {
-            return { error: "Ce créneau est réservé pour un baptême en attente de validation." };
-        }
-        const freshSession = await prisma.flight_sessions.findUnique({
-            where: { id: session.id },
-            select: { studentID: true },
+        const check = checkStudentRegistration({
+            user: student,
+            club,
+            session,
+            planeID,
+            plane,
+            clubPlanes,
+            now: toClubWallClock(new Date()),
+            hasConflict: conflictingSessions.length > 0,
+            heldByBapteme: holdState.held,
         });
-        if (freshSession?.studentID != null) {
-            return { error: "Ce créneau est déjà réservé." };
-        }
+        if (!check.ok) return { error: check.error };
 
-        // Étape 2 : Mise à jour rapide de la session
-        if (student) {
+        // Wallet (AER-66): a student / pilot with a zero or negative balance can no
+        // longer book. Club and balance are re-read from the DB for the SIGNED-IN user
+        // (never the objects sent by the client).
+        const walletBlock = await checkWalletBooking(student);
+        if (walletBlock) return { error: walletBlock, code: "WALLET_EMPTY" as const };
 
-            await prisma.flight_sessions.update({
-                where: { id: session.id },
-                data: {
-                    studentID: student.id,
-                    studentPlaneID: planeID,
-                    studentFirstName: student.firstName,
-                    studentLastName: student.lastName,
-                    studentComment: studentComment,
-                }})            
-        }
+        // Conditional write: if someone took the slot between the read and the write,
+        // nothing is changed.
+        const updated = await prisma.flight_sessions.updateMany({
+            where: { id: session.id, studentID: null },
+            data: {
+                studentID: student.id,
+                studentPlaneID: planeID,
+                studentFirstName: student.firstName,
+                studentLastName: student.lastName,
+                studentComment: studentComment,
+            },
+        });
+        if (updated.count !== 1) return { error: "Ce créneau est déjà réservé." };
 
-        // Retour rapide de succès
         return { success: "Étudiant inscrit avec succès à la session." };
 
     } catch {
@@ -498,220 +404,29 @@ export const studentRegistration = async (session: flight_sessions, student: Use
 
 };
 
-export const getHoursByMonth = async (clubID: string) => {
-    const auth = await requireAuth(ADMIN_ROLES);
-    if ('error' in auth) return [];
-    if (auth.user.clubID !== clubID) return [];
-
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-
-    const sessions = await prisma.flight_sessions.findMany({
-        where: {
-            clubID,
-            sessionDateStart: {
-                gte: new Date(`${currentYear}-01-01`), // Début de l'année
-                lte: now, // Date actuelle
-            },
-            studentID: { not: null },
-        },
-        select: {
-            sessionDateStart: true,
-            sessionDateDuration_min: true,
-        },
-    });
-
-    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-
-    const hoursByMonth = Array.from({ length: currentMonth + 1 }, (_, monthIndex) => ({
-        name: monthNames[monthIndex],
-        hours: 0,
-    }));
-
-    sessions.forEach((session) => {
-        const sessionDate = new Date(session.sessionDateStart!);
-        const monthIndex = sessionDate.getMonth();
-
-        if (monthIndex <= currentMonth) {
-            hoursByMonth[monthIndex].hours += (session.sessionDateDuration_min || 0) / 60;
-        }
-    });
-
-    return hoursByMonth;
-};
-
-export const getHoursByInstructor = async (clubID: string) => {
-    const auth = await requireAuth(ADMIN_ROLES);
-    if ('error' in auth) return [];
-    if (auth.user.clubID !== clubID) return [];
-
-    const currentYear = new Date().getFullYear();
-
-    const sessions = await prisma.flight_sessions.findMany({
-        where: {
-            clubID,
-            sessionDateStart: {
-                gte: new Date(`${currentYear}-01-01`),
-                lte: new Date(),
-            },
-            studentID: { not: null },
-        },
-        select: {
-            pilotID: true,
-            sessionDateDuration_min: true,
-            pilotFirstName: true,
-            pilotLastName: true,
-        },
-    });
-
-    const instructorHoursMap: Record<string, { name: string; hours: number }> = {};
-
-    sessions.forEach((session) => {
-        const instructorID = session.pilotID!;
-        const hours = (session.sessionDateDuration_min || 0) / 60;
-
-        if (!instructorHoursMap[instructorID]) {
-            const name = session.pilotLastName && session.pilotFirstName
-                ? `${session.pilotLastName.toUpperCase().slice(0, 1)}.${session.pilotFirstName.toLowerCase().slice(0, 3)}`
-                : 'Inconnu';
-
-            instructorHoursMap[instructorID] = { name, hours: 0 };
-        }
-
-        instructorHoursMap[instructorID].hours += hours;
-    });
-
-    return Object.values(instructorHoursMap);
-};
-
-export const getHoursByPlane = async (clubID: string) => {
-    const auth = await requireAuth(ADMIN_ROLES);
-    if ('error' in auth) return [];
-    if (auth.user.clubID !== clubID) return [];
-
-    const currentYear = new Date().getFullYear();
-
-    const sessions = await prisma.flight_sessions.findMany({
-        where: {
-            clubID,
-            sessionDateStart: {
-                gte: new Date(`${currentYear}-01-01`),
-                lte: new Date(),
-            },
-            studentPlaneID: { not: null },
-        },
-        select: {
-            studentPlaneID: true,
-            sessionDateDuration_min: true,
-        },
-    });
-
-    const planeHoursMap: Record<string, number> = {};
-
-    sessions.forEach((session) => {
-        const planeID = session.studentPlaneID!;
-        const hours = (session.sessionDateDuration_min || 0) / 60;
-
-        if (!planeHoursMap[planeID]) {
-            planeHoursMap[planeID] = 0;
-        }
-
-        planeHoursMap[planeID] += hours;
-    });
-
-    const planes = await prisma.planes.findMany({
-        where: {
-            id: { in: Object.keys(planeHoursMap) },
-        },
-        select: { id: true, name: true },
-    });
-
-    return planes.map((plane) => ({
-        name: plane.name || 'Inconnu',
-        hours: planeHoursMap[plane.id] || 0,
-    }));
-};
-
-export const getHoursByStudent = async (clubID: string) => {
-    const auth = await requireAuth(ADMIN_ROLES);
-    if ('error' in auth) return [];
-    if (auth.user.clubID !== clubID) return [];
-
-    const currentYear = new Date().getFullYear();
-
-    const [sessions, students] = await Promise.all([
-        prisma.flight_sessions.findMany({
-            where: {
-                clubID,
-                sessionDateStart: {
-                    gte: new Date(`${currentYear}-01-01`),
-                    lte: new Date(),
-                },
-                studentID: { not: null },
-            },
-            select: {
-                studentID: true,
-                sessionDateDuration_min: true,
-            },
-        }),
-        prisma.user.findMany({
-            where: { role: 'STUDENT' },
-            select: { id: true, firstName: true, lastName: true },
-        }),
-    ]);
-
-    // Créer une map pour vérifier rapidement si un ID correspond à un étudiant
-    const validStudentIDs = new Set(students.map((student) => student.id));
-
-    const studentMap = students.reduce<Record<string, string>>((acc, student) => {
-        acc[student.id] = `${student.lastName} ${student.firstName}`;
-        return acc;
-    }, {});
-
-    const studentHoursMap: Record<string, number> = {};
-
-    // Filtrer les sessions pour ne garder que celles des étudiants
-    sessions
-        .filter((session) => validStudentIDs.has(session.studentID!)) // Vérifie si l'ID est valide
-        .forEach((session) => {
-            const studentID = session.studentID!;
-            const hours = (session.sessionDateDuration_min || 0) / 60;
-
-            if (!studentHoursMap[studentID]) {
-                studentHoursMap[studentID] = 0;
-            }
-
-            studentHoursMap[studentID] += hours;
-        });
-
-    return Object.entries(studentHoursMap).map(([studentID, hours]) => ({
-        name: studentMap[studentID] || 'Inconnu',
-        hours,
-    }));
-};
-
-export const updateCommentSession = async(session: flight_sessions, pilotComment: string, studentComment: string) => {
-    if (!session || !session.id) {
+/**
+ * Slot notes. Only the slot ID comes from the client: the session is re-read from
+ * the DB, and each party only edits their own note (management: both), see
+ * resolveCommentUpdate (AER-67).
+ */
+export const updateCommentSession = async (sessionID: string, pilotComment: string, studentComment: string) => {
+    if (!sessionID) {
         return { error: "Une erreur est survenue (E_001: session is undefined)" };
     }
 
     const auth = await requireAuth();
     if ('error' in auth) return { error: auth.error };
 
-    const isManager = ADMIN_ROLES.includes(auth.user.role);
-    const isInvolved = auth.user.id === session.pilotID || auth.user.id === session.studentID;
-    if (!isManager && !isInvolved) {
-        return { error: "Permissions insuffisantes" };
-    }
-
     try {
+        const session = await prisma.flight_sessions.findUnique({ where: { id: sessionID } });
+        if (!session) return { error: "Permissions insuffisantes" };
+
+        const update = resolveCommentUpdate({ user: auth.user, session, pilotComment, studentComment });
+        if (!update.ok) return { error: update.error };
+
         await prisma.flight_sessions.update({
             where: { id: session.id },
-            data: {
-                pilotComment: pilotComment,
-                studentComment: studentComment,
-            }
+            data: update.data,
         });
 
         return { success: "Les notes ont été mises à jour avec succès !" };

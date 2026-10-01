@@ -24,35 +24,42 @@ import { Copy, Download, RefreshCw, Share2, LinkIcon, QrCode } from "lucide-reac
 interface Props {
     clubID: string;
     initialToken: string | null;
+    // Embedded in a section that already has the title (Settings): no card header.
+    embedded?: boolean;
+    // Notifies the page when the link is (re)generated (compact overview row).
+    onTokenChange?: (token: string) => void;
 }
 
-const PublicBookingLink = ({ clubID, initialToken }: Props) => {
+const PublicBookingLink = ({ clubID, initialToken, embedded = false, onTokenChange }: Props) => {
     const { currentUser } = useCurrentUser();
     const { currentClub } = useCurrentClub();
     const clubName = currentClub?.Name ?? null;
     const [token, setToken] = useState<string | null>(initialToken);
-    const [qrDataUrl, setQrDataUrl] = useState<string>("");
+    // QR stored with the URL it encodes: a stale QR (regenerated link, or generation
+    // still in progress) is never shown.
+    const [qr, setQr] = useState<{ url: string; dataUrl: string }>({ url: "", dataUrl: "" });
     const [loading, setLoading] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
 
-    // Lien construit côté client à partir de l'origine réelle (évite toute
-    // incohérence de variable d'environnement de base URL).
+    // Link built client-side from the real origin (avoids any base URL env var
+    // mismatch).
     const url = token ? `${typeof window !== "undefined" ? window.location.origin : ""}/reservation/${clubID}/${token}` : "";
 
+    const qrDataUrl = url && qr.url === url ? qr.dataUrl : "";
+
     useEffect(() => {
-        if (!url) {
-            setQrDataUrl("");
-            return;
-        }
+        if (!url) return;
+        let cancelled = false;
         QRCode.toDataURL(url, { width: 512, margin: 1 })
-            .then(setQrDataUrl)
-            .catch(() => setQrDataUrl(""));
+            .then((dataUrl) => { if (!cancelled) setQr({ url, dataUrl }); })
+            .catch(() => { if (!cancelled) setQr({ url, dataUrl: "" }); });
+        return () => { cancelled = true; };
     }, [url]);
 
     if (!currentUser) return null;
 
-    // Tout membre peut consulter / partager le lien ; seuls le président et
-    // l'administrateur peuvent le (re)générer.
+    // Any member can view / share the link; only the president and the admin can
+    // (re)generate it.
     const canManage = canManagePublicLink(currentUser.role);
 
     const onRegenerate = async () => {
@@ -65,6 +72,7 @@ const PublicBookingLink = ({ clubID, initialToken }: Props) => {
             return;
         }
         setToken(res.token);
+        onTokenChange?.(res.token);
         toast({ title: "Lien régénéré", description: res.success, className: "bg-green-600 text-white border-none" });
     };
 
@@ -95,8 +103,7 @@ const PublicBookingLink = ({ clubID, initialToken }: Props) => {
         }
     };
 
-    // Smartphone : partage natif (enregistrement dans la pellicule) avec repli
-    // téléchargement de l'image PNG.
+    // Smartphone: native share (save to camera roll) with a PNG download fallback.
     const onShareImage = async () => {
         if (!qrDataUrl) return;
         try {
@@ -122,9 +129,9 @@ const PublicBookingLink = ({ clubID, initialToken }: Props) => {
     };
 
     return (
-        <Card className="border-none shadow-none md:border md:shadow-sm bg-transparent md:bg-white">
-            <CardHeader className="px-0 md:px-6">
-                <CardTitle className="text-xl font-bold flex items-center gap-2">
+        <Card className={embedded ? "border-none shadow-none bg-transparent" : "border-none shadow-none md:border md:shadow-sm bg-transparent md:bg-white"}>
+            <CardHeader className={embedded ? "p-0 pb-4" : "px-0 md:px-6"}>
+                <CardTitle className={embedded ? "sr-only" : "text-xl font-bold flex items-center gap-2"}>
                     <LinkIcon className="w-5 h-5 text-[#774BBE]" />
                     Lien public de réservation
                 </CardTitle>
@@ -134,7 +141,7 @@ const PublicBookingLink = ({ clubID, initialToken }: Props) => {
                 </CardDescription>
             </CardHeader>
 
-            <CardContent className="p-0 md:p-6 space-y-5">
+            <CardContent className={embedded ? "p-0 space-y-5" : "p-0 md:p-6 space-y-5"}>
                 {!token ? (
                     <div className="text-center py-8 space-y-4">
                         <p className="text-sm text-slate-500">
@@ -195,7 +202,7 @@ const PublicBookingLink = ({ clubID, initialToken }: Props) => {
                 )}
             </CardContent>
 
-            {/* Disclaimer de régénération */}
+            {/* Regeneration disclaimer */}
             <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>

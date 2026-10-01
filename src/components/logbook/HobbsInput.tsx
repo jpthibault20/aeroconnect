@@ -9,9 +9,8 @@ import {
     formatHobbsValue,
 } from "@/lib/logbookCalc";
 
-// Bascule HH:MM / Décimal partagée par les popups de saisie de vol.
-// Le format choisi ne sert qu'à la saisie : HobbsInput émet toujours des heures
-// décimales canoniques.
+// HH:MM / decimal toggle shared by the flight entry popups. The chosen format
+// only affects input: HobbsInput always emits canonical decimal hours.
 export function HobbsFormatToggle({
     format,
     onChange,
@@ -45,15 +44,15 @@ export function HobbsFormatToggle({
     );
 }
 
-// Tolérance d'égalité (~1/2 minute) pour éviter de réécraser la saisie locale
-// quand la valeur décimale renvoyée par le parent revient identique.
+// Equality tolerance (~1/2 minute) to avoid overwriting local input when the
+// decimal value coming back from the parent is identical.
 function sameTime(a: number | null, b: number | null): boolean {
     if (a == null || b == null) return a === b;
     return Math.abs(a - b) < 1 / 120;
 }
 
 interface HobbsInputProps {
-    // Valeur en heures décimales canoniques (telle que stockée en DB), ou null.
+    // Value in canonical decimal hours (as stored in the DB), or null.
     value: number | null;
     onChange: (decimal: number | null) => void;
     format: HobbsFormat;
@@ -70,17 +69,17 @@ export function HobbsInput({
     inputClassName,
     placeholder,
 }: HobbsInputProps) {
-    // Saisie brute locale. On la synchronise depuis `value` uniquement quand
-    // celui-ci diverge réellement (pré-remplissage / reset) ou quand le format
-    // change — jamais à chaque frappe, sinon on perturbe le curseur et on
-    // tronque les décimales en cours de saisie (ex. "123." réécrit en "123").
+    // Raw local input. Only synced from `value` when it really diverges (prefill /
+    // reset) or when the format changes, never on every keystroke, otherwise the
+    // cursor jumps and decimals being typed get truncated (e.g. "123." rewritten as
+    // "123").
     const [raw, setRaw] = React.useState(() => formatHobbsValue(value, format));
     const prevFormat = React.useRef(format);
 
     React.useEffect(() => {
         if (prevFormat.current !== format) {
-            // Bascule de format : on reformate la valeur courante dans le nouveau
-            // format pour que l'affichage reste cohérent.
+            // Format switch: reformat the current value in the new format so the display
+            // stays consistent.
             prevFormat.current = format;
             setRaw(formatHobbsValue(value, format));
             return;

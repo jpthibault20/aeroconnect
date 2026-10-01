@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
-import { Club, flight_sessions, planes, User } from "@prisma/client";
+import { flight_sessions, planes, User } from "@prisma/client";
 import { Dialog } from "./ui/dialog";
 import { useCurrentUser } from "@/app/context/useCurrentUser";
 import SessionHeader from "./SessionHeader";
@@ -9,12 +9,13 @@ import InstructorSelect from "./InstructorSelect";
 import PlaneSelect from "./PlaneSelect";
 import SubmitButton from "./SubmitButton";
 import { toast } from "@/hooks/use-toast";
+import { sendNotificationsOrWarn } from "@/lib/notifications";
+import { warnNotificationFailure } from "@/lib/notificationToast";
 import { filterPilotePlane } from "@/api/popupCalendar";
 import { filterBookablePlanes, filterPlanesForBeneficiary, resolveOfferedPlaneIDs, sessionOffersPlane } from "@/lib/planeVisibility";
 import { studentRegistration } from "@/api/db/sessions";
 import { sendNotificationBooking, sendStudentNotificationBooking } from "@/lib/mail";
-import { useCurrentClub } from "@/app/context/useCurrentClub";
-import { MessageSquareMore, Plane, User as AlertCircle } from "lucide-react";
+import { AlertTriangle, MessageSquareMore, Plane, User as AlertCircle } from "lucide-react";
 import { PiStudent } from "react-icons/pi";
 import { LiaChalkboardTeacherSolid } from "react-icons/lia";
 import SessionPopupUpdate from "./SessionPopupUpdate";
@@ -24,6 +25,10 @@ import ShowCommentSession from "./ShowCommentSession";
 import SessionContacts from "./calendar/SessionContacts";
 import BaptemeSessionValidation from "./calendar/BaptemeSessionValidation";
 import { cn, LEGACY_NO_PLANE_ID } from "@/lib/utils";
+import { useWallet } from "@/hooks/useWallet";
+import { formatCents, isBookingGatedRole } from "@/lib/wallet";
+import { emitWalletChanged } from "@/lib/walletEvents";
+import { WalletBookingBlock } from "./wallet/WalletBookingBlock";
 
 interface Prop {
     children: React.ReactNode;
@@ -36,7 +41,6 @@ interface Prop {
 
 const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp, noSessions }: Prop) => {
     const { currentUser } = useCurrentUser();
-    const { currentClub } = useCurrentClub();
 
     const [isOpen, setIsOpen] = useState(false);
     const [error, setError] = useState("");
@@ -54,17 +58,23 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     const [session, setSession] = useState<flight_sessions>();
     const [studentComment, setStudentComment] = useState("");
 
-    // Machines réservables : visibilité (club + sa propre privée) ∩ classe autorisée.
+    // Wallet (AER-66, AER-73): student / pilot below the club threshold => booking blocked (the
+    // server refuses anyway, see studentRegistration).
+    const wallet = useWallet();
+    const walletGated = wallet.enabled && isBookingGatedRole(currentUser?.role) && wallet.balanceCents != null;
+    const walletBlocked = walletGated && wallet.state === "blocked";
+    const walletLow = walletGated && !walletBlocked && wallet.state === "low";
+
+    // Bookable planes: visibility (club + own private plane) ∩ allowed class.
     const filterdPlanes = currentUser ? filterBookablePlanes(planesProp, currentUser) : [];
 
-    // Une machine privée appartenant à l'utilisateur courant n'a pas à être
-    // « proposée » par le créneau : elle est à lui. Sans ça, elle n'apparaît que
-    // si le créateur de la séance la voyait (président/admin), et un créneau
-    // ouvert par un instructeur la rendrait inaccessible à son propriétaire.
+    // A private plane owned by the current user does not need to be "offered" by the
+    // slot: it is theirs. Otherwise it would only appear if the session creator could
+    // see it (president/admin), and a slot opened by an instructor would hide it from
+    // its owner.
     const isOwnPlane = (planeID: string) =>
         !!currentUser && planesProp.some(p => p.id === planeID && p.ownerID === currentUser.id);
 
-    // --- 1. LOGIC & EFFECTS (Inchangés pour garantir le fonctionnement) ---
     useEffect(() => {
         if (sessions.length === 1) {
             setSession(sessions[0]);
@@ -85,9 +95,9 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
             try {
                 const { pilotes } = await filterPilotePlane(sessions, usersProps, filterdPlanes);
 
-                // Machines proposées : celles offertes sur les créneaux encore
-                // libres, PLUS la machine privée de l'utilisateur (cf. isOwnPlane).
-                // Même règle que côté gestionnaire (filterPlanesForBeneficiary).
+                // Offered planes: those offered on still-free slots, PLUS the user's private
+                // plane (see isOwnPlane). Same rule as on the manager side
+                // (filterPlanesForBeneficiary).
                 const availableSessions = sessions.filter(s => s.studentID === null);
                 const offeredPlaneIDs = Array.from(
                     new Set(availableSessions.flatMap(s => resolveOfferedPlaneIDs(s.planeID, planesProp)))
@@ -106,7 +116,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 setAllPlanes(bookable);
                 setAvailableInstructors(pilotes);
                 setAvailablePlanes(bookable);
-            } catch (err) {
+            } catch {
+                setError("Impossible de charger les instructeurs et les machines disponibles.");
             }
         };
         loadPilotsAndPlanes();
@@ -130,14 +141,14 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
     useEffect(() => {
         let updatedPlanes;
-        const classroomPlane = { id: "classroomSession", name: "Théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3, hobbsTotal: null, ownerID: null, usageTypes: [], maintenanceHistory: null, imagePath: null };
+        const classroomPlane = { id: "classroomSession", name: "Théorique", immatriculation: "classroomSession", operational: true, clubID: currentUser?.clubID as string, classes: 3, hobbsTotal: null, ownerID: null, usageTypes: [], maintenanceHistory: null, imagePath: null, instructionHourlyRateCents: null };
 
         if (instructor === "nothing") {
             updatedPlanes = allPlanes;
         } else {
             updatedPlanes = allPlanes.filter(plane =>
-                // Sa propre machine reste proposable quel que soit l'instructeur :
-                // elle n'appartient pas à l'offre du créneau.
+                // Their own plane stays available whatever the instructor: it is not part of the
+                // slot's offer.
                 isOwnPlane(plane.id) ||
                 sessions.some(session => session.pilotID === instructor && sessionOffersPlane(session.planeID, plane.id, planesProp))
             );
@@ -154,8 +165,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
     useEffect(() => {
         setAvailableInstructors(
-            // Avec sa propre machine, tous les instructeurs du créneau restent
-            // possibles : le choix de la machine ne dépend plus de leur offre.
+            // With their own plane, every instructor of the slot stays possible: the plane
+            // choice no longer depends on their offer.
             plane === "nothing" || isOwnPlane(plane)
                 ? allInstructors
                 : allInstructors.filter(instructor =>
@@ -173,7 +184,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
         try {
             setLoading(true);
-            const res = await studentRegistration(session, currentUser as User, plane, currentClub as Club, new Date().getTimezoneOffset() as number, studentComment as string);
+            const res = await studentRegistration(session.id, plane, studentComment as string);
             if (res.error) {
                 toast({
                     title: "Erreur",
@@ -181,6 +192,8 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                     variant: "destructive",
                 });
                 setError(res.error);
+                // Balance changed in the meantime: refresh to show the block.
+                if ('code' in res && res.code === "WALLET_EMPTY") emitWalletChanged();
             } else if (res.success) {
                 toast({
                     title: "Succès",
@@ -196,7 +209,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                     )
                 );
 
-                // Notifications logic (kept as is)
+                // Notifications: the user is warned if one fails.
                 const endDate = new Date(session!.sessionDateStart);
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session!.sessionDateDuration_min);
                 const instructorFull = usersProps.find(user => user.id === session.pilotID);
@@ -204,7 +217,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                     planesProp.find((p) => p.id === plane)?.name;
                 const pilotComment = session.pilotComment as string;
 
-                Promise.all([
+                void sendNotificationsOrWarn([
                     sendNotificationBooking(
                         instructorFull?.email || "",
                         currentUser?.firstName || "",
@@ -225,9 +238,9 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                         pilotComment as string,
                         studentComment as string
                     ),
-                ]);
+                ], warnNotificationFailure);
             }
-        } catch (err) {
+        } catch {
             setError("Une erreur technique est survenue.");
         } finally {
             setLoading(false);
@@ -240,12 +253,10 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
     const endDate = new Date(startDate);
     endDate.setMinutes(startDate.getMinutes() + sessions[0].sessionDateDuration_min);
 
-    // --- 2. UI REFONTE ---
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] bg-white rounded-xl shadow-2xl p-0 gap-0 overflow-hidden !flex !flex-col">
-                {/* Header Unifié */}
                 <div className="bg-slate-50 p-6 border-b border-slate-100 flex-shrink-0">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-slate-800">Détails du créneau</DialogTitle>
@@ -258,17 +269,13 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                 </div>
 
                 <div className="p-6 overflow-y-auto max-h-[70vh]">
-                    {/* Baptême en attente : validable ici comme en page
-                        Club, avec les mêmes droits (pilote assigné ou
-                        gestion). Placé hors du branchement par rôle pour
-                        rester visible du pilote non gestionnaire. */}
+                    {/* Pending discovery flight: can be accepted here as on the Club page, with the same rights (assigned pilot or management). Placed outside the role branch so a non-management pilot still sees it. */}
                     <BaptemeSessionValidation
                         sessions={sessions}
                         setSessions={setSessions}
                         open={isOpen}
                     />
 
-                    {/* MODE ADMIN / OWNER / INSTRUCTOR / MANAGER : UPDATE */}
                     {["ADMIN", "OWNER", "INSTRUCTOR", "MANAGER"].includes(currentUser?.role as string) ? (
                         <SessionPopupUpdate
                             sessions={sessions}
@@ -278,7 +285,7 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                         />
                     ) : noSessions ? (
 
-                        // --- MODE LECTURE (SESSIONS DÉJÀ RÉSERVÉES) ---
+                        // --- READ MODE (ALREADY BOOKED SESSIONS) ---
                         <div className="space-y-4">
                             <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Vols confirmés</h3>
                             <div className={cn(
@@ -292,7 +299,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                     >
                                         <div className="absolute top-0 left-0 w-1 h-full bg-[#774BBE]" />
 
-                                        {/* Ligne 1: Pilote & Élève */}
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-2 text-slate-700 font-medium text-sm">
@@ -310,7 +316,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
 
                                         <div className="w-full h-px bg-slate-100 my-2" />
 
-                                        {/* Ligne 2: Avion & Notes */}
                                         <div className="flex justify-between items-center text-xs">
                                             <div className="flex items-center gap-2 text-slate-600 bg-slate-50 px-2 py-1 rounded">
                                                 <Plane size={14} />
@@ -342,11 +347,15 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                             </div>
                         </div>
 
+                    ) : walletBlocked ? (
+
+                        // --- BOOKING BLOCKED: BALANCE DEPLETED ---
+                        <WalletBookingBlock balanceCents={wallet.balanceCents as number} bookingMinCents={wallet.bookingMinCents ?? 0} />
+
                     ) : (
 
-                        // --- MODE RÉSERVATION (STUDENT) ---
+                        // --- BOOKING MODE (STUDENT) ---
                         <div className="space-y-6">
-                            {/* Section Configuration */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                                     <span className="w-6 h-px bg-slate-300"></span>
@@ -374,7 +383,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 </div>
                             </div>
 
-                            {/* Section Notes */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                                     <span className="w-6 h-px bg-slate-300"></span>
@@ -383,7 +391,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 </h3>
 
                                 <div className="grid gap-4">
-                                    {/* Note Instructeur (Lecture seule) */}
                                     {(session && session.pilotComment) && (
                                         <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 space-y-1">
                                             <Label className="text-xs font-semibold text-amber-700 flex items-center gap-1">
@@ -395,7 +402,6 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                         </div>
                                     )}
 
-                                    {/* Note Étudiant (Saisie) */}
                                     {session && (
                                         <div className="space-y-1.5">
                                             <Label className="text-xs text-slate-600">Votre message pour l&apos;instructeur (optionnel)</Label>
@@ -410,8 +416,16 @@ const SessionPopup = ({ sessions, children, setSessions, usersProps, planesProp,
                                 </div>
                             </div>
 
-                            {/* Actions */}
-                            <div className="pt-4 border-t border-slate-100">
+                            <div className="pt-4 border-t border-slate-100 space-y-3">
+                                {walletLow && (
+                                    <div className="flex items-start gap-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs text-amber-800">
+                                        <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                                        <span>
+                                            Votre solde est faible (<span className="font-mono tabular-nums">{formatCents(wallet.balanceCents as number)}</span>).
+                                            Pensez à recharger votre compte auprès du club.
+                                        </span>
+                                    </div>
+                                )}
                                 <SubmitButton
                                     submitDisabled={submitDisabled}
                                     onSubmit={onSubmit}

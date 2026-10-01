@@ -15,12 +15,11 @@ interface Props {
 }
 
 const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps }: Props) => {
-    const [plane, setPlane] = useState("all") // Stocke l'ID de l'avion sélectionné
-    const [instructor, setInstructor] = useState("all") // Stocke l'ID de l'instructeur sélectionné
+    const [plane, setPlane] = useState("all")
+    const [instructor, setInstructor] = useState("all")
 
     const instructors = usersProps.filter((instructor) => instructor.role === userRole.INSTRUCTOR || instructor.role === userRole.OWNER);
 
-    // Effet pour filtrer les sessions lorsque l'avion ou l'instructeur change
     useEffect(() => {
         const filteredSessions = sessions?.filter(session => {
             const instructorMatch = instructor === "all" || session.pilotID === instructor;
@@ -32,7 +31,6 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [plane, instructor, sessions]);
 
-    // Fonction pour reset les filtres
     const resetFilters = () => {
         setPlane("all");
         setInstructor("all");
@@ -43,7 +41,6 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
     if (display === "desktop") {
         return (
             <div className='flex items-center gap-1'>
-                {/* Filtre par Instructeur */}
                 <Select value={instructor} onValueChange={(val) => setInstructor(val)}>
                     <SelectTrigger
                         className={cn(
@@ -66,10 +63,8 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
                     </SelectContent>
                 </Select>
 
-                {/* Séparateur visuel léger entre les deux filtres */}
                 <div className="w-px h-4 bg-slate-200" />
 
-                {/* Filtre par Avion */}
                 <Select value={plane} onValueChange={(val) => setPlane(val)}>
                     <SelectTrigger
                         className={cn(
@@ -93,7 +88,7 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
                     </SelectContent>
                 </Select>
 
-                {/* Bouton Reset (visible seulement si filtres actifs) */}
+                {/* Reset button (only shown when filters are active) */}
                 {hasActiveFilters && (
                     <Button
                         variant="ghost"
@@ -134,7 +129,6 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
                             </div>
 
                             <div className="space-y-3">
-                                {/* Filtre par Instructeur */}
                                 <div className="space-y-1.5">
                                     <label className="text-xs text-slate-500 uppercase font-medium">Instructeur</label>
                                     <Select value={instructor} onValueChange={(val) => setInstructor(val)}>
@@ -152,7 +146,6 @@ const Filter = ({ sessions, setSessionsFiltered, display, planesProp, usersProps
                                     </Select>
                                 </div>
 
-                                {/* Filtre par Avion */}
                                 <div className="space-y-1.5">
                                     <label className="text-xs text-slate-500 uppercase font-medium">Appareil</label>
                                     <Select value={plane} onValueChange={(val) => setPlane(val)}>

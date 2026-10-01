@@ -5,8 +5,29 @@ import { User } from '@prisma/client'
 import prisma from '../prisma';
 import { resolveBaptemeHold } from './baptemeHold';
 import { canViewPlane, isPrivatePlane } from '@/lib/planeVisibility';
+import { managerBookingWarning } from '@/lib/wallet';
+import { canSwitchClub } from '@/lib/clubAccess';
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
+
+// Non-blocking warning when management books a student / pilot whose balance is
+// below the club booking threshold, with the wallet enabled (AER-66, AER-73).
+async function walletBookingWarning(memberID: string, clubID: string | null): Promise<string | null> {
+    if (!clubID) return null;
+    const [club, member, wallet] = await Promise.all([
+        prisma.club.findUnique({ where: { id: clubID }, select: { walletEnabled: true, walletBookingMinCents: true } }),
+        prisma.user.findUnique({ where: { id: memberID }, select: { clubID: true, role: true, firstName: true, lastName: true } }),
+        prisma.wallet.findUnique({ where: { clubID_userID: { clubID, userID: memberID } }, select: { balanceCents: true } }),
+    ]);
+    // Pure, tested decision (see managerBookingWarning in src/lib/wallet.ts).
+    return managerBookingWarning({
+        walletEnabled: !!club?.walletEnabled,
+        clubID,
+        member,
+        balanceCents: wallet?.balanceCents ?? 0,
+        bookingMinCents: club?.walletBookingMinCents ?? 0,
+    });
+}
 
 export async function requireAuth(allowedRoles?: userRole[]) {
     const supabase = await createClient();
@@ -31,36 +52,6 @@ export interface InvitedStudent {
     phone: string,
 }
 
-interface UserMin {
-    firstName: string,
-    lastName: string,
-    email: string,
-    phone: string,
-}
-
-export const createUser = async (dataUser: UserMin) => {
-    if (!dataUser.firstName || !dataUser.lastName || !dataUser.email || !dataUser.phone) {
-        return { error: 'Missing required fields' }
-    }
-
-    try {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const user = await prisma.user.create({
-            data: {
-                firstName: dataUser.firstName,
-                lastName: dataUser.lastName,
-                email: dataUser.email,
-                phone: dataUser.phone,
-            },
-        });
-        return { succes: "User created successfully" };
-
-    } catch {
-        return {
-            error: 'User creation failed',
-        };
-    }
-}
 
 export const getAllUser = async (clubID: string) => {
     const auth = await requireAuth();
@@ -80,7 +71,6 @@ export const getAllUser = async (clubID: string) => {
 
 }
 
-// récupération de la session de l'utilisateur
 export const getSession = async () => {
     const supabase = await createClient()
     try {
@@ -139,7 +129,7 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
     }
 
     try {
-        // Étape 1 : Charger les données critiques
+        // Step 1: load the critical data
         const [session, plane] = await Promise.all([
             prisma.flight_sessions.findUnique({
                 where: { id: sessionID },
@@ -156,7 +146,6 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             })
         ]);
 
-        // Vérifications critiques
         if (!session) {
             return { error: "Session introuvable." };
         }
@@ -165,8 +154,8 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             return { error: "Permissions insuffisantes." };
         }
 
-        // Un créneau tenu par une demande de baptême en attente ne peut pas être
-        // attribué à un élève / invité tant que le hold n'est pas levé.
+        // A slot held by a pending discovery-flight request cannot be given to a
+        // student / guest until the hold is released.
         const holdState = await resolveBaptemeHold(sessionID);
         if (holdState.held) {
             return { error: "Ce créneau est réservé pour un baptême en attente de validation." };
@@ -176,10 +165,10 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             return { error: "L'avion est désactivé par l'administrateur du club." };
         }
 
-        // Défense en profondeur, symétrique de studentRegistration : la machine
-        // est validée du point de vue de l'ÉLÈVE inscrit, pas du gestionnaire qui
-        // saisit. Une machine privée n'est donc attribuable qu'à son propriétaire
-        // — et un invité externe (pas de compte) n'a droit qu'aux machines club.
+        // Defense in depth, symmetric with studentRegistration: the plane is validated
+        // from the booked STUDENT's point of view, not the manager entering it. A private
+        // plane can therefore only go to its owner, and an external guest (no account)
+        // only gets club planes.
         if (plane && isPrivatePlane(plane)) {
             const beneficiary = await prisma.user.findUnique({ where: { id: student.id } });
             if (!beneficiary || !canViewPlane(plane, beneficiary)) {
@@ -191,7 +180,7 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             return { error: "La date de la session est passée." };
         }
 
-        // Étape 2 : Mise à jour rapide de la session
+        // Step 2: update the session
         await prisma.flight_sessions.update({
             where: { id: sessionID },
             data: {
@@ -204,7 +193,10 @@ export const addStudentToSession = async (sessionID: string, student: { id: stri
             },
         });
 
-        return { success: "L'élève a été ajouté au vol !" };
+        // Wallet: booking is allowed even with a balance ≤ 0, but a warning is returned.
+        const warning = await walletBookingWarning(student.id, auth.user.clubID);
+
+        return { success: "L'élève a été ajouté au vol !", ...(warning && { warning }) };
 
     } catch {
         return { error: "Erreur lors de l'ajout de l'élève au vol." };
@@ -287,40 +279,6 @@ export const updateUser = async (user: User) => {
     }
 }
 
-export const getUserByID = async (id: string[]) => {
-    try {
-        const user = await prisma.user.findMany({
-            where: {
-                id: {
-                    in: id
-                }
-            }
-        })
-        return user;
-    } catch {
-        return { error: "Erreur lors de la récupération des utilisateurs" };
-    }
-
-}
-
-export const getInsctructors = async (clubID: string | undefined) => {
-    if (!clubID) {
-        return { error: "Une erreur est survenue (E_001: clubID is undefined)" };
-    }
-    try {
-        const instructors = await prisma.user.findMany({
-            where: {
-                clubID,
-                role: { in: [userRole.INSTRUCTOR, userRole.ADMIN, userRole.OWNER] }
-            }
-        })
-        return instructors;
-    } catch {
-        return { error: "Erreur lors de la récupération des instructeurs" };
-    }
-
-}
-
 export const blockUser = async (userID: string, restricted: boolean) => {
     if (!userID) {
         return { error: "Une erreur est survenue (E_001: userID is undefined)" };
@@ -350,10 +308,16 @@ export const updateUserClub = async (userID: string, clubID: string) => {
         return { error: "Une erreur est survenue (E_001: userID is undefined)" };
     }
 
-    const auth = await requireAuth(MANAGEMENT_ROLES);
+    const auth = await requireAuth([userRole.ADMIN]);
     if ('error' in auth) return { error: auth.error };
+    if (!canSwitchClub(auth.user, userID)) {
+        return { error: "Permissions insuffisantes" };
+    }
 
     try {
+        const club = await prisma.club.findUnique({ where: { id: clubID }, select: { id: true } });
+        if (!club) return { error: "Club introuvable" };
+
         await prisma.user.update({
             where: { id: userID },
             data: { clubID }

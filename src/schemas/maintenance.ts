@@ -1,21 +1,17 @@
 import { z } from "zod";
 
 /**
- * Forme d'une intervention de maintenance stockée dans la colonne JSON
- * `planes.maintenanceHistory` (un tableau de ces objets).
+ * Shape of a maintenance intervention stored in the `planes.maintenanceHistory`
+ * JSON column (an array of these objects).
  *
- * Le stockage en JSON (plutôt qu'une table séparée) est volontaire : il garde
- * un lien indestructible entre la machine et son historique de maintenance
- * (pas de suppression en cascade, pas de jointure). Le revers est qu'il n'y a
- * pas de contrainte SQL : la validation est donc entièrement applicative, via
- * ce schéma zod, aussi bien en lecture qu'en écriture.
- *
- * La page maintenance et les actions d'ajout arrivent au prochain ticket : ici
- * on prépare uniquement la structure de données et sa validation.
+ * JSON storage (rather than a separate table) is deliberate: it keeps an
+ * unbreakable link between the plane and its maintenance history (no cascade
+ * delete, no join). The flip side is there is no SQL constraint: validation is
+ * entirely application-side, through this zod schema, on both read and write.
  */
 
-// Types d'intervention. Volontairement large (le prochain ticket affinera la
-// liste avec le club). `type` reste une chaîne libre pour ne rien bloquer.
+// Intervention types. Deliberately broad (to be refined with the club). `type`
+// stays a free string so nothing is blocked.
 export const MAINTENANCE_TYPES = [
     "VIDANGE",
     "REVISION",
@@ -26,22 +22,22 @@ export const MAINTENANCE_TYPES = [
 ] as const;
 
 export const maintenanceInterventionSchema = z.object({
-    // Identifiant de l'intervention (uuid généré côté serveur à l'ajout).
+    // Intervention ID (uuid generated server-side on add).
     id: z.string(),
-    // Date de l'intervention (ISO 8601).
+    // Intervention date (ISO 8601).
     date: z.string(),
-    // Type de maintenance (cf. MAINTENANCE_TYPES ; chaîne libre pour rester souple).
+    // Maintenance type (see MAINTENANCE_TYPES; free string to stay flexible).
     type: z.string().min(1),
-    // Ce qui a été fait.
-    description: z.string().min(1),
-    // Commentaire optionnel.
+    // What was done (optional, may be empty).
+    description: z.string(),
+    // Optional comment.
     comment: z.string().optional(),
-    // Heures moteur au moment de l'intervention (snapshot de hobbsTotal).
+    // Hobbs hours at the time of the intervention (snapshot of hobbsTotal).
     engineHours: z.number().nullable(),
-    // Auteur de la saisie (dénormalisé pour survivre aux suppressions de compte).
+    // Author of the entry (denormalized to survive account deletions).
     createdById: z.string(),
     createdByName: z.string(),
-    // Horodatage de création de l'entrée (ISO 8601).
+    // Entry creation timestamp (ISO 8601).
     createdAt: z.string(),
 });
 
@@ -49,36 +45,36 @@ export type MaintenanceIntervention = z.infer<typeof maintenanceInterventionSche
 
 export const maintenanceHistorySchema = z.array(maintenanceInterventionSchema);
 
-// ─── Entrées de formulaire (validées côté client ET serveur) ───
+// ─── Form inputs (validated client- AND server-side) ───
 
 /**
- * Saisie d'une intervention (les champs dénormalisés id/auteur/createdAt sont
- * ajoutés côté serveur ; on ne valide ici que ce que l'utilisateur saisit).
+ * Intervention input (the denormalized id/author/createdAt fields are added
+ * server-side; only what the user enters is validated here).
  */
 export const interventionInputSchema = z.object({
     date: z.string().min(1, "Date requise"),
     type: z.string().min(1, "Type requis"),
-    description: z.string().min(1, "Description requise"),
+    description: z.string(),
     comment: z.string().optional(),
-    // Heures moteur au moment de l'intervention (peut être vide => null).
+    // Hobbs hours at the time of the intervention (may be empty => null).
     engineHours: z.number().nullable(),
-    // Rappel éventuellement clôturé par cette intervention (réinitialise son
-    // compteur). undefined => aucune association.
+    // Reminder possibly closed by this intervention (resets its counter).
+    // undefined => no link.
     taskID: z.string().optional(),
 });
 
 export type InterventionInput = z.infer<typeof interventionInputSchema>;
 
 /**
- * Saisie d'un rappel récurrent (MaintenanceTask). Au moins une borne
- * (heures OU mois) est requise — validé par `refine`.
+ * Recurring reminder input (MaintenanceTask). At least one limit (hours OR
+ * months) is required, validated by `refine`.
  */
 export const taskInputSchema = z
     .object({
         title: z.string().min(1, "Intitulé requis"),
         intervalHours: z.number().positive().nullable(),
         intervalMonths: z.number().int().positive().nullable(),
-        // Référence de départ du compteur (dernière réalisation connue).
+        // Counter starting reference (last known completion).
         lastPerformedDate: z.string().min(1, "Date de référence requise"),
         lastPerformedHobbs: z.number(),
     })
@@ -90,8 +86,8 @@ export const taskInputSchema = z
 export type TaskInput = z.infer<typeof taskInputSchema>;
 
 /**
- * Parse en toute sécurité le JSON `planes.maintenanceHistory` en tableau typé.
- * Retourne [] si null / invalide (jamais d'exception côté lecture).
+ * Safely parses the `planes.maintenanceHistory` JSON into a typed array.
+ * Returns [] if null / invalid (never throws on read).
  */
 export function parseMaintenanceHistory(raw: unknown): MaintenanceIntervention[] {
     if (raw == null) return [];

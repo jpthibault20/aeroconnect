@@ -32,10 +32,10 @@ import {
 
 
 
-// ─── Helpers internes ───
+// ─── Internal helpers ───
 
-// Valide le couple (clubID, token) contre le jeton public courant du club.
-// Renvoie le club si le lien est valide, sinon null.
+// Validates the (clubID, token) pair against the club's current public token.
+// Returns the club if the link is valid, null otherwise.
 async function resolveClubByToken(clubID: string, token: string) {
     if (!clubID || !token) return null;
     const club = await prisma.club.findUnique({ where: { id: clubID } });
@@ -45,9 +45,9 @@ async function resolveClubByToken(clubID: string, token: string) {
 }
 
 /**
- * DTO commun aux deux points d'entrée de validation (page Club et popup du
- * calendrier) : la demande enrichie du créneau et de la machine, filtrée sur ce
- * que `user` a le droit de traiter (pilote assigné ou gestion).
+ * DTO shared by both validation entry points (Club page and calendar popup): the
+ * request enriched with its slot and plane, filtered to what `user` is allowed to
+ * handle (assigned pilot or management).
  */
 async function buildPendingBaptemeItems(
     requests: BaptemeRequest[],
@@ -108,25 +108,24 @@ async function buildPendingBaptemeItems(
 }
 
 
-// ─── Actions publiques (SANS requireAuth) ───
+// ─── Public actions (NO requireAuth) ───
 
 /**
- * Créneaux baptême proposables au public pour un club via son lien.
- * N'expose que des données non sensibles : id du créneau, date, durée et la
- * liste des machines DU CLUB réservables (id + nom). Jamais de machine privée
- * ni de créneau non-baptême.
+ * Discovery-flight slots offered to the public for a club through its link.
+ * Only exposes non-sensitive data: slot id, date, duration and the list of
+ * bookable CLUB planes (id + name). Never a private plane or a non-discovery slot.
  */
 export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
     const club = await resolveClubByToken(clubID, token);
     if (!club) return { error: "Lien invalide ou expiré." };
 
     const now = new Date();
-    // Les créneaux sont stockés en wall-clock UTC : les comparer à l'instant
-    // réel laisserait passer les créneaux dépassés de moins de 2 h l'été.
+    // Slots are stored as UTC wall-clock: comparing them to the real instant would
+    // let through slots that ended less than 2 h ago in summer.
     const slotNow = toClubWallClock(now);
 
-    // Au-delà de l'horizon, on ne propose rien : la charge utile reste bornée
-    // même pour un club qui ouvre des créneaux très à l'avance.
+    // Nothing is offered past the horizon, so the payload stays bounded even for a
+    // club that opens slots far in advance.
     const horizon = new Date(slotNow.getTime() + PUBLIC_BOOKING_HORIZON_DAYS * 24 * 60 * 60 * 1000);
 
     try {
@@ -159,8 +158,8 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
                 where: { clubID, status: "PENDING" },
                 select: { sessionID: true, status: true, expiresAt: true },
             }),
-            // Machines déjà engagées sur un horaire à venir, toutes natures de
-            // vol confondues : baptême concurrent comme réservation d'un membre.
+            // Planes already committed to an upcoming time, whatever the flight type:
+            // a competing discovery flight as well as a member's booking.
             prisma.flight_sessions.findMany({
                 where: {
                     clubID,
@@ -178,8 +177,7 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
             holdsBySession.set(h.sessionID, list);
         }
 
-        // Indexées par horaire de départ : deux sessions simultanées ne peuvent
-        // pas vendre le même appareil.
+        // Keyed by start time: two simultaneous sessions cannot sell the same plane.
         const takenPlanesByStart = new Map<number, string[]>();
         for (const s of busySessions) {
             if (!s.studentPlaneID) continue;
@@ -190,9 +188,9 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
         }
         const takenAt = (start: Date) => takenPlanesByStart.get(start.getTime()) ?? [];
 
-        // Nom + photo de chaque machine : le client choisit son appareil en le
-        // voyant, pas seulement d'après un nom de modèle. L'URL est construite
-        // ici (le chemin brut en base n'a aucun sens pour le navigateur).
+        // Name + photo of each plane: the customer picks the plane by seeing it, not
+        // just from a model name. The URL is built here (the raw DB path means nothing
+        // to the browser).
         const planeInfo = new Map(
             planes.map((p) => [
                 p.id,
@@ -225,10 +223,9 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
                 sessionID: s.id,
                 sessionDateStart: s.sessionDateStart,
                 durationMin: s.sessionDateDuration_min,
-                // Nom du pilote qui assurera le vol : le client choisit son
-                // créneau en connaissance de cause. Aucune coordonnée n'est
-                // exposée ici (page publique) — elles arrivent dans l'email de
-                // confirmation, une fois la demande validée.
+                // Name of the pilot flying: the customer picks the slot knowingly. No contact
+                // details are exposed here (public page); they come in the confirmation email
+                // once the request is accepted.
                 pilotFirstName: s.pilotFirstName,
                 pilotLastName: s.pilotLastName,
                 planes: filterBaptemePlanes(
@@ -245,8 +242,8 @@ export const getPublicBaptemeSlots = async (clubID: string, token: string) => {
                 ),
             }));
 
-        // Coordonnées publiques du club : affichées sur la page publique pour que
-        // le visiteur puisse joindre le club (adresse, téléphone, email, référent).
+        // Club's public contact details, shown on the public page so visitors can reach
+        // the club (address, phone, email, contact person).
         const clubContact = {
             firstNameContact: club.firstNameContact,
             lastNameContact: club.lastNameContact,
@@ -274,23 +271,23 @@ interface CreateBaptemeInput {
     email: string;
     phone: string;
     comment?: string;
-    // Formule (durée + tarif) choisie parmi celles configurées sur la machine.
-    // Absent si la machine n'en a aucune.
+    // Package (duration + price) chosen among those configured on the plane.
+    // Absent if the plane has none.
     baptemeOptionID?: string;
     captchaToken?: string;
 }
 
 /**
- * Crée une demande de baptême PENDING (pose un hold sur le créneau).
- * Sans authentification : on revalide intégralement clubID / token / créneau /
- * machine + captcha, et on applique l'anti-double-hold (un seul PENDING actif
- * par créneau, premier arrivé gagne).
+ * Creates a PENDING discovery-flight request (places a hold on the slot).
+ * Unauthenticated: clubID / token / slot / plane + captcha are fully revalidated,
+ * and the anti-double-hold rule applies (one active PENDING per slot, first come
+ * first served).
  */
 export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
     const club = await resolveClubByToken(input.clubID, input.token);
     if (!club) return { error: "Lien invalide ou expiré." };
 
-    // Validation serveur des champs de contact (miroir du formulaire client).
+    // Server-side validation of the contact fields (mirrors the client form).
     const parsed = baptemeRequestSchema.safeParse({
         firstName: input.firstName,
         lastName: input.lastName,
@@ -309,8 +306,8 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
     if (!captchaOk) return { error: "Vérification anti-robot échouée. Merci de réessayer." };
 
     const now = new Date();
-    // Même précaution qu'à l'affichage : sans ça un formulaire laissé ouvert
-    // (ou une requête forgée) permet de réserver un créneau déjà commencé.
+    // Same guard as when listing: otherwise a form left open (or a forged request)
+    // could book a slot that has already started.
     const slotNow = toClubWallClock(now);
 
     try {
@@ -325,9 +322,9 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
             prisma.planes.findMany({
                 where: { clubID: input.clubID, ownerID: null, operational: true },
             }),
-            // Machines déjà engagées au même horaire par une AUTRE session : la
-            // session courante est exclue (son propre studentPlaneID est nul
-            // tant qu'aucun hold n'est posé, mais autant être explicite).
+            // Planes already taken at the same time by ANOTHER session: the current session
+            // is excluded (its studentPlaneID is null until a hold is placed, but better to
+            // be explicit).
             prisma.flight_sessions.findMany({
                 where: {
                     clubID: input.clubID,
@@ -343,7 +340,7 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
             .map((s) => s.studentPlaneID)
             .filter((id): id is string => id !== null);
 
-        // Le créneau doit encore être un baptême libre et futur…
+        // The slot must still be a free, upcoming discovery slot…
         if (
             !isBaptemeSlotAvailable(
                 {
@@ -363,8 +360,8 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
             return { error: "Ce créneau n'est plus disponible." };
         }
 
-        // …et la machine choisie doit être une machine club proposée sur le
-        // créneau, et pas déjà prise à cet horaire par quelqu'un d'autre.
+        // …and the chosen plane must be a club plane offered on the slot, not already
+        // taken at that time by someone else.
         const eligiblePlanes = filterBaptemePlanes(
             planes,
             { planeID: session.planeID, classes: session.classes },
@@ -375,10 +372,9 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
             return { error: "Appareil indisponible pour ce créneau." };
         }
 
-        // Formule (durée + tarif) : si la machine en propose, le client doit en
-        // avoir choisi une (revalidée ici — jamais fait confiance à l'ID envoyé
-        // sans vérifier qu'il appartient bien à CETTE machine). Sans formule
-        // configurée côté machine, aucun choix n'est attendu.
+        // Package (duration + price): if the plane offers some, the customer must have
+        // picked one (revalidated here: never trust the ID sent without checking it
+        // belongs to THIS plane). With no package configured, no choice is expected.
         const planeOptions = await prisma.baptemeOption.findMany({ where: { planeId: chosenPlane.id } });
         let option: { durationMin: number; price: number } | null = null;
         if (planeOptions.length > 0) {
@@ -389,8 +385,8 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
             option = { durationMin: chosenOption.durationMin, price: chosenOption.price };
         }
 
-        // Anti-double-hold : on purge les holds expirés (ce qui libère aussi le
-        // créneau), puis on refuse s'il reste un PENDING actif (1er arrivé gagne).
+        // Anti-double-hold: purge expired holds (which also frees the slot), then reject
+        // if an active PENDING remains (first come first served).
         await expireStaleHolds(now, { sessionID: input.sessionID });
         const activeHolds = await prisma.baptemeRequest.findMany({
             where: { sessionID: input.sessionID, status: "PENDING" },
@@ -402,9 +398,9 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
 
         const expiresAt = computeHoldExpiry(now);
         const sessionComment = buildBaptemeSessionComment(option, parsed.data.comment || null);
-        // On crée la demande ET on occupe le créneau (studentID = sentinelle de
-        // hold) dans la même transaction : plus aucune inscription concurrente
-        // possible tant que le pilote n'a pas validé/refusé (ou 24 h écoulées).
+        // Create the request AND occupy the slot (studentID = hold sentinel) in the same
+        // transaction: no concurrent booking is possible until the pilot accepts/rejects
+        // (or 24 h pass).
         await prisma.$transaction([
             prisma.baptemeRequest.create({
                 data: {
@@ -441,7 +437,7 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
         const validationLink = `${appUrl()}/dashboard?clubID=${input.clubID}`;
         const optionLabel = option ? formatBaptemeOptionLabel(option) : null;
 
-        // Notifie le pilote assigné + accuse réception au client (non bloquant).
+        // Notify the assigned pilot + acknowledge to the customer (non-blocking).
         const pilot = await prisma.user.findUnique({ where: { id: session.pilotID } });
         await Promise.all([
             pilot?.email
@@ -479,11 +475,11 @@ export const createBaptemeRequest = async (input: CreateBaptemeInput) => {
     }
 };
 
-// ─── Actions de gestion (AVEC requireAuth) ───
+// ─── Management actions (WITH requireAuth) ───
 
 /**
- * Demandes de baptême en attente que l'utilisateur courant peut traiter :
- * celles dont il est le pilote assigné, ou toutes s'il est gestion.
+ * Pending discovery-flight requests the current user can handle: those where
+ * they are the assigned pilot, or all of them for management.
  */
 export const getPendingBaptemeRequests = async (clubID: string) => {
     const auth = await requireAuth();
@@ -493,7 +489,7 @@ export const getPendingBaptemeRequests = async (clubID: string) => {
     const now = new Date();
 
     try {
-        // Expiration paresseuse à l'échelle du club (libère aussi les créneaux).
+        // Club-wide lazy expiry (also frees the slots).
         await expireStaleHolds(now, { clubID });
 
         const requests = await prisma.baptemeRequest.findMany({
@@ -501,7 +497,7 @@ export const getPendingBaptemeRequests = async (clubID: string) => {
             orderBy: { createdAt: "asc" },
         });
 
-        // Ne renvoie que les demandes que l'utilisateur peut valider.
+        // Only return the requests the user can accept.
         return await buildPendingBaptemeItems(requests, auth.user);
     } catch {
         return { error: "Erreur lors de la récupération des baptêmes en attente." };
@@ -509,10 +505,9 @@ export const getPendingBaptemeRequests = async (clubID: string) => {
 };
 
 /**
- * Demandes en attente portant sur des créneaux précis, que l'utilisateur courant
- * peut traiter. Alimente la validation depuis la popup du calendrier : les mêmes
- * droits qu'en page Club (pilote assigné ou gestion), sans l'obliger à quitter
- * son planning pour valider un baptême qu'il a sous les yeux.
+ * Pending requests on specific slots that the current user can handle. Feeds the
+ * validation from the calendar popup: same rights as on the Club page (assigned
+ * pilot or management), without leaving the schedule.
  */
 export const getPendingBaptemeRequestsBySessions = async (sessionIDs: string[]) => {
     const auth = await requireAuth();
@@ -523,8 +518,8 @@ export const getPendingBaptemeRequestsBySessions = async (sessionIDs: string[]) 
     const now = new Date();
 
     try {
-        // Même expiration paresseuse qu'en page Club : un hold échu ne doit pas
-        // rester proposé à la validation.
+        // Same lazy expiry as on the Club page: an expired hold must not be offered for
+        // validation.
         await expireStaleHolds(now, { clubID: auth.user.clubID });
 
         const requests = await prisma.baptemeRequest.findMany({
@@ -539,10 +534,10 @@ export const getPendingBaptemeRequestsBySessions = async (sessionIDs: string[]) 
 };
 
 /**
- * Compteur léger des baptêmes en attente que l'utilisateur courant peut traiter
- * (gestion => tout le club ; sinon => uniquement ses créneaux en tant que
- * pilote assigné). Sert au badge de notification du menu. Renvoie toujours un
- * objet { count } (0 si non autorisé / erreur) pour rester simple côté nav.
+ * Lightweight count of pending discovery-flight requests the current user can
+ * handle (management => whole club; otherwise => only their slots as assigned
+ * pilot). Used by the menu badge. Always returns { count } (0 when unauthorized /
+ * on error) to keep the nav simple.
  */
 export const getPendingBaptemeCount = async (clubID: string) => {
     const auth = await requireAuth();
@@ -560,7 +555,7 @@ export const getPendingBaptemeCount = async (clubID: string) => {
             return { count };
         }
 
-        // Pilote assigné : ne compter que les demandes portant sur ses créneaux.
+        // Assigned pilot: only count requests on their own slots.
         const pending = await prisma.baptemeRequest.findMany({
             where: { clubID, status: "PENDING" },
             select: { sessionID: true },
@@ -576,9 +571,9 @@ export const getPendingBaptemeCount = async (clubID: string) => {
 };
 
 /**
- * Valide une demande : inscrit le client dans le créneau via le mécanisme
- * « invité » (studentID = 'invited'), passe la demande à CONFIRMED et envoie
- * l'email de confirmation soigné.
+ * Accepts a request: books the customer on the slot through the "guest"
+ * mechanism (studentID = 'invited'), sets the request to CONFIRMED and sends the
+ * confirmation email.
  */
 export const validateBaptemeRequest = async (requestID: string) => {
     if (!requestID) return { error: "Une erreur est survenue (E_001: requestID manquant)" };
@@ -616,21 +611,21 @@ export const validateBaptemeRequest = async (requestID: string) => {
             ]);
             return { error: "Cette demande a expiré, le créneau a été rouvert." };
         }
-        // Le créneau doit être libre OU tenu par le hold de cette demande.
+        // The slot must be free OR held by this request's hold.
         if (session.studentID != null && session.studentID !== BAPTEME_HOLD_STUDENT_ID) {
             return { error: "Ce créneau n'est plus disponible." };
         }
 
-        // La formule (durée + tarif dénormalisés sur la demande) doit apparaître
-        // dans le commentaire du vol exactement comme lors de la création du hold
-        // (buildBaptemeSessionComment produit le même texte des deux côtés).
+        // The package (duration + price denormalized on the request) must appear in the
+        // flight comment exactly as when the hold was created
+        // (buildBaptemeSessionComment produces the same text on both sides).
         const option =
             request.optionDurationMin != null && request.optionPrice != null
                 ? { durationMin: request.optionDurationMin, price: request.optionPrice }
                 : null;
         const sessionComment = buildBaptemeSessionComment(option, request.comment);
 
-        // Inscription via le mécanisme invité + passage à CONFIRMED, en transaction.
+        // Guest booking + switch to CONFIRMED, in a transaction.
         await prisma.$transaction([
             prisma.flight_sessions.update({
                 where: { id: session.id },
@@ -675,8 +670,8 @@ export const validateBaptemeRequest = async (requestID: string) => {
 };
 
 /**
- * Refuse une demande : passe à REJECTED (le créneau n'ayant jamais été rempli
- * pendant le hold, il est de fait rouvert) et envoie un email courtois.
+ * Rejects a request: sets it to REJECTED (the slot was never filled during the
+ * hold, so it is effectively reopened) and sends a polite email.
  */
 export const rejectBaptemeRequest = async (requestID: string) => {
     if (!requestID) return { error: "Une erreur est survenue (E_001: requestID manquant)" };
@@ -704,7 +699,7 @@ export const rejectBaptemeRequest = async (requestID: string) => {
             return { error: "Permissions insuffisantes" };
         }
 
-        // Refus + réouverture du créneau (le hold est levé) en une transaction.
+        // Rejection + slot reopening (hold released) in one transaction.
         await prisma.$transaction([
             prisma.baptemeRequest.update({
                 where: { id: requestID },
@@ -741,13 +736,12 @@ export const rejectBaptemeRequest = async (requestID: string) => {
     }
 };
 
-// ─── Lien public (lecture : tout membre / régénération : ADMIN-OWNER) ───
+// ─── Public link (read: any member / regenerate: ADMIN-OWNER) ───
 
 /**
- * Renvoie le jeton public courant du club (null si aucun lien actif).
- * Accessible à TOUT membre du club : le lien est fait pour être diffusé, chaque
- * membre doit pouvoir le partager (QR code, réseaux sociaux…). Seule sa
- * régénération reste réservée au président / admin.
+ * Returns the club's current public token (null if no active link).
+ * Available to ANY club member: the link is meant to be shared (QR code, social
+ * media…). Only regenerating it is restricted to president / admin.
  */
 export const getPublicBookingToken = async (clubID: string) => {
     const auth = await requireAuth();
@@ -766,8 +760,8 @@ export const getPublicBookingToken = async (clubID: string) => {
 };
 
 /**
- * (Ré)génère le jeton public : l'ancienne URL cesse immédiatement de
- * fonctionner. Réservé ADMIN / OWNER.
+ * (Re)generates the public token: the previous URL stops working immediately.
+ * ADMIN / OWNER only.
  */
 export const regeneratePublicBookingToken = async (clubID: string) => {
     const auth = await requireAuth(PUBLIC_LINK_MANAGE_ROLES);

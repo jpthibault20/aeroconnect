@@ -2,8 +2,7 @@ import { describe, it, expect } from "vitest";
 import { userRole } from "@prisma/client";
 
 /**
- * Tests documentant les failles de sécurité identifiées et CORRIGÉES.
- * Ces tests servent de garde-fous contre les régressions.
+ * Regression guards for security flaws that were identified and FIXED.
  */
 
 const ADMIN_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
@@ -11,11 +10,11 @@ const SIGN_OVERRIDE: userRole[] = [userRole.OWNER, userRole.ADMIN];
 
 describe("Failles de sécurité corrigées", () => {
 
-    // ─── ISOLATION INTER-CLUBS ───
+    // ─── CROSS-CLUB ISOLATION ───
 
     describe("[CORRIGÉ] Isolation inter-clubs sur les mutations", () => {
         it("updatePlane vérifie que l'avion appartient au club de l'utilisateur", () => {
-            // planes.ts updatePlane() : vérifie existing.clubID === auth.user.clubID
+            // planes.ts updatePlane(): checks existing.clubID === auth.user.clubID
             const authClubID: string = "club-1";
             const planeClubID = "club-2";
             const isBlocked = authClubID !== planeClubID;
@@ -23,7 +22,7 @@ describe("Failles de sécurité corrigées", () => {
         });
 
         it("updateOperationalByID vérifie le clubID de l'avion", () => {
-            // planes.ts updateOperationalByID() : vérifie existing.clubID === auth.user.clubID
+            // planes.ts updateOperationalByID(): checks existing.clubID === auth.user.clubID
             const authClubID: string = "club-1";
             const planeClubID = "club-2";
             const isBlocked = authClubID !== planeClubID;
@@ -39,23 +38,23 @@ describe("Failles de sécurité corrigées", () => {
         });
     });
 
-    // ─── AUTHENTIFICATION ───
+    // ─── AUTHENTICATION ───
 
     describe("[CORRIGÉ] Fonctions avec requireAuth()", () => {
         it("studentRegistration a maintenant requireAuth", () => {
-            // sessions.ts : requireAuth() ajouté en début de fonction
+            // sessions.ts: requireAuth() added at the top of the function
             const hasRequireAuth = true;
             expect(hasRequireAuth).toBe(true);
         });
 
         it("removeStudentFromSessionID a maintenant requireAuth", () => {
-            // sessions.ts : requireAuth() ajouté en début de fonction
+            // sessions.ts: requireAuth() added at the top of the function
             const hasRequireAuth = true;
             expect(hasRequireAuth).toBe(true);
         });
 
         it("addStudentToSession a maintenant requireAuth(MANAGEMENT_ROLES)", () => {
-            // users.ts : requireAuth(MANAGEMENT_ROLES) ajouté
+            // users.ts: requireAuth(MANAGEMENT_ROLES) added
             const hasRequireAuth = true;
             expect(hasRequireAuth).toBe(true);
         });
@@ -67,7 +66,7 @@ describe("Failles de sécurité corrigées", () => {
         });
     });
 
-    // ─── DONNÉES SENSIBLES ───
+    // ─── SENSITIVE DATA ───
 
     describe("[CORRIGÉ] Données protégées par vérification de rôle", () => {
         it("getHoursByStudent est restreint aux ADMIN_ROLES", () => {
@@ -100,15 +99,15 @@ describe("Failles de sécurité corrigées", () => {
         });
 
         it("getAllUser vérifie l'authentification et le club", () => {
-            // Tout utilisateur authentifié du même club peut voir la liste
-            // mais requireAuth bloque les non-authentifiés
+            // Any authenticated user of the same club can see the list,
+            // but requireAuth blocks unauthenticated users
             const isAuthenticated = true;
             const sameClub = true;
             expect(isAuthenticated && sameClub).toBe(true);
         });
     });
 
-    // ─── AUTO-ESCALADE DE PRIVILÈGES ───
+    // ─── PRIVILEGE SELF-ESCALATION ───
 
     describe("[VÉRIFIÉ] Protection contre l'escalade de privilèges", () => {
         it("un STUDENT ne peut pas se promouvoir ADMIN via updateUser", () => {
@@ -133,7 +132,7 @@ describe("Failles de sécurité corrigées", () => {
         });
     });
 
-    // ─── PROTECTION DES DONNÉES SIGNÉES ───
+    // ─── SIGNED DATA PROTECTION ───
 
     describe("[VÉRIFIÉ] Protection des vols signés (SIGN_OVERRIDE = OWNER + ADMIN)", () => {
         it("un STUDENT ne peut pas modifier un vol signé", () => {

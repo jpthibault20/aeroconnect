@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { Spinner } from './ui/SpinnerVariants'
 import { toast } from '@/hooks/use-toast';
+import { sendNotificationsOrWarn } from '@/lib/notifications';
+import { warnNotificationFailure } from '@/lib/notificationToast';
 import { Club, flight_sessions, User } from '@prisma/client';
 import { UserMinus, AlertTriangle, Trash2 } from 'lucide-react';
 import { removeStudentFromSessionID } from '@/api/db/sessions';
-import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { useCurrentClub } from '@/app/context/useCurrentClub';
 import { sendNotificationRemoveAppointment, sendNotificationSudentRemoveForPilot } from '@/lib/mail';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
@@ -17,7 +18,6 @@ interface Props {
 }
 
 const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
-    const { currentUser } = useCurrentUser()
     const { currentClub } = useCurrentClub()
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -25,7 +25,6 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
     const handleRemoveStudent = async () => {
         const sessionID = session.id;
 
-        // Vérification date passée
         const sessionDate = new Date(session.sessionDateStart);
         const nowDate = new Date();
 
@@ -44,7 +43,7 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
             const student = usersProp.find(item => item.id === session.studentID)
             const pilote = usersProp.find(item => item.id === session.pilotID)
 
-            const res = await removeStudentFromSessionID(session, new Date().getTimezoneOffset() as number, currentClub as Club, currentUser as User);
+            const res = await removeStudentFromSessionID(session.id);
 
             if (res.success) {
                 toast({
@@ -53,7 +52,6 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
                     className: "bg-green-600 text-white border-none"
                 });
 
-                // Mise à jour de la session locale
                 setSessions(prevSessions => {
                     return prevSessions.map(s =>
                         s.id === sessionID
@@ -68,11 +66,10 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
                     );
                 });
 
-                // Envoi des notifications
                 const endDate = new Date(session.sessionDateStart);
                 endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
 
-                Promise.all([
+                void sendNotificationsOrWarn([
                     student?.email && sendNotificationRemoveAppointment(
                         student.email,
                         session.sessionDateStart as Date,
@@ -85,7 +82,7 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
                         endDate,
                         currentClub as Club
                     ),
-                ]);
+                ], warnNotificationFailure);
 
                 setIsOpen(false);
             } else if (res.error) {
@@ -95,7 +92,7 @@ const RemoveStudent = ({ session, setSessions, usersProp }: Props) => {
                     variant: "destructive"
                 });
             }
-        } catch (error) {
+        } catch {
             toast({
                 title: "Erreur technique",
                 description: "Impossible de retirer l'élève pour le moment.",

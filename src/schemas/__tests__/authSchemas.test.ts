@@ -4,12 +4,12 @@ import { loginSchema } from "@/schemas/loginSchema";
 import { newPasswordSchema, updatePasswordSchema } from "@/schemas/newPasswordSchema";
 
 /**
- * Validation des formulaires d'authentification. Ces schémas sont la seule
- * barrière côté client avant l'appel à Supabase : un assouplissement
- * involontaire (règle retirée, message changé) doit casser ici.
+ * Auth form validation. These schemas are the only client-side barrier before
+ * calling Supabase: any unintended loosening (rule removed, message changed) must
+ * break here.
  */
 
-// Premier message d'erreur pour un champ donné, ou undefined si le champ passe.
+// First error message for a given field, or undefined if the field passes.
 const errorFor = (
     schema: { safeParse: (v: unknown) => { success: boolean; error?: { issues: { path: PropertyKey[]; message: string }[] } } },
     value: unknown,
@@ -20,7 +20,7 @@ const errorFor = (
     return res.error?.issues.find((i) => i.path[0] === field)?.message;
 };
 
-// ─── Création de compte ───
+// ─── Sign-up ───
 
 describe("registerSchema — formulaire de création de compte", () => {
     const valid = {
@@ -73,7 +73,7 @@ describe("registerSchema — formulaire de création de compte", () => {
     });
 });
 
-// ─── Connexion ───
+// ─── Login ───
 
 describe("loginSchema — formulaire de connexion", () => {
     const valid = { email: "luc@club.fr", password: "motdepasse" };
@@ -92,15 +92,14 @@ describe("loginSchema — formulaire de connexion", () => {
     });
 
     it("ne demande QUE l'email et le mot de passe", () => {
-        // Régression : ajouter un champ obligatoire ici casserait le formulaire
-        // de connexion existant.
+        // Regression: adding a required field here would break the existing login form.
         const res = loginSchema.safeParse(valid);
         expect(res.success).toBe(true);
         if (res.success) expect(Object.keys(res.data).sort()).toEqual(["email", "password"]);
     });
 });
 
-// ─── Mot de passe perdu ───
+// ─── Forgotten password ───
 
 describe("newPasswordSchema — demande de réinitialisation", () => {
     it("accepte une adresse valide", () => {
@@ -141,7 +140,7 @@ describe("updatePasswordSchema — saisie du nouveau mot de passe", () => {
     });
 
     it("la confirmation n'a pas de longueur minimale propre (seule la concordance compte)", () => {
-        // Sinon l'utilisateur reçoit deux erreurs contradictoires en tapant.
+        // Otherwise the user gets two contradictory errors while typing.
         const res = updatePasswordSchema.safeParse({ password: "abc", confirmPassword: "abc" });
         expect(res.success).toBe(false);
         if (!res.success) {

@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoginSchema, loginSchema } from "../../schemas/loginSchema"; // Assure-toi que le chemin est correct
+import { LoginSchema, loginSchema } from "../../schemas/loginSchema";
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '../ui/button';
@@ -19,27 +19,29 @@ import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 export const Login = () => {
     const [loading, setLoading] = React.useState(false);
-    const [message, setMessage] = React.useState('');
-    const [messageG, setMessageG] = React.useState('');
-    const [showPassword, setShowPassword] = React.useState(false); // État pour la visibilité du mot de passe
-    const searchParams = useSearchParams(); // Utiliser le hook pour obtenir les paramètres de recherche
+    const [showPassword, setShowPassword] = React.useState(false);
+    const searchParams = useSearchParams();
+    const [message, setMessage] = React.useState(() => searchParams.get('message') ?? '');
+    const [messageG, setMessageG] = React.useState(() => searchParams.get('messageG') ?? '');
     const router = useRouter();
 
-    // Précharge la page de destination
+    // Prefetch the post-login page
     useEffect(() => {
-        router.prefetch('/Calendar'); // Ou ta page de destination
+        router.prefetch('/calendar');
     }, [router]);
-    useEffect(() => {
+    // Messages passed through redirect (?message= / ?messageG=): resynced when the
+    // URL changes (adjusted during render rather than in an effect).
+    const [prevSearchParams, setPrevSearchParams] = React.useState(searchParams);
+    if (prevSearchParams !== searchParams) {
+        setPrevSearchParams(searchParams);
         setMessage(searchParams.get('message') ?? '');
         setMessageG(searchParams.get('messageG') ?? '');
-        // setLoading(false); // Réinitialiser le loading à false après avoir récupéré les paramètres de recherche
-    }, [searchParams]);
+    }
 
     const {
         register,
         handleSubmit,
         formState: { errors },
-        // reset,
     } = useForm<LoginSchema>({
         resolver: zodResolver(loginSchema),
     });
@@ -54,29 +56,25 @@ export const Login = () => {
             formData.append('email', data.email);
             formData.append('password', data.password);
 
-            // 1. On stocke le résultat de l'action
             const res = await login(formData);
 
-            // 2. On vérifie si l'action a retourné une erreur "logique" (mauvais mdp, etc.)
-            // Note: Si 'res' existe, c'est que le redirect n'a PAS eu lieu (car redirect lance une erreur)
+            // If `res` exists the redirect did NOT happen (redirect throws): business error
+            // (wrong password, etc.).
             if (res && !res.success) {
                 setMessage(res.message || "Erreur de connexion");
-                setLoading(false); // ICI : On arrête le spinner car l'utilisateur doit réessayer
+                setLoading(false); // The user has to retry, stop the spinner
                 return;
             }
 
         } catch (error) {
-            // 3. Gestion de la redirection (SUCCÈS)
-            // La fonction `redirect()` de Next.js lance une erreur spéciale de type NEXT_REDIRECT
+            // Success: Next.js `redirect()` throws a special NEXT_REDIRECT error.
             if (isRedirectError(error)) {
-                // C'est le signe que tout a marché !
-                // On NE met PAS setLoading(false) ici.
-                // On laisse le spinner tourner pendant que la page change.
+                // Keep the spinner running while the page changes: no setLoading(false) here.
                 throw error;
             }
 
-            // 4. Gestion des vrais crashs techniques (Bug code, serveur down...)
-            setLoading(false); // On arrête le spinner
+            // Real technical failures (code bug, server down...)
+            setLoading(false);
             setMessage("Une erreur inattendue est survenue.");
         }
     };
@@ -197,13 +195,6 @@ export const Login = () => {
 
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2">
-                                    {/* <Checkbox id="remember" />
-                                    <Label
-                                        htmlFor="remember"
-                                        className="text-sm text-gray-500 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                    >
-                                        Se souvenir de moi
-                                    </Label> */}
                                 </div>
                                 <Link href={'/auth/forgotPassword'} className="text-sm text-purple-600 hover:text-purple-500">
                                     Mot de passe oublié ?

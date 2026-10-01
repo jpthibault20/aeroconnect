@@ -64,22 +64,26 @@ model planes {
   operational        Boolean           @default(true)
   classes            Int               @default(3)
   hobbsTotal         Float?            @default(0)
-  // Propriétaire physique de la machine. null => machine du club (propriétaire =
-  // le club). Renseigné => machine privée, visible seulement par le
-  // propriétaire, le président (OWNER) et l'admin (ADMIN).
+  // Physical owner of the plane. null => club plane. Set => private plane, visible
+  // only to its owner, the club president (OWNER) and ADMIN.
   ownerID            String?
-  // Usages d'une machine du club (instruction / location / usage club). Vide
-  // pour une machine privée : la nature « privée » est portée par ownerID, pas
-  // par un tag. INSTRUCTION/LOCATION/CLUB et « privé » sont mutuellement exclusifs.
+  // Club plane usages (instruction / rental / club use). Empty for a private plane:
+  // "private" is carried by ownerID, not by a tag. INSTRUCTION/LOCATION/CLUB and
+  // private are mutually exclusive.
   usageTypes         MachineUsage[]    @default([])
-  // Historique des interventions de maintenance, stocké en JSON directement sur
-  // la machine pour garder un lien indestructible machine <-> maintenance.
-  // Forme : MaintenanceIntervention[] (cf. src/schemas/maintenance.ts).
+  // Maintenance intervention history, stored as JSON on the plane itself so the
+  // plane <-> maintenance link can never break.
+  // Shape: MaintenanceIntervention[] (see src/schemas/maintenance.ts).
   maintenanceHistory Json?
-  // Photo de la machine : CHEMIN dans le bucket Supabase Storage (jamais l'URL
-  // complète, pour ne pas figer le projet/bucket en base). Forme :
-  // `{planeID}/{uuid}.{ext}` — cf. src/lib/planeImage.ts. null => aucune photo.
+  // Plane photo: PATH inside the Supabase Storage bucket (never the full URL, so
+  // the project/bucket is not baked into the DB). Shape: `{planeID}/{uuid}.{ext}`,
+  // see src/lib/planeImage.ts. null => no photo.
   imagePath          String?
+  // Instruction rate (cents / hour, instructor included) of a CLUB plane, debited
+  // pro rata to the minutes when an instruction flight is signed. null => no rate
+  // (not the same as 0): signing is then blocked if the club wallet is enabled.
+  // Ignored for a private plane.
+  instructionHourlyRateCents Int?
   MaintenanceTask    MaintenanceTask[]
   BaptemeOption      BaptemeOption[]
 }
@@ -114,10 +118,22 @@ model Club {
   lastNameContact             String?
   mailContact                 String?
   phoneContact                String?
-  // Jeton du lien public de réservation de baptêmes
-  // (/reservation/[clubID]/[token]). null => aucun lien actif. Régénérer ce
-  // jeton invalide immédiatement l'ancienne URL (cf. ADMIN/OWNER only).
+  // Token of the public discovery-flight booking link
+  // (/reservation/[clubID]/[token]). null => no active link. Regenerating the token
+  // immediately invalidates the previous URL (ADMIN/OWNER only).
   publicBookingToken          String?
+  // Student wallet (AER-66). Disabled by default: no debit, no booking block and no
+  // wallet UI until the club enables it.
+  walletEnabled               Boolean  @default(false)
+  // Hourly rate (cents) charged for instruction flights on a PRIVATE plane: the
+  // student only pays the instructor. null => not set.
+  instructorHourlyRateCents   Int?
+  // Minimum balance (cents) a STUDENT / PILOT needs to book a slot (AER-73):
+  // booking allowed if balance >= threshold. Any amount, negative included (a
+  // tolerated overdraft); a very low value amounts to never blocking.
+  walletBookingMinCents       Int      @default(0)
+  // Email the member when their balance drops below the "low" threshold.
+  walletLowBalanceEmail       Boolean  @default(true)
 }
 
 model MaintenanceTask {
@@ -133,12 +149,11 @@ model MaintenanceTask {
   planes             planes   @relation(fields: [planeId], references: [id], onDelete: Cascade)
 }
 
-// Formule de vol baptême proposable sur une machine DU CLUB : une durée et un
-// tarif. Une machine peut avoir autant de formules que le club veut (ex. 15,
-// 20, 30, 45 min). Le créneau calendrier reste toujours d'une heure quelle que
-// soit la formule choisie ; seule la partie visible côté client (page publique,
-// commentaire du vol, mail) varie. Sans intérêt sur une machine privée : les
-// machines privées ne sont jamais proposées au public (cf. filterBaptemePlanes).
+// Discovery-flight package offered on a CLUB plane: a duration and a price. A
+// plane can have as many packages as the club wants (e.g. 15, 20, 30, 45 min).
+// The calendar slot is always one hour regardless of the package; only what the
+// customer sees (public page, flight comment, email) changes. Private planes are
+// never offered to the public (see filterBaptemePlanes).
 model BaptemeOption {
   id          String   @id @default(uuid())
   createdAt   DateTime @default(now())
@@ -248,33 +263,91 @@ model flight_logs {
   isManualEntry Boolean  @default(false)
 }
 
-// Demande de réservation d'un vol baptême passée depuis le lien public
-// (/reservation/[clubID]/[token]), par un client externe sans compte.
-// La demande PENDING pose un « hold » sur le créneau (expiresAt = TTL) jusqu'à
-// validation/refus par le pilote assigné ou la gestion. Expiration paresseuse :
-// une demande PENDING dont expiresAt < now est considérée expirée à la lecture.
+// Discovery-flight booking request made from the public link
+// (/reservation/[clubID]/[token]) by an external customer without an account.
+// A PENDING request places a hold on the slot (expiresAt = TTL) until the
+// assigned pilot or management accepts/rejects it. Lazy expiry: a PENDING request
+// whose expiresAt < now is treated as expired when read.
 model BaptemeRequest {
   id                String        @id @default(uuid())
   clubID            String
-  sessionID         String // créneau flight_sessions visé
+  sessionID         String // targeted flight_sessions slot
   firstName         String
   lastName          String
   email             String
   phone             String
   comment           String?
-  planeID           String // machine club choisie
-  // Formule choisie (durée + tarif), copiée depuis BaptemeOption au moment de la
-  // demande : la formule doit survivre à une modification/suppression ultérieure
-  // de la config de la machine (même logique que les champs dénormalisés de
-  // flight_logs). null => la machine n'avait pas (ou plus) de formule configurée.
+  planeID           String // chosen club plane
+  // Chosen package (duration + price), copied from BaptemeOption at request time so
+  // it survives later changes to the plane's config (same idea as the denormalized
+  // fields of flight_logs). null => the plane had no package configured.
   optionDurationMin Int?
   optionPrice       Float?
   status            BaptemeStatus @default(PENDING)
   createdAt         DateTime      @default(now())
-  expiresAt         DateTime // TTL du hold
-  handledBy         String? // userID du validateur / refuseur
+  expiresAt         DateTime // hold TTL
+  handledBy         String? // userID of whoever accepted / rejected it
   handledAt         DateTime?
 
   @@index([clubID, status])
   @@index([sessionID, status])
+}
+
+enum WalletTransactionType {
+  CREDIT // payment received (manual credit)
+  DEBIT // automatic debit of a signed instruction flight
+  ADJUSTMENT // manual withdrawal / correction, or automatic correction of an edited signed flight
+}
+
+enum PaymentMethod {
+  CASH
+  CHECK
+  TRANSFER
+  CARD
+  OTHER
+}
+
+enum WalletRateSource {
+  PLANE // club plane instruction rate
+  INSTRUCTOR // club instructor rate (private plane)
+}
+
+// Current balance of a member IN a club (AER-66). Deliberately kept off `User`:
+// many actions return full User rows to the client and the balance would leak.
+// One row per (club, member), created on the first operation; no row => balance 0.
+model Wallet {
+  id           String   @id @default(uuid())
+  clubID       String
+  userID       String
+  balanceCents Int      @default(0)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([clubID, userID])
+}
+
+// Immutable wallet ledger: never updated or deleted, mistakes are fixed with a
+// reverse operation. Flight fields are denormalized (like flight_logs) so they
+// stay readable if the plane or the rate changes later.
+model WalletTransaction {
+  id                String                @id @default(uuid())
+  clubID            String
+  userID            String
+  createdAt         DateTime              @default(now()) @db.Timestamptz(6)
+  type              WalletTransactionType
+  amountCents       Int // signed: > 0 credits, < 0 debits
+  balanceAfterCents Int
+  paymentMethod     PaymentMethod?
+  comment           String?
+  authorID          String? // null => automatic operation (flight signature / correction)
+  flightLogID       String?
+  flightDate        DateTime?             @db.Date
+  planeName         String?
+  planeRegistration String?
+  durationMin       Int?
+  rateCents         Int?
+  rateSource        WalletRateSource?
+
+  @@index([clubID, userID, createdAt])
+  @@index([flightLogID])
 }

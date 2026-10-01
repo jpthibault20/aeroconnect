@@ -5,7 +5,7 @@ import { flight_sessions, planes } from '@prisma/client';
 import { LEGACY_NO_PLANE_ID } from '@/lib/utils';
 
 interface Props {
-    // Modification: accepte un tableau d'IDs d'instructeurs au lieu d'un seul
+    // Array of instructor IDs
     instructorIDs: string[];
     flightsSessions: flight_sessions[];
     planes: planes[];
@@ -21,43 +21,39 @@ const isSameDay = (d1: Date, d2: Date): boolean =>
 
 const getPlaneName = (planeID: string, planes: planes[]) => {
     if (planeID === 'classroomSession') return 'Session salle';
-    // Séances historiques uniquement (cf. LEGACY_NO_PLANE_ID).
+    // Historical sessions only (see LEGACY_NO_PLANE_ID).
     if (planeID === LEGACY_NO_PLANE_ID) return 'Aucun avion';
     const plane = planes.find((p) => p.id === planeID);
     return plane ? plane.name : 'Avion inconnu';
 };
 
 const getWeeksBetween = (startInput: Date, endInput: Date): Date[][] => {
-    // Vérifier que les dates sont valides avant de procéder
     if (isNaN(startInput.getTime()) || isNaN(endInput.getTime())) {
-        return []; // Retourner un tableau vide en cas de dates invalides
+        return [];
     }
 
-    // Créer des copies immutables des dates d'entrée
+    // Immutable copies of the input dates
     const start = new Date(startInput.getFullYear(), startInput.getMonth(), startInput.getDate());
     const end = new Date(endInput.getFullYear(), endInput.getMonth(), endInput.getDate(), 23, 59, 59);
 
     const weeks: Date[][] = [];
     let currentWeek: Date[] = [];
 
-    // Créer une nouvelle date pour itération, sans modifier l'original
     let current = new Date(start);
 
-    // Boucle de sécurité pour éviter une boucle infinie
+    // Safety counter against an infinite loop
     let safetyCounter = 0;
     const MAX_WEEKS = 100;
 
     while (current.getTime() <= end.getTime() && safetyCounter < MAX_WEEKS) {
-        // Créer une nouvelle instance pour chaque jour
         currentWeek.push(new Date(current));
 
-        // Si c'est dimanche ou le dernier jour, on termine la semaine
+        // Close the week on Sunday or on the last day
         if (current.getDay() === 0 || current.getTime() === end.getTime()) {
             weeks.push([...currentWeek]);
             currentWeek = [];
         }
 
-        // Créer une nouvelle date pour le jour suivant plutôt que modifier l'existante
         const nextDay = new Date(current);
         nextDay.setDate(nextDay.getDate() + 1);
         current = nextDay;
@@ -65,7 +61,7 @@ const getWeeksBetween = (startInput: Date, endInput: Date): Date[][] => {
         safetyCounter++;
     }
 
-    // Ajouter la dernière semaine si elle n'est pas vide et n'a pas déjà été ajoutée
+    // Add the last week if it is not empty and not added yet
     if (currentWeek.length > 0) {
         weeks.push([...currentWeek]);
     }
@@ -73,7 +69,7 @@ const getWeeksBetween = (startInput: Date, endInput: Date): Date[][] => {
     return weeks;
 };
 
-// Formater la date en français pour le titre
+// French week title
 const formatWeekTitle = (startDate: Date): string => {
     const options: Intl.DateTimeFormatOptions = {
         day: 'numeric',
@@ -91,21 +87,19 @@ const formatWeekTitle = (startDate: Date): string => {
 };
 
 export const MyDocument = ({ instructorIDs, flightsSessions, planes, startDate, endDate, clubHours }: Props) => {
-    // S'assurer que les dates sont des objets Date
     const start = startDate instanceof Date ? startDate : new Date(startDate);
     const end = endDate instanceof Date ? endDate : new Date(endDate);
 
-    // Vérifier que les dates sont valides
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
         return <Document><Page size="A4"><Text>Erreur: dates invalides</Text></Page></Document>;
     }
 
     const weeks = getWeeksBetween(start, end);
 
-    // Filtrer les sessions pour n'inclure que celles des instructeurs spécifiés et avec un étudiant
+    // Only sessions of the selected instructors that have a student
     const filteredSessions = flightsSessions.filter((s) =>
         (instructorIDs.includes('all') || instructorIDs.includes(s.pilotID)) &&
-        s.studentID // Vérifier qu'il y a un étudiant inscrit
+        s.studentID
     );
 
     return (
@@ -126,14 +120,12 @@ export const MyDocument = ({ instructorIDs, flightsSessions, planes, startDate, 
                             <View key={hour} style={styles.tableRow}>
                                 <Text style={styles.hourCell}>{hour}:00</Text>
                                 {week.map((day, index) => {
-                                    // Trouver toutes les sessions pour ce jour et cette heure
                                     const sessions = filteredSessions.filter(
                                         (s) =>
                                             isSameDay(new Date(s.sessionDateStart), day) &&
                                             new Date(s.sessionDateStart).getHours() === hour
                                     );
 
-                                    // S'il y a des sessions, les afficher toutes
                                     if (sessions.length > 0) {
                                         return (
                                             <View key={index} style={styles.tableCell}>
@@ -154,7 +146,6 @@ export const MyDocument = ({ instructorIDs, flightsSessions, planes, startDate, 
                                         );
                                     }
 
-                                    // Sinon, retourner une cellule vide
                                     return (
                                         <View key={index} style={styles.tableCell} />
                                     );
@@ -173,7 +164,7 @@ export const MyDocument = ({ instructorIDs, flightsSessions, planes, startDate, 
     );
 };
 
-// Styles PDF - optimisé pour format paysage
+// PDF styles, tuned for landscape
 const styles = StyleSheet.create({
     page: {
         flexDirection: 'column',

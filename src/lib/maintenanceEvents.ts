@@ -1,9 +1,9 @@
 /**
- * Nom de l'événement global (window) émis quand la maintenance d'une machine
- * change (ajout/suppression de rappel ou d'intervention). La navigation
- * l'écoute pour recalculer la bulle de retard.
+ * Name of the global (window) event fired when a plane's maintenance changes
+ * (reminder or intervention added/removed). The navigation listens to it to
+ * recompute the overdue badge.
  *
- * Isolé dans son propre module (sans dépendance UI) pour ne pas tirer le code de
- * la modale — et notamment `@react-pdf/renderer` — dans le bundle de navigation.
+ * Kept in its own module (no UI dependency) so the dialog's code, notably
+ * `@react-pdf/renderer`, is not pulled into the navigation bundle.
  */
 export const MAINTENANCE_ALERTS_EVENT = "refresh-maintenance-alerts";

@@ -8,7 +8,7 @@
  * - Horizontal scrolling on mobile without breaking layout.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import TableRowComponent from './TableRowComponent';
@@ -26,19 +26,22 @@ interface Props {
 const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, usersProp }: Props) => {
     const { currentUser } = useCurrentUser();
     const [isAllChecked, setIsAllChecked] = useState(false);
-    const [sessionsSorted, setSessionsSorted] = useState<flight_sessions[]>([]);
-
     // Sort sessions chronologically
-    useEffect(() => {
-        const sortedSessions = [...sessions].sort((a, b) => {
+    const sessionsSorted = useMemo(() => {
+        return [...sessions].sort((a, b) => {
             const dateA = new Date(a.sessionDateStart).getTime();
             const dateB = new Date(b.sessionDateStart).getTime();
             return dateA - dateB;
         });
-
-        setSessionsSorted(sortedSessions);
-        setIsAllChecked(false);
     }, [sessions]);
+
+    // The list changed: untick "select all" (adjusted during render rather than in an
+    // effect, see React's "You Might Not Need an Effect").
+    const [prevSessions, setPrevSessions] = useState(sessions);
+    if (prevSessions !== sessions) {
+        setPrevSessions(sessions);
+        setIsAllChecked(false);
+    }
 
     // Handle "select all"
     const handleSelectAll = (checked: boolean) => {
@@ -50,20 +53,16 @@ const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, 
         }
     };
 
-    // Helper class for table headers to ensure consistency
-    // text-xs uppercase tracking-wider = Standard moderne pour les headers de table SaaS
+    // Shared header class for consistency
     const headerClass = "text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap py-3";
 
     return (
         <div className="flex flex-col h-full">
-            {/* Container principal avec gestion du scroll.
-                On utilise h-[calc(100vh-...)] ou max-h pour limiter la hauteur si besoin,
-                mais ici on laisse le parent gérer la hauteur ou on met une limite fixe.
-            */}
+            {/* Main container handling the scroll. */}
             <div className="relative w-full overflow-auto max-h-[70vh] rounded-b-2xl">
 
                 <Table className="w-full text-sm text-left">
-                    {/* Sticky Header: Reste accroché en haut lors du scroll */}
+                    {/* Sticky header: stays on top while scrolling */}
                     <TableHeader className="bg-slate-50 sticky top-0 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                         <TableRow className="border-b border-slate-200 hover:bg-slate-50">
 
@@ -107,7 +106,7 @@ const TableComponent = ({ sessions, setSessions, setSessionChecked, planesProp, 
                                 />
                             ))
                         ) : (
-                            // État vide pour éviter une table "cassée" si pas de données
+                            // Empty state so the table does not look broken without data
                             <TableRow>
                                 <td colSpan={10} className="h-24 text-center text-slate-400">
                                     Aucun vol à afficher.

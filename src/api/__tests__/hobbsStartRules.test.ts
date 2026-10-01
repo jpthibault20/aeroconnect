@@ -9,11 +9,11 @@ import {
 } from "@/lib/logbookCalc";
 
 /**
- * Règles de résolution du début (hobbsStart) côté serveur, extraites de
- * createFlightLog / updateFlightLog / signFlightLog (src/api/db/logbook.ts).
+ * Server-side hobbsStart resolution rules, extracted from createFlightLog /
+ * updateFlightLog / signFlightLog (src/api/db/logbook.ts).
  *
- * Enjeu sécurité : le début d'un vol est la lecture du compteur de la machine,
- * pas une valeur choisie par le pilote. Seuls OWNER/ADMIN peuvent l'imposer.
+ * Security: a flight's start is the plane's counter reading, not a value chosen
+ * by the pilot. Only OWNER/ADMIN can override it.
  */
 
 describe("validateHobbsRange — fin > début", () => {
@@ -44,7 +44,7 @@ describe("resolveCreateHobbsStart — début à la création", () => {
         });
 
         it("OWNER/ADMIN : la valeur envoyée remplace le compteur (override)", () => {
-            // Cas d'usage : vol antérieur saisi en retard (BOUR 06/09 après le 08/09).
+            // Use case: an earlier flight entered late (BOUR 06/09 after 08/09).
             expect(resolveCreateHobbsStart({ planeHobbsTotal: 1346, requested: 1344.25, canOverride: true })).toBe(1344.25);
         });
 
@@ -79,7 +79,7 @@ describe("resolveUpdateHobbs — modification d'une entrée", () => {
     });
 
     it("PILOT envoie un début « pratique » pour contourner fin <= début stocké : refusé", () => {
-        // Début stocké 1345, il veut une fin 1345 en baissant le début : non.
+        // Stored start 1345, wants an end of 1345 by lowering the start: rejected.
         const r = resolveUpdateHobbs({ existing, requestedStart: 1340, requestedEnd: 1345, canOverride: false });
         expect(r).toEqual({ ok: false, error: HOBBS_END_BEFORE_START_ERROR });
     });
@@ -115,7 +115,7 @@ describe("resolveUpdateHobbs — modification d'une entrée", () => {
 
 describe("resolveSignHobbsStart — début au moment de la signature", () => {
     it("début déjà figé à la création : conservé tel quel, quel que soit le compteur", () => {
-        // Le compteur a avancé depuis (autres pilotes) : on ne relit surtout pas.
+        // The counter has moved since (other pilots): it must not be re-read.
         expect(resolveSignHobbsStart({ logStart: 1344.25, logEnd: 1345, planeHobbsTotal: 1349 }))
             .toEqual({ ok: true, hobbsStart: 1344.25 });
     });

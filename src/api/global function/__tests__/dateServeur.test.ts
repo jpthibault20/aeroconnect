@@ -28,24 +28,22 @@ describe("convertMinutesToHours", () => {
 });
 
 /**
- * Cohérence des heures de session affichées dans l'application.
+ * Consistency of session times displayed across the app.
  *
- * Contrat : api/db/sessions.ts stocke `sessionDateStart` via `setUTCHours()`,
- * de sorte que l'heure UTC du `Date` correspond à l'heure « wall-clock » saisie
- * par l'utilisateur (ex. 9h saisi → 09:00 UTC stocké).
+ * Contract: api/db/sessions.ts stores `sessionDateStart` via `setUTCHours()`, so
+ * the Date's UTC hour matches the wall-clock hour entered by the user (e.g. 9am
+ * entered → 09:00 UTC stored).
  *
- * Tous les composants qui affichent une heure de session DOIVENT donc lire en
- * UTC, sinon ils dérivent de 1 ou 2 heures selon le fuseau du navigateur.
- * C'est le bug qui a été corrigé dans SessionDate.tsx (la popup affichait 11h
- * pour une session de 9h en CEST).
- *
- * Ces tests verrouillent l'invariant pour éviter une régression.
+ * Every component displaying a session time MUST therefore read it in UTC,
+ * otherwise it drifts by 1 or 2 hours depending on the browser time zone. That
+ * was the bug fixed in SessionDate.tsx (the popup showed 11am for a 9am session
+ * in CEST). These tests lock the invariant.
  */
 describe("formatSessionTime — cohérence des heures de session", () => {
-    // Reproduit la façon dont sessions.ts construit une session : on part d'une
-    // date locale au jour J, puis on positionne l'heure en UTC.
+    // Mirrors how sessions.ts builds a session: start from a local date on day D,
+    // then set the hour in UTC.
     const buildSessionDate = (utcHour: number, utcMinute: number): Date => {
-        const d = new Date(2026, 5, 15); // 15 juin 2026, minuit local
+        const d = new Date(2026, 5, 15); // June 15 2026, local midnight
         d.setUTCHours(utcHour, utcMinute, 0, 0);
         return d;
     };
@@ -68,32 +66,31 @@ describe("formatSessionTime — cohérence des heures de session", () => {
     });
 
     it("ne dépend pas du fuseau horaire local du navigateur", () => {
-        // Une date construite à partir d'un ISO UTC explicite doit toujours
-        // ressortir avec les mêmes heures, peu importe le TZ du runner.
+        // A date built from an explicit UTC ISO string must always come out with the
+        // same hours, whatever the runner's TZ.
         expect(formatSessionTime(new Date("2026-06-15T09:00:00.000Z"))).toBe("09:00");
         expect(formatSessionTime(new Date("2026-12-15T09:00:00.000Z"))).toBe("09:00");
     });
 
     it("regression bug popup : ne renvoie PAS l'heure locale (toLocaleTimeString)", () => {
-        // Si quelqu'un réintroduit `toLocaleTimeString('fr-FR', …)`, l'heure
-        // retournée vaudrait getHours() (locale), pas getUTCHours(). On
-        // vérifie l'écart attendu sur tout fuseau ≠ UTC.
+        // If someone reintroduces `toLocaleTimeString('fr-FR', …)`, the returned hour
+        // would be getHours() (local), not getUTCHours(). Check the expected offset on
+        // any non-UTC time zone.
         const d = new Date("2026-06-15T09:00:00.000Z");
         const localFormat = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-        const offsetMin = d.getTimezoneOffset(); // 0 si UTC, négatif si en avance
+        const offsetMin = d.getTimezoneOffset(); // 0 if UTC, negative when ahead
         if (offsetMin !== 0) {
-            // Le runner n'est pas en UTC : la sortie locale doit différer de
-            // la sortie UTC, sinon le helper utilise (à tort) l'heure locale.
+            // The runner is not in UTC: local output must differ from UTC output, otherwise
+            // the helper (wrongly) uses local time.
             expect(formatSessionTime(d)).not.toBe(localFormat);
         }
-        // Quel que soit le TZ, la sortie attendue reste UTC.
+        // Whatever the TZ, the expected output stays UTC.
         expect(formatSessionTime(d)).toBe("09:00");
     });
 
     it("est cohérent avec le formatage UTC du calendrier (Session.tsx, phone/Session.tsx)", () => {
-        // Le helper doit reproduire exactement `${getUTCHours}:${getUTCMinutes}`
-        // padés sur 2 chiffres — c'est le contrat partagé entre la popup et le
-        // calendrier.
+        // The helper must reproduce exactly `${getUTCHours}:${getUTCMinutes}` padded to 2
+        // digits: the contract shared by the popup and the calendar.
         const cases = [
             buildSessionDate(9, 0),
             buildSessionDate(14, 30),
@@ -108,7 +105,7 @@ describe("formatSessionTime — cohérence des heures de session", () => {
     });
 
     it("aller-retour : durée ajoutée en ms → fin formatée correspond à start + durée", () => {
-        // Exactement ce que calcule calendar/Session.tsx pour afficher la fin.
+        // Exactly what calendar/Session.tsx computes to display the end.
         const start = buildSessionDate(9, 0);
         const durationMin = 60;
         const end = new Date(start.getTime() + durationMin * 60000);
@@ -117,12 +114,12 @@ describe("formatSessionTime — cohérence des heures de session", () => {
     });
 
     it("régression AER-59 : la page Vols (TableRowComponent) ne doit pas décaler l'horaire de +2h en été", () => {
-        // Bug rapporté : une séance affichée 09:00-10:00 dans le calendrier
-        // ressortait 11:00-12:00 dans la page Vols. Cause : TableRowComponent
-        // formatait avec `date.toLocaleTimeString('fr-FR', …)` sans `timeZone:
-        // "UTC"`, donc dans le fuseau du navigateur (CEST = UTC+2 en été) au
-        // lieu de lire l'heure wall-clock stockée. Reproduit ici exactement le
-        // calcul de TableRowComponent : startDate puis endDate = start + durée.
+        // Reported bug: a session shown 09:00-10:00 in the calendar came out as
+        // 11:00-12:00 on the Flights page. Cause: TableRowComponent formatted with
+        // `date.toLocaleTimeString('fr-FR', …)` without `timeZone: "UTC"`, hence in the
+        // browser time zone (CEST = UTC+2 in summer) instead of the stored wall-clock
+        // hour. Reproduces TableRowComponent's computation: startDate then
+        // endDate = start + duration.
         const sessionDateStart = new Date("2026-06-15T09:00:00.000Z");
         const sessionDateDuration_min = 60;
         const startDate = new Date(sessionDateStart);
@@ -131,19 +128,19 @@ describe("formatSessionTime — cohérence des heures de session", () => {
         expect(formatSessionTime(startDate)).toBe("09:00");
         expect(formatSessionTime(endDate)).toBe("10:00");
 
-        // Non-régression explicite sur le symptôme observé (+2h, CEST).
+        // Explicit non-regression on the observed symptom (+2h, CEST).
         expect(formatSessionTime(startDate)).not.toBe("11:00");
         expect(formatSessionTime(endDate)).not.toBe("12:00");
     });
 });
 
 /**
- * Même invariant, côté DATE.
+ * Same invariant, for the DATE.
  *
- * Régression : la page publique de réservation baptême et le tableau des
- * demandes en attente formataient avec toLocaleDate/TimeString SANS `timeZone`,
- * donc dans le fuseau du visiteur — les horaires ressortaient décalés de +2 h
- * en France l'été, et un créneau de fin de soirée changeait de jour.
+ * Regression: the public discovery-flight booking page and the pending requests
+ * table formatted with toLocaleDate/TimeString WITHOUT `timeZone`, hence in the
+ * visitor's time zone: times came out +2 h in France in summer, and a late
+ * evening slot changed day.
  */
 describe("formatSessionDate — cohérence des dates de session", () => {
     it("accepte une date sérialisée (props RSC → composant client)", () => {
@@ -152,8 +149,8 @@ describe("formatSessionDate — cohérence des dates de session", () => {
     });
 
     it("ne bascule pas d'un jour sur un créneau de fin de soirée", () => {
-        // 22:30 UTC = 00:30 le lendemain à Paris : sans timeZone UTC, la date
-        // affichée passerait au 13 août.
+        // 22:30 UTC = 00:30 the next day in Paris: without timeZone UTC, the displayed
+        // date would move to August 13.
         const tard = new Date("2026-08-12T22:30:00.000Z");
         expect(formatSessionDate(tard, { day: "2-digit", month: "long" })).toBe("12 août");
         expect(formatSessionTime(tard)).toBe("22:30");
@@ -167,8 +164,8 @@ describe("formatSessionDate — cohérence des dates de session", () => {
     });
 
     it("regression : ne renvoie PAS la date locale du navigateur", () => {
-        // Si quelqu'un retire `timeZone: "UTC"`, ce créneau ressortirait au 13
-        // août sur tout fuseau en avance sur UTC.
+        // If someone removes `timeZone: "UTC"`, this slot would come out on August 13 on
+        // any time zone ahead of UTC.
         const d = new Date("2026-08-12T23:30:00.000Z");
         const localFormat = d.toLocaleDateString("fr-FR", { day: "2-digit", month: "long" });
         if (d.getTimezoneOffset() < 0) {

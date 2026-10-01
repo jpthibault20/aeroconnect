@@ -1,17 +1,17 @@
 import { MaintenanceIntervention } from "@/schemas/maintenance";
 
 /**
- * Calcul (pur, testé) des échéances de maintenance à partir d'un rappel
- * `MaintenanceTask`. Un rappel peut être borné par des heures moteur
- * (`intervalHours`), par une durée en mois (`intervalMonths`), ou les deux : la
- * première échéance atteinte déclenche le « retard ».
+ * Pure, tested computation of maintenance due dates from a `MaintenanceTask`
+ * reminder. A reminder can be bounded by Hobbs hours (`intervalHours`), by a
+ * duration in months (`intervalMonths`), or both: the first limit reached
+ * triggers "overdue".
  *
- * Factorisé hors des server actions / composants pour être partagé entre le
- * code et les tests (cf. convention CLAUDE.md).
+ * Factored out of the server actions / components to be shared by code and tests
+ * (see CLAUDE.md).
  */
 
-// Forme minimale d'un rappel nécessaire au calcul d'échéance (sous-ensemble de
-// MaintenanceTask, pour rester testable sans Prisma).
+// Minimal reminder shape needed for the due date computation (subset of
+// MaintenanceTask, to stay testable without Prisma).
 export interface MaintenanceTaskLike {
     intervalHours: number | null;
     intervalMonths: number | null;
@@ -20,22 +20,22 @@ export interface MaintenanceTaskLike {
 }
 
 export interface MaintenanceDueStatus {
-    // true dès qu'une des bornes (heures ou date) est dépassée.
+    // true as soon as one of the limits (hours or date) is exceeded.
     overdue: boolean;
-    // Prochaine échéance en heures moteur (null si pas de borne horaire).
+    // Next due Hobbs (null if no hour limit).
     nextDueHobbs: number | null;
-    // Prochaine échéance calendaire (null si pas de borne mensuelle).
+    // Next calendar due date (null if no month limit).
     nextDueDate: Date | null;
-    // Heures moteur restantes avant échéance (négatif si dépassé, null si N/A).
+    // Hobbs hours left before due (negative if exceeded, null if N/A).
     hoursRemaining: number | null;
-    // Jours restants avant échéance (négatif si dépassé, null si N/A).
+    // Days left before due (negative if exceeded, null if N/A).
     daysRemaining: number | null;
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 /**
- * Ajoute `months` mois à une date (en préservant au mieux le jour du mois).
+ * Adds `months` months to a date (preserving the day of the month as far as possible).
  */
 export function addMonths(date: Date, months: number): Date {
     const d = new Date(date.getTime());
@@ -46,8 +46,7 @@ export function addMonths(date: Date, months: number): Date {
 }
 
 /**
- * Statut d'échéance d'un rappel, en fonction des heures moteur courantes de la
- * machine et de la date de référence.
+ * Due status of a reminder, from the plane's current Hobbs and the reference date.
  */
 export function getTaskDueStatus(
     task: MaintenanceTaskLike,
@@ -89,7 +88,7 @@ export function getTaskDueStatus(
 }
 
 /**
- * Une machine est « en retard » dès qu'au moins un de ses rappels est dépassé.
+ * A plane is "overdue" as soon as at least one of its reminders is exceeded.
  */
 export function isPlaneOverdue(
     tasks: MaintenanceTaskLike[],
@@ -100,12 +99,23 @@ export function isPlaneOverdue(
 }
 
 /**
- * Tri d'affichage des rappels : les plus urgents d'abord. On classe sur la
- * « marge » restante, exprimée en jours pour la borne calendaire et en heures
- * pour la borne moteur ; un rappel borné par les deux prend la plus petite des
- * deux marges (c'est elle qui déclenchera l'alerte). Les rappels sans marge
- * calculable (pas d'heures moteur connues, pas de borne mensuelle) passent en
- * dernier.
+ * Overdue reminders of a plane (subset of `tasks`, order kept). Used for the
+ * warning shown when creating an availability (AER-43).
+ */
+export function getOverdueTasks<T extends MaintenanceTaskLike>(
+    tasks: T[],
+    currentHobbs: number | null,
+    now: Date
+): T[] {
+    return tasks.filter((t) => getTaskDueStatus(t, currentHobbs, now).overdue);
+}
+
+/**
+ * Display sort of reminders: most urgent first. Sorted on the remaining
+ * "margin", in days for the calendar limit and in hours for the Hobbs limit; a
+ * reminder bounded by both takes the smaller margin (the one that will trigger
+ * the alert). Reminders with no computable margin (no known Hobbs, no month
+ * limit) come last.
  */
 export function sortTasksByUrgency<T extends MaintenanceTaskLike>(
     tasks: T[],
@@ -126,8 +136,8 @@ export function sortTasksByUrgency<T extends MaintenanceTaskLike>(
 }
 
 /**
- * Tri d'affichage des interventions : les plus récentes d'abord (par date, puis
- * par date de saisie pour départager).
+ * Display sort of interventions: most recent first (by date, then by entry date
+ * to break ties).
  */
 export function sortInterventionsDesc(
     interventions: MaintenanceIntervention[]

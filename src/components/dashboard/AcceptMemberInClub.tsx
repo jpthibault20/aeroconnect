@@ -33,7 +33,7 @@ const AcceptMemberInClub = ({ membershipRequests, setMembershipRequests, userReq
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Fermer le dropdown si on clique à l'extérieur
+    // Close the dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -46,7 +46,7 @@ const AcceptMemberInClub = ({ membershipRequests, setMembershipRequests, userReq
 
     const handleRoleToggle = (role: userRole) => {
         setStudentRole(role);
-        setIsDropdownOpen(false); // Fermer le dropdown après sélection
+        setIsDropdownOpen(false);
     };
 
     const onClickAccept = (user: User, onClose: () => void) => {
@@ -76,7 +76,6 @@ const AcceptMemberInClub = ({ membershipRequests, setMembershipRequests, userReq
                             </ModalHeader>
                             <ModalBody>
                                 <div className="space-y-4">
-                                    {/* Dropdown Rôle */}
                                     <div className="relative" ref={dropdownRef}>
                                         <Label className="text-sm font-semibold">Rôle</Label>
                                         <button
@@ -96,12 +95,11 @@ const AcceptMemberInClub = ({ membershipRequests, setMembershipRequests, userReq
                                             <ChevronDown className="ml-2" />
                                         </button>
 
-                                        {/* Dropdown Menu */}
                                         {isDropdownOpen && (
                                             <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg">
                                                 <ScrollArea className="max-h-48 overflow-y-auto">
                                                     {Object.entries(userRole)
-                                                        .filter(([key]) => key !== "ADMIN") // Exclure "ADMIN"
+                                                        .filter(([key]) => key !== "ADMIN")
                                                         .map(([key, value]) => (
                                                             <button
                                                                 key={key}
@@ -123,7 +121,6 @@ const AcceptMemberInClub = ({ membershipRequests, setMembershipRequests, userReq
                                         )}
                                     </div>
 
-                                    {/* Input pour les Classes */}
                                     <div>
                                         <InputClasses
                                             disabled={loading}

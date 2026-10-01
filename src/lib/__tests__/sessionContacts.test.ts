@@ -63,7 +63,7 @@ describe("Visibilité des coordonnées d'une séance", () => {
     });
 
     it("on ne renvoie jamais ses propres coordonnées", () => {
-        // Gestionnaire qui est aussi le pilote de la séance : il ne voit que l'élève.
+        // Manager who is also the session's pilot: only sees the student.
         const contacts = resolveSessionContacts(makeSession(), viewer(PILOT, userRole.OWNER), members);
         expect(contacts.map((c) => c.role)).toEqual(["student"]);
     });

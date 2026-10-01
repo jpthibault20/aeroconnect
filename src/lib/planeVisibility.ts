@@ -1,40 +1,38 @@
 import { MachineUsage, planes, userRole } from "@prisma/client";
 
 /**
- * Règles de visibilité / propriété des machines.
+ * Plane visibility / ownership rules.
  *
- * Une machine est soit :
- *  - « du club » : `ownerID == null`. Visible et réservable par tous les
- *    membres du club (sous réserve du filtrage par classe fait ailleurs).
- *  - « privée » : `ownerID != null`. Visible uniquement par son propriétaire,
- *    le président (OWNER) et l'admin (ADMIN). Un élève propriétaire peut donc
- *    la réserver pour ses propres sessions ; les autres membres ne la voient
- *    même pas.
+ * A plane is either:
+ *  - "club": `ownerID == null`. Visible and bookable by every club member
+ *    (subject to class filtering done elsewhere).
+ *  - "private": `ownerID != null`. Only visible to its owner, the president
+ *    (OWNER) and the admin (ADMIN). A student owner can therefore book it for
+ *    their own sessions; other members do not even see it.
  *
- * « privé » et les usages club (INSTRUCTION / LOCATION / CLUB) sont
- * mutuellement exclusifs : une machine privée a `usageTypes = []`.
+ * "Private" and the club usages (INSTRUCTION / LOCATION / CLUB) are mutually
+ * exclusive: a private plane has `usageTypes = []`.
  */
 
-// Rôles qui voient TOUTES les machines privées du club, en plus de leurs propres
-// machines : président (OWNER) et admin (ADMIN). Ce sont aussi les seuls rôles
-// habilités à réattribuer le propriétaire d'une machine (cf. canReassignPlaneOwner).
+// Roles that see ALL the club's private planes, on top of their own: president
+// (OWNER) and admin (ADMIN). They are also the only roles allowed to reassign a
+// plane's owner (see canReassignPlaneOwner).
 export const PRIVATE_PLANE_OVERSIGHT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN];
 
-// Rôles de gestion, seuls habilités à créer/gérer des machines DU CLUB.
+// Management roles, the only ones allowed to create/manage CLUB planes.
 export const CLUB_PLANE_MANAGE_ROLES: userRole[] = [
     userRole.MANAGER,
     userRole.OWNER,
     userRole.ADMIN,
 ];
 
-// Une machine privée a un propriétaire physique.
+// A private plane has a physical owner.
 export function isPrivatePlane(plane: Pick<planes, "ownerID">): boolean {
     return plane.ownerID != null;
 }
 
-// Création : tout membre SAUF le rôle USER de base peut créer une machine privée
-// (dont il devient propriétaire). Seuls les rôles de gestion peuvent créer une
-// machine DU CLUB.
+// Creation: any member EXCEPT the base USER role can create a private plane
+// (which they own). Only management roles can create a CLUB plane.
 export function canCreatePrivatePlane(role: userRole): boolean {
     return role !== userRole.USER;
 }
@@ -43,20 +41,20 @@ export function canCreateClubPlane(role: userRole): boolean {
     return CLUB_PLANE_MANAGE_ROLES.includes(role);
 }
 
-// Peut créer au moins un type de machine (utilisé pour afficher le bouton
-// « Ajouter »). Équivaut à « pas le rôle USER ».
+// Can create at least one kind of plane (used to show the "Add" button).
+// Equivalent to "not the USER role".
 export function canCreateAnyPlane(role: userRole): boolean {
     return canCreatePrivatePlane(role);
 }
 
-// Usages valides pour une machine DU CLUB (une machine privée n'a aucun usage).
+// Valid usages for a CLUB plane (a private plane has no usage).
 export const CLUB_USAGE_VALUES: MachineUsage[] = [
     MachineUsage.INSTRUCTION,
     MachineUsage.LOCATION,
     MachineUsage.CLUB,
 ];
 
-// Ne conserve que les usages club valides (rejette tout le reste).
+// Keeps only valid club usages (rejects everything else).
 export function sanitizeClubUsages(usages: MachineUsage[]): MachineUsage[] {
     return usages.filter((u) => CLUB_USAGE_VALUES.includes(u));
 }
@@ -69,14 +67,13 @@ export interface PlaneCreationResolution {
 }
 
 /**
- * Résout le propriétaire + les usages d'une machine à créer selon le rôle du
- * créateur et le type demandé. Fonction pure (le server action fait ensuite la
- * persistance). Règles :
- *  - USER ne peut rien créer ;
- *  - machine du club : réservée aux rôles de gestion, propriétaire = le club
- *    (ownerID null), au moins un usage valide requis ;
- *  - machine privée : propriétaire = le créateur, aucun usage (privé et usages
- *    club sont mutuellement exclusifs).
+ * Resolves the owner + usages of a plane to create from the creator's role and
+ * the requested kind. Pure (the server action then persists). Rules:
+ *  - USER cannot create anything;
+ *  - club plane: management roles only, owner = the club (ownerID null), at
+ *    least one valid usage required;
+ *  - private plane: owner = the creator, no usage (private and club usages are
+ *    mutually exclusive).
  */
 export function resolvePlaneCreation(
     creator: { id: string; role: userRole },
@@ -96,7 +93,7 @@ export function resolvePlaneCreation(
         }
         return { ownerID: null, usageTypes };
     }
-    // Machine privée.
+    // Private plane.
     return { ownerID: creator.id, usageTypes: [] };
 }
 
@@ -105,8 +102,8 @@ interface Viewer {
     role: userRole;
 }
 
-// Seuls le président et l'admin peuvent réattribuer le propriétaire d'une
-// machine (à un membre du club, ou « au club » = ownerID null).
+// Only the president and the admin can reassign a plane's owner (to a club
+// member, or to the club = ownerID null).
 export function canReassignPlaneOwner(user: Viewer): boolean {
     return PRIVATE_PLANE_OVERSIGHT_ROLES.includes(user.role);
 }
@@ -117,12 +114,12 @@ export interface OwnerReassignment {
 }
 
 /**
- * Résout propriétaire + usages lors d'une réattribution (président/admin
- * uniquement). Mêmes règles d'exclusivité que resolvePlaneCreation :
- *  - nouveau propriétaire = un membre => machine privée, aucun usage club ;
- *  - nouveau propriétaire = null => machine du club, on reprend les usages
- *    existants (le cas où la machine était déjà du club), ou tous les usages
- *    par défaut si elle était privée (elle n'en avait aucun).
+ * Resolves owner + usages on a reassignment (president/admin only). Same
+ * exclusivity rules as resolvePlaneCreation:
+ *  - new owner = a member => private plane, no club usage;
+ *  - new owner = null => club plane, keeping the existing usages (when it was
+ *    already a club plane), or all usages by default if it was private (it had
+ *    none).
  */
 export function resolveOwnerReassignment(
     newOwnerID: string | null,
@@ -136,8 +133,8 @@ export function resolveOwnerReassignment(
 }
 
 /**
- * Un utilisateur donné peut-il voir cette machine ? (le club est supposé déjà
- * vérifié en amont — on ne filtre ici que la dimension privé/public).
+ * Can a given user see this plane? (the club is assumed already checked
+ * upstream; only the private/public dimension is filtered here).
  */
 export function canViewPlane(plane: Pick<planes, "ownerID">, user: Viewer): boolean {
     if (!isPrivatePlane(plane)) return true;
@@ -146,9 +143,9 @@ export function canViewPlane(plane: Pick<planes, "ownerID">, user: Viewer): bool
 }
 
 /**
- * Un utilisateur peut-il modifier / supprimer cette machine ?
- *  - machine du club : réservé aux rôles de gestion ;
- *  - machine privée : propriétaire, président ou admin.
+ * Can a user edit / delete this plane?
+ *  - club plane: management roles only;
+ *  - private plane: owner, president or admin.
  */
 export function canManagePlane(plane: Pick<planes, "ownerID">, user: Viewer): boolean {
     if (isPrivatePlane(plane)) {
@@ -158,23 +155,22 @@ export function canManagePlane(plane: Pick<planes, "ownerID">, user: Viewer): bo
 }
 
 /**
- * Un utilisateur peut-il corriger le compteur horaire (hobbsTotal) de cette
- * machine depuis sa fiche ?
- *  - machine du club : président (OWNER) et admin (ADMIN) uniquement ;
- *  - machine privée : son propriétaire, en plus du président et de l'admin.
+ * Can a user correct this plane's Hobbs counter (hobbsTotal) from its form?
+ *  - club plane: president (OWNER) and admin (ADMIN) only;
+ *  - private plane: its owner, plus the president and the admin.
  *
- * Le compteur avance normalement tout seul à la signature d'un vol
- * (cf. signFlightLog) : cette édition est une correction manuelle, d'où
- * l'avertissement affiché dans la fiche.
+ * The counter normally advances by itself when a flight is signed (see
+ * signFlightLog): this edit is a manual correction, hence the warning shown in
+ * the form.
  */
 export function canEditPlaneHobbs(plane: Pick<planes, "ownerID">, user: Viewer): boolean {
     if (PRIVATE_PLANE_OVERSIGHT_ROLES.includes(user.role)) return true;
     return isPrivatePlane(plane) && plane.ownerID === user.id;
 }
 
-// Rôles qui voient/gèrent la maintenance d'une machine DU CLUB : instructeurs +
-// gestion (manager, président, admin). PILOT / STUDENT / USER n'y ont pas accès
-// (même s'ils voient la fiche de l'avion).
+// Roles that see/manage a CLUB plane's maintenance: instructors + management
+// (manager, president, admin). PILOT / STUDENT / USER have no access (even though
+// they see the plane's card).
 export const MAINTENANCE_CLUB_ROLES: userRole[] = [
     userRole.INSTRUCTOR,
     userRole.MANAGER,
@@ -183,10 +179,10 @@ export const MAINTENANCE_CLUB_ROLES: userRole[] = [
 ];
 
 /**
- * Accès au suivi de maintenance d'une machine. « Voir = gérer » (décidé avec le
- * client : quiconque voit la section peut aussi ajouter/modifier) :
- *  - machine privée : propriétaire + président (OWNER) + admin (ADMIN) ;
- *  - machine du club : instructeurs + manager + président + admin.
+ * Access to a plane's maintenance tracking. "View = manage" (agreed with the
+ * client: anyone who sees the section can also add/edit):
+ *  - private plane: owner + president (OWNER) + admin (ADMIN);
+ *  - club plane: instructors + manager + president + admin.
  */
 export function canAccessMaintenance(plane: Pick<planes, "ownerID">, user: Viewer): boolean {
     if (isPrivatePlane(plane)) {
@@ -196,7 +192,7 @@ export function canAccessMaintenance(plane: Pick<planes, "ownerID">, user: Viewe
 }
 
 /**
- * Filtre une liste de machines selon la visibilité pour l'utilisateur courant.
+ * Filters a list of planes by visibility for the current user.
  */
 export function filterVisiblePlanes<T extends Pick<planes, "ownerID">>(
     list: T[],
@@ -206,9 +202,8 @@ export function filterVisiblePlanes<T extends Pick<planes, "ownerID">>(
 }
 
 /**
- * Machines réservables par un utilisateur : visibles (club + sa propre privée)
- * ET de l'une de ses classes autorisées. Combine les deux règles utilisées à la
- * réservation (visibilité + classe).
+ * Planes bookable by a user: visible (club + their own private one) AND of one of
+ * their allowed classes. Combines the two booking rules (visibility + class).
  */
 export function filterBookablePlanes<T extends Pick<planes, "ownerID" | "classes">>(
     list: T[],
@@ -218,27 +213,26 @@ export function filterBookablePlanes<T extends Pick<planes, "ownerID" | "classes
 }
 
 /**
- * Marqueur stocké dans `flight_sessions.planeID`, au même titre que le
- * marqueur `"classroomSession"` déjà présent dans ce tableau : signifie
- * « toutes les machines DU CLUB », résolu dynamiquement à la lecture plutôt
- * que figé à la création.
+ * Marker stored in `flight_sessions.planeID`, like the `"classroomSession"`
+ * marker already in that array: means "every CLUB plane", resolved dynamically
+ * on read rather than frozen at creation.
  *
- * Sans ça, un créneau (a fortiori une série récurrente sur plusieurs mois)
- * créé avec « Tout sélectionner » ne proposait plus jamais une machine créée
- * après coup : `planeID` était une photo des avions existants au moment de la
- * création, jamais mise à jour. cf. resolveOfferedPlaneIDs / resolveOfferedClasses.
+ * Without it, a slot (let alone a recurring series over several months) created
+ * with "Select all" never offered a plane created afterwards: `planeID` was a
+ * snapshot of the planes existing at creation, never updated. See
+ * resolveOfferedPlaneIDs / resolveOfferedClasses.
  */
 export const ALL_CLUB_PLANES_SENTINEL = "allClubPlanes";
 
 /**
- * Résout les machines réellement proposées par un créneau : remplace le
- * marqueur `ALL_CLUB_PLANES_SENTINEL` (s'il est présent) par la liste actuelle
- * des machines DU CLUB (jamais une machine privée), tout en conservant les
- * autres entrées telles quelles (notamment `"classroomSession"`).
+ * Resolves the planes actually offered by a slot: replaces the
+ * `ALL_CLUB_PLANES_SENTINEL` marker (if present) with the current list of CLUB
+ * planes (never a private plane), keeping the other entries as is (notably
+ * `"classroomSession"`).
  *
- * Un `planeID` sans marqueur (créneau où l'instructeur a délibérément choisi
- * un sous-ensemble de machines) n'est jamais modifié : seule la sélection
- * « toutes les machines » doit suivre l'ajout de nouvelles machines.
+ * A `planeID` without the marker (slot where the instructor deliberately picked
+ * a subset of planes) is never changed: only the "all planes" selection must
+ * follow the addition of new planes.
  */
 export function resolveOfferedPlaneIDs<T extends Pick<planes, "id" | "ownerID">>(
     planeIDField: string[],
@@ -252,10 +246,10 @@ export function resolveOfferedPlaneIDs<T extends Pick<planes, "id" | "ownerID">>
 }
 
 /**
- * Résout les classes réellement couvertes par un créneau. Même logique que
- * resolveOfferedPlaneIDs : si le créneau porte le marqueur « toutes les
- * machines », les classes suivent dynamiquement les machines DU CLUB
- * existantes plutôt que de rester figées sur celles présentes à la création.
+ * Resolves the classes actually covered by a slot. Same logic as
+ * resolveOfferedPlaneIDs: if the slot carries the "all planes" marker, the
+ * classes dynamically follow the existing CLUB planes rather than staying frozen
+ * on those present at creation.
  */
 export function resolveOfferedClasses<T extends Pick<planes, "classes" | "ownerID">>(
     planeIDField: string[],
@@ -267,8 +261,8 @@ export function resolveOfferedClasses<T extends Pick<planes, "classes" | "ownerI
 }
 
 /**
- * Une machine donnée est-elle proposée par ce créneau ? Pratique pour les
- * `.includes(...)` ponctuels (SessionPopup) sans reconstruire la liste complète.
+ * Is a given plane offered by this slot? Handy for one-off `.includes(...)`
+ * checks (SessionPopup) without rebuilding the full list.
  */
 export function sessionOffersPlane<T extends Pick<planes, "id" | "ownerID">>(
     planeIDField: string[],
@@ -279,30 +273,30 @@ export function sessionOffersPlane<T extends Pick<planes, "id" | "ownerID">>(
 }
 
 export interface BeneficiaryPlaneScope {
-    // Machines proposées sur le créneau (flight_sessions.planeID) : ce que
-    // l'instructeur a mis à disposition.
+    // Planes offered on the slot (flight_sessions.planeID): what the instructor made
+    // available.
     offeredPlaneIDs: string[];
-    // Machines déjà prises par une autre inscription au même horaire.
+    // Planes already taken by another booking at the same time.
     unavailablePlaneIDs?: string[];
 }
 
 /**
- * Machines réservables POUR LE BÉNÉFICIAIRE d'un vol (l'élève inscrit), sur un
- * créneau donné.
+ * Planes bookable FOR THE BENEFICIARY of a flight (the booked student), on a
+ * given slot.
  *
- * La liste se calcule du point de vue de celui qui va voler, jamais de celui
- * qui saisit : un manager qui inscrit un élève par téléphone doit voir les
- * machines de CET élève, pas les siennes. C'est déjà la règle appliquée côté
- * serveur (cf. canViewPlane dans studentRegistration).
+ * The list is computed from the point of view of the one who will fly, never the
+ * one entering it: a manager booking a student over the phone must see THAT
+ * student's planes, not their own. This is already the server-side rule (see
+ * canViewPlane in studentRegistration).
  *
- * Deux sources se cumulent :
- *  - les machines DU CLUB proposées sur le créneau (l'instructeur choisit
- *    lesquelles il met à disposition) ;
- *  - les machines PRIVÉES du bénéficiaire, qu'il n'a pas à voir « offertes »
- *    par le créneau : elles lui appartiennent.
+ * Two sources add up:
+ *  - the CLUB planes offered on the slot (the instructor picks which ones they
+ *    make available);
+ *  - the beneficiary's PRIVATE planes, which do not need to be "offered" by the
+ *    slot: they own them.
  *
- * Dans les deux cas la classe du bénéficiaire est exigée : posséder une machine
- * ne dispense pas d'être qualifié dessus.
+ * In both cases the beneficiary's class is required: owning a plane does not
+ * exempt from being rated on it.
  */
 export function filterPlanesForBeneficiary<T extends Pick<planes, "id" | "ownerID" | "classes">>(
     list: T[],
@@ -313,9 +307,36 @@ export function filterPlanesForBeneficiary<T extends Pick<planes, "id" | "ownerI
     return list.filter((plane) => {
         if (unavailable.has(plane.id)) return false;
         if (!beneficiary.classes.includes(plane.classes)) return false;
-        // Machine du bénéficiaire : toujours proposable.
+        // Beneficiary's plane: always available.
         if (isPrivatePlane(plane) && plane.ownerID === beneficiary.id) return true;
-        // Sinon : machine visible par lui ET mise à disposition sur le créneau.
+        // Otherwise: plane visible to them AND made available on the slot.
         return canViewPlane(plane, beneficiary) && scope.offeredPlaneIDs.includes(plane.id);
     });
+}
+
+export interface FlightLogParticipants {
+    // User entering the flight.
+    actor: Viewer;
+    // Flight's pilot (the one entering it, or the targeted pilot in delegated entry).
+    pilotID: string;
+    // Flight's student (instruction flight entered by the instructor), if any.
+    studentID?: string | null;
+}
+
+/**
+ * Can a plane be put on a logbook entry?
+ *  - club plane: yes;
+ *  - private plane: only if it belongs to the flight's pilot or student.
+ *    President (OWNER) and admin (ADMIN), who supervise every private plane, can
+ *    pick any of them.
+ *
+ * Same rule in the UI (offered list) and server-side (createFlightLog).
+ */
+export function canLogFlightOnPlane(
+    plane: Pick<planes, "ownerID">,
+    { actor, pilotID, studentID }: FlightLogParticipants
+): boolean {
+    if (!isPrivatePlane(plane)) return true;
+    if (PRIVATE_PLANE_OVERSIGHT_ROLES.includes(actor.role)) return true;
+    return plane.ownerID === pilotID || (!!studentID && plane.ownerID === studentID);
 }

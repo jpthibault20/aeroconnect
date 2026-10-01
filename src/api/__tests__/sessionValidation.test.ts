@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
 
 /**
- * Tests de validation des sessions.
- * On teste la logique de checkSessionDate sans appeler Prisma.
- * Les règles sont extraites de sessions.ts.
+ * Session validation: checkSessionDate logic tested without Prisma.
+ * Rules extracted from sessions.ts.
  */
 
 interface SessionInput {
@@ -44,7 +43,7 @@ function validateSessionInput(data: SessionInput, user: UserLike | undefined): s
         return "Veuillez sélectionner des appareils";
     }
 
-    return null; // pas d'erreur
+    return null;
 }
 
 const defaultUser: UserLike = { id: "user-1", clubID: "club-1" };
@@ -105,7 +104,7 @@ describe("Validation des sessions", () => {
 
     describe("Durée et multiples", () => {
         it("refuse si le créneau n'est pas un multiple de la durée", () => {
-            // Créneau de 90 min avec durée de 60 → 90 % 60 = 30 ≠ 0
+            // 90 min slot with a 60 min duration → 90 % 60 = 30 ≠ 0
             const result = validateSessionInput({
                 ...validSession,
                 startHour: "9",

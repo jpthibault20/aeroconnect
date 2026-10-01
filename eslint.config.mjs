@@ -1,7 +1,5 @@
-// Configuration ESLint en « flat config ».
-// Next 16 a supprimé la commande `next lint` : le lint passe désormais par
-// l'exécutable ESLint (`npm run lint`), qui ne lit plus `.eslintrc.json`.
-// `eslint-config-next` expose directement des tableaux de flat config.
+// ESLint flat config. Next 16 removed `next lint`: linting now goes through the
+// ESLint binary (`npm run lint`), which no longer reads `.eslintrc.json`.
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
 

@@ -5,6 +5,8 @@ import { addStudentToSession, InvitedStudent } from '@/api/db/users';
 import { flight_sessions, planes, User, userRole } from '@prisma/client';
 import { Button } from '../ui/button';
 import { toast } from '@/hooks/use-toast';
+import { sendNotificationsOrWarn } from '@/lib/notifications';
+import { warnNotificationFailure } from '@/lib/notificationToast';
 import { Spinner } from '../ui/SpinnerVariants';
 import { getFreePlanesUsers } from '@/api/popupCalendar';
 import { getPlanesForStudentOnSession } from '@/api/db/planes';
@@ -15,9 +17,13 @@ import { AlertCircle, UserPlus, Plane, User as UserIcon, Check } from 'lucide-re
 import InvitedForm from './InvitedForm';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { Label } from '../ui/label';
+import { useCurrentClub } from '@/app/context/useCurrentClub';
+import { getMemberBalances } from '@/api/db/wallet';
+import { balanceTextClass, canBookWithBalance, formatCents, isBookingGatedRole } from '@/lib/wallet';
+import { emitWalletChanged } from '@/lib/walletEvents';
+import { cn } from '@/lib/utils';
 
-// Machine proposée dans la liste. `isPrivate` absent = ce n'est pas une machine
-// (séance en salle).
+// Plane offered in the list. `isPrivate` missing = not a plane (classroom session).
 interface PlaneOption {
     id: string;
     name: string;
@@ -52,7 +58,28 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
     const PRIMARY_COLOR = "#774BBE";
 
-    // --- LOGIQUE METIER (Inchangée) ---
+    // Wallet (AER-66): member balances, shown in the list so management knows before
+    // choosing. Loaded on open.
+    const { currentClub } = useCurrentClub();
+    const walletEnabled = !!currentClub?.walletEnabled;
+    const bookingMinCents = currentClub?.walletBookingMinCents ?? 0;
+    const [balances, setBalances] = useState<Record<string, number> | null>(null);
+
+    useEffect(() => {
+        if (!isOpen || !walletEnabled) return;
+        let cancelled = false;
+        getMemberBalances().then((res) => {
+            if (!cancelled && 'balances' in res && res.balances) setBalances(res.balances);
+        }).catch(() => { });
+        return () => { cancelled = true; };
+    }, [isOpen, walletEnabled]);
+
+    const selectedMember = usersProp.find((u) => u.id === studentId);
+    const selectedBalance = selectedMember && balances ? balances[selectedMember.id] ?? 0 : null;
+    const walletWarning = walletEnabled && selectedMember && selectedBalance != null
+        && isBookingGatedRole(selectedMember.role) && !canBookWithBalance(selectedBalance, bookingMinCents)
+        ? `Le solde de ${selectedMember.firstName} ${selectedMember.lastName.toUpperCase()} est de ${formatCents(selectedBalance)}. L'inscription reste possible, et le vol sera débité à la signature. Pensez à régulariser avec l'élève.`
+        : "";
 
     const filterStudentsByPlane = (planeId: string) => {
         const { students } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
@@ -75,8 +102,8 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         }));
     };
 
-    // La séance en salle n'est pas une machine : isPrivate reste indéfini, la
-    // pastille club/privé n'est alors pas affichée.
+    // A classroom session is not a plane: isPrivate stays undefined, so the
+    // club/private badge is not shown.
     const withClassroom = (list: PlaneOption[]): PlaneOption[] =>
         session.planeID.includes("classroomSession")
             ? [...list, { id: "classroomSession", name: "Session théorique" }]
@@ -86,18 +113,17 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         list.map(plane => ({ id: plane.id, name: plane.name, isPrivate: isPrivatePlane(plane) }));
 
     /**
-     * Machines proposables à l'élève sélectionné.
+     * Planes that can be offered to the selected student.
      *
-     * Résolu CÔTÉ SERVEUR : la page calendrier ne transmet au navigateur que les
-     * machines visibles par l'utilisateur courant, donc jamais la machine privée
-     * de l'élève qu'un gestionnaire veut inscrire. Le filtrage local ne pouvait
-     * pas la faire réapparaître.
+     * Resolved SERVER-SIDE: the calendar page only sends the browser the planes
+     * visible to the current user, so never the private plane of the student a
+     * manager wants to book. Local filtering could not bring it back.
      */
     const loadPlanesForStudent = async (studentId: string) => {
         if (!studentId) return [];
 
-        // Invité externe : pas de compte, donc aucune machine personnelle. Le
-        // filtrage local sur les machines du club suffit.
+        // External guest: no account, hence no personal plane. Local filtering on the
+        // club planes is enough.
         if (studentId === "invited") {
             const { planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
             return withClassroom(toOptions(planes));
@@ -105,8 +131,8 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
         const res = await getPlanesForStudentOnSession(session.id, studentId);
         if ("error" in res || !res.planes) {
-            // Repli sur les machines déjà connues du navigateur : on n'empêche
-            // pas l'inscription si l'appel échoue.
+            // Fall back to the planes the browser already knows: do not block the booking if
+            // the call fails.
             const { planes } = getFreePlanesUsers(session, sessions, usersProp, planesProp);
             return withClassroom(toOptions(planes));
         }
@@ -115,10 +141,10 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
 
     useEffect(() => {
         let cancelled = false;
-        // Filtrer les élèves par machine n'a de sens QUE si aucun élève n'est
-        // encore choisi : sinon la machine sélectionnée peut être la machine
-        // privée de l'élève, absente de planesProp (elle vient du serveur), et
-        // le calcul viderait à tort la liste des élèves.
+        // Filtering students by plane only makes sense if no student is chosen yet:
+        // otherwise the selected plane may be the student's private plane, missing from
+        // planesProp (it comes from the server), and the computation would wrongly empty
+        // the student list.
         if (planeId && planeId !== " " && !studentId) {
             setFreeStudents(filterStudentsByPlane(planeId));
         } else if (studentId && studentId !== " ") {
@@ -204,19 +230,20 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         });
                     }
 
-                    if (res.success) {
+                    if ('success' in res && res.success) {
                         toast({
                             title: "Succès",
-                            description: res.success,
+                            description: res.warning ? `${res.success} (solde négatif)` : res.success,
                             style: { background: '#0bab15', color: '#fff' }
                         });
+                        if (res.warning) emitWalletChanged();
 
                         const endDate = new Date(session.sessionDateStart);
                         endDate.setUTCMinutes(endDate.getUTCMinutes() + session.sessionDateDuration_min);
                         const instructor = usersProp.find((user) => user.id === session.pilotID);
                         const planeName = planeId === "classroomSession" ? "Théorique" : planesProp.find((p) => p.id === planeId)?.name;
 
-                        Promise.all([
+                        void sendNotificationsOrWarn([
                             sendNotificationBooking(
                                 instructor?.email || "",
                                 studentId === 'invited' ? invitedStudent.firstName : selectedUser?.firstName as string,
@@ -237,7 +264,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                 session.pilotComment as string,
                                 session.studentComment as string
                             ),
-                        ]);
+                        ], warnNotificationFailure);
 
                         setSessions(prevSessions => {
                             return prevSessions.map(s =>
@@ -256,7 +283,7 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         setPlaneId(" ");
                         setIsOpen(false);
                     }
-                } catch (err) {
+                } catch {
                     setError("Une erreur technique est survenue.");
                 } finally {
                     setLoading(false);
@@ -271,7 +298,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
         }
     };
 
-    // --- 2. UI REFONTE ---
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
@@ -285,7 +311,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden border-slate-200">
-                {/* Header Style Pro */}
                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-start gap-4">
                     <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 hidden sm:block">
                         <UserPlus className="w-6 h-6 text-[#774BBE]" />
@@ -301,7 +326,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* Choix Élève */}
                     <div className="space-y-3">
                         <Label className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                             <UserIcon className="w-3 h-3" /> Qui participe ?
@@ -313,11 +337,21 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                             </SelectTrigger>
                             <SelectContent className="max-h-60">
                                 <SelectItem value=" ">-- Choisir --</SelectItem>
-                                {freeStudents.map((item, index) => (
-                                    <SelectItem key={index} value={item.id}>
-                                        {item.name}
-                                    </SelectItem>
-                                ))}
+                                {freeStudents.map((item, index) => {
+                                    const balance = walletEnabled && balances ? balances[item.id] ?? 0 : null;
+                                    return (
+                                        <SelectItem key={index} value={item.id}>
+                                            <span className="flex items-center gap-3">
+                                                <span className="truncate">{item.name}</span>
+                                                {balance != null && (
+                                                    <span className={cn("text-xs font-mono tabular-nums", balanceTextClass(balance, bookingMinCents))}>
+                                                        {formatCents(balance)}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </SelectItem>
+                                    );
+                                })}
                                 {(currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.OWNER) && (
                                     <>
                                         <div className="mx-2 my-1 h-px bg-slate-100" />
@@ -334,9 +368,15 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                                 <AlertCircle size={14} className="shrink-0" /> {warningStudent}
                             </div>
                         )}
+
+                        {walletWarning && (
+                            <div className="flex items-start gap-2 text-amber-700 bg-amber-50 p-2.5 rounded-md text-xs border border-amber-200">
+                                <AlertCircle size={14} className="shrink-0 mt-0.5" /> {walletWarning}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Formulaire Invité (Conditionnel) */}
+                    {/* Guest form (conditional) */}
                     {studentId === "invited" && (
                         <div className="border-l-2 border-[#774BBE] pl-4 py-1 bg-purple-50/30 rounded-r-lg animate-in slide-in-from-top-2 fade-in duration-300">
                             <InvitedForm
@@ -346,7 +386,6 @@ const AddStudent = ({ session, sessions, setSessions, planesProp, usersProp }: P
                         </div>
                     )}
 
-                    {/* Choix Avion */}
                     <div className="space-y-3">
                         <Label className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                             <Plane className="w-3 h-3" /> Sur quel appareil ?

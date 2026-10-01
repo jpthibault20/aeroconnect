@@ -12,7 +12,7 @@ interface PlaneSelectProps {
 }
 
 const PlaneSelect = ({ planes, selectedPlane, onPlaneChange }: PlaneSelectProps) => {
-    // Auto-sélection s'il n'y a qu'un seul choix
+    // Auto-select when there is only one choice
     useEffect(() => {
         if (planes.length === 1) {
             onPlaneChange(planes[0].id);
@@ -35,8 +35,7 @@ const PlaneSelect = ({ planes, selectedPlane, onPlaneChange }: PlaneSelectProps)
                 {planes.map(item => (
                     <SelectItem key={item.id} value={item.id}>
                         <span className="flex items-center gap-2">
-                            {/* La séance en salle n'est pas une machine : ni
-                                vignette, ni pastille. */}
+                            {/* A classroom session is not a plane: no thumbnail, no badge. */}
                             {item.id !== "classroomSession" && (
                                 <PlaneThumbnail
                                     imagePath={item.imagePath}

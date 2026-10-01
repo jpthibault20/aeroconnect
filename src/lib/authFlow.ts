@@ -1,14 +1,14 @@
 /**
- * Règles de navigation et messages des flux d'authentification (création de
- * compte, connexion, mot de passe perdu).
+ * Navigation rules and messages of the auth flows (sign-up, login, forgotten
+ * password).
  *
- * Les server actions correspondantes ne font qu'appeler Supabase puis
- * `redirect()` : toute la décision « où aller et avec quel message » est
- * factorisée ici, en fonctions pures, pour être testable (cf. convention
- * CLAUDE.md — extraire la logique des server actions puis la tester).
+ * The matching server actions only call Supabase then `redirect()`: every
+ * "where to go and with which message" decision is factored out here as pure
+ * functions so it can be tested (see CLAUDE.md: extract logic from server
+ * actions, then test it).
  *
- * Convention des pages auth : le paramètre `message` porte une erreur,
- * `messageG` un succès (affichage vert). Ne pas les intervertir.
+ * Auth pages convention: the `message` param carries an error, `messageG` a
+ * success (green). Do not swap them.
  */
 
 export const AUTH_ROUTES = {
@@ -19,8 +19,8 @@ export const AUTH_ROUTES = {
     calendar: "/calendar",
 } as const;
 
-// Messages utilisateur. Les codes E_00x sont repris tels quels dans le support :
-// ne pas les modifier sans prévenir.
+// User messages. The E_00x codes are quoted as-is by support: do not change them
+// without notice.
 export const AUTH_MESSAGES = {
     signupAuthFailed:
         "Une erreur est survenue lors de la création du compte, se rapprocher de l'administrateur (E_009: failed to create auth user)",
@@ -39,22 +39,22 @@ export const AUTH_MESSAGES = {
 
 export type AuthMessageKind = "error" | "success";
 
-/** URL de destination avec son message, encodé. */
+/** Destination URL with its encoded message. */
 export function authRedirect(path: string, kind: AuthMessageKind, message: string): string {
     const param = kind === "success" ? "messageG" : "message";
     return `${path}?${param}=${encodeURIComponent(message)}`;
 }
 
-// ─── Création de compte ───
+// ─── Sign-up ───
 
 export type SignupOutcome = "authError" | "profileError" | "success";
 
 /**
- * Où renvoyer l'utilisateur après une tentative de création de compte.
+ * Where to send the user after a sign-up attempt.
  *
- * Note : un échec côté Supabase renvoie vers la page de connexion, un échec de
- * création du profil Prisma vers le formulaire d'inscription (le compte auth
- * existe alors déjà). C'est le comportement historique, conservé tel quel.
+ * Note: a Supabase failure goes to the login page, a Prisma profile creation
+ * failure to the sign-up form (the auth account already exists then).
+ * Historical behavior, kept as is.
  */
 export function signupRedirect(outcome: SignupOutcome): string {
     switch (outcome) {
@@ -67,22 +67,22 @@ export function signupRedirect(outcome: SignupOutcome): string {
     }
 }
 
-// ─── Connexion ───
+// ─── Login ───
 
-/** Réponse renvoyée au formulaire quand les identifiants sont refusés. */
+/** Response returned to the form when the credentials are rejected. */
 export function loginFailure(): { success: false; message: string } {
     return { success: false, message: AUTH_MESSAGES.loginInvalidCredentials };
 }
 
 /**
- * Destination après connexion réussie. Un membre sans club part avec un clubID
- * vide : le calendrier gère ce cas (écran « aucun club »).
+ * Destination after a successful login. A member without a club leaves with an
+ * empty clubID: the calendar handles it ("no club" screen).
  */
 export function loginRedirect(clubID: string | null | undefined): string {
     return `${AUTH_ROUTES.calendar}?clubID=${clubID || ""}`;
 }
 
-// ─── Mot de passe perdu : demande de réinitialisation ───
+// ─── Forgotten password: reset request ───
 
 export type ForgotPasswordOutcome = "missingEmail" | "sendError" | "sent";
 
@@ -98,15 +98,15 @@ export function forgotPasswordRedirect(outcome: ForgotPasswordOutcome): string {
 }
 
 /**
- * URL de retour transmise à Supabase pour le lien de réinitialisation. Le slash
- * final de la base est retiré : sans ça le lien contiendrait `//auth/...`.
+ * Return URL passed to Supabase for the reset link. The base's trailing slash is
+ * removed, otherwise the link would contain `//auth/...`.
  */
 export function passwordResetRedirectTo(baseUrl: string | undefined | null): string {
     const base = (baseUrl ?? "").trim().replace(/\/+$/, "");
     return `${base}${AUTH_ROUTES.newPassword}`;
 }
 
-// ─── Mot de passe perdu : nouveau mot de passe ───
+// ─── Forgotten password: new password ───
 
 export type UpdatePasswordOutcome = "missingEmail" | "updateError" | "success";
 
@@ -128,8 +128,8 @@ export function updatePasswordRedirect(outcome: UpdatePasswordOutcome): string {
 export type NewPasswordCheck = { ok: true } | { ok: false; redirect: string };
 
 /**
- * Contrôle du couple mot de passe / confirmation avant d'appeler Supabase.
- * Un champ vide et une non-concordance ne donnent pas le même message.
+ * Checks the password / confirmation pair before calling Supabase. An empty
+ * field and a mismatch give different messages.
  */
 export function validateNewPassword(
     password: string | null | undefined,

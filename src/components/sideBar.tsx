@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import Image from "next/image";
 import { ChevronDown, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -19,19 +19,19 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useSearchParams } from "next/navigation";
 import { updateUserClub } from "@/api/db/users";
+import { toast } from "@/hooks/use-toast";
 import packageJson from "../../package.json";
 import { cn } from "@/lib/utils";
-import { getAllUserRequestedClubID } from "@/api/db/club";
-import { getMaintenanceAlerts } from "@/api/db/maintenance";
-import { getPendingBaptemeCount } from "@/api/db/bapteme";
-import { MAINTENANCE_ALERTS_EVENT } from "@/lib/maintenanceEvents";
-import { BAPTEME_REQUESTS_EVENT } from "@/lib/baptemeEvents";
+import type { NavigationCounts } from "@/hooks/useNavigationCounts";
+import { useCurrentClub } from "@/app/context/useCurrentClub";
+import { formatCents, isBookingGatedRole } from "@/lib/wallet";
 
 interface props {
     clubsProp: Club[]
+    counts: NavigationCounts
 }
 
-const SideBar = ({ clubsProp }: props) => {
+const SideBar = ({ clubsProp, counts }: props) => {
     const pathname = usePathname();
     const router = useRouter();
     const { currentUser } = useCurrentUser();
@@ -39,95 +39,9 @@ const SideBar = ({ clubsProp }: props) => {
     const searchParams = useSearchParams();
     const clubID = searchParams.get("clubID");
     const [clubForAdmin, setClubForAdmin] = React.useState<string | null>(clubID);
-    const [refreshTrigger, setRefreshTrigger] = React.useState(0);
-
-    // Nouvel état pour le nombre de demandes en attente
-    const [requestCount, setRequestCount] = React.useState(0);
-    // Nombre d'avions ayant au moins un rappel de maintenance en retard.
-    const [maintenanceCount, setMaintenanceCount] = React.useState(0);
-    // Nombre de demandes de baptême en attente que l'utilisateur peut traiter.
-    const [baptemeCount, setBaptemeCount] = React.useState(0);
-
-    // --- EFFECT: Récupérer les demandes en attente ---
-    useEffect(() => {
-        const fetchRequests = async () => {
-            // Définition explicite des rôles pour TypeScript
-            const allowedRoles: userRole[] = [userRole.ADMIN, userRole.OWNER, userRole.MANAGER];
-
-            // Vérification si l'utilisateur a le droit de voir les demandes
-            const canManage = currentUser?.role && allowedRoles.includes(currentUser.role);
-
-            if (clubID && canManage) {
-                try {
-                    const requests = await getAllUserRequestedClubID(clubID);
-                    // Mise à jour du compteur si la réponse est un tableau
-                    if (Array.isArray(requests)) {
-                        setRequestCount(requests.length);
-                    }
-                } catch (error) {
-                }
-            }
-        };
-
-        // Appel immédiat au chargement du composant
-        fetchRequests();
-
-        // --- GESTION DE L'AUTO-REFRESH ---
-
-        // Fonction qui sera appelée quand l'événement est déclenché
-        const handleRefresh = () => {
-            // On incrémente ce compteur, ce qui modifie une dépendance du useEffect
-            // et force React à relancer 'fetchRequests()'
-            setRefreshTrigger((prev) => prev + 1);
-        };
-
-        // On écoute l'événement global personnalisé
-        window.addEventListener('refresh-club-requests', handleRefresh);
-
-        // Fonction de nettoyage (très important pour éviter les fuites de mémoire)
-        return () => {
-            window.removeEventListener('refresh-club-requests', handleRefresh);
-        };
-
-    }, [clubID, currentUser, refreshTrigger]);
-
-    // --- EFFECT: Récupérer les rappels de maintenance en retard ---
-    useEffect(() => {
-        if (!clubID) return;
-
-        const fetchAlerts = async () => {
-            try {
-                const res = await getMaintenanceAlerts(clubID);
-                setMaintenanceCount(res.count);
-            } catch {
-            }
-        };
-
-        fetchAlerts();
-
-        // Recalcul quand la maintenance change (ajout/suppression rappel/intervention).
-        window.addEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
-        return () => window.removeEventListener(MAINTENANCE_ALERTS_EVENT, fetchAlerts);
-    }, [clubID, currentUser]);
-
-    // --- EFFECT: Récupérer les baptêmes en attente ---
-    useEffect(() => {
-        if (!clubID) return;
-
-        const fetchBaptemes = async () => {
-            try {
-                const res = await getPendingBaptemeCount(clubID);
-                setBaptemeCount(res.count);
-            } catch {
-            }
-        };
-
-        fetchBaptemes();
-
-        // Recalcul quand une demande de baptême est validée/refusée.
-        window.addEventListener(BAPTEME_REQUESTS_EVENT, fetchBaptemes);
-        return () => window.removeEventListener(BAPTEME_REQUESTS_EVENT, fetchBaptemes);
-    }, [clubID, currentUser]);
+    const { requestCount, maintenanceCount, baptemeCount, walletAlert, wallet } = counts;
+    const { currentClub } = useCurrentClub();
+    const showBalance = wallet.enabled && isBookingGatedRole(currentUser?.role) && wallet.balanceCents != null;
 
     const handleNavigation = (href: string) => {
         router.push(href);
@@ -138,11 +52,17 @@ const SideBar = ({ clubsProp }: props) => {
         signOut();
     };
 
-    const handleClubChange = async (clubID: string) => {
-        setClubForAdmin(clubID);
+    const handleClubChange = async (newClubID: string) => {
+        setClubForAdmin(newClubID);
         if (currentUser?.id) {
-            await updateUserClub(currentUser.id, clubID);
-            window.location.href = `/calendar?clubID=${clubID}`;
+            const res = await updateUserClub(currentUser.id, newClubID);
+            if ('error' in res) {
+                setClubForAdmin(clubID);
+                toast({ title: "Changement de club impossible", description: res.error, variant: "destructive" });
+                return;
+            }
+            // Full reload: user / club contexts are re-read server-side.
+            window.location.assign(`/calendar?clubID=${newClubID}`);
         }
     };
 
@@ -160,7 +80,6 @@ const SideBar = ({ clubsProp }: props) => {
 
     return (
         <aside className="hidden lg:flex w-60 h-screen bg-[#1A1B1E] text-slate-300 flex-col transition-all duration-300 z-20 border-r border-white/5">
-            {/* --- HEADER : LOGO --- */}
             <div className="h-20 flex items-center px-6 border-b border-white/5">
                 <button
                     onClick={() => handleNavigation("/")}
@@ -177,7 +96,7 @@ const SideBar = ({ clubsProp }: props) => {
                 </button>
             </div>
 
-            {/* --- SECTION ADMIN : SELECTEUR CLUB --- */}
+            {/* --- ADMIN SECTION: CLUB SELECTOR --- */}
             {currentUser?.role === userRole.ADMIN && (
                 <div className="px-4 my-6">
                     <DropdownMenu>
@@ -209,26 +128,27 @@ const SideBar = ({ clubsProp }: props) => {
                 </div>
             )}
 
-            {/* --- NAVIGATION --- */}
             <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
                 <div className="space-y-1">
                     <p className="px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Principal</p>
                     <nav className="space-y-1">
                         {navigationLinks
                             .filter((link) => link.roles.includes(currentUser?.role as userRole))
+                            .filter((link) => !link.requiresWallet || !!currentClub?.walletEnabled)
                             .map((link) => {
                                 const IconComponent = link.icon;
                                 const isActive = pathname === link.path;
 
-                                // Badge par onglet : demandes d'adhésion + baptêmes en
-                                // attente pour "Club", rappels de maintenance pour "Avions".
+                                // Badge per tab: membership requests + pending discovery flights for "Club",
+                                // maintenance reminders for "Planes".
                                 const badgeCount =
                                     link.name === "Club" || link.name === "Membres"
                                         ? requestCount + baptemeCount
                                         : link.name === "Avions"
                                             ? maintenanceCount
                                             : 0;
-                                const showBadge = badgeCount > 0;
+                                const isWalletAlert = link.path === "/wallet" && walletAlert;
+                                const showBadge = badgeCount > 0 || isWalletAlert;
 
                                 return (
                                     <Link
@@ -251,10 +171,9 @@ const SideBar = ({ clubsProp }: props) => {
                                         <span className="relative z-10 flex-1 flex justify-between items-center">
                                             {link.name}
 
-                                            {/* --- BULLE DE NOTIFICATION --- */}
                                             {showBadge && (
                                                 <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-sm ring-2 ring-[#1A1B1E] animate-in zoom-in-50 duration-300">
-                                                    {badgeCount}
+                                                    {isWalletAlert ? "!" : badgeCount}
                                                 </span>
                                             )}
                                         </span>
@@ -265,7 +184,6 @@ const SideBar = ({ clubsProp }: props) => {
                 </div>
             </div>
 
-            {/* --- FOOTER : PROFIL & LOGOUT --- */}
             <div className="p-4 border-t border-white/5 bg-black/20">
                 <Link
                     href={`/profile?clubID=${currentUser?.clubID}`}
@@ -288,6 +206,14 @@ const SideBar = ({ clubsProp }: props) => {
                         <p className="text-xs text-slate-500 truncate">
                             {getRoleLabel(currentUser?.role)}
                         </p>
+                        {showBalance && (
+                            <p className={cn(
+                                "text-xs font-mono tabular-nums truncate",
+                                wallet.state === "blocked" ? "text-red-300" : wallet.state === "low" ? "text-amber-300" : "text-emerald-300"
+                            )}>
+                                Solde : {formatCents(wallet.balanceCents as number)}
+                            </p>
+                        )}
                     </div>
                 </Link>
 
@@ -302,9 +228,7 @@ const SideBar = ({ clubsProp }: props) => {
                     </button>
                 </div>
 
-                {/* Version + date, comme dans le menu mobile (navBar.tsx). Sur sa
-                    propre ligne : la sidebar ne fait que 240px et le libellé
-                    déborderait à côté du bouton de déconnexion. */}
+                {/* Version + date, as in the mobile menu (navBar.tsx). On its own line: the sidebar is only 240px wide and the label would overflow next to the logout button. */}
                 <p className="text-center pt-2 text-[10px] text-slate-600 font-mono">
                     v{packageJson.version} • {packageJson.date}
                 </p>

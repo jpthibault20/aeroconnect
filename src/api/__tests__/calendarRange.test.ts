@@ -3,15 +3,14 @@ import { flight_sessions } from "@prisma/client";
 import { getSessionsOfWeek } from "../date";
 
 /**
- * getSessionsOfWeek ne lit que `id` et `sessionDateStart` : on construit des
- * objets minimalistes plutôt qu'un flight_sessions complet (même approche que
- * les autres tests de règles pures, cf. CLAUDE.md).
+ * getSessionsOfWeek only reads `id` and `sessionDateStart`, so minimal objects
+ * are enough instead of full flight_sessions.
  */
 const makeSession = (id: string, start: Date) =>
     ({ id, sessionDateStart: start } as flight_sessions);
 
-// Mercredi 8 avril 2026, construit en LOCAL comme la date de navigation du
-// calendrier. La semaine attendue va du lundi 6 au dimanche 12 avril.
+// Wednesday April 8 2026, built in LOCAL time like the calendar's navigation
+// date. The expected week runs from Monday 6 to Sunday 12 April.
 const wednesday = new Date(2026, 3, 8, 12, 0, 0);
 
 describe("getSessionsOfWeek", () => {
@@ -31,9 +30,8 @@ describe("getSessionsOfWeek", () => {
     });
 
     it("compare les créneaux sur leurs composantes UTC (wall-clock)", () => {
-        // Stocké à 23:00 UTC le dimanche : reste dans la semaine, quel que soit
-        // le fuseau du navigateur (une lecture locale le basculerait au lundi
-        // suivant à l'est de Greenwich).
+        // Stored at 23:00 UTC on Sunday: stays in the week whatever the browser time
+        // zone (a local read would push it to the next Monday east of Greenwich).
         const lateSunday = makeSession("late", new Date(Date.UTC(2026, 3, 12, 23, 0)));
 
         expect(getSessionsOfWeek(wednesday, [lateSunday]).map((s) => s.id)).toEqual(["late"]);

@@ -1,12 +1,10 @@
 /**
- * @file PlanePageComponent.tsx
- * @brief Component for displaying flight sessions and filters.
- * * @details
- * Updated design to match Aero Connect modern dashboard style.
+ * @file FlightsPageComponent.tsx
+ * @brief Displays flight sessions and filters.
  */
 
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import TableComponent from "@/components/flights/TableComponent";
 import Filter from '@/components/flights/Filter';
 import { useCurrentUser } from '@/app/context/useCurrentUser';
@@ -16,8 +14,6 @@ import DeleteFlightSession from '../DeleteFlightSession';
 import { isSameDay } from 'date-fns';
 import { DateValue } from "@internationalized/date";
 import { BaptemePendingProvider } from '@/components/calendar/BaptemePendingContext';
-
-// Icônes (Optionnel : si tu as lucide-react ou heroicons, c'est mieux d'ajouter des icônes visuelles)
 
 interface Props {
     sessionsProp: flight_sessions[];
@@ -35,7 +31,6 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
     const [selectedStudents, setSelectedStudents] = useState<string>("al");
     const [status, setStatus] = useState<StatusType>("al");
 
-    // Initialisation du state (inchangé)
     const [sessions, setSessions] = useState<flight_sessions[]>(() => {
         if (currentUser?.role === userRole.STUDENT || currentUser?.role === userRole.PILOT || currentUser?.role === userRole.USER) {
             return sessionsProp.filter(session => session.studentID === currentUser?.id);
@@ -48,12 +43,11 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
         }
     });
 
-    const [filteredSessions, setFilteredSessions] = useState(sessions);
     const planes = planesProp.filter((p) => currentUser?.classes.includes(p.classes));
 
-    // Logique de filtrage (inchangé)
-    useEffect(() => {
-        const filtered = sessions.filter(session => {
+    // Filtering: list derived from the sessions and the active filters.
+    const filteredSessions = useMemo(() => {
+        return sessions.filter(session => {
             let isValid = true;
             if (status === "available") isValid = isValid && session.studentID === null;
             if (status === "unavailable") isValid = isValid && session.studentID !== null;
@@ -66,18 +60,14 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
             }
             return isValid;
         });
-        setFilteredSessions(filtered);
     }, [status, filterDate, sessions, selectedPlane, selectedInstructor, selectedStudents]);
 
 
-    // --- RENDU ---
-
     return (
-        // Pas de préchargement ici (la table n'a pas de plage bornée) : le
-        // provider sert juste à ce que la popup d'un vol puisse charger et
-        // mémoriser une demande de baptême à valider, comme au calendrier.
+        // No prefetch here (the table has no bounded range): the provider only lets a
+        // flight's popup load and remember a discovery-flight request to validate, as in
+        // the calendar.
         <BaptemePendingProvider>
-        {/* 1. Fond plus léger et moderne (Slate-50 au lieu de Gray-200) */}
         <div className='h-full min-h-screen bg-slate-50 p-6 md:p-8 font-sans text-slate-800'>
 
             {/* Header Section */}
@@ -85,7 +75,6 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
                 <div className='flex items-center space-x-3'>
                     <h1 className='font-bold text-3xl text-slate-900 tracking-tight'>Mes vols</h1>
 
-                    {/* Badge compteur stylisé */}
                     {currentUser?.role !== userRole.USER && (
                         <span className='px-3 py-1 bg-white text-purple-600 border border-purple-100 font-semibold rounded-full text-sm shadow-sm'>
                             {filteredSessions.length} vols
@@ -96,7 +85,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
                 {/* Action Bar */}
                 <div className='flex items-center gap-3'>
 
-                    {/* Zone de suppression conditionnelle (Stylisée en mode "Danger") */}
+                    {/* Bulk delete area (conditional) */}
                     {sessionChecked.length > 0 && (currentUser?.role === userRole.ADMIN || currentUser?.role === userRole.INSTRUCTOR || currentUser?.role === userRole.OWNER || currentUser?.role === userRole.MANAGER) && (
                         <DeleteFlightSession
                             description={`${sessionChecked.length} vols vont être supprimés définitivement`}
@@ -110,7 +99,6 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
                         </DeleteFlightSession>
                     )}
 
-                    {/* Groupe Filtre & Ajout */}
                     <div className='flex items-center space-x-2 '>
                         <Filter
                             status={status}
@@ -126,7 +114,7 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
                             setSelectedStudents={setSelectedStudents}
                         />
 
-                        <div className='h-6 w-[1px] bg-slate-200 mx-1'></div> {/* Séparateur vertical visuel */}
+                        <div className='h-6 w-[1px] bg-slate-200 mx-1'></div>
 
                         <div className='hidden lg:block'>
                             <NewSession
@@ -148,11 +136,9 @@ const FlightsPageComponent = ({ sessionsProp, planesProp, usersProp }: Props) =>
                 </div>
             </div>
 
-            {/* Content Card */}
-            {/* C'est ici que se joue le design "Aero Connect" : une carte blanche, ombrée, qui contient la table */}
             <div className='bg-white border border-slate-200 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden'>
 
-                {/* Si la table est vide, on peut afficher un état vide (optionnel mais recommandé) */}
+                {/* Empty state when the table has no rows */}
                 {filteredSessions.length === 0 ? (
                     <div className="p-10 text-center text-slate-400">
                         <p>Aucun vol trouvé pour ces critères.</p>

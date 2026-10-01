@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Plane, BookOpen, ChevronLeft, ChevronRight, ArrowRight, RotateCw, ArrowUp, ArrowDown } from "lucide-react";
+import { Plane, ChevronLeft, ChevronRight, ArrowRight, RotateCw, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { shouldShowStudent } from "@/lib/logbookDisplay";
 
@@ -28,8 +28,8 @@ const PAGE_SIZE = 50;
 interface Props {
     logs: flight_logs[];
     planes: planes[];
-    // Lecture seule : un membre non gestionnaire (ex : élève propriétaire)
-    // consulte le carnet de route de SA machine mais ne peut ni éditer ni signer.
+    // Read-only: a non-management member (e.g. a student owning a plane) views THEIR
+    // plane's logbook but can neither edit nor sign.
     readOnly?: boolean;
     onPlaneChange?: (planeID: string) => void;
     onFilteredLogsChange?: (logs: flight_logs[]) => void;
@@ -75,12 +75,17 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = fal
         return sorted;
     }, [logsProp, selectedPlaneID, natureFilter, onlyUnsigned, sortDir]);
 
-    useEffect(() => {
+    // Back to the first page when filters or sorting change (adjusted during render
+    // rather than in an effect: no intermediate render).
+    const pageResetKey = JSON.stringify([selectedPlaneID, natureFilter, onlyUnsigned, sortDir]);
+    const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey);
+    if (prevPageResetKey !== pageResetKey) {
+        setPrevPageResetKey(pageResetKey);
         setPage(0);
-    }, [selectedPlaneID, natureFilter, onlyUnsigned, sortDir]);
+    }
 
-    // Hobbs courant par avion, pour estimer une durée provisoire des vols non
-    // signés (hobbsStart pas encore figé).
+    // Current Hobbs per plane, to estimate a provisional duration for unsigned
+    // flights (hobbsStart not frozen yet).
     const planeHobbsMap = useMemo(() => {
         const m = new Map<string, number | null>();
         for (const p of planesList) m.set(p.id, p.hobbsTotal ?? null);
@@ -88,7 +93,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = fal
     }, [planesList]);
 
     useEffect(() => {
-        // Export officiel : on ne transmet que les vols signés (durée définitive).
+        // Official export: only signed flights are passed on (final duration).
         onFilteredLogsChange?.(planeLogs.filter((l) => l.pilotSigned));
     }, [planeLogs, onFilteredLogsChange]);
 
@@ -106,14 +111,14 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = fal
     }, [onLogUpdated]);
 
     const handleRowClick = useCallback(async (log: flight_logs) => {
-        // Lecture seule : pas d'ouverture du dialog d'édition.
+        // Read-only: do not open the edit dialog.
         if (readOnly) return;
         setEditingLog(log);
         setEditDefaultHobbsStart(undefined);
         setEditOpen(true);
 
-        // Entrée historique sans début figé : pré-remplir avec le hobbsTotal
-        // courant de l'avion (figé ensuite à la signature).
+        // Historical entry without a frozen start: prefill with the plane's current
+        // hobbsTotal (frozen later on signing).
         if (log.planeID && log.hobbsStart == null) {
             const hobbs = await getPlaneHobbs(log.planeID);
             if (hobbs != null) setEditDefaultHobbsStart(hobbs);
@@ -392,15 +397,15 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = fal
                                 )}
                                 onClick={readOnly ? undefined : () => handleRowClick(log)}
                             >
-                                {/* Ligne 1 : date + statut signé */}
+                                {/* Line 1: date + signed status */}
                                 <div className="flex items-center justify-between gap-2">
                                     <span className="text-sm font-semibold text-slate-800">
                                         {new Date(log.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                                     </span>
-                                    <SignFlightLogButton log={log} onSigned={handleSigned} readOnly={readOnly} />
+                                    <SignFlightLogButton log={log} onSigned={handleSigned} onTriggerEdit={readOnly ? undefined : () => handleRowClick(log)} readOnly={readOnly} />
                                 </div>
 
-                                {/* Machine : nom + immatriculation */}
+                                {/* Plane: name + registration */}
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-800">
                                         <Plane className="w-3.5 h-3.5 text-[#774BBE]" />
@@ -411,7 +416,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = fal
                                     </span>
                                 </div>
 
-                                {/* Ligne 2 : pilote (+ élève si instruction) + durée */}
+                                {/* Line 2: pilot (+ student for instruction) + duration */}
                                 <div className="flex items-center gap-2">
                                     <div className="flex flex-col leading-tight min-w-0">
                                         <span className="text-sm font-medium text-slate-700 truncate">
@@ -435,7 +440,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = fal
                                     </span>
                                 </div>
 
-                                {/* Ligne 3 : nature + trajet */}
+                                {/* Line 3: flight type + route */}
                                 <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
                                     <span>{formatNature(log.flightNature, log.instructionSubType)}</span>
                                     {log.departureAirfield && (
@@ -459,7 +464,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = fal
                                     )}
                                 </div>
 
-                                {/* Ligne 4 : hobbs + carb + anomalie */}
+                                {/* Line 4: Hobbs + fuel + anomaly */}
                                 <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
                                     {log.hobbsStart != null && log.hobbsEnd != null && (
                                         <span className="font-mono tabular-nums">
@@ -485,7 +490,7 @@ const AircraftLogbookTab = ({ logs: logsProp, planes: planesList, readOnly = fal
                 </>
             )}
 
-            {/* Dialog d'édition au clic sur une ligne (jamais en lecture seule) */}
+            {/* Edit dialog on row click (never in read-only mode) */}
             {!readOnly && (
                 <CompleteFlightDialog
                     log={editingLog}

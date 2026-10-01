@@ -22,13 +22,13 @@ function utcDate(year: number, month: number, day: number, hour: number, minute:
     return new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
 }
 
-// ─── Données ───
+// ─── Data ───
 
 const USERS = [
-    // Instructeurs
+    // Instructors
     { firstName: "Marc", lastName: "Delacroix", email: "marc.delacroix@fictif.local", phone: "0601010101", role: "INSTRUCTOR" as const, classes: [3, 6] },
     { firstName: "Claire", lastName: "Beaumont", email: "claire.beaumont@fictif.local", phone: "0602020202", role: "INSTRUCTOR" as const, classes: [3, 6] },
-    // Élèves
+    // Students
     { firstName: "Julien", lastName: "Morel", email: "julien.morel@fictif.local", phone: "0603030303", role: "STUDENT" as const, classes: [3] },
     { firstName: "Manon", lastName: "Dubois", email: "manon.dubois@fictif.local", phone: "0604040404", role: "STUDENT" as const, classes: [3] },
     { firstName: "Romain", lastName: "Leroy", email: "romain.leroy@fictif.local", phone: "0605050505", role: "STUDENT" as const, classes: [3] },
@@ -56,7 +56,7 @@ const COMMENTS_STUDENT = [
 ];
 
 async function main() {
-    // Récupérer ton profil pour connaître le club
+    // Look up your profile to get the club
     const me = await prisma.user.findFirst({ where: { email: "tjeanpierre757@gmail.com" } });
     if (!me || !me.clubID) {
         console.log("❌ Profil ou club introuvable");
@@ -65,13 +65,12 @@ async function main() {
 
     const clubID = me.clubID;
 
-    // Récupérer le club pour l'airfield
     const club = await prisma.club.findUnique({ where: { id: clubID } });
     const airfield = club?.defaultAirfield ?? "LFXX";
 
     console.log(`🏢 Club: ${clubID} (${club?.Name})\n`);
 
-    // ─── Utilisateurs ───
+    // ─── Users ───
     console.log("👥 Création des utilisateurs...");
     const createdUsers: { id: string; firstName: string; lastName: string; email: string; phone: string | null; role: string }[] = [];
 
@@ -101,7 +100,7 @@ async function main() {
     const instructors = createdUsers.filter((u) => u.role === "INSTRUCTOR");
     const students = createdUsers.filter((u) => u.role === "STUDENT");
 
-    // ─── Avions ───
+    // ─── Planes ───
     console.log("\n✈️  Création des avions...");
     const createdPlanes: { id: string; name: string; immatriculation: string; classes: number; hobbsTotal: number | null }[] = [];
 
@@ -122,7 +121,7 @@ async function main() {
         console.log(`   ✅ ${pl.name} (${pl.immatriculation}) — classe ${pl.classes}`);
     }
 
-    // ─── Tâches de maintenance ───
+    // ─── Maintenance tasks ───
     console.log("\n🔧 Création des tâches de maintenance...");
     for (const plane of createdPlanes) {
         const existingTask = await prisma.maintenanceTask.findFirst({
@@ -147,30 +146,27 @@ async function main() {
         console.log(`   ✅ Maintenance ${plane.name}`);
     }
 
-    // ─── Sessions de vol passées (janvier → mars 2026) ───
+    // ─── Past flight sessions (January → March 2026) ───
     console.log("\n📅 Création des séances (janvier - mars 2026)...");
 
     let sessionCount = 0;
     let reservedCount = 0;
     let freeCount = 0;
 
-    // Du 5 janvier 2026 (lundi) au 31 mars 2026
-    const startDate = new Date(2026, 0, 5); // 5 janvier 2026
-    const endDate = new Date(2026, 2, 31);  // 31 mars 2026
+    const startDate = new Date(2026, 0, 5);
+    const endDate = new Date(2026, 2, 31);
 
     let currentWeekStart = new Date(startDate);
 
     while (currentWeekStart <= endDate) {
-        // 3-5 jours de vol par semaine
-        const flyingDays = [2, 3, 6]; // mardi, mercredi, samedi
-        if (Math.random() > 0.4) flyingDays.push(4); // jeudi souvent
-        if (Math.random() > 0.7) flyingDays.push(5); // vendredi parfois
+        const flyingDays = [2, 3, 6]; // Tue, Wed, Sat
+        if (Math.random() > 0.4) flyingDays.push(4); // often Thursday
+        if (Math.random() > 0.7) flyingDays.push(5); // sometimes Friday
 
         for (const dayOffset of flyingDays) {
             const sessionDate = addDays(currentWeekStart, dayOffset - 1);
             if (sessionDate > endDate) break;
 
-            // 3-5 créneaux par jour
             const slotsCount = randomInt(3, 5);
             const startHour = randomInt(8, 10);
 
@@ -183,7 +179,7 @@ async function main() {
                 const duration = randomItem([30, 45, 60, 60, 60, 90]);
                 const nature = randomItem(NATURES);
 
-                // ~65% des séances sont réservées (avec élève), ~35% restent libres
+                // ~65% of sessions are booked (with a student), ~35% stay free
                 const isReserved = Math.random() < 0.65;
                 const student = isReserved ? randomItem(students) : null;
 
@@ -234,7 +230,7 @@ async function main() {
 
     console.log(`   ✅ ${sessionCount} séances créées (${reservedCount} réservées, ${freeCount} libres)`);
 
-    // ─── Résumé ───
+    // ─── Summary ───
     console.log("\n🎉 Seed terminé !");
     console.log(`   Club: ${clubID}`);
     console.log(`   Utilisateurs: ${createdUsers.length} (${instructors.length} instructeurs, ${students.length} élèves)`);

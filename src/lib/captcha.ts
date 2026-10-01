@@ -1,21 +1,20 @@
 /**
- * Vérification de captcha pour les formulaires publics (réservation baptême).
+ * Captcha verification for public forms (discovery-flight booking).
  *
- * V1 : DIFFÉRÉ. L'emplacement et le point de vérification serveur sont en place,
- * mais aucun fournisseur n'est branché — la protection anti-spam repose pour
- * l'instant sur le TTL du hold et l'anti-double-hold. Le jour où l'on active
- * Cloudflare Turnstile (ou hCaptcha), il suffit de renseigner les variables
- * d'environnement et de dé-commenter l'appel siteverify ci-dessous.
+ * V1: DEFERRED. The slot and the server verification point are in place, but no
+ * provider is wired: anti-spam currently relies on the hold TTL and the
+ * anti-double-hold rule. When Cloudflare Turnstile (or hCaptcha) is enabled, just
+ * set the environment variables and uncomment the siteverify call below.
  *
- * Env attendues le moment venu :
+ * Expected env vars when the time comes:
  *   - NEXT_PUBLIC_TURNSTILE_SITE_KEY (client)
- *   - TURNSTILE_SECRET_KEY          (serveur, jamais exposée)
+ *   - TURNSTILE_SECRET_KEY          (server, never exposed)
  */
 
 const CAPTCHA_ENABLED = process.env.TURNSTILE_SECRET_KEY != null;
 
 export async function verifyCaptcha(token: string | undefined): Promise<boolean> {
-    // V1 : captcha désactivé => on laisse passer.
+    // V1: captcha disabled => let it through.
     if (!CAPTCHA_ENABLED) return true;
 
     if (!token) return false;

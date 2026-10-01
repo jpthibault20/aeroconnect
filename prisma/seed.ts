@@ -30,7 +30,7 @@ const AIRFIELD = "LFXX";
 const DAYS_FR = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 const DEFAULT_MINUTES = ["00", "15", "30", "45"];
 
-// ─── Données réalistes ───
+// ─── Realistic data ───
 
 const INSTRUCTORS = [
     { firstName: "Jean", lastName: "Dupont", email: "jean.dupont@seed.local", phone: "0601020304" },
@@ -73,7 +73,7 @@ const COMMENTS_STUDENT = [
 async function main() {
     console.log("🌱 Début du seeding...\n");
 
-    // ─── Nettoyage données seed précédentes ───
+    // ─── Clean up previous seed data ───
     console.log("🧹 Nettoyage des données seed existantes...");
     await prisma.flight_logs.deleteMany({ where: { clubID: CLUB_ID } });
     await prisma.flight_sessions.deleteMany({ where: { clubID: CLUB_ID } });
@@ -153,13 +153,13 @@ async function main() {
         )
     );
 
-    // Mettre à jour OwnerId du club
+    // Update the club's OwnerId
     await prisma.club.update({
         where: { id: CLUB_ID },
         data: { OwnerId: [createdInstructors[0].id] },
     });
 
-    // ─── Avions ───
+    // ─── Planes ───
     console.log("✈️  Création des avions...");
     const createdPlanes = await Promise.all(
         PLANES.map((p) =>
@@ -169,7 +169,7 @@ async function main() {
         )
     );
 
-    // ─── Tâches de maintenance ───
+    // ─── Maintenance tasks ───
     console.log("🔧 Création des tâches de maintenance...");
     for (const plane of createdPlanes) {
         await prisma.maintenanceTask.create({
@@ -185,30 +185,27 @@ async function main() {
         });
     }
 
-    // ─── Sessions de vol (janvier → aujourd'hui) ───
+    // ─── Flight sessions (January → today) ───
     console.log("📅 Création des sessions de vol...");
 
     const allUsers = [...createdInstructors, ...createdStudents, ...createdPilots];
     const class3Planes = createdPlanes.filter((p) => p.classes === 3);
 
     let sessionCount = 0;
-    const startDate = new Date(2025, 0, 6); // 6 janvier 2025 (lundi)
+    const startDate = new Date(2025, 0, 6); // Monday
     const today = new Date();
 
-    // Générer des sessions semaine par semaine
     let currentWeekStart = new Date(startDate);
 
     while (currentWeekStart < today) {
-        // 3-5 jours de vol par semaine (mardi, mercredi, samedi typiquement + aléatoire)
-        const flyingDays = [2, 3, 6]; // mar, mer, sam
-        if (Math.random() > 0.5) flyingDays.push(4); // jeudi parfois
-        if (Math.random() > 0.7) flyingDays.push(5); // vendredi rarement
+        const flyingDays = [2, 3, 6]; // Tue, Wed, Sat
+        if (Math.random() > 0.5) flyingDays.push(4); // sometimes Thursday
+        if (Math.random() > 0.7) flyingDays.push(5); // rarely Friday
 
         for (const dayOffset of flyingDays) {
             const sessionDate = addDays(currentWeekStart, dayOffset - 1);
             if (sessionDate > today) break;
 
-            // 3-6 créneaux par jour
             const slotsCount = randomInt(3, 6);
             const startHour = randomInt(8, 10);
 
@@ -222,7 +219,7 @@ async function main() {
                 const nature = randomItem(NATURES);
                 const isPast = sessionDate < today;
 
-                // ~80% des sessions passées ont un élève inscrit
+                // ~80% of past sessions have a student
                 const hasStudent = isPast && Math.random() < 0.8;
                 const student = hasStudent ? randomItem(createdStudents) : null;
 
@@ -265,19 +262,18 @@ async function main() {
             }
         }
 
-        // Semaine suivante
         currentWeekStart = addDays(currentWeekStart, 7);
     }
 
     console.log(`   ✅ ${sessionCount} sessions créées`);
 
-    // ─── Sessions futures (2 semaines) ───
+    // ─── Upcoming sessions (2 weeks) ───
     console.log("📅 Création des sessions futures...");
     let futureCount = 0;
     for (let dayOffset = 1; dayOffset <= 14; dayOffset++) {
         const futureDate = addDays(today, dayOffset);
         const dayOfWeek = futureDate.getDay();
-        if (dayOfWeek === 0 || dayOfWeek === 1) continue; // pas dim/lun
+        if (dayOfWeek === 0 || dayOfWeek === 1) continue; // not Sun/Mon
 
         const slotsCount = randomInt(3, 5);
         for (let slot = 0; slot < slotsCount; slot++) {
@@ -312,7 +308,7 @@ async function main() {
     }
     console.log(`   ✅ ${futureCount} sessions futures créées`);
 
-    // ─── Flight logs (auto-création simulée pour les sessions depuis juillet 2025) ───
+    // ─── Flight logs (simulated auto-creation for sessions since July 2025) ───
     console.log("📖 Création des entrées de carnet de vol...");
 
     const pastSessionsWithStudent = await prisma.flight_sessions.findMany({
@@ -330,7 +326,7 @@ async function main() {
     for (const session of pastSessionsWithStudent) {
         const plane = createdPlanes.find((p) => p.id === session.studentPlaneID);
 
-        // Entrée instructeur
+        // Instructor entry
         await prisma.flight_logs.create({
             data: {
                 clubID: CLUB_ID,
@@ -362,7 +358,7 @@ async function main() {
             },
         });
 
-        // Entrée élève
+        // Student entry
         await prisma.flight_logs.create({
             data: {
                 clubID: CLUB_ID,
@@ -397,7 +393,7 @@ async function main() {
     }
     console.log(`   ✅ ${logCount} entrées de carnet créées`);
 
-    // ─── Résumé ───
+    // ─── Summary ───
     console.log("\n🎉 Seeding terminé !");
     console.log(`   Club: ${CLUB_ID}`);
     console.log(`   Utilisateurs: ${allUsers.length} (${createdInstructors.length} instructeurs, ${createdStudents.length} élèves, ${createdPilots.length} pilotes)`);

@@ -21,8 +21,8 @@ const makeSession = (over: Partial<SessionKindLike> = {}): SessionKindLike => ({
 const baptemeSlot = { natureOfTheft: [NatureOfTheft.DISCOVERY] };
 
 /**
- * Règle produit : le marqueur du créneau n'est qu'une possibilité, c'est
- * l'inscription qui détermine la nature du vol.
+ * Product rule: the slot marker is only a possibility, the booking determines
+ * the flight type.
  */
 describe("resolveSessionKind — tant que personne n'est inscrit", () => {
     it("créneau libre → type non déterminé", () => {
@@ -30,8 +30,8 @@ describe("resolveSessionKind — tant que personne n'est inscrit", () => {
     });
 
     it("créneau baptême encore libre → toujours non déterminé", () => {
-        // Le créneau est proposé au public, mais un élève du club peut encore le
-        // prendre : rien n'est joué.
+        // The slot is offered to the public, but a club student can still take it:
+        // nothing is settled.
         expect(resolveSessionKind(makeSession({ ...baptemeSlot, studentID: null }))).toBe("UNDETERMINED");
     });
 
@@ -58,24 +58,24 @@ describe("resolveSessionKind — une fois quelqu'un inscrit", () => {
     });
 
     it("demande de baptême encore en attente (hold) → déjà Baptême", () => {
-        // Le créneau est bloqué par le hold : la nature est jouée, seule la
-        // validation manque.
+        // The slot is blocked by the hold: the type is settled, only validation is
+        // missing.
         expect(
             resolveSessionKind(makeSession({ ...baptemeSlot, studentID: BAPTEME_HOLD_STUDENT_ID }))
         ).toBe("BAPTEME");
     });
 
     it("élève du club sur un créneau BAPTÊME → Instruction, pas Baptême", () => {
-        // Cœur de la règle : le créneau était proposé aux baptêmes, mais c'est un
-        // membre qui l'a pris — le vol est de l'instruction.
+        // Heart of the rule: the slot was offered for discovery flights, but a member
+        // took it, so it is an instruction flight.
         expect(resolveSessionKind(makeSession({ ...baptemeSlot, studentID: MEMBER }))).toBe(
             "INSTRUCTION"
         );
     });
 
     it("invité externe sur un créneau ORDINAIRE → Instruction, pas Baptême", () => {
-        // « + Invité externe » (AddStudent) pose la même sentinelle sans que le
-        // club ait déclaré un baptême : les deux conditions sont nécessaires.
+        // "+ External guest" (AddStudent) sets the same sentinel without the club having
+        // declared a discovery flight: both conditions are required.
         expect(resolveSessionKind(makeSession({ studentID: GUEST_STUDENT_ID }))).toBe("INSTRUCTION");
     });
 

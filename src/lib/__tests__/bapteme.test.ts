@@ -34,7 +34,7 @@ const now = new Date("2026-07-22T12:00:00Z");
 const future = new Date("2026-07-23T10:00:00Z");
 const past = new Date("2026-07-21T10:00:00Z");
 
-// ─── Fabriques ───
+// ─── Factories ───
 
 const makeSlot = (over: Partial<BaptemeSlotLike> = {}): BaptemeSlotLike => ({
     studentID: null,
@@ -94,13 +94,13 @@ describe("isBaptemeSlotAvailable", () => {
     });
 });
 
-// ─── isBaptemeSlotAvailable : les deux référentiels de temps ───
+// ─── isBaptemeSlotAvailable: the two time references ───
 
 describe("isBaptemeSlotAvailable — slotNow (heure de pendule du club)", () => {
-    // Les créneaux sont stockés en wall-clock UTC. Comparés à l'instant réel,
-    // ceux d'il y a moins de 2 h (offset France l'été) passaient pour futurs.
+    // Slots are stored as UTC wall-clock. Compared to the real instant, those that
+    // started less than 2 h ago (France summer offset) looked upcoming.
     const slot = makeSlot({ sessionDateStart: "2026-08-12T15:00:00.000Z" });
-    // 13:30Z = 15:30 à Paris en août : le créneau de 15:00 a commencé.
+    // 13:30Z = 15:30 in Paris in August: the 15:00 slot has started.
     const instantReel = new Date("2026-08-12T13:30:00.000Z");
     const penduleClub = new Date("2026-08-12T15:30:00.000Z");
 
@@ -122,8 +122,8 @@ describe("isBaptemeSlotAvailable — slotNow (heure de pendule du club)", () => 
         const holds: BaptemeRequestLike[] = [
             { status: "PENDING", expiresAt: new Date("2026-08-12T14:00:00.000Z") },
         ];
-        // Le hold expire à 14:00Z, soit après l'instant réel (13:30Z) : encore
-        // actif. Jugé sur la pendule club (15:30Z) il paraîtrait expiré.
+        // The hold expires at 14:00Z, after the real instant (13:30Z): still active.
+        // Judged on the club clock (15:30Z) it would look expired.
         expect(isBaptemeSlotAvailable(plusTard, [clubPlane], holds, instantReel, penduleClub)).toBe(false);
     });
 
@@ -150,7 +150,7 @@ describe("filterBaptemePlanes", () => {
     });
 
     it("exclut les machines de classe incompatible avec le créneau", () => {
-        const planes = [makePlane({ id: "p1", classes: 1 })]; // créneau ne propose que la classe 3
+        const planes = [makePlane({ id: "p1", classes: 1 })]; // slot only offers class 3
         expect(filterBaptemePlanes(planes, slot)).toHaveLength(0);
     });
 
@@ -185,7 +185,7 @@ describe("filterBaptemePlanes", () => {
     });
 });
 
-// ─── Conflit d'appareil entre deux créneaux simultanés ───
+// ─── Plane conflict between two simultaneous slots ───
 
 describe("isBaptemeSlotAvailable — machines déjà engagées à cet horaire", () => {
     it("créneau dont l'unique machine est déjà prise ailleurs → indisponible", () => {
@@ -298,7 +298,7 @@ describe("nextBaptemeStatus", () => {
     });
 });
 
-// ─── Schéma zod de la demande publique ───
+// ─── Zod schema of the public request ───
 
 describe("baptemeRequestSchema", () => {
     const valid = {
@@ -338,7 +338,7 @@ describe("baptemeRequestSchema", () => {
     });
 });
 
-// ─── Interrupteur « baptême » à la création d'une séance ───
+// ─── "Discovery flight" switch when creating a session ───
 
 describe("natureOfTheftForBapteme — interrupteur de NewSession", () => {
     it("activé : pose le seul marqueur DISCOVERY", () => {
@@ -350,8 +350,8 @@ describe("natureOfTheftForBapteme — interrupteur de NewSession", () => {
     });
 
     it("le marqueur produit rend bien le créneau visible côté public", () => {
-        // Contrat entre l'interrupteur et getPublicBaptemeSlots (has: DISCOVERY) :
-        // si l'un des deux change, ce test casse.
+        // Contract between the switch and getPublicBaptemeSlots (has: DISCOVERY): if
+        // either changes, this test breaks.
         const slot = makeSlot({ natureOfTheft: natureOfTheftForBapteme(true) });
         expect(isBaptemeSlotAvailable(slot, [clubPlane], [], now)).toBe(true);
         expect(isBaptemeSlot(slot.natureOfTheft)).toBe(true);
@@ -369,7 +369,7 @@ describe("natureOfTheftForBapteme — interrupteur de NewSession", () => {
     });
 });
 
-// ─── Durée du hold ───
+// ─── Hold duration ───
 
 describe("computeHoldExpiry — durée de blocage d'un créneau", () => {
     it("le hold dure 24 h", () => {
@@ -390,8 +390,6 @@ describe("computeHoldExpiry — durée de blocage d'un créneau", () => {
         expect(hasActiveHold([{ status: "PENDING", expiresAt }], apres)).toBe(false);
     });
 });
-
-// ─── Libellé public d'un créneau ───
 
 // ─── groupBaptemeSlots ───
 
@@ -438,8 +436,7 @@ describe("groupBaptemeSlots", () => {
     });
 
     it("groupe en UTC : un créneau de fin de soirée reste sur son jour", () => {
-        // 23:30 wall-clock : une lecture en heure locale (UTC+2) le basculerait
-        // au lendemain 01:30.
+        // 23:30 wall-clock: a local-time read (UTC+2) would move it to 01:30 the next day.
         const days = groupBaptemeSlots([slot("s1", "2026-08-12T23:30:00.000Z")]);
         expect(days[0].dayKey).toBe("2026-08-12");
         expect(days[0].times[0].timeKey).toBe("23:30");
@@ -494,8 +491,7 @@ describe("groupBaptemeDaysByMonth", () => {
     });
 
     it("groupe en UTC : fin de mois en soirée ne bascule pas sur le mois suivant", () => {
-        // 23:30 wall-clock le 31 août : une lecture locale (UTC+2) le ferait
-        // passer au 1er septembre.
+        // 23:30 wall-clock on August 31: a local read (UTC+2) would move it to September 1.
         const days = groupBaptemeSlots([slot("s1", "2026-08-31T23:30:00.000Z")]);
         expect(groupBaptemeDaysByMonth(days)[0].monthKey).toBe("2026-08");
     });
@@ -508,7 +504,7 @@ describe("formatBaptemeMonthLabel", () => {
     });
 });
 
-// ─── Catalogues des points d'entrée « par appareil » / « par pilote » ───
+// ─── "By plane" / "by pilot" entry point catalogs ───
 
 describe("listBaptemePlanes", () => {
     const slot = (planes: { id: string; name: string }[]) => ({ planes });
@@ -579,7 +575,7 @@ describe("formatBaptemeSlotLabel — sélecteur de la page publique", () => {
     });
 
     it("lit les horaires en UTC (pas de décalage selon le fuseau du visiteur)", () => {
-        // 22:30 UTC = 00:30 le lendemain à Paris : la date ne doit pas basculer.
+        // 22:30 UTC = 00:30 the next day in Paris: the date must not change.
         const tard = { ...slot, sessionDateStart: "2026-08-12T22:30:00.000Z", durationMin: 30 };
         expect(formatBaptemeSlotLabel(tard)).toBe(
             "mercredi 12 août · 22:30 → 23:00 · Luc DUPONT"
@@ -598,7 +594,7 @@ describe("formatBaptemeSlotLabel — sélecteur de la page publique", () => {
     });
 });
 
-// ─── Formules (durée + tarif) ───
+// ─── Packages (duration + price) ───
 
 describe("canManageBaptemeOptions", () => {
     it("machine du club + rôle de gestion → autorisé", () => {

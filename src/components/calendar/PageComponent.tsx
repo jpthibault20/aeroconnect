@@ -10,19 +10,17 @@ import { resolveOfferedClasses } from '@/lib/planeVisibility';
 import { BaptemePendingProvider } from '@/components/calendar/BaptemePendingContext';
 
 /**
- * Hook personnalisé pour détecter si l'écran est de taille mobile ou desktop.
+ * Detects whether the screen is mobile or desktop sized.
  */
 const useScreenSize = () => {
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
-        const mediaQuery = window.matchMedia('(max-width: 1023px)'); // 768px est souvent le seuil pour mobile.
+        const mediaQuery = window.matchMedia('(max-width: 1023px)');
         const handleResize = () => setIsMobile(mediaQuery.matches);
 
-        // Détecter initialement la taille de l'écran
         handleResize();
 
-        // Ajouter un listener pour détecter les changements de taille
         mediaQuery.addEventListener('change', handleResize);
 
         return () => {
@@ -43,21 +41,30 @@ interface props {
 const PageComponent = ({ sessionsprops, planesProp, clubIDUrl, usersProps }: props) => {
     const isMobile = useScreenSize();
     const { currentUser } = useCurrentUser();
-    const [sessions, setSessions] = useState<flight_sessions[]>([]);
+    const userClasses = currentUser?.classes;
+    // Visible sessions: those offering at least one of the user's classes.
+    const filterSessions = () => sessionsprops.filter((s) => {
+        const offeredClasses = resolveOfferedClasses(s.planeID, s.classes, planesProp);
+        return userClasses?.some(cls => offeredClasses.includes(cls));
+    });
+    const [sessions, setSessions] = useState<flight_sessions[]>(filterSessions);
 
-    useEffect(() => {
-        setSessions(sessionsprops.filter((s) => {
-            const offeredClasses = resolveOfferedClasses(s.planeID, s.classes, planesProp);
-            return currentUser?.classes.some(cls => offeredClasses.includes(cls));
-        }));
-    }, [currentUser?.classes, sessionsprops, planesProp]);
+    // Sources changed: recompute the list (adjusted during render rather than in an
+    // effect). Local mutations via setSessions stay possible between source changes.
+    const [prevSources, setPrevSources] = useState({ sessionsprops, planesProp, userClasses });
+    if (
+        prevSources.sessionsprops !== sessionsprops ||
+        prevSources.planesProp !== planesProp ||
+        prevSources.userClasses !== userClasses
+    ) {
+        setPrevSources({ sessionsprops, planesProp, userClasses });
+        setSessions(filterSessions());
+    }
 
 
-    // Rendu conditionnel en fonction de la taille de l'écran
     return (
         <InitialLoading className="h-full w-full" clubIDURL={clubIDUrl}>
-            {/* Cache des demandes de baptême en attente, préchargé par chaque
-                vue sur sa propre plage affichée (semaine / jour). */}
+            {/* Cache of pending discovery-flight requests, prefetched by each view for its own displayed range (week / day). */}
             <BaptemePendingProvider>
                 {!isMobile ? (
                     <GlobalCalendarDesktop

@@ -4,7 +4,7 @@ import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 import { flight_logs } from '@prisma/client';
 import { computeFlightTimes, formatNature } from '@/lib/logbookCalc';
 
-// Une section = le carnet de route d'UNE machine (registration + logs).
+// A section = the logbook of ONE plane (registration + logs).
 export interface AircraftLogbookSection {
     planeRegistration: string;
     planeName: string;
@@ -12,7 +12,7 @@ export interface AircraftLogbookSection {
 }
 
 interface Props {
-    // Une ou plusieurs machines (export « Tous les aéronefs » = plusieurs sections).
+    // One or more planes ("All planes" export = several sections).
     sections: AircraftLogbookSection[];
     periodLabel: string;
 }
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     },
 });
 
-// Colonnes carnet de route (Art. 5.3.3)
+// Plane logbook columns (Art. 5.3.3)
 const columns = [
     { label: "Pilote", width: "14%" },
     { label: "Date", width: "6%" },
@@ -124,25 +124,25 @@ const columns = [
     { label: "Signé", width: "4%" },
 ];
 
-// Nombre de lignes tenant sur une page A4 paysage (en-tête de tableau + pied
-// de page compris). Volontairement conservateur : au-delà, @react-pdf coupe
-// lui-même la page et produit une page orpheline d'une ou deux lignes.
+// Number of rows fitting on a landscape A4 page (table header + footer
+// included). Deliberately conservative: beyond it @react-pdf breaks the page
+// itself and produces an orphan page of one or two rows.
 const ROWS_PER_PAGE = 29;
 
-// Une ligne du flux : séparateur de machine, vol, ou total de machine.
+// A row of the stream: plane separator, flight, or plane total.
 type LogbookRow =
     | { kind: "machine"; registration: string; name: string; continued: boolean }
     | { kind: "log"; log: flight_logs }
     | { kind: "total"; minutes: number; landings: number; fuel: number };
 
-// Aplatit toutes les sections en un seul flux de lignes : les machines se
-// suivent sur la même page, on ne repart en page neuve que lorsqu'elle est
-// pleine (et non à chaque changement de machine).
+// Flattens all sections into a single stream of rows: planes follow each other
+// on the same page, a new page only starts when the current one is full (not on
+// every plane change).
 const buildRows = (sections: AircraftLogbookSection[], withMachineHeaders: boolean): LogbookRow[] => {
     const rows: LogbookRow[] = [];
 
     for (const section of sections) {
-        // Ordre historique : du vol le plus ancien (en haut) au plus récent (en bas).
+        // Chronological order: oldest flight (top) to most recent (bottom).
         const logs = [...section.logs].sort(
             (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
         );
@@ -169,15 +169,15 @@ const buildRows = (sections: AircraftLogbookSection[], withMachineHeaders: boole
     return rows;
 };
 
-// Découpe le flux en pages pleines. Quand une machine déborde sur la page
-// suivante, on réinsère son intitulé suivi de « (suite) ».
+// Splits the stream into full pages. When a plane overflows onto the next page,
+// its heading is repeated followed by "(continued)".
 const paginate = (rows: LogbookRow[]): LogbookRow[][] => {
     const pages: LogbookRow[][] = [];
     let current: LogbookRow[] = [];
     let currentMachine: { registration: string; name: string } | null = null;
 
     for (const row of rows) {
-        // Évite un intitulé de machine seul en bas de page.
+        // Avoids a plane heading alone at the bottom of a page.
         const wouldOrphanHeader = row.kind === "machine" && current.length >= ROWS_PER_PAGE - 2;
 
         if (current.length >= ROWS_PER_PAGE || (wouldOrphanHeader && current.length > 0)) {
@@ -200,13 +200,13 @@ const paginate = (rows: LogbookRow[]): LogbookRow[][] => {
 };
 
 export const AircraftLogbookDocument = ({ sections, periodLabel }: Props) => {
-    // Au moins une section pour toujours produire un PDF valide (non vide).
+    // At least one section so a valid (non-empty) PDF is always produced.
     const safeSections = sections.length > 0
         ? sections
         : [{ planeRegistration: "", planeName: "", logs: [] }];
 
-    // Une seule machine : elle est déjà nommée dans le sous-titre, pas besoin
-    // de séparateur dans le tableau.
+    // A single plane is already named in the subtitle: no separator needed in the
+    // table.
     const multiMachine = safeSections.length > 1;
     const pages = paginate(buildRows(safeSections, multiMachine));
 

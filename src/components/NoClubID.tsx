@@ -33,7 +33,7 @@ const NoClubID = () => {
         try {
             const fetchedClubs = await getAllClubs();
             setClubs(fetchedClubs);
-        } catch (err) {
+        } catch {
             setError("Impossible de charger les clubs. Veuillez réessayer.");
         } finally {
             setLoading(false);
@@ -49,7 +49,6 @@ const NoClubID = () => {
         await signOut();
     };
 
-    // --- Gestion du Titre et Description dynamique ---
     const getHeaderContent = () => {
         if (currentUser?.clubIDRequest || requestClubID) {
             return { title: "Demande envoyée", desc: "En attente de validation." };
@@ -63,15 +62,12 @@ const NoClubID = () => {
     const headerContent = getHeaderContent();
 
     return (
-        // OVERLAY GLOBAL : z-[9999] assure que c'est au-dessus de tout le reste
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300">
 
             <Card className="w-full max-w-lg bg-white shadow-2xl border-none overflow-hidden flex flex-col max-h-[90vh]">
 
-                {/* --- Header avec Navigation --- */}
                 <CardHeader className="bg-slate-50 border-b border-slate-100 p-6 flex-shrink-0">
                     <div className="flex items-center gap-4">
-                        {/* Bouton Retour (si on est dans Création) */}
                         {newClub && !requestClubID && (
                             <Button
                                 variant="ghost"
@@ -97,7 +93,6 @@ const NoClubID = () => {
                     </div>
                 </CardHeader>
 
-                {/* --- Contenu Scrollable --- */}
                 <CardContent className="p-0 overflow-hidden flex-1 flex flex-col">
                     <div className="overflow-y-auto p-6 flex-1">
                         {currentUser?.clubIDRequest || requestClubID ? (
@@ -119,7 +114,6 @@ const NoClubID = () => {
                     </div>
                 </CardContent>
 
-                {/* --- Footer (Déconnexion) --- */}
                 <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-center flex-shrink-0">
                     <Button
                         variant="ghost"

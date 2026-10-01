@@ -6,17 +6,18 @@ import { useCurrentUser } from '@/app/context/useCurrentUser';
 import { deletePlane, updateOperationalByID } from '@/api/db/planes';
 import { toast } from '@/hooks/use-toast';
 import AlertConfirmDeleted from '../AlertConfirmDeleted';
-import UpdatePlanes from './UpdatePlanes'; // Ton composant d'édition
+import UpdatePlanes from './UpdatePlanes';
 import { Switch } from '@/components/ui/switch';
 import { clearCache } from '@/lib/cache';
 import { aircraftClasses } from '@/config/config';
-import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, User, Wrench, AlertTriangle, Ticket } from 'lucide-react';
+import { Plane as PlaneIcon, Trash2, Pencil, CheckCircle2, Ban, Lock, Gauge, User, Wrench, AlertTriangle, Euro } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { canManagePlane, canAccessMaintenance, isPrivatePlane } from '@/lib/planeVisibility';
 import { canManageBaptemeOptions } from '@/lib/bapteme';
 import MaintenanceDialog from './maintenance/MaintenanceDialog';
-import BaptemeOptionsDialog from './bapteme/BaptemeOptionsDialog';
+import PlaneTariffsDialog from './PlaneTariffsDialog';
 import PlaneThumbnail from './PlaneThumbnail';
+import PlaneRateBadge from './PlaneRateBadge';
 
 interface Props {
     planesList: planes[];
@@ -39,7 +40,8 @@ const MobilePlaneList = ({ planesList, setPlanes, ownerNames, onOwnerNameResolve
     return (
         <div className="flex flex-col gap-4 pb-20">
             {planesList.map((plane) => (
-                // On délègue le rendu à un sous-composant pour isoler l'état (loading, operational...) de chaque avion
+                // Rendering is delegated to a sub-component to isolate each plane's state
+                // (loading, operational...)
                 <MobilePlaneCard
                     key={plane.id}
                     initialPlane={plane}
@@ -54,8 +56,8 @@ const MobilePlaneList = ({ planesList, setPlanes, ownerNames, onOwnerNameResolve
     );
 };
 
-// --- SOUS-COMPOSANT : CARTE INDIVIDUELLE ---
-// Il contient toute la logique métier (Delete, Update Status) copiée de TableRowComponent
+// --- SUB-COMPONENT: SINGLE CARD ---
+// Holds the business logic (Delete, Update Status) mirrored from TableRowComponent
 interface CardProps {
     initialPlane: planes;
     setPlanes: React.Dispatch<React.SetStateAction<planes[]>>;
@@ -73,12 +75,12 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
     const [showBapteme, setShowBapteme] = useState(false);
     const [planeState, setPlaneState] = useState<planes>(initialPlane);
 
-    // --- Permissions (par machine, identiques au Tableau) ---
+    // --- Permissions (per plane, same as the table) ---
     const canManage = currentUser ? canManagePlane(planeState, currentUser) : false;
     const canMaintenance = currentUser ? canAccessMaintenance(planeState, currentUser) : false;
     const canBapteme = currentUser ? canManageBaptemeOptions(planeState, currentUser) : false;
 
-    // Président (OWNER) et admin voient le propriétaire des machines privées.
+    // President (OWNER) and admin see the owner of private planes.
     const canViewOwner =
         currentUser?.role === userRole.OWNER ||
         currentUser?.role === userRole.ADMIN;
@@ -108,7 +110,7 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
             } else {
                 toast({ title: "Erreur", description: res.error, variant: "destructive" });
             }
-        } catch (error) {
+        } catch {
             toast({ title: "Erreur technique", variant: "destructive" });
         } finally {
             setLoading(false);
@@ -137,8 +139,9 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                 setPlaneState(prev => ({ ...prev, operational: !newState }));
                 toast({ title: "Erreur", variant: "destructive" });
             }
-        } catch (error) {
+        } catch {
             setPlaneState(prev => ({ ...prev, operational: !newState }));
+            toast({ title: "Erreur technique", description: "Le statut de la machine n'a pas été modifié.", variant: "destructive" });
         } finally {
             setLoading(false);
         }
@@ -155,10 +158,9 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
         )}>
             <CardContent className="p-4 space-y-4">
 
-                {/* Header: Icon, Name, Immat */}
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                        {/* Photo de la machine, ou icône dynamique selon statut */}
+                        {/* Plane photo, or status-based icon */}
                         <PlaneThumbnail
                             imagePath={planeState.imagePath}
                             name={planeState.name}
@@ -186,26 +188,24 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                                         Révision en retard
                                     </span>
                                 )}
-                                {/* Les usages (instruction / location / club) ne sont
-                                    plus affichés : le champ n'est pas encore exploité
-                                    par une règle métier. */}
+                                {/* Usages (instruction / rental / club) are no longer shown: the field is not used by any business rule yet. */}
                                 {isPrivate && (
                                     <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
                                         <Lock className="w-3 h-3" />
                                         Privé
                                     </span>
                                 )}
+                                <PlaneRateBadge plane={planeState} />
                             </div>
                         </div>
                     </div>
 
-                    {/* Badge de Classe (En haut à droite) */}
                     <span className="text-[10px] uppercase font-bold text-slate-400 border border-slate-100 px-2 py-1 rounded-full">
                         {getClasseLabel()}
                     </span>
                 </div>
 
-                {/* Propriétaire (président/admin uniquement) */}
+                {/* Owner (president/admin only) */}
                 {canViewOwner && (
                     <div className="flex items-center justify-between px-1">
                         <span className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600">
@@ -220,7 +220,6 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                     </div>
                 )}
 
-                {/* Heures moteur */}
                 <div className="flex items-center justify-between px-1">
                     <span className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600">
                         <Gauge className="w-4 h-4 text-slate-400" />
@@ -231,7 +230,7 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                     </span>
                 </div>
 
-                {/* Status Switch (Pour Manager) ou Badge (Pour User) */}
+                {/* Status switch (manager) or badge (user) */}
                 {canViewStatus && (
                     <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 flex items-center justify-between">
                         <span className="text-sm font-medium text-slate-600">État de l&apos;appareil</span>
@@ -264,7 +263,7 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                     </div>
                 )}
 
-                {/* Bouton Maintenance (accès plus large que la gestion) */}
+                {/* Maintenance button (wider access than management) */}
                 {canMaintenance && (
                     <div className="pt-2 border-t border-slate-100">
                         <Button
@@ -284,7 +283,7 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                     </div>
                 )}
 
-                {/* Bouton Formules de baptême (durée + tarif) */}
+                {/* "Rates" shortcut: instruction rate + discovery-flight packages */}
                 {canBapteme && (
                     <div className={cn("pt-2", !canMaintenance && "border-t border-slate-100")}>
                         <Button
@@ -292,8 +291,8 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                             onClick={() => setShowBapteme(true)}
                             className="w-full border-slate-200 text-slate-700 hover:bg-purple-50 hover:text-[#774BBE] hover:border-purple-200"
                         >
-                            <Ticket className="w-4 h-4 mr-2" />
-                            Formules de baptême
+                            <Euro className="w-4 h-4 mr-2" />
+                            Tarifs
                         </Button>
                     </div>
                 )}
@@ -347,10 +346,14 @@ const MobilePlaneCard = ({ initialPlane, setPlanes, allPlanes, ownerNames, onOwn
                 )}
 
                 {canBapteme && (
-                    <BaptemeOptionsDialog
+                    <PlaneTariffsDialog
                         plane={planeState}
                         open={showBapteme}
                         onOpenChange={setShowBapteme}
+                        onRateSaved={(rate) => {
+                            setPlaneState((prev) => ({ ...prev, instructionHourlyRateCents: rate }));
+                            setPlanes((prev) => prev.map((p) => (p.id === planeState.id ? { ...p, instructionHourlyRateCents: rate } : p)));
+                        }}
                     />
                 )}
             </CardContent>
