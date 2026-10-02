@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import prisma from '@/api/prisma'
 import { AUTH_ROUTES, loginFailure, loginRedirect } from '@/lib/authFlow'
+import { refreshDemoClubByIDIfDue } from '@/api/demoClub'
 
 export async function login(formData: FormData) {
     const supabase = await createClient();
@@ -24,6 +25,9 @@ export async function login(formData: FormData) {
         where: { email: data.email },
         select: { clubID: true },
     });
+
+    // Before the redirect, so the first page already shows today's demo data.
+    await refreshDemoClubByIDIfDue(userClub?.clubID);
 
     revalidatePath('/', 'layout');
     redirect(loginRedirect(userClub?.clubID));

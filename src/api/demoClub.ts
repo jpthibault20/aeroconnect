@@ -25,22 +25,27 @@ type DemoClubState = { id: string; isDemo: boolean; demoRefreshedAt: Date | null
 
 /**
  * Regenerates the demo club's sessions, logbook and wallets around today when
- * the last refresh is from an earlier club day. Never throws: a failure must not
- * prevent the prospect from using the app.
+ * the last refresh is from an earlier club day. Returns true when THIS call
+ * regenerated the data. Never throws: a failure must not prevent the prospect
+ * from using the app.
+ *
+ * Call it before navigating to a page (login, club switch): Next renders the
+ * layout and the page in parallel, so a page rendered alongside the refresh
+ * reads the previous data.
  */
-export async function refreshDemoClubIfDue(club: DemoClubState | null | undefined): Promise<void> {
+export async function refreshDemoClubIfDue(club: DemoClubState | null | undefined): Promise<boolean> {
     const now = new Date();
-    if (!club || !isDemoRefreshDue(club, now)) return;
+    if (!club || !isDemoRefreshDue(club, now)) return false;
 
     try {
-        await prisma.$transaction(async (tx) => {
+        return await prisma.$transaction(async (tx) => {
             // Compare-and-set on the value read: when several prospects log in at
             // once, only the first one regenerates, the others see 0 rows here.
             const claimed = await tx.club.updateMany({
                 where: { id: club.id, isDemo: true, demoRefreshedAt: club.demoRefreshedAt },
                 data: { demoRefreshedAt: now },
             });
-            if (claimed.count === 0) return;
+            if (claimed.count === 0) return false;
 
             const clubRow = await tx.club.findUniqueOrThrow({ where: { id: club.id } });
             // The wallet must be on (and priced) for the demo to show debits.
@@ -104,8 +109,17 @@ export async function refreshDemoClubIfDue(club: DemoClubState | null | undefine
             await tx.flight_logs.createMany({ data: dataset.logs });
             await tx.walletTransaction.createMany({ data: dataset.transactions });
             await tx.wallet.createMany({ data: dataset.wallets.map((w) => ({ ...w, clubID: club.id })) });
+            return true;
         }, { maxWait: 10_000, timeout: 30_000 });
     } catch (error) {
         console.error("[demoClub] refresh failed", error);
+        return false;
     }
+}
+
+/** Same as refreshDemoClubIfDue, from a club ID (reads the demo flags). */
+export async function refreshDemoClubByIDIfDue(clubID: string | null | undefined): Promise<boolean> {
+    if (!clubID) return false;
+    const club = await prisma.club.findUnique({ where: { id: clubID }, select: { id: true, isDemo: true, demoRefreshedAt: true } });
+    return refreshDemoClubIfDue(club);
 }

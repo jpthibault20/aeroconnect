@@ -7,6 +7,7 @@ import Navigation from "@/components/navigation";
 import prisma from "@/api/prisma";
 import { CurrentClubWrapper } from "../context/useCurrentClub";
 import { refreshDemoClubIfDue } from "@/api/demoClub";
+import ReloadOnMount from "@/components/ReloadOnMount";
 
 export default async function ProtectLayout({
     children,
@@ -26,11 +27,14 @@ export default async function ProtectLayout({
         redirect('/auth/login');
     }
 
-    // Demo club: keep its activity around today (once per day, first visit).
-    await refreshDemoClubIfDue(clubs.find((club) => club.id === user.clubID));
+    // Demo club: normally refreshed at login / club switch. This catches a session
+    // left open across midnight; the page rendered in parallel read the previous
+    // data, hence the one-off reload.
+    const demoRefreshed = await refreshDemoClubIfDue(clubs.find((club) => club.id === user.clubID));
 
     return (
         <div className="h-full">
+            {demoRefreshed && <ReloadOnMount />}
             <CurrentUserWrapper>
                 <CurrentClubWrapper>
                     <UpdateContext userProp={user} clubProp={clubs.filter(club => club.id === user.clubID)[0]} />

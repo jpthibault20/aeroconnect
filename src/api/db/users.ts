@@ -7,6 +7,7 @@ import { resolveBaptemeHold } from './baptemeHold';
 import { canViewPlane, isPrivatePlane } from '@/lib/planeVisibility';
 import { managerBookingWarning } from '@/lib/wallet';
 import { canSwitchClub } from '@/lib/clubAccess';
+import { refreshDemoClubByIDIfDue } from '../demoClub';
 
 const MANAGEMENT_ROLES: userRole[] = [userRole.OWNER, userRole.ADMIN, userRole.MANAGER];
 
@@ -322,6 +323,8 @@ export const updateUserClub = async (userID: string, clubID: string) => {
             where: { id: userID },
             data: { clubID }
         });
+        // Before the client reloads onto the new club (see refreshDemoClubIfDue).
+        await refreshDemoClubByIDIfDue(clubID);
         return { success: "L'utilisateur a été mis à jour avec succès !" };
     } catch {
         return { error: "Erreur lors de la mise à jour de l'utilisateur" };
