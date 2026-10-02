@@ -15,6 +15,7 @@
     "postbuild": "npm run migrate:prod",
     "email": "email dev",
     "seed:month": "npx --yes tsx prisma/seed-current-month.ts",
+    "seed:dev": "npx --yes tsx prisma/seed-dev.ts",
     "test": "vitest",
     "test:run": "vitest run"
   },

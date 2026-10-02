@@ -134,6 +134,11 @@ model Club {
   walletBookingMinCents       Int      @default(0)
   // Email the member when their balance drops below the "low" threshold.
   walletLowBalanceEmail       Boolean  @default(true)
+  // Demo club (shared prospect account): its sessions, logbook and wallets are
+  // wiped and regenerated around today, at most once per club day (see
+  // src/api/demoClub.ts). Never set it on a real club.
+  isDemo                      Boolean  @default(false)
+  demoRefreshedAt             DateTime? @db.Timestamptz(6)
 }
 
 model MaintenanceTask {
